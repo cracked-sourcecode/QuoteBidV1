@@ -1,0 +1,5 @@
+ALTER TABLE pitches 
+ADD COLUMN IF NOT EXISTS authorization_expires_at TIMESTAMP,
+ADD COLUMN IF NOT EXISTS billed_at TIMESTAMP,
+ADD COLUMN IF NOT EXISTS stripe_charge_id TEXT,
+ADD COLUMN IF NOT EXISTS billing_error TEXT;

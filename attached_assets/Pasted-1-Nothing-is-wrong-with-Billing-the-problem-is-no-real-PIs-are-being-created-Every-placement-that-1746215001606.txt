@@ -1,0 +1,73 @@
+1 — Nothing is wrong with Billing; the problem is no real PIs are being created
+Every placement that shows Ready for Billing still has pitch.payment_intent_id = NULL, so the Billing endpoint quite correctly returns:
+
+css
+Copy
+Edit
+400 { message:"No payment intent found for this placement" }
+Until the bid flow writes a real Stripe ID into that column, the modal will keep erroring. Stop tweaking the admin code and finish the bid flow.
+
+2 — Hard‑wire the PI creation on bid submit
+2.1 Server (POST /api/pitch or /api/bid)
+ts
+Copy
+Edit
+const pi = await stripe.paymentIntents.create({
+  amount:  bidPriceInCents,
+  currency:'usd',
+  capture_method:'manual',
+  metadata: { pitchId: newPitch.id, userId: req.user.id }
+});
+
+await db.pitch.update(newPitch.id, {
+  payment_intent_id:        pi.id,
+  authorization_expires_at: new Date(Date.now() + 6.5*24*60*60*1000)
+});
+2.2 Return both IDs to the front‑end
+json
+Copy
+Edit
+{ "pitchId": 42, "clientSecret": "pi_..._secret_...", "paymentIntentId": "pi_..." }
+2.3 Front‑end
+ConfirmBidDialog doesn’t need pitchId anymore to create a PI—it already exists.
+
+Use the clientSecret to render the payment‑sheet; ignore paymentIntentId.
+
+3 — Migrate existing rows once (optional)
+sql
+Copy
+Edit
+UPDATE pitch
+SET    payment_intent_id = e.value
+FROM   jsonb_each_text(metadata) e
+WHERE  e.key = 'paymentIntentId'   -- only if you logged it in metadata earlier
+  AND  payment_intent_id IS NULL;
+Otherwise just let old test pitches die; create fresh ones after you ship 2 — that’s cleaner.
+
+4 — Smoke test (takes 60 seconds)
+bash
+Copy
+Edit
+# 1. Place a new bid via UI (card 4242 etc.)
+# 2. psql: SELECT id, payment_intent_id FROM pitch ORDER BY id DESC LIMIT 1;
+#    -> should display 'pi_3XYZ…'
+# 3. Admin > Billing Manager -> Bill Now
+# 4. Should fetch PI (last‑4, $ amount) and Capture without error
+# 5. Table row status flips to 'Billed'
+If step 2 shows NULL, the server code in step 2.1 is still not running. That’s the only place left to fix.
+
+5 — Fail‑safe logging (add once)
+ts
+Copy
+Edit
+console.log('[PITCH]', pitch.id, 'saved PI', pitch.payment_intent_id);
+When you don’t see that line after bidding, you know exactly where to look.
+
+Ship the bid‑flow patch, run the smoke test, and the Billing modal will finally light up instead of screaming “No payment intent found.”
+
+
+
+
+
+
+

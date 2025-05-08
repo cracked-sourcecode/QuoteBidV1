@@ -1,0 +1,72 @@
+Clean up this project command for QuoteBid, sharing with replit: No listen this is the instruction: 
+
+Remove the agreements page and put all of the information under agreements into a modal for each user. 
+
+Under manage users there should be a new row, called agreement - this is a button. 
+
+When you click the button it opens a modal. 
+
+The modal includes date of agreement signed, and the pdf that you can view / download. This eliminates having an extra page for agreements and adds this feature to the manage users page as a more central hub. 
+
+Also in the user management page: 
+
+- Remove agreement pending
+- Remove billing cycle inactive
+- Status: should show if they are subscribed or not, there Is no free version. 
+- Remove industry row, and remove email row. 
+
+Create a new modal called account information — This modal has all of the customers information, including the ability to reset password by sending a link, shows the date they joined. Shows their account username, shows their account information more deeply etc… 
+
+Do you understand?
+
+
+ChatGPT said:
+Here’s a cleaned-up and structured project command for Replit:
+
+🔧 QuoteBid Admin Portal Instructions – User Management & Agreements Revamp
+✅ 1. Remove Agreements Page
+Delete the existing /agreements page entirely.
+
+Move all agreement-related data into a modal accessible from the Manage Users page.
+
+✅ 2. Add “Agreement” Column to Manage Users
+In the Manage Users table:
+
+Add a new column titled "Agreement" with a button.
+
+When clicked, it opens a modal containing:
+
+The date the agreement was signed
+
+A PDF viewer with download functionality
+
+✅ 3. Update Manage Users Table UI
+Remove the following columns:
+
+Agreement Pending
+
+Billing Cycle Inactive
+
+Industry
+
+Email
+
+Update the Status column:
+
+Show whether the user is subscribed or not
+
+No free version exists — remove any logic or display suggesting otherwise
+
+✅ 4. Add New Modal: “Account Information”
+Accessible from a button or icon in the Manage Users row
+
+Modal includes:
+
+Account username
+
+Date joined
+
+Reset password link (sends password reset email)
+
+Detailed user info (phone, name, subscription details, etc.)
+

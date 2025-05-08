@@ -1,0 +1,67 @@
+
+
+
+Ok this is the initial ui feature — It didn't understand profile settings to keep these features — so this is what I am communicating now: In the top left it should show the links... the profile infomration drop down is fine, but you also need to have the account information setting shows manage subscription, manage password, update account information like email phone number etc and should also show contact support and connect with a QuoteBid team member etc. Right now when you open profile setting sit takes you back to the sign up page profile-setup. You shuold be able to edit profile set up features simply by being on the /account page — like updating links photos etc... the /account-setup page is kust an onboarding screen for initial sign up. Thne you can edit those features on the account page. User settings needs to be like user settings functionality totally different. Please communicate this effectively to Replit. Essentially the UI build out doesn't show all of the user id fields under account that we saw when we created /account-setup
+
+ChatGPT said:
+Message to Replit Dev Team — Account Page polish (profile vs. user‑settings)
+
+Pain points we need to fix
+Profile Information dropdown currently links back to the onboarding page (/profile-setup).
+→ That page should be one‑time onboarding only. After sign‑up, all those fields must be editable directly on /account.
+
+User Settings section is missing core account controls (subscription, password, email, phone, support).
+
+Sidebar contact links from onboarding aren’t shown.
+
+Concrete requirements
+1 — Sidebar (left column)
+Element	Data & action
+Avatar, Name, Username, Location	Already there.
+Contact links	Show icons + URLs for Web, LinkedIn, Instagram, X/Twitter, Location. All values came from /profile-setup; make them clickable & editable inline.
+Profile‑completion meter	Keep.
+User Settings accordion (see #2)	Replace current “Profile Information” dropdown.
+
+2 — User Settings accordion (collapsed by default)
+sql
+Copy
+Edit
+User Settings ▼
+  • Manage Subscription        → opens billing portal URL
+  • Change Password            → inline modal (current, new, confirm)
+  • Update Email & Phone       → inline modal
+  • Contact Support            → mailto:support@quotebid.com
+  • Book 1:1 with QuoteBid     → external Calendly link
+3 — Profile editing on /account
+All fields captured in /profile-setup—Avatar, Full Name, Location, Bio, Primary Industry, social links, Past PR links—must be editable in place on /account without redirect.
+
+Use the existing pencil‑icon inline editor pattern (shown in your “Bryce Henson” mock).
+
+4 — Routing cleanup
+Remove link from sidebar that pushes users back to /profile-setup.
+
+Keep /profile-setup route but guard it:
+
+ts
+Copy
+Edit
+if (user.profileCompleted) return res.redirect('/account');
+5 — API
+No new endpoints needed:
+
+PATCH /api/user/profile → update all profile fields.
+
+PATCH /api/user/account → update auth details (email, phone, password).
+
+GET /api/billing/portal-link → returns Stripe billing‑portal URL.
+
+Acceptance checklist
+Clicking User Settings › Manage Subscription opens Stripe portal.
+
+All onboarding fields editable inline on /account (no redirect).
+
+Sidebar shows contact links with icons.
+
+/profile-setup is only reachable for incomplete profiles.
+
+Once these tweaks land, the Account page will fully cover both public profile and private account settings without bouncing users back to onboarding.

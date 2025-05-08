@@ -1,0 +1,120 @@
+🔥 Root cause (based on the 400)
+"No payment intent found for this placement"
+
+Your GET /api/admin/billing/:placementId logic still checks the placement (pitch) table for payment_intent_id but never falls back to the pitch record that actually owns it. So any placement created before the DB migration—or any new placement where you forgot to copy the field across—returns 404/400.
+
+1. Single‑source of truth
+Only the pitch row should own payment_intent_id.
+Stop trying to mirror it into placement (or whatever second table you’re calling “placement”). It’s leading to race conditions and nulls.
+
+Schema cleanup
+If you added payment_intent_id to placements, drop it or mark it nullable and ignore it. Keep:
+
+sql
+Copy
+Edit
+-- in pitch
+payment_intent_id        varchar(64) not null,
+authorization_expires_at timestamptz not null
+2. Fix GET /api/admin/billing/:placementId
+ts
+Copy
+Edit
+router.get('/api/admin/billing/:placementId', isAdmin, async (req,res) => {
+  const placement = await db.placement.find(req.params.placementId);
+  if (!placement) return res.status(404).json({message:'placement_not_found'});
+
+  // Get *the* pitch row that generated the placement
+  const pitch = await db.pitch.find(placement.pitch_id);
+
+  if (!pitch?.payment_intent_id) {
+    return res.status(400).json({message:'missing_payment_intent', placement});
+  }
+
+  const pi = await stripe.paymentIntents.retrieve(pitch.payment_intent_id);
+  res.json({ placement, paymentIntent: pi });
+});
+Front‑end stays untouched — it already expects paymentIntent in payload.
+
+3. Make absolutely sure pitch rows get the PI on bid
+ts
+Copy
+Edit
+const pi = await stripe.paymentIntents.create({
+  capture_method: 'manual',
+  amount: bidPriceInCents,
+  currency: 'usd',
+  metadata: { pitchId: pitch.id, userId: user.id },
+});
+
+await db.pitch.update(pitch.id, {
+  payment_intent_id: pi.id,
+  authorization_expires_at: new Date(Date.now() + 6.5*24*60*60*1000) // ~6.5 days
+});
+If this update fails (look for any try/catch swallowing errors!) the rest of the flow will always break.
+
+4. Back‑fill older rows once
+sql
+Copy
+Edit
+UPDATE pitch p
+SET    payment_intent_id = e.value
+FROM   jsonb_each_text(p.metadata) e
+WHERE  e.key='paymentIntentId'
+  AND  p.payment_intent_id IS NULL;
+Run it locally against dev DB, then prod.
+
+5. Logging to prove it
+Add one liner before stripe.paymentIntents.retrieve:
+
+ts
+Copy
+Edit
+console.log('Capturing PI', pitch.payment_intent_id, 'for placement', placement.id);
+If the log prints undefined, the bug is upstream; if it prints a real PI but Stripe 404s, ID is wrong length (typo / whitespace).
+
+6. Bid page crash sanity check
+The crash cascade happens whenever pitchId is undefined. Patch creation response:
+
+ts
+Copy
+Edit
+// POST /api/pitch
+return res.json({ pitchId: newPitch.id, clientSecret: pi.client_secret });
+Front‑end:
+
+tsx
+Copy
+Edit
+const { pitchId, clientSecret } = await createPitch(...);
+// pass both to ConfirmBidDialog
+No pitchId → no linking → Bill Now always fails.
+
+⚡️ Definition of done
+Billing modal shows last‑4 card + amount (pulled from PI) instead of “Unable to fetch”.
+
+Clicking Capture returns 200 and changes status to Billed in the table.
+
+Pitch submission completes without console errors and opens payment sheet.
+
+Ship these three and we’re live. Ping me when the modal populates with card details.
+
+
+
+
+
+
+
+
+
+
+
+Search
+
+Deep research
+
+Create image
+
+
+
+ChatGPT can make mistakes. Check important info.

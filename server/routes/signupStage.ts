@@ -1,0 +1,545 @@
+import 'dotenv/config';
+import { Request, Response, Router } from 'express';
+import { getDb } from '../db';
+import { users } from '@shared/schema';
+import { eq } from 'drizzle-orm';
+import Stripe from 'stripe';
+import path from 'path';
+import fs from 'fs';
+import multer from 'multer';
+import jwt from 'jsonwebtoken';
+
+// Initialize Stripe client
+function getStripeClient() {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+  }
+  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2025-03-31.basil',
+  });
+}
+
+// Get Stripe instance when needed
+const stripe = getStripeClient();
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadDir = path.join(process.cwd(), 'uploads', 'avatars');
+      // Ensure directory exists
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, 'avatar-' + uniqueSuffix + ext);
+    }
+  }),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept only images
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
+});
+
+const router = Router();
+
+// Allowed signup stages in order
+const VALID_STAGES = ['agreement', 'payment', 'profile', 'ready', 'legacy'];
+
+// Get the current signup stage for a user
+router.get('/:email', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.params;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    
+    // Find user by email
+    const [user] = await getDb()
+      .select()
+      .from(users)
+      .where(eq(users.email, decodeURIComponent(email)));
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Determine which stage the user is in
+    const stageInfo = determineSignupStage(user);
+    
+    return res.status(200).json(stageInfo);
+  } catch (error) {
+    console.error('Error getting signup stage:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Advance a user to the next signup stage
+router.post('/:email/advance', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.params;
+    const { action } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    
+    if (!action || !VALID_STAGES.includes(action)) {
+      return res.status(400).json({ message: 'Valid action is required' });
+    }
+    
+    // Find user by email
+    const [user] = await getDb()
+      .select()
+      .from(users)
+      .where(eq(users.email, decodeURIComponent(email)));
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Determine the next stage
+    const currentStage = user.signup_stage || 'agreement';
+    const currentIndex = VALID_STAGES.indexOf(currentStage);
+    const actionIndex = VALID_STAGES.indexOf(action);
+    
+    // Only allow advancing to the next stage or staying on the same stage
+    if (actionIndex < currentIndex) {
+      return res.status(400).json({ 
+        message: 'Cannot go back to a previous stage',
+        stage: currentStage 
+      });
+    }
+    
+    // If we're completing the current stage, advance to the next one
+    let nextStage = currentStage;
+    if (action === currentStage && actionIndex < VALID_STAGES.length - 1) {
+      nextStage = VALID_STAGES[actionIndex + 1];
+    }
+    
+    // Special handling for agreement stage
+    if (action === 'agreement') {
+      const { fullName, signature } = req.body;
+      // Store the signature as agreement_signed if available, fallback to fullName
+      const agreementValue = signature || fullName;
+      
+      if (agreementValue) {
+        await getDb().query(`
+          UPDATE users 
+          SET agreement_signed = $1,
+              signup_stage = $2
+          WHERE email = $3;
+        `, [agreementValue, nextStage, decodeURIComponent(email)]);
+        
+        return res.status(200).json({
+          stage: nextStage,
+          nextStage: actionIndex < VALID_STAGES.length - 1 ? VALID_STAGES[actionIndex + 1] : undefined
+        });
+      }
+    } 
+    
+    // Special handling for payment stage
+    if (action === 'payment') {
+      const { paymentMethodId } = req.body;
+      
+      if (!paymentMethodId) {
+        return res.status(400).json({ 
+          message: 'Payment method ID is required',
+          success: false 
+        });
+      }
+      
+      try {
+        // Find user by email
+        const [user] = await getDb()
+          .select()
+          .from(users)
+          .where(eq(users.email, decodeURIComponent(email)));
+        
+        if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+        
+        // Check if the user already has a Stripe customer ID
+        let customerId = user.stripeCustomerId;
+        
+        if (!customerId) {
+          // Create a new customer in Stripe
+          const customer = await stripe.customers.create({
+            email: user.email,
+            name: user.fullName || user.username,
+            payment_method: paymentMethodId,
+            invoice_settings: {
+              default_payment_method: paymentMethodId,
+            },
+          });
+          customerId = customer.id;
+        } else {
+          // Update the customer's payment method
+          await stripe.customers.update(customerId, {
+            invoice_settings: {
+              default_payment_method: paymentMethodId,
+            },
+          });
+          
+          // Attach the payment method to the customer
+          await stripe.paymentMethods.attach(paymentMethodId, {
+            customer: customerId,
+          });
+        }
+        
+        // Create a subscription
+        const priceId = process.env.STRIPE_PRICE_ID;
+        
+        if (!priceId) {
+          throw new Error('STRIPE_PRICE_ID is not configured');
+        }
+        
+        const subscription = await stripe.subscriptions.create({
+          customer: customerId,
+          items: [{ price: priceId }],
+          default_payment_method: paymentMethodId,
+        });
+        
+        // Update the user record with subscription information
+        await getDb()
+          .update(users)
+          .set({ 
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscription.id,
+            subscription_status: subscription.status,
+            signup_stage: nextStage,
+            hasCompletedPayment: true
+          })
+          .where(eq(users.id, user.id));
+        
+        return res.status(200).json({
+          stage: nextStage,
+          nextStage: actionIndex < VALID_STAGES.length - 1 ? VALID_STAGES[actionIndex + 1] : undefined,
+          subscription: {
+            id: subscription.id,
+            status: subscription.status
+          }
+        });
+      } catch (error) {
+        console.error('Error processing payment:', error);
+        return res.status(500).json({ 
+          message: 'Error processing payment',
+          error: error.message
+        });
+      }
+    }
+    
+    // Regular stage update
+    await getDb()
+      .update(users)
+      .set({ signup_stage: nextStage })
+      .where(eq(users.id, user.id));
+    
+    // Get the updated stage info
+    const updatedStageInfo = {
+      stage: nextStage,
+      nextStage: actionIndex < VALID_STAGES.length - 1 ? VALID_STAGES[actionIndex + 1] : undefined
+    };
+    
+    return res.status(200).json(updatedStageInfo);
+  } catch (error) {
+    console.error('Error advancing signup stage:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Update user profile information during signup
+router.patch('/:email/profile', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.params;
+    const profileData = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    
+    // Find user by email
+    const [user] = await getDb()
+      .select()
+      .from(users)
+      .where(eq(users.email, decodeURIComponent(email)));
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Update the allowed profile fields
+    const allowedFields = [
+      'fullName', 
+      'company_name', 
+      'phone_number', 
+      'industry', 
+      'title', 
+      'location', 
+      'bio'
+    ];
+    
+    const updateData = Object.keys(profileData)
+      .filter(key => allowedFields.includes(key))
+      .reduce((obj, key) => {
+        obj[key] = profileData[key];
+        return obj;
+      }, {});
+    
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ 
+        message: 'No valid profile fields provided',
+        success: false 
+      });
+    }
+    
+    // Update the user's profile
+    await getDb()
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, user.id));
+    
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error updating profile during signup:', error);
+    return res.status(500).json({ message: 'Internal server error', success: false });
+  }
+});
+
+// Helper function to determine signup stage based on user data
+function determineSignupStage(user: any) {
+  // If using the legacy boolean flags system, convert to the new stage system
+  if (user.signup_stage) {
+    // Use the new stage field if it exists
+    const currentStageIndex = VALID_STAGES.indexOf(user.signup_stage);
+    
+    return {
+      stage: user.signup_stage,
+      nextStage: currentStageIndex < VALID_STAGES.length - 1 
+        ? VALID_STAGES[currentStageIndex + 1] 
+        : undefined
+    };
+  }
+  
+  // Fallback logic based on old boolean flags for backwards compatibility
+  if (!user.hasAgreedToTerms) {
+    return { stage: 'agreement', nextStage: 'payment' };
+  } else if (!user.hasCompletedPayment) {
+    return { stage: 'payment', nextStage: 'profile' };
+  } else if (!user.hasCompletedProfile) {
+    return { stage: 'profile', nextStage: 'ready' };
+  } else {
+    return { stage: 'ready' };
+  }
+}
+
+// Handle avatar uploads
+router.post('/:email/avatar', upload.single('avatar'), async (req: Request, res: Response) => {
+  try {
+    const { email } = req.params;
+    const file = req.file;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    
+    if (!file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+    
+    // Find user by email
+    const [user] = await getDb()
+      .select()
+      .from(users)
+      .where(eq(users.email, decodeURIComponent(email)));
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Save the avatar path to the user record
+    const avatarPath = `/uploads/avatars/${file.filename}`;
+    
+    await getDb()
+      .update(users)
+      .set({ avatarUrl: avatarPath })
+      .where(eq(users.id, user.id));
+    
+    return res.status(200).json({ success: true, path: avatarPath });
+  } catch (error) {
+    console.error('Error uploading avatar:', error);
+    return res.status(500).json({ message: 'Internal server error', success: false });
+  }
+});
+
+// Create or retrieve subscription for the user
+router.post('/get-or-create-subscription', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    
+    // Find user by email
+    const [user] = await getDb()
+      .select()
+      .from(users)
+      .where(eq(users.email, email));
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // If user already has an active subscription
+    if (user.stripeSubscriptionId) {
+      try {
+        // Retrieve the subscription from Stripe
+        const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+        
+        // If subscription is still valid, return the payment intent client secret
+        if (subscription.status === 'active' || subscription.status === 'trialing') {
+          return res.status(200).json({
+            subscriptionId: subscription.id,
+            status: subscription.status,
+            active: true,
+          });
+        }
+      } catch (stripeError) {
+        console.error('Error retrieving subscription:', stripeError);
+        // If the subscription isn't found, we'll create a new one below
+      }
+    }
+    
+    // Create a customer if the user doesn't have one
+    let customerId = user.stripeCustomerId;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: user.fullName || user.username,
+      });
+      customerId = customer.id;
+      
+      // Update the user record with the customer ID
+      await getDb()
+        .update(users)
+        .set({ stripeCustomerId: customerId })
+        .where(eq(users.id, user.id));
+    }
+    
+    // Create a new subscription
+    // Use the monthly subscription price
+    const priceId = process.env.STRIPE_PRICE_ID; // Monthly subscription price ID
+    
+    if (!priceId) {
+      throw new Error('STRIPE_PRICE_ID is not configured');
+    }
+    
+    // Create the subscription with payment_behavior: 'default_incomplete' to collect first payment
+    const subscription = await stripe.subscriptions.create({
+      customer: customerId,
+      items: [{ price: priceId }],
+      payment_behavior: 'default_incomplete',
+      payment_settings: { save_default_payment_method: 'on_subscription' },
+      expand: ['latest_invoice.payment_intent'],
+    });
+    
+    // Update the user record with the subscription ID
+    await getDb()
+      .update(users)
+      .set({ 
+        stripeSubscriptionId: subscription.id,
+        subscription_status: subscription.status,
+      })
+      .where(eq(users.id, user.id));
+    
+    // Get the client secret for the invoice's payment intent
+    const invoice = subscription.latest_invoice as any;
+    const clientSecret = invoice?.payment_intent?.client_secret;
+    
+    if (!clientSecret) {
+      throw new Error('Failed to get client secret from subscription');
+    }
+    
+    return res.status(200).json({
+      subscriptionId: subscription.id,
+      clientSecret: clientSecret,
+      status: subscription.status,
+    });
+  } catch (error) {
+    console.error('Error creating subscription:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Complete signup and generate JWT token
+router.post('/:email/complete', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.params;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    
+    // Find user by email
+    const [user] = await getDb()
+      .select()
+      .from(users)
+      .where(eq(users.email, decodeURIComponent(email)));
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Update the user's signup stage to 'ready'
+    await getDb()
+      .update(users)
+      .set({ 
+        signup_stage: 'ready', 
+        hasAgreedToTerms: true,
+        hasCompletedPayment: true,
+        hasCompletedProfile: true
+      })
+      .where(eq(users.id, user.id));
+    
+    // Generate a JWT token for the user
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role || 'user' 
+      }, 
+      process.env.JWT_SECRET || 'quotebid_secret',
+      { expiresIn: '7d' }
+    );
+    
+    return res.status(200).json({ 
+      success: true, 
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Error completing signup:', error);
+    return res.status(500).json({ message: 'Internal server error', success: false });
+  }
+});
+
+export default router;

@@ -1,0 +1,51 @@
+Perfect — you’re creating a checkout confirmation UX that fuses financial clarity, user trust, and emotional excitement into a single final moment before someone places a bid.
+
+Here’s how to structure it:
+
+✅ Function: What this screen needs to do
+Before the user hits “Submit Bid”, this pop-up must:
+
+Clarify what’s happening financially (pending hold, not charged)
+
+Set clear expectations on when/why they’ll be charged
+
+Make it feel exciting — like a high-stakes investment or a potential win
+
+Reduce risk fear — no bait & switch, clean refund logic
+
+Be visually consistent with the Robinhood / flight-booking vibe
+
+🧩 Suggested UI Layout (Modal / Sheet)
+Header: 🎯 Confirm Your Bid for Coverage
+(Tier 1 Outlet – Current Bid: $325)
+
+🔐 What happens now
+By submitting your pitch:
+
+A pending authorization will be placed on your card for $325.
+
+You will only be charged if your quote is selected by the journalist.
+
+If selected, you’ll receive an email + in-platform notification with a link to the live coverage.
+
+If not selected, the pending hold disappears automatically — you pay nothing.
+
+📣 Why this matters
+You're pitching for limited placement in a real editorial feature.
+Reporters review all submissions based on fit, not just price — so a great pitch can beat a higher bid.
+This is your chance to earn real press — not pay for access, but compete for it.
+
+💬 (Optional line, adds energy)
+Think of it like booking a flight at the best price — but the runway is exclusive and your quote has to land ✈️
+
+⚠️ Legal footer-style line
+All bids are final. By submitting, you authorize QuoteBid to place a temporary charge hold on your payment method. Final billing only occurs if your pitch is selected and coverage is published. Full terms available [here].
+
+🟢 Buttons:
+[Submit Pitch & Authorize Bid] — primary button (green / orange)
+
+Cancel — ghost button
+
+🛠 Implementation Note (to Replit dev)
+Use shadcn/ui <Dialog> or <Sheet> with side="right" or center modal. Use Stripe payment intent with capture_method=manual to authorize, then capture only if reporter confirms selection.
+

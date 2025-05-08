@@ -1,0 +1,37 @@
+Here’s a tight punch-list you can hand to the Replit dev agent.
+Each item explains why it matters and exactly what to change, so they can tackle the bugs without breaking the wizard skeleton we just stood up.
+
+🛠 Fix-ups for Agreement Step & Wizard UI
+#	Issue	What to change	Why
+1	Signature canvas is over-kill	Front-end – Remove the <SignaturePad> component.
+Replace with a simple “I agree” checkbox plus an input for “Full legal name” (required).
+
+Back-end – Accept fullName (string) instead of an image in POST /signup/stage/advance when action:'agreement'. Store it in agreement_signed as plain text for now (we can move to PDF embed later).	Keeps the step friction-free; most SaaS products treat typed name + checkbox as e-signature.
+2	Agreement isn’t saving / stage not advancing	In db.advanceStage(email,'agreement', data) add:
+ts\nawait db.query(`\n UPDATE users \n SET agreement_signed = $1,\n signup_stage = 'payment'\n WHERE email = $2;`, [data.fullName, email]);\n
+Return {stage:'payment'}.	Wizard polling will now see stage change and auto-advance to Payment.
+3	Progress bar styling & visibility	In SignupProgress.tsx:
+• Change numbers to filled circles only for completed steps; current step gets bold text and primary color.
+• Increase line height / color contrast (border-neutral-300).
+• Shrink circle size to h-6 w-6 text-sm.	Makes the bar readable against white background and clearly shows which step is next.
+4	Can’t see next step cards (viewport too tall)	Wrap each step in overflow-auto max-h-[calc(100vh-120px)] so the page scrolls if content grows.	Prevents “blank below fold” on small laptop screens.
+5	Require checkbox before POST	Add front-end guard: disable “I Agree & Continue” button until checkbox is checked and fullName.length > 2.	Blocks empty submissions, removes server 400s.
+6	Remove stage ‘Complete’ (we only need 3)	Progress array → ['agreement','payment','profile']. Remove “4 Complete” label.	Cleaner UX; dashboard redirect is the completion.
+
+Suggested commit sequence (one PR)
+UI tweaks (items 3, 4, 6) – purely front-end.
+
+Signature → fullName refactor (items 1, 5).
+
+Back-end update to advanceStage (item 2) + adjust TypeScript types.
+
+Manual test:
+
+Enter email → agree (typed name) → wizard advances to Payment placeholder.
+
+DB row shows signup_stage='payment' & agreement_signed='John Smith'.
+
+Push, review, merge into signup-wizard branch.
+Feature flag stays off, so prod remains untouched.
+
+Once Payment and Profile steps are wired the same way, we’ll flip NEXT_SIGNUP_WIZARD=true and sunset the broken legacy flow.

@@ -1,0 +1,103 @@
+🚀 Signup-Wizard — Phase 1 (Scaffold only)
+0 · Branch & env flag
+bash
+Copy
+Edit
+git checkout -b signup-wizard
+echo "NEXT_SIGNUP_WIZARD=false" >> .env
+1 · DB migration (adds enum + empty cols)
+Create migrations/2025-05-08_signup_stage.sql
+
+sql
+Copy
+Edit
+-- up
+DO $$ BEGIN
+  CREATE TYPE signup_stage AS ENUM ('agreement','payment','profile','ready');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS signup_stage signup_stage NOT NULL DEFAULT 'agreement',
+  ADD COLUMN IF NOT EXISTS company_name      VARCHAR(120),
+  ADD COLUMN IF NOT EXISTS phone_number      VARCHAR(40),
+  ADD COLUMN IF NOT EXISTS agreement_signed  TEXT,
+  ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT,
+  ADD COLUMN IF NOT EXISTS subscription_id    TEXT,
+  ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'inactive';
+Run the migration.
+
+2 · Public endpoints (stub)
+server/routes/signupStage.ts
+
+ts
+Copy
+Edit
+router.get('/signup/stage', async (req, res) => {
+  const { email } = req.query;
+  const stage = await db.userStage(email as string);
+  res.json({ stage });
+});
+
+router.post('/signup/stage/advance', async (req, res) => {
+  const { email, action } = req.body;   // action = agreement|payment|profile
+  const stage = await db.advanceStage(email, action);
+  res.json({ stage });
+});
+Mount under /api before auth middleware.
+
+3 · Wizard skeleton
+client/src/pages/SignupWizard.tsx
+
+tsx
+Copy
+Edit
+export default function SignupWizard() {
+  const email = useLocalStorage('pendingEmail','');
+  const { data } = useQuery(['stage', email], () => api.getStage(email), { enabled: !!email, refetchInterval:3000 });
+
+  if (!email) return <EmailCapture setEmail={setEmail} />;
+  if (!data)  return <Spinner />;
+
+  if (data.stage === 'ready') {
+    window.location.href = '/login';
+    return null;
+  }
+
+  return (
+    <WizardLayout current={data.stage}>
+      {data.stage === 'agreement' && <AgreementStep email={email} />}
+      {data.stage === 'payment'   && <PaymentStep   email={email} />}
+      {data.stage === 'profile'   && <ProfileStep   email={email} />}
+    </WizardLayout>
+  );
+}
+(Each Step component can just render “TODO” for now.)
+
+Add route & flag switch in App.tsx:
+
+tsx
+Copy
+Edit
+<Route path="/signup" element={
+  import.meta.env.VITE_NEXT_SIGNUP_WIZARD === 'true'
+    ? <SignupWizard />
+    : <LegacySignup />
+} />
+<Route path="/signup-wizard" element={<SignupWizard />} />  {/* dev only */}
+4 · Proof check
+Run dev server, visit /signup-wizard.
+
+Enter email → see AgreementStep placeholder → manually POST /api/signup/stage/advance {agreement} via Postman → wizard should auto-advance to Payment placeholder.
+
+Confirm nothing on /signup or /login changed (flag still false).
+
+5 · Commit
+bash
+Copy
+Edit
+git add .
+git commit -m "Phase1: signup wizard scaffold with stage enum + endpoints"
+git push --set-upstream origin signup-wizard
+Next phase (after this merges & QA approves):
+– Implement real Agreement PDF upload → Stripe Elements → Profile form → JWT issue.

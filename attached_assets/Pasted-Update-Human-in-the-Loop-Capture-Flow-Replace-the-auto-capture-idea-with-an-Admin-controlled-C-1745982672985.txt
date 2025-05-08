@@ -1,0 +1,96 @@
+Update — “Human-in-the-Loop Capture” Flow
+(Replace the auto-capture idea with an Admin-controlled “Charge Now” button once coverage is verified.)
+
+1 New Lifecycle States
+
+Bid state	Who triggers it	What it means
+pending	Expert	Bid placed, card authorized (requires_capture).
+selected	Reporter	Pitch chosen; still only a hold.
+coverage_shared	Internal staff marks article URL visible to client.	
+ready_to_capture	Billing manager queue after coverage is live & client notified.	
+captured	Billing manager clicks Charge Now; Stripe capture succeeds.	
+Add two columns to bids:
+
+sql
+Copy
+Edit
+ALTER TABLE bids ADD COLUMN coverage_url TEXT;
+ALTER TABLE bids ADD COLUMN state TEXT DEFAULT 'pending';
+2 Database & API tweaks
+2.1 Store the PaymentIntent ID
+Already saved as intent_id when the bid is authorized.
+
+2.2 Admin endpoints
+ruby
+Copy
+Edit
+GET  /admin/billing/queue           -> all bids WHERE state='ready_to_capture'
+POST /admin/billing/:bidId/capture  -> captures Stripe PI, sets state='captured'
+POST /admin/billing/:bidId/mark-ready
+      body: { coverage_url }        -> sets state='ready_to_capture', saves URL
+3 Admin UI slice
+
+Route	Component	Key actions
+/admin/coverage	CoverageVerifier table	Paste article URL ➜ “Mark Ready for Billing”
+/admin/billing	BillingQueue table	Shows outlet, client, bid $, Charge Now button
+BillingQueue Row
+tsx
+Copy
+Edit
+<Button onClick={() => captureBid(bidId)}
+        className="bg-green-600 hover:bg-green-700">
+  Charge Now
+</Button>
+Captures the PI:
+
+ts
+Copy
+Edit
+await fetch(`/admin/billing/${bidId}/capture`, { method:'POST' })
+toast.success('Payment captured ✅')
+4 Stripe code snippet (server)
+ts
+Copy
+Edit
+import Stripe from 'stripe';
+const stripe = new Stripe(process.env.STRIPE_SECRET!);
+
+export async function capturePayment(intentId: string) {
+  const intent = await stripe.paymentIntents.capture(intentId);
+  // intent.status === 'succeeded' → update DB
+}
+Docs: “Using authorization and capture with PaymentIntents”
+→ /payments/place-a-hold-on-a-payment-method (authorize)
+→ /api/payment_intents/capture (manual capture)
+
+5 Prompt block for Replit AI
+bash
+Copy
+Edit
+🆕  ADMIN-CAPTURE FEATURE
+Create the following:
+
+1. DB migration: add coverage_url & state columns to bids.
+
+2. API routes (Next.js app-router):
+   • POST /api/admin/bids/[id]/mark-ready  -> update state='ready_to_capture'
+   • POST /api/admin/bids/[id]/capture     -> stripe.capture + state='captured'
+   Both routes protected by simple JWT (TODO comment).
+
+3. /admin/coverage page
+   • Table lists bids where state='selected'
+   • Input field for coverage URL
+   • “Mark Ready for Billing” button (calls mark-ready)
+
+4. /admin/billing page
+   • Table lists bids state='ready_to_capture'
+   • Shows outlet, expert, amount, coverage_url
+   • “Charge Now” button → POST capture route
+   • Toast success / error.
+
+5. Comment at top of capture route:
+   // Card was authorized via PaymentIntent(capture_method='manual').
+   // We capture only after human verification of live coverage.
+
+Generate code with Tailwind + shadcn/ui tables and buttons.
+Give this block to Replit’s Ghostwriter; it will scaffold the admin screens, endpoints, and Stripe-capture stub so your billing manager can click a single button to settle the payment once coverage is confirmed live.

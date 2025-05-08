@@ -1,0 +1,42 @@
+Pitch‑Card & Progress Tracker — UI/UX Requirements for Replit
+
+1. Pitch Card (content & labeling)
+Element	New Behavior
+Outlet line	Remove the placeholder text “Published by reporter: Unknown Publication …”. Dynamically inject the actual outlet name (e.g., Forbes, WSJ).
+Stage label	Display the current deal stage (same wording used in admin “Pitch Management”)—e.g., Pending ➝ Sent to Reporter ➝ Reporter Interested ➝ In Review ➝ Published. The label must update in real time as the pitch’s stage changes.
+Edit icon	Only visible while the pitch is in Pending. Clicking it opens the existing “Edit Pitch” modal.
+
+2. Visual Stage Tracker (DoorDash‑style)
+Embed this tracker inside the pitch card, directly under the headline block.
+css
+CopyEdit (Match Pitch Management stages)
+[●] Pending ——— [○] Sent to Reporter ——— [○] Reporter Interested ——— [○] Not Interested ——— [○] Successful Coverage
+
+Different UI words in the customer side that match these api keys / db function stages. 
+
+Pitch Pending, Pitch Sent, Reporter Accepted, Reporter Denied, Successful Coverage. 
+
+* Rules
+    * Filled circle = current stage.
+    * Connecting bar animates left‑to‑right as the pitch advances.
+    * Hover/tooltip on each node shows timestamp of that stage.
+
+3. “Track Pitch Progress” Action
+* New button inside every pitch card: Track Pitch Progress
+* Opens the existing “Review Pitch” modal, scrolled to a new Progress tab that contains the stage tracker, full change log, and any reporter messages.
+
+4. Active vs. Expired Tabs
+* Add top‑level filter tabs: Active Pitches | Expired Pitches
+    * Active = any stage before Published/Expired.
+    * Expired = pitches that reached the “Expires” date without progressing or were manually closed.
+
+5. Reporter Notifications
+* When a reporter requests more info (via their portal), trigger:
+    * Frontend — in‑app toast + badge on the corresponding pitch card.
+    * Backend — WebSocket push to update the stage tracker, flagging a new sub‑stage “Reporter Follow‑Up Needed” right after Interested.
+
+Deliverables
+1. Updated React components for PitchCard, StageTracker, and ReviewPitchModal.
+2. WebSocket event hooks for stage/status changes and reporter messages.
+3. Unit tests for conditional rendering (stage updates, edit icon visibility, Active/Expired filters).
+Please keep styling consistent with existing design tokens; only extend where required for the tracker animation.

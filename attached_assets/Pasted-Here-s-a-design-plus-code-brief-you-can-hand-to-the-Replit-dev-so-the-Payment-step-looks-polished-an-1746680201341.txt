@@ -1,0 +1,54 @@
+Here’s a design-plus-code brief you can hand to the Replit dev so the Payment step looks polished and sells the value.
+
+🎨 UX / UI Goals
+Section	Desired feel	Notes
+Plan header	Bold, conversion-focused	“Subscribe to QuoteBid” + tagline sub-text (“Unlock the full marketplace — unlimited bids, AI tools, real-time analytics”).
+Price block	Hero block in soft blue card	$99.99 / month large, with subtle “cancel anytime” underneath.
+Feature bullets	Icon + short hook	• Bid-for-coverage (no retainers)
+• Pay only when published
+• AI voice-pitch recorder
+• Verified media requests daily
+Card entry	Stripe Elements field inside neutral-gray rounded box, full width	Autofocus on card number.
+CTA button	Full-width primary “Start My Membership”	Shows spinner on submit.
+Trust signals	Small lock icon + “Secure • Powered by Stripe” under button	Reduce abandonment.
+
+🛠 Implementation Checklist
+Two-column layout on ≥768 px
+Left: value props & bullets. Right: price + card form. (Stacked on mobile.)
+
+Use lucide-react icons (DollarSign, FileText, Mic, ShieldCheck) for bullets.
+
+Tailwind tweaks
+
+tsx
+Copy
+Edit
+<div className="bg-blue-50 p-6 rounded-xl shadow-sm">…</div>  // price block
+<div className="border border-gray-300 rounded-lg p-4 mt-6">   // card box
+CTA state
+
+tsx
+Copy
+Edit
+<Button disabled={isProcessing} className="w-full">
+  {isProcessing ? 'Processing…' : 'Start My Membership'}
+</Button>
+Secure badge
+
+tsx
+Copy
+Edit
+<div className="flex items-center justify-center mt-2 text-xs text-gray-500">
+  <Lock className="h-3 w-3 mr-1" /> Secure • Powered by Stripe
+</div>
+Copy suggestions
+Headline: “Bid for coverage. Pay only for results.”
+Bullet 1: “Set your own price — no retainers, no flat fees.”
+Bullet 2: “Payment only when your quote is published.”
+Bullet 3: “AI Voice Pitch recorder transcribes on the fly.”
+Bullet 4: “Daily, verified requests from top-tier journalists.”
+
+One-liner to paste for the dev
+“Revamp PaymentStep.tsx: add a two-column Tailwind layout, hero price card, iconized bullet list (DollarSign, FileText, Mic, ShieldCheck), full-width Stripe card box, and a secure ‘Start My Membership’ button with spinner. Follow the UX spec above; copy bullets verbatim. Keep the existing handleSuccess logic untouched.”
+
+This keeps the Stripe wiring as is but gives you a modern, persuasive checkout screen.

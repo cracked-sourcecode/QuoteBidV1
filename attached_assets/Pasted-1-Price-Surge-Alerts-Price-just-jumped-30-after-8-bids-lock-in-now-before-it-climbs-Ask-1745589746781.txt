@@ -1,0 +1,129 @@
+1. Price Surge Alerts
+🔥 "Price just jumped 30% after 8 bids—lock in now before it climbs!"
+
+📈 "Ask price ▲20% this hour—trending toward $1K+ soon!"
+
+⏳ "Last expert paid 
+500.
+C
+u
+r
+r
+e
+n
+t
+a
+s
+k
+:
+500.Currentask:750. Don’t miss the next spike!"
+
+2. Slot Scarcity Warnings
+🚨 "2/3 slots filled—only 1 left at this price!"
+
+⏳ "60% of slots typically sell out in the first 6 hours."
+
+✨ "Last story like this had 22 bids—price peaked at $1,200."
+
+3. Deadline Countdowns
+⏳ "6h left—price drops in 2h if no bids!" (False scarcity)
+
+🔄 "Deadline in 90m—last chance to lock in before market closes!"
+
+💸 "Final 3h: Prices usually ▼15%... or sell out entirely."
+
+4. Peer Pressure Triggers
+👥 "12 experts viewed this pitch—5 already bidding."
+
+🏆 "Top-rated source ‘Jane D.’ just bid $800 on this."
+
+🌟 "3 verified experts joined this auction in the last hour."
+
+5. Historical Comparisons
+📆 "Last week’s similar query hit 
+1
+,
+500
+—
+c
+u
+r
+r
+e
+n
+t
+l
+y
+a
+t
+1,500—currentlyat900."
+
+💰 "Avg. winning bid for Forbes: 
+1
+,
+200.
+C
+u
+r
+r
+e
+n
+t
+a
+s
+k
+:
+1,200.Currentask:750."
+
+📉 "Price dropped 10% after rejections—time to grab the dip!"
+
+6. Exclusive Opportunity Alerts
+🔒 "Early-bird window closes in 30m—next price tier: +25%."
+
+🎯 "You qualify for ‘Priority Pitch’—skip the queue for +$150."
+
+✉️ "Your last pitch was accepted! This query matches your profile."
+
+7. Abandonment Triggers
+😱 "You almost placed a bid yesterday—price is now 40% higher!"
+
+📉 "3 experts just withdrew—price may drop soon. Bid now to lock in."
+
+🔄 "Your competitor ‘XYZ Capital’ bid on this 12m ago."
+
+UI Placement Examples:
+Price ticker: "
+1
+,
+000
+→
+1,000→1,200 ▲20% (8 bids)" + flashing ▲ icon.
+
+Pitch card banner: "🚨 1 SLOT LEFT at 
+750
+—
+n
+e
+x
+t
+t
+i
+e
+r
+:
+750—nexttier:900".
+
+Push notification: "Breaking: 5 new bids on your saved query—price climbing fast!".
+
+Why This Works:
+Triggers loss aversion: "Miss the low price → pay more later."
+
+Validates urgency: Real-time data proves market movement.
+
+Feels personalized: Aligns with user behavior (past bids/saves).
+
+Pro Tip: Rotate these messages to prevent banner blindness. For maximum impact, pair with:
+
+A live price graph on each query.
+
+A bid-history log (e.g., "3 bids at $600 in last 10m").

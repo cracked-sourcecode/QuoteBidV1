@@ -1,0 +1,282 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* QuoteBid brand colors */
+:root {
+  --brand-50: #f5f8ff;
+  --brand-100: #e8edff;
+  --brand-300: #b8c4ff;
+  --brand-500: #707dff;
+  --brand-700: #423dff;
+  --brand-900: #2a1aff;
+}
+
+/* Gloss effect for progress bars and buttons */
+.gloss {
+  position: relative;
+  overflow: hidden;
+}
+
+.gloss::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.7) 0%, rgba(255,255,255,0) 60%);
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.gloss::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 15%;
+  top: 0;
+  left: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: shimmer 2s infinite;
+  transform: translateX(-100%);
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pulse-subtle {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.3);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s infinite;
+}
+
+@keyframes scale-subtle {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+.animate-scale-subtle {
+  animation: scale-subtle 3s infinite;
+}
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 20 14.3% 4.1%;
+  --muted: 60 4.8% 95.9%;
+  --muted-foreground: 25 5.3% 44.7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 14.3% 4.1%;
+  --card: 0 0% 100%;
+  --card-foreground: 20 14.3% 4.1%;
+  --border: 20 5.9% 90%;
+  --input: 20 5.9% 90%;
+  --primary: 210 100% 26%; /* Company Blue (#004684) */
+  --primary-foreground: 60 9.1% 97.8%;
+  --secondary: 60 4.8% 95.9%;
+  --secondary-foreground: 24 9.8% 10%;
+  --accent: 210 80% 40%; /* Lighter blue accent */
+  --accent-foreground: 60 9.1% 97.8%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  --ring: 210 100% 26%;
+  --radius: 0.5rem;
+  --chart-1: 210 100% 26%;
+  --chart-2: 25 95% 50%;
+  --chart-3: 10 90% 60%;
+  --chart-4: 142 71% 45%;
+  --chart-5: 200 98% 40%;
+  
+  /* Company specific colors */
+  --qpurple: 210 100% 26%; /* #004684 */
+  --qorange: 29 100% 50%; /* #FF8400 */
+  --qlightgray: 0 0% 96%; /* #F5F5F5 */
+  --qgray: 0 0% 88%; /* #E0E0E0 */
+  --qtext: 0 0% 20%; /* #333333 */
+  --qnavtext: 0 0% 100%; /* #FFFFFF */
+  
+  /* Sidebar colors remain same as default */
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 222.2 47.4% 11.2%;
+  --sidebar-primary: 222.2 47.4% 11.2%;
+  --sidebar-primary-foreground: 210 40% 98%;
+  --sidebar-accent: 210 40% 96.1%;
+  --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+  --sidebar-border: 214.3 31.8% 91.4%;
+  --sidebar-ring: 215 20.2% 65.1%;
+}
+
+.dark {
+  --background: 20 14.3% 4.1%;
+  --foreground: 60 9.1% 97.8%;
+  --muted: 12 6.5% 15.1%;
+  --muted-foreground: 24 5.4% 63.9%;
+  --popover: 20 14.3% 4.1%;
+  --popover-foreground: 60 9.1% 97.8%;
+  --card: 20 14.3% 4.1%;
+  --card-foreground: 60 9.1% 97.8%;
+  --border: 12 6.5% 15.1%;
+  --input: 12 6.5% 15.1%;
+  --primary: 210 100% 26%; /* Company Blue (#004684) */
+  --primary-foreground: 60 9.1% 97.8%;
+  --secondary: 12 6.5% 15.1%;
+  --secondary-foreground: 60 9.1% 97.8%;
+  --accent: 210 80% 40%; /* Lighter blue accent */
+  --accent-foreground: 60 9.1% 97.8%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  --ring: 210 100% 26%;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-qlightgray text-foreground font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  .bg-qpurple {
+    background-color: #004684;
+  }
+  
+  .text-qpurple {
+    color: #004684;
+  }
+  
+  .bg-qorange {
+    background-color: #FF8400;
+  }
+  
+  .text-qorange {
+    color: #FF8400;
+  }
+  
+  .bg-qlightgray {
+    background-color: #F5F5F5;
+  }
+  
+  .bg-qgray {
+    background-color: #E0E0E0;
+  }
+  
+  .text-qtext {
+    color: #333333;
+  }
+  
+  .text-qnavtext {
+    color: #FFFFFF;
+  }
+  
+  .border-qpurple {
+    border-color: #004684;
+  }
+  
+  .hover\:bg-qpurple-dark:hover {
+    background-color: #003866;
+  }
+  
+  .hover\:bg-qorange-dark:hover {
+    background-color: #E67700;
+  }
+}
+
+/* Global styles */
+html {
+  scroll-behavior: smooth;
+}
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Notification dot */
+.notification-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  height: 8px;
+  width: 8px;
+  background-color: #F44336;
+  border-radius: 50%;
+}
+
+/* Animation classes */
+@keyframes blob {
+  0% {
+    transform: scale(1);
+  }
+  33% {
+    transform: scale(1.1);
+  }
+  66% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* Stripe Embedded Checkout */
+.StripeEmbeddedCheckout {
+  width: 100%;
+  height: 100%;
+}
+
+.stripe-checkout-container {
+  height: 500px;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Account page content scrolling */
+.account-content-area {
+  max-height: 100vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.account-content-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.account-content-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.account-content-area::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 6px;
+}

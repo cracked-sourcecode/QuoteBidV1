@@ -1,0 +1,97 @@
+QuoteBid ‑ Pitch‑Stage Sync & UI Overhaul
+Developer Brief for Replit Workspace
+
+1. Core Objective
+Guarantee that a single source‑of‑truth “stage” for every pitch is persisted in Postgres, served by the API, and reflected in all client views (Opportunities card, Pitch Detail modal, My Pitches list, and Admin Portal). From the moment a user creates a pitch until coverage is secured, the interface must always display the correct wording, buttons, and actions for that stage.
+
+2. Canonical Stage Model
+Enum (pitches.status)	Admin dropdown label	Customer‑facing label	Customer actions allowed
+draft	Draft	Draft – finish & submit	Edit • Submit
+pending	Pending	Pitch Pending	Edit
+sent_to_reporter	Pitch Sent	Pitch Sent	View only
+reporter_interested	Reporter Interested	Reporter Interested	View reporter notes (future)
+reporter_not_interested	Reporter Not Interested	Reporter Declined	Archive
+successful_coverage	Successful Coverage	Coverage Secured	View article • Invoice
+
+Add a NOT NULL enum column with the above values and migrate existing rows.
+Status updates occur only in two places:
+
+Customer app sets draft → pending (submit action).
+
+Admin Portal sets any further transitions via dropdown.
+
+3. Database & API
+Foreign keys:
+
+pitches.publication_id → publications.id (no more “Unknown Publication”).
+
+pitches.opportunity_id → opportunities.id.
+
+Default joins: /api/pitches must include opportunity title, publication name, and current status.
+
+Real‑time updates: Emit a pitchStatusUpdated WebSocket (or Server‑Sent Events) so the customer UI refreshes instantly when an admin changes the status.
+
+4. Front‑End Requirements
+4.1 Opportunities Card
+If user already has a pitch on an opportunity, replace Place Your Bid panel with a compact status banner:
+
+“You bid $X – Status: Pitch Pending (click to view/edit)”.
+
+4.2 Pitch Detail Modal (opened from Opportunities or My Pitches)
+Title becomes “Pitch Status”.
+
+Stage‑based component map:
+
+Stage	Header Icon	Body Copy	Buttons
+pending	📝	“Your pitch has been submitted and is awaiting internal review. You may still edit it until we begin outreach.”	Edit Pitch • Browse Other Opportunities
+sent_to_reporter	🚀	“We’ve sent your pitch to the reporter. Sit tight—we’ll keep you posted.”	—
+reporter_interested	⭐	“Great news! The reporter wants more info. We’ll follow up shortly.”	—
+reporter_not_interested	❌	“This reporter passed on the pitch. Keep an eye on new opportunities.”	Browse Other Opportunities
+successful_coverage	✅	“Coverage secured! View the live article below.”	View Article
+
+4.3 My Pitches Page
+Each card displays: publication logo, opportunity title, status badge (color‑coded), and vertical progress tracker (five dots matching the enum).
+
+Drafts show a blue “Finish your pitch” banner.
+
+Clicking the card opens the Pitch Status modal above.
+
+4.4 Disable Redundant Actions
+Once a pitch exists (any status other than draft), hide/disable “Bid” button for that opportunity.
+
+Only pending pitches expose Edit Pitch.
+
+5. Admin Portal Updates
+Dropdown options should map exactly to the enum keys.
+
+Changing a status fires the WebSocket event.
+
+Optional: add a “Send to reporter” quick‑action button that sets sent_to_reporter.
+
+6. Acceptance Criteria
+Submitting a pitch always creates pitches.status = 'pending', emits event, and UI shifts to Pitch Pending state without reload.
+
+Admin toggling status updates UI for an already‑open customer session within 3 s.
+
+“Unknown Publication” never appears—publication names propagate end‑to‑end.
+
+Attempting a second bid on the same opportunity surfaces the status banner instead of the bid form.
+
+Unit tests: status transitions, API joins, and WebSocket event payloads.
+
+Cypress e2e: draft → pending → sent_to_reporter path reflected in UI at each step.
+
+7. Suggested Task Breakdown
+DB Migration – add enum, foreign keys, seed status values.
+
+API Layer – extend pitches endpoints, add WebSocket.
+
+Admin UX – enforce enum mapping, emit events.
+
+Customer React Components – refactor OpportunitiesCard, PitchModal, MyPitchesList to consume unified status prop.
+
+Real‑time Hook – subscribe to pitchStatusUpdated.
+
+QA & Regression Tests.
+
+Deliver this spec verbatim to the Replit team; it contains the exact schema changes, API contracts, UI copy, and success metrics they need to implement the fully agentic, stage‑aware flow.

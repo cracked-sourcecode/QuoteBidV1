@@ -1,0 +1,52 @@
+Understood — we overshot when we pulled out the signature pad, and the progress bar isn’t updating.
+Below is a concise “fix ticket” for the Replit dev to restore a minimal signature field and wire the stage progress.
+
+🎯 Fix Ticket: Agreement Step Signature + Progress Bar
+1 · Re-add a minimal signature capture
+Change	Code	Reason
+Add a slim signature pad just below “Full Legal Name”	```tsx import SignaturePad from 'react-signature-canvas'; const [sigRef, setSigRef] = useState<SignaturePad	null>(null); … <label className="mt-4 font-medium">Signature</label> <SignaturePad ref={setSigRef} penColor="#000" canvasProps={{className:'border rounded w-full h-28'}}/> ```
+Validation	Disable “I Agree & Continue” button unless:
+• fullName.length > 2
+• checkbox checked
+• sigRef?.isEmpty() === false	Avoid empty submissions.
+POST payload	ts const data = { email, fullName, signature: sigRef!.toDataURL() }; api.advanceStage({ action:'agreement', ...data });	Encode signature as base64 PNG (small).
+
+Back-end: store the dataURL in agreement_signed (text) and set signup_stage='payment'.
+
+2 · Make progress bar reactive
+Move stage state into context (SignupWizardContext).
+
+tsx
+Copy
+Edit
+const { stage } = useSignupStage(email);   // existing hook
+<SignupProgress current={stage} />
+Update SignupProgress.tsx
+
+tsx
+Copy
+Edit
+const steps: Stage[] = ['agreement','payment','profile'];  …  const isComplete = i < steps.indexOf(current); const isCurrent  = s === current; … className={clsx({ 'bg-primary text-white':isComplete, 'border-primary':isCurrent })} ```  
+(Use `clsx` for conditional classes.)
+
+CSS tweaks
+
+Height 8 px line, circles h-6 w-6, use rounded-full.
+
+Completed line: bg-primary, upcoming: bg-gray-300.
+
+3 · Smoke test acceptance criteria
+Agreement page now shows: full-name field, signature pad, checkbox.
+
+“I Agree & Continue” disabled until all three filled.
+
+On click, wizard auto-advances to Payment (stage bar highlights step 2).
+
+DB row: signup_stage='payment', agreement_signed non-null (contains base64).
+
+Reloading wizard resumes at Payment step (bar reflects this).
+
+Please implement these fixes in the signup-wizard branch only.
+Flag remains off (NEXT_SIGNUP_WIZARD=false) so production is unaffected.
+
+Once these pass, we’ll move on to wiring Stripe in the Payment step.

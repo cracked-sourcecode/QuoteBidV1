@@ -1,0 +1,122 @@
+🏗️  NEW FEATURE — “Confirm Bid” Modal
+────────────────────────────────────────
+Create a confirmation dialog that appears when a user clicks
+**“Submit Bid”** inside <BidTicket/>.  It must:
+
+1. Explain that a **pending Stripe authorization** is placed.
+2. Clarify that the card is **captured only if** the pitch wins.
+3. Highlight the excitement of competing for coverage.
+4. Show outlet + bid amount for context.
+5. Provide primary / cancel actions.
+
+────────────────────────────────────────
+📂  FILE / FOLDER UPDATES
+────────────────────────────────────────
+/components
+ ├─ BidTicket.tsx             ⟵ add a state hook to open dialog
+ └─ ConfirmBidDialog.tsx      ⟵ 〈— NEW FILE
+/lib
+ └─ stripe.ts                 ⟵ stub createPaymentIntent() w/ manual capture
+/pages/api
+ └─ bids/index.ts             ⟵ add “authorize only” logic (TODO comment)
+
+────────────────────────────────────────
+💡  COMPONENT: ConfirmBidDialog.tsx
+────────────────────────────────────────
+import { Dialog, DialogHeader, DialogContent,
+         DialogFooter, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: (bidAmount: number) => void;
+  outlet: string;
+  amount: number;
+}
+
+export default function ConfirmBidDialog(p: Props) {
+  return (
+   <Dialog open={p.open} onOpenChange={p.onClose}>
+    <DialogContent className="max-w-md bg-slate-900 text-slate-100">
+      <DialogHeader>
+        <DialogTitle className="text-lg font-bold">
+          🎯 Confirm Your Bid for Coverage
+        </DialogTitle>
+      </DialogHeader>
+
+      <section className="space-y-4 text-sm">
+        <p>
+          <strong>Outlet:</strong> {p.outlet}<br/>
+          <strong>Bid Amount:</strong> ${p.amount.toFixed(2)}
+        </p>
+
+        <ul className="list-disc ml-4 space-y-1">
+          <li>A <em>pending authorization</em> will appear on your card for this amount.</li>
+          <li>You’ll <em>only</em> be charged if your quote is selected by the journalist.</li>
+          <li>If selected, you’ll get an email + in-app alert with the live article link.</li>
+          <li>If not selected, the hold disappears automatically—no cost to you.</li>
+        </ul>
+
+        <p className="italic text-emerald-400">
+          Think of it like booking a flight at the perfect price—your quote just needs to land! ✈️
+        </p>
+
+        <p className="text-xs text-slate-400">
+          By continuing you authorize QuoteBid to place a temporary hold on your payment
+          method.  Full terms <a className="underline" href="/terms" target="_blank">here</a>.
+        </p>
+      </section>
+
+      <DialogFooter className="mt-4">
+        <Button variant="outline" onClick={p.onClose}>Cancel</Button>
+        <Button className="bg-orange-600 hover:bg-orange-700"
+                onClick={() => { p.onConfirm(p.amount); p.onClose(); }}>
+          Submit Pitch &amp; Authorize
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+   </Dialog>
+  )
+}
+
+────────────────────────────────────────
+🔗  INTEGRATE INTO BidTicket.tsx
+────────────────────────────────────────
+• Add `const [confirmOpen,setConfirmOpen] = useState(false)`
+• Replace direct /api/bids call with:
+      setConfirmOpen(true)
+• Pass {outlet, amount} props to ConfirmBidDialog
+• In onConfirm:
+      1. await createPaymentIntent({ amount, capture_method:'manual' })
+      2. POST /api/bids with { intentId, pitch, amount }
+      3. Toast “Bid placed! 🚀”
+
+────────────────────────────────────────
+🛠️  lib/stripe.ts  (stub)
+────────────────────────────────────────
+export async function createPaymentIntent({ amount }: { amount:number }) {
+  // TODO: replace with real Stripe call
+  return { intentId: "pi_stub_123" }
+}
+
+────────────────────────────────────────
+✅  ACCEPTANCE CHECK
+────────────────────────────────────────
+1. Click “Submit Bid” → modal slides in (center or side).
+2. Modal shows outlet & amount, bullets, playful CTA.
+3. Cancel closes without API hit.
+4. Confirm fires console.log of {intentId, amount, pitch} (stub).
+5. Page still animates price & slots behind modal.
+
+────────────────────────────────────────
+💬  CODE COMMENT REMINDERS
+────────────────────────────────────────
+Top of ConfirmBidDialog.tsx:
+  // Convex ladder price -> bid authorization explanation.
+  // Charge capture deferred until editorial selection.
+
+BidTicket.tsx onConfirm handler:
+  // Stripe capture occurs later in /api/select once reporter approves.
+
+Generate all code now with Tailwind classes & shadcn/ui components.

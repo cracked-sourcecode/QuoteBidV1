@@ -1,0 +1,169 @@
+Below is a design‑first, code‑ready spec you can drop into your Replit ticket so they stop “clip‑arting” the stepper and finally ship something that feels like a polished SaaS component instead of a weekend hack.
+
+1 · Visual Reference
+scss
+Copy
+Edit
+ ┌────────────────────────────────────────── Pitch Progress ──────────────────────────────────────────┐
+ │    ●──────────●──────────●──────────●                                                            
+ │    │          │          │          │                                                            
+ │  Submitted    Sent   Interested  Outcome (Success 🏆 / Declined ⚠)                                  
+ └─────────────────────────────────────────────────────────────────────────────────────────────────────
+States
+Stage index	Circle	Label	Line segment (left‑to‑right)
+< current	Filled brand‑gradient + white icon	brand‑700 text	brand‑gradient 100%
+== current	Outline 2 px brand‑700, white fill	brand‑900 bold	brand‑gradient animates up to this point
+> current	Outline 1 px gray‑300, white fill	gray‑500	neutral gray‑200
+
+Outcome stage swaps icon + fill when status === 'reporter_not_interested' (⚠ icon, error‑red‑500 fill) vs. successful_coverage (🏆 icon, emerald‑500 fill).
+
+Brand palette
+bash
+Copy
+Edit
+brand‑50 #f5f8ff
+brand‑100 #e8edff
+brand‑300 #b8c4ff
+brand‑500 #707dff   ← starting hue
+brand‑700 #423dff   ← mid‑hue
+brand‑900 #2a1aff   ← end hue
+Gradient: linear‑gradient(90deg, brand‑500 0%, brand‑700 60%, brand‑900 100%).
+
+2 · Component API
+ts
+Copy
+Edit
+type Stage =
+  | 'submitted'
+  | 'sent_to_reporter'
+  | 'reporter_interested'
+  | 'reporter_not_interested'
+  | 'successful_coverage';
+
+<PitchStepper
+  current={stage: Stage}
+  declined={stage === 'reporter_not_interested'}
+/>
+3 · Implementation Checklist (React + Tailwind)
+Flex container
+
+tsx
+Copy
+Edit
+<div className="flex items-center justify-between w-full px-6 py-4 bg-gray-50 rounded-lg">
+SVG line under circles
+
+tsx
+Copy
+Edit
+<div className="absolute top-1/2 left-0 w-full h-1 -translate-y-1/2 bg-gray-200">
+  <div
+    style={{ width: `${(indexOf(current)/3)*100}%` }}
+    className={`h-1 transition-all duration-700 bg-gradient-to-r from-brand-500 via-brand-700 to-brand-900`}
+  />
+</div>
+Circle node
+
+tsx
+Copy
+Edit
+const filled   = idx < activeIdx;
+const current  = idx === activeIdx;
+const declined = stage === 'reporter_not_interested' && idx === 3;
+
+const circleCls = clsx(
+  'relative z-10 flex h-10 w-10 items-center justify-center rounded-full transition-colors',
+  filled && 'bg-gradient-to-br from-brand-500 to-brand-900 text-white shadow-lg',
+  current && 'bg-white ring-2 ring-brand-700 text-brand-700',
+  !filled && !current && 'bg-white border border-gray-300 text-gray-400',
+  declined && 'bg-error-500 text-white'
+);
+Icon swap
+
+tsx
+Copy
+Edit
+const icons: Record<Stage, JSX.Element> = {
+  submitted: <FileIcon />,
+  sent_to_reporter: <SendIcon />,
+  reporter_interested: <StarIcon />,
+  reporter_not_interested: <AlertTriangle />,
+  successful_coverage: <TrophyIcon />,
+}
+Label (always centered under its node)
+
+tsx
+Copy
+Edit
+<span className={clsx("mt-2 text-xs text-center",
+    filled ? 'text-brand-700 font-medium' :
+    current ? 'text-brand-900 font-semibold' :
+    'text-gray-500'
+)}>
+  {label}
+</span>
+Gloss effect (optional)
+Add after the gradient bar:
+
+css
+Copy
+Edit
+.gloss::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.6)0%,rgba(255,255,255,0)70%);
+  border-radius:9999px;
+  pointer-events:none;
+}
+Animation
+
+The width of the gradient bar (div in step 2) animates with transition-all duration-700.
+
+Node fill uses transition-colors.
+
+4 · Edge‑cases to cover
+Backend status	Stepper outcome
+draft	render 0 % bar, first node outlined, label “Draft”
+pending	treat as submitted stage
+reporter_not_interested	final node uses ⚠ icon, bar stops at 75 %
+successful_coverage	final node uses 🏆 icon, bar full width
+
+5 · Copy & Accessibility
+Aria‑label on nav container: "Pitch progress: 3 of 4 steps completed".
+
+Each circle gets aria-current="step" when active.
+
+Use sr-only text inside each node with full stage name for screen readers.
+
+6 · Deliverables
+PitchStepper.tsx component (≈100 loc).
+
+tailwind.config.js updated with brand palette.
+
+Jest snapshot for each stage.
+
+Cypress e2e: iterate through enum values and assert bar width & icon swap.
+
+Hand them this spec verbatim—they’ll have everything: color codes, class names, layout, animation logic, a11y notes, and test plan. No more guesswork, no more clip‑art.
+
+
+
+
+
+
+
+
+
+
+
+
+Search
+
+Deep research
+
+Create image
+
+
+
+ChatGPT can make mistakes. Check important info.

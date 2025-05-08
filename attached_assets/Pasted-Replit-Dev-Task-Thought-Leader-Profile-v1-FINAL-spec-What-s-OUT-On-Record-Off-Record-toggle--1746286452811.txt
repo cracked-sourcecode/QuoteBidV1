@@ -1,0 +1,72 @@
+Replit Dev Task — Thought‑Leader Profile v1 (FINAL spec)
+
+What’s OUT
+On‑Record / Off‑Record toggle – remove entirely from sidebar and DB.
+
+Story Ideas section – do not include in main content.
+
+Page Layout
+css
+Copy
+Edit
+┌───────────────────────────┬───────────────────────────────────────────────┐
+│  Sidebar 280px            │  Main Content                                │
+│  (fixed)                  │  (flex, scrolls)                             │
+└───────────────────────────┴───────────────────────────────────────────────┘
+Sidebar
+Element	Data source
+Avatar	users.avatar
+Name + Username	users
+Location	users.location
+Contact links (LinkedIn, Website, X/Twitter, Instagram)	user_profiles
+Profile‑completion meter	% of required fields
+
+No toggle, no advanced dropdown.
+
+Main Content
+Bio – user_profiles.bio, editable.
+
+Employment – small card list.
+
+Media – grid (2‑up ≥1024 px):
+
+QuoteBid placements (placements where status = 'published')
+
+User‑added media (user_media table)
+
+“+ Add Media” button (opens modal: outlet, headline, URL, date).
+
+No Paid/Earned badges.
+
+Recent Quotes – user_profiles.quote, inline editable.
+
+Headshots – user_profiles.headshots array → thumbs + modal.
+
+Data / API
+Endpoint	Purpose
+GET /api/user/profile → returns avatar, bio, social links, headshots, user_media.	
+POST /api/user/media → create user‑added media item (validate fields).	
+PATCH /api/user/profile → update bio, quotes, socials, headshots.	
+
+user_media table:
+id, user_id, outlet, headline, url, date, created_at.
+
+Theme guard‑rails
+QuoteBid color palette & Tailwind tokens (primary #0057FF, rounded-lg, shadow-sm).
+
+H1 text-[22px] font-bold; section titles uppercase text-xs tracking-wider font-semibold.
+
+Dark‑mode variables already in theme.
+
+Acceptance criteria
+Completing /profile-setup instantly populates /account with Bio, Industry, Social links, Past PR, Avatar.
+
+Media grid shows QuoteBid placements and user‑added media.
+
+“+ Add Media” saves via POST /api/user/media and appears without page reload.
+
+No On‑Record toggle, no Story Ideas card, no Paid/Earned badges.
+
+Responsive, Lighthouse ≥ 90.
+
+Please implement this updated spec and push to staging.

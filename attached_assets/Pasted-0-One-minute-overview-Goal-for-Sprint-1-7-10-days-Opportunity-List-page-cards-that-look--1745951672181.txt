@@ -1,0 +1,126 @@
+0 One-minute overview
+Goal for Sprint #1 (7-10 days):
+
+Opportunity List page ("/"): cards that look like Robinhood tiles.
+
+Opportunity Detail page ("/opportunity/:id"):
+
+Surge-price chart (Google-Flights style)
+
+Live price/slot ticker
+
+Bid form + “Review Order” side panel (Robinhood trade ticket vibe)
+
+Everything powered by stub JSON + mock WebSocket so you see motion on day 1; you wire in real APIs later.
+
+1 Repo & Tech Stack (Replit-friendly)
+
+Layer	Tool	Why
+Front-end	Next.js 14 + shadcn/ui + Tailwind	Fast routing, ready UI primitives
+Charts	Recharts	Dead-simple; no config hell
+Real-time	Socket.io client	Supported by Replit, quick dev
+State	Zustand	Tiny, avoids Redux boilerplate
+Design system	Storybook	Visual sandbox for each component
+npx create-next-app quote-bid --typescript --tailwind --eslint
+pnpm add shadcn-ui@latest recharts zustand socket.io-client
+
+2 Folder skeleton
+bash
+Copy
+Edit
+/app
+ ├─ layout.tsx               (global shell)
+ ├─ page.tsx                 (OpportunityList)
+/app/opportunity/[id]
+ ├─ page.tsx                 (OpportunityDetail)
+ └─ PriceChart.tsx           (reusable)
+ /components
+ ├─ OpportunityCard.tsx
+ ├─ SlotBar.tsx
+ ├─ BidTicket.tsx
+ └─ PriceBadge.tsx
+/mock
+ ├─ opportunities.json
+ └─ price-stream.ts          (random WS generator)
+3 Step-by-step build sequence
+
+Day	Deliverable	What you literally type / do
+1	Static OpportunityCard	Build in Storybook; props: title, tier, currentPrice, slots.
+2	Opportunity List page	Fetch /mock/opportunities.json with fetch(); map to cards.
+3	Routing → Detail page	Link href={"/opportunity/"+id}; create blank detail page.
+4	PriceChart + SlotBar	Drop Recharts <LineChart>; dummy data from file.
+5	Mock WebSocket feed	const socket = io("/mock"); update chart every 2 s.
+6	BidTicket side panel	shadcn <Sheet> that slides in like Robinhood “Review Order”.
+7	Polish & theming	Tailwind bg-slate-900, text-green-400 for “low price”, etc.
+You now have a clickable demo that looks alive even though it’s 100 % local data.
+
+4 Key component blue-prints
+4.1 OpportunityCard.tsx
+tsx
+Copy
+Edit
+type Props = { id:string; outlet:string; title:string;
+              current:number; baseline:number; slots:number; tier:1|2|3 }
+export default function OpportunityCard(p:Props){
+  return (
+   <Card onClick={()=>router.push(`/opportunity/${p.id}`)}
+         className="hover:ring-2 ring-green-400 cursor-pointer">
+     <CardContent>
+       <div className="flex justify-between">
+         <div>
+           <h3 className="font-semibold">{p.outlet}</h3>
+           <p className="text-sm text-muted">{p.title}</p>
+         </div>
+         <PriceBadge price={p.current} baseline={p.baseline}/>
+       </div>
+       <SlotBar slots={p.slots}/>
+     </CardContent>
+   </Card>
+  )
+}
+4.2 PriceChart.tsx
+tsx
+Copy
+Edit
+export default function PriceChart({data}:{data:PricePoint[]}){
+ return (
+  <ResponsiveContainer width="100%" height={200}>
+   <LineChart data={data}>
+     <Line type="monotone" dataKey="price" strokeWidth={2}/>
+   </LineChart>
+  </ResponsiveContainer>
+ )
+}
+4.3 BidTicket.tsx
+Behaves exactly like Robinhood’s trade ticket: amount input, bid preview, Review Order button → hits /api/bids (stub for now).
+
+5 Connecting real data later (when engine is ready)
+
+Stub call	Swap to real API
+fetch('/mock/opportunities.json')	fetch('/api/opportunities')
+io('/mock')	io('/live')
+POST /api/bids (returns 200 OK)	Real endpoint that authorizes Stripe, calls LLM
+No refactor—just change the URLs in an .env file.
+
+6 Visual references (match your screenshots)
+Color language:
+
+Low price → green badge (bg-green-600/20 text-green-400)
+
+Typical range → amber
+
+High price → rose
+
+Chart container: replicate Google-Flights dark panel (rounded-2xl bg-slate-800 px-6 py-4 shadow-xl).
+
+BidTicket: right-side sliding sheet, full-height on desktop, bottom-sheet on mobile (shadcn <Sheet side="right"> + Tailwind md:side="right" side="bottom").
+
+7 Sanity checklist before you push to prod
+Type-safe API contracts (tRPC or Zod) so UI doesn’t break on shape change.
+
+Socket reconnect logic (socket.io-client auto-reconnect true).
+
+Skeleton loaders for chart & card (show shimmer until data arrives).
+
+Accessibility: aria-live="polite" on price badge for screen readers.
+

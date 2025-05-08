@@ -1,0 +1,101 @@
+1 — UI/UX delta
+Location	Change	Notes
+/admin/billing table	Add “Bill Now” column (far‑right) with a primary button for every row where status === "Ready for Billing"	Button label → Bill Now. Disable if status ≠ Ready.
+Bill Now Modal	On click, open a modal (single‑page div, not route) that pulls:
+• Publication, Article, Bid Price
+• Last 4 of card
+• Stripe fee estimate
+• Net to QuoteBid
+• “Capture & Send Receipt” CTA	This modal only needs one API hit (GET /api/admin/billing/:placementId) to fetch Stripe PaymentIntent details.
+
+Styling: reuse existing Admin Portal classes; keep modal width ~480 px so it fits all breakpoints.
+
+2 — Data contract you need before building
+When the customer first bids you’re already authorizing the card and creating a Stripe PaymentIntent in manual capture mode (status = requires_capture).
+Store these fields on the Pitch/Placement record:
+
+Field	Why
+paymentIntentId	Used to capture later.
+stripeCustomerId	For receipts & future charges.
+authorizationExpiresAt	Stripe gives you ~7 days to capture; surface warnings if close to expiry.
+bidPrice (already have)	Display in modal / sanity check.
+
+Without these fields in your DB, the new feature can’t look up the uncaptured charge.
+
+3 — End‑to‑end flow (happy path)
+Pitch submission
+
+text
+Copy
+Edit
+POST /api/pitch
+→ create PaymentIntent (capture_method=manual, amount=bidPrice)
+← save paymentIntentId on pitch
+Reporter accepts → Coverage Manager marks “Successful”
+– existing step, now set billingStatus = "Ready for Billing"
+
+Admin visits Billing Manager
+– table shows new Bill Now button via billingStatus flag
+
+Admin clicks Bill Now
+
+text
+Copy
+Edit
+GET /api/admin/billing/:placementId
+→ server pulls PaymentIntent from Stripe (PI) and returns JSON
+Admin confirms & hits Capture
+
+text
+Copy
+Edit
+POST /api/admin/billing/capture
+Body: { placementId }
+→ server calls stripe.paymentIntents.capture(paymentIntentId)
+→ on success: update placement.status = "Billed" , record stripeChargeId, netAmount
+→ send customer receipt email
+← return 200
+Stripe webhook (§ optional but best‑practice)
+– listen for payment_intent.captured and double‑check local state = safety net
+
+4 — Key Stripe calls
+js
+Copy
+Edit
+// 1. Authorize at bid time
+stripe.paymentIntents.create({
+  amount: bidPriceInCents,
+  currency: 'usd',
+  capture_method: 'manual',
+  customer: stripeCustomerId,
+  description: `QuoteBid pending charge for pitch ${pitchId}`,
+});
+
+// 2. Capture in admin portal
+stripe.paymentIntents.capture(paymentIntentId, {
+  // Optionally pass amount_to_capture if doing partials
+});
+⚠️ Edge‑cases
+
+Expired PI → returns 400. Surface “Payment authorization expired – ask client to rebid.”
+
+Insufficient funds at capture → PI goes to requires_payment_method. Show retry UI (same modal) letting admin request a new card.
+
+5 — Security & permissions
+Only role === "admin" can hit /capture.
+
+Server‑side verify placement.billingStatus === "Ready for Billing" and that the PI is still requires_capture before attempting capture.
+
+Never expose paymentIntent.client_secret in admin responses (not needed for server‑side capture).
+
+6 — What to build first
+DB migration → add paymentIntentId, stripeCustomerId, authorizationExpiresAt to placements.
+
+API endpoint /api/admin/billing/:placementId (GET & POST capture).
+
+Frontend → add column, modal, capture call + optimistic UI.
+
+Stripe webhook listener (optional but recommended).
+
+Ship each step behind a feature flag to avoid interrupting existing manual capture flow in Stripe dashboard.
+

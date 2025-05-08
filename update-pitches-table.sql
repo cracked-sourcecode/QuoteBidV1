@@ -1,0 +1,5 @@
+-- Add new columns to pitches table
+ALTER TABLE pitches 
+ADD COLUMN IF NOT EXISTS is_draft BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS pitch_type TEXT DEFAULT 'text',
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();

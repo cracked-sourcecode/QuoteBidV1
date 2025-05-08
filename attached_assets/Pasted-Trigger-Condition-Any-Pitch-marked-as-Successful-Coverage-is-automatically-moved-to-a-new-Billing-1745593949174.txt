@@ -1,0 +1,56 @@
+Trigger Condition: Any Pitch marked as ✅ Successful Coverage is automatically moved to a new Billing tab for final delivery and invoicing.
+
+🧭 User Flow: Admin Billing Workflow for Successful Placements
+1. Pitches Tab
+* Each pitch includes a status dropdown: All Pitches - Pending • Sent • Interested • Not Interested •  ✅ Successful
+* Once "Successful Coverage" is selected:
+    * The pitch is tagged as complete
+    * It’s auto-routed to the Billing tab with a “Ready for Billing” flag
+
+2. Billing Tab
+This is your admin hub for monetizing successful pitches.
+Billing Queue (New UI Section)
+Each row includes:
+plaintext
+CopyEdit
+[Customer Name]  [Company]  [Publication]  [Article Title]  [Bid Price]  [Status]  [Actions]
+
+Filter & Sort Options:
+* Customer
+* Publication
+* Bid amount
+* Billing status
+
+3. Article Attachment Module
+In each unbilled row, admin can:
+* Attach Article URL → Paste link to published piece (required before billing)
+* Preview Article Snippet → Auto-fetch title, image, or summary for confirmation
+* Upload Screenshot or PDF (Optional) → For premium delivery visuals or downloadable clip
+
+4. Customer Selection & Billing Action
+After article link is attached:
+* Auto-populate customer profile:
+    * Name
+    * Email
+    * Card on file (via Stripe)
+* Click: “Bill Now” → Stripe modal appears to confirm:
+    * Amount = Bid price
+    * Description = “Coverage in [Publication] – [Date]”
+    * Final confirmation
+* Stripe triggers:
+    * Charge
+    * Email receipt
+    * Logs placement as “🟢 Paid”
+
+5. Post-Billing Client Notification
+Upon billing:
+* Automated Email/SMS sent to customer: “🎉 Congrats, Your Bid Secured Coverage!” → [Article Link] A receipt has been sent to your email. Your card has been billed $[amount]. 
+* Optional:
+    * Auto-insert social sharing buttons (LinkedIn, Twitter)
+    * Press Clip PDF download
+    * Add to Client Portal Media Kit
+
+✅ Resulting UX Benefits
+* Centralized Workflow: Admin never needs to manually move placements or juggle statuses.
+* Frictionless Monetization: Every successful pitch flows directly into a monetizable event.
+* Polished Delivery: Clients receive immediate gratification with a professional receipt + article showcase.

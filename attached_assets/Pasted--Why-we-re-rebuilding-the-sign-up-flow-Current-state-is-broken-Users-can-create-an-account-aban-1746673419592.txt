@@ -1,0 +1,36 @@
+⚠️ Why we’re rebuilding the sign-up flow
+Current state is broken – Users can create an account, abandon the Agreement/Payment steps, and still log in. This is a security hole (un-gated access) and a terrible UX.
+
+Flag spaghetti – The legacy code uses multiple booleans (onboarding_complete, agreement_signed, etc.) and scattered middleware, which has proven impossible to maintain.
+
+Goal – Replace the entire multi-page flow with a single-page, state-driven wizard that blocks progress until the Agreement is signed, payment succeeds, and profile is completed. One enum field (signup_stage) will be the single source of truth.
+
+Phase 1 Deliverable (no business logic yet)
+Feature branch signup-wizard – isolates all new code.
+
+DB migration – adds signup_stage enum + empty profile columns.
+
+Two public endpoints to get/advance the stage (no auth).
+
+React wizard shell at /signup-wizard with placeholders for the three steps.
+
+Feature flag NEXT_SIGNUP_WIZARD (default false) so production keeps using the legacy flow until we flip the flag.
+
+This phase only proves routing and enum wiring; nothing in production can break.
+
+🛠 Exact tasks
+#	Task	Code / Command
+0	Branch & env flag	git checkout -b signup-wizard
+echo "NEXT_SIGNUP_WIZARD=false" >> .env
+1	Migration: enum + cols	migrations/2025-05-08_signup_stage.sql (see code block)
+2	Stub endpoints	server/routes/signupStage.ts (GET /signup/stage, POST /signup/stage/advance)
+3	Wizard skeleton	client/src/pages/SignupWizard.tsx + placeholder step components
+4	Router & flag switch	Add to App.tsx as shown
+5	Smoke test & commit	Manual test via /signup-wizard then git commit -m "Phase1: signup wizard scaffold + enum"
+
+(Full code blocks are in the previous message.)
+
+Outcome:
+We’ll have a working wizard shell that can advance through steps by hitting the new endpoints, and we can toggle it on/off without touching the broken legacy code. After Phase 1 is merged, we’ll flesh out Agreement upload, Stripe payment, and profile form in Phase 2.
+
+Please proceed with Phase 1 exactly as outlined.

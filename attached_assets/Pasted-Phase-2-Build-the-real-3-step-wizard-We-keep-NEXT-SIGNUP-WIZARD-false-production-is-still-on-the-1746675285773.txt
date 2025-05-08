@@ -1,0 +1,46 @@
+Phase 2 – Build the real 3-step wizard
+(We keep NEXT_SIGNUP_WIZARD=false; production is still on the legacy flow.)
+
+#	Task	Code & Handoff Notes	Why
+2.1	AgreementStep — functional	Front-end
+1. Replace placeholder with PDF viewer (use react-pdf/renderer).
+2. “I Agree & Continue” uploads the signed PDF:
+ts\nawait api.advanceStage({ email, action:'agreement', file });\n
+
+Back-end
+• advanceStage('agreement') → save PDF to S3 agreements/{user_uuid}.pdf, set signup_stage='payment'.	Blocks user until the agreement file is safely stored.
+2.2	PaymentStep — Stripe Elements	Front-end
+1. Load Stripe with test key.
+2. On “Subscribe” create paymentMethod → send to:
+POST /api/signup/stage/advance { email, action:'payment', paymentMethodId }
+
+Back-end
+• Create customer + subscription (price_id TBD) → set signup_stage='profile' & save stripe_customer_id, subscription_id, subscription_status=active.
+• Webhook double-checks status.	Ensures card is on file before profile.
+2.3	ProfileStep – final form	Front-end
+Fields: full name, company_name, phone_number, avatar upload (optional).
+POST /api/signup/profile (JWT not required; we pass email token).
+
+Back-end
+• Save fields, set signup_stage='ready'.
+• Return JWT in JSON.	When this returns 200, onboarding is truly complete.
+2.4	Wizard auto-advance logic	In SignupWizard.tsx keep current polling (/signup/stage every 3 s). When stage changes, step component re-mounts automatically.	User doesn’t have to refresh.
+2.5	Login unification	When ProfileStep returns JWT:
+setToken(jwt); router.push('/dashboard');	No second login.
+2.6	Smoke tests	• Start from /signup-wizard with a fresh email.
+• Walk through all 3 steps; wizard lands on dashboard.
+• DB row shows signup_stage='ready' + new columns populated.
+• Try aborting mid-wizard → reloading resumes correct step.	Confirms end-to-end happy path & resume logic.
+2.7	Code review & flag	PR merges into signup-wizard branch only. NEXT_SIGNUP_WIZARD still false.	Keeps prod safe until final sign-off.
+
+Notes / Specs handed over
+Price IDs – please drop the Stripe test & live price IDs into .env so the back-end can read them.
+
+S3 bucket – process.env.AGREEMENT_BUCKET already exists (used by legacy PDF upload).
+
+Message to Replit dev team
+We are now in Phase 2. Implement the real logic for AgreementStep, PaymentStep, and ProfileStep as outlined above.
+Do not touch existing /signup or legacy pages; all work stays inside the signup-wizard branch behind the flag.
+When Phase 2 passes the smoke tests, we’ll review and then flip NEXT_SIGNUP_WIZARD=true in .env.
+
+Once these tasks are done we’ll have a fully functioning, single-page onboarding flow that eliminates the current auth loopholes.

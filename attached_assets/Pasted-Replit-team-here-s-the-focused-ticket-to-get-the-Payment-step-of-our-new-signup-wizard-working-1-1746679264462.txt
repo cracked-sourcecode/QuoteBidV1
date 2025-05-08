@@ -1,0 +1,83 @@
+Replit team – here’s the focused ticket to get the Payment step of our new signup-wizard working.
+
+1 · Front-end: rebuild PaymentStep
+Locate our old Stripe checkout code
+
+Search the repo (or Rewind) for the file that previously handled Stripe:
+client/src/pages/payment.tsx, CheckoutForm.tsx, or anything that used loadStripe / Elements.
+
+Create client/src/components/onboarding/PaymentStep.tsx
+
+tsx
+Copy
+Edit
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+import { useMutation } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import CheckoutForm from '@/components/onboarding/CheckoutForm'; // <- copy code here
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUB_KEY!);
+
+export default function PaymentStep({ email }: { email: string }) {
+  const { mutate, isLoading } = useMutation(api.advanceStage);
+
+  const handleSuccess = (paymentMethodId: string) => {
+    mutate({ email, action: 'payment', paymentMethodId });
+  };
+
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutForm onSuccess={handleSuccess} loading={isLoading} />
+    </Elements>
+  );
+}
+Copy only the JSX / logic from the old page; no legacy layouts.
+
+Import the step in SignupWizard.tsx
+
+tsx
+Copy
+Edit
+import PaymentStep from '@/components/onboarding/PaymentStep';
+2 · Back-end: handle action:"payment"
+server/db.ts (or wherever advanceStage lives):
+
+ts
+Copy
+Edit
+if (action === 'payment') {
+  const { customer, subscription } = await createSubscription(email, paymentMethodId); // helper you already had
+  await sql`
+    UPDATE users
+       SET stripe_customer_id = ${customer.id},
+           subscription_id    = ${subscription.id},
+           subscription_status='active',
+           signup_stage       = 'profile'
+     WHERE email = ${email};
+  `;
+  return 'profile';      // wizard will auto-advance
+}
+3 · Environment keys (already in Stripe sandbox)
+ini
+Copy
+Edit
+VITE_STRIPE_PUB_KEY=pk_test_xxxxxxxxx
+STRIPE_SECRET_KEY=sk_test_xxxxxxxxx
+STRIPE_PRICE_ID=price_12345
+(Add to .env if not present.)
+
+4 · Smoke test (manual)
+Visit /signup-wizard
+
+Agreement step → “I Agree”
+
+Payment step shows Stripe card form
+
+Use test card 4242 4242 4242 4242 → submit
+
+Wizard jumps to Profile placeholder
+
+DB row now: signup_stage='profile', subscription_status='active'
+
+Everything stays in signup-wizard branch; feature flag NEXT_SIGNUP_WIZARD remains false, so production is untouched.

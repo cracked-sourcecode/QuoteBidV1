@@ -1,0 +1,96 @@
+Slack this verbatim to the Replit dev so they can squash the last two blockers (“Unable to fetch payment details” + bid‑page crash).
+
+0. TL;DR
+Bill Now modal can’t find a paymentIntentId → returns “Unable to fetch…”.
+
+Opportunity > Submit Bid still throws because pitchId isn’t propagated all the way down to the payment‑intent call.
+
+Fix is two tiny joins + one prop drill. Do the steps below and we’re done.
+
+1. Bill Now modal fix
+1.1 API
+GET /api/admin/billing/:placementId
+
+ts
+Copy
+Edit
+// server/routes.ts
+router.get('/api/admin/billing/:placementId', isAdmin, async (req,res) => {
+  const placement = await db.pitch.find(req.params.placementId);
+
+  if (!placement?.payment_intent_id) {
+    return res.status(404).json({error:'missing_payment_intent'});
+  }
+
+  const pi = await stripe.paymentIntents.retrieve(placement.payment_intent_id);
+  res.json({ pitchId: placement.id, paymentIntent: pi });
+});
+1.2 SQL join powering Billing Manager table
+sql
+Copy
+Edit
+SELECT p.id,           -- already there
+       p.payment_intent_id,      -- ADD THIS
+       /* existing cols */
+FROM   pitch p
+JOIN   opportunity o ON o.id = p.opportunity_id
+WHERE  p.status = 'Successful';
+(Front‑end already passes placementId to the modal; it just needs payment_intent_id in the JSON returned above.)
+
+2. Capture endpoint safety‑net
+Inside POST /api/admin/billing/capture add:
+
+ts
+Copy
+Edit
+if (!pitch.payment_intent_id) throw new Error('No payment intent linked');
+…and make sure you await stripe.paymentIntents.capture(pitch.payment_intent_id).
+
+3. Bid page crash (pitchId not found)
+3.1 Prop‑drill pitchId
+BidTicket generates the pitch on handleSubmit → response contains pitch.id.
+
+Pass that pitch.id down to ConfirmBidDialog:
+
+tsx
+Copy
+Edit
+<ConfirmBidDialog
+   open={dialogOpen}
+   onClose={...}
+   pitchId={createdPitch.id}      // <‑‑ ADD
+   ...
+/>
+ConfirmBidDialog already expects pitchId and feeds it to /create-payment-intent.
+
+3.2 Backend expects pitchId
+Ensure body payload:
+
+json
+Copy
+Edit
+{ "bidAmount":30000, "pitchId":123 }
+…and server route writes payment_intent_id back to that same pitch row.
+
+4. Seed old records (once‑off SQL)
+sql
+Copy
+Edit
+UPDATE pitch
+SET    payment_intent_id = meta.value
+FROM   jsonb_each_text(metadata) meta
+WHERE  payment_intent_id IS NULL
+  AND  meta.key = 'paymentIntentId';   -- if you previously stashed it in metadata
+5. Quick test script
+bash
+Copy
+Edit
+# 1) place bid
+curl -X POST /api/pitch ...
+# 2) mark successful
+curl -X POST /api/admin/pitch/123/success
+# 3) get billing details
+curl /api/admin/billing/123   # => should return PI JSON
+# 4) capture
+curl -X POST /api/admin/billing/capture -d '{ "pitchId":123 }'
+If all four calls work, UI will work.

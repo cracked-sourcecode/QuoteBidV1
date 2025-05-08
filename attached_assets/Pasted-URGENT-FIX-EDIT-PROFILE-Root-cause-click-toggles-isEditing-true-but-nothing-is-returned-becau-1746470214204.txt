@@ -1,0 +1,82 @@
+URGENT FIX – EDIT PROFILE
+
+Root cause: click toggles isEditing = true, but nothing is returned because the branch that should mount <EditProfileForm> never renders (or crashes silently).
+Console stays clean because there’s no uncaught error—React is just returning null.
+
+Stop touching the backend; the blank screen is 100 % front‑end.
+
+diff
+Copy
+Edit
+// client/src/pages/AccountPage.tsx
++import { EditProfileForm } from '@/components/EditProfileForm';
++import { Spinner } from '@/components/Spinner';
++import { ErrorState } from '@/components/ErrorState';
+
+ const AccountPage = () => {
+   const { data: user, isLoading, error } = useCurrentUser();
+-  const [isEditing, setIsEditing] = useState(false);
++  const [editing, setEditing] = useState(false);
+
++  /* ---------- guard clauses ---------- */
++  if (isLoading) return <Spinner />;
++  if (error)     return <ErrorState err={error} />;
+
+   return (
+     <>
+-      {/* OLD toggling logic deleted */}
+-      {/* … */}
++      {editing ? (
++        <EditProfileForm
++          key="edit"          // force fresh mount
++          user={user}
++          onCancel={() => setEditing(false)}
++          onSaved={(u) => {
++            queryClient.setQueryData(['currentUser'], u); // optimistic update
++            setEditing(false);
++          }}
++        />
++      ) : (
++        <ProfileView
++          key="view"
++          user={user}
++          onEdit={() => setEditing(true)}
++        />
++      )}
+     </>
+   );
+ };
+ export default AccountPage;
+MUST‑HAVE inside EditProfileForm
+tsx
+Copy
+Edit
+// make the new field optional so it can’t explode on an empty string
+const schema = z.object({
+  name: z.string(),
+  email: z.string().email(),
+  doFollowLink: z.string().url().optional().or(z.literal('')),
+});
+
+const form = useForm<z.infer<typeof schema>>({
+  resolver: zodResolver(schema),
+  defaultValues: {
+    ...user,
+    doFollowLink: user.doFollowLink ?? '',
+  },
+});
+Sanity check in the browser
+Hard‑refresh the page (⌘+Shift+R).
+
+Open DevTools → Components; watch AccountPage → editing flip to true when you click Edit.
+
+Form should now mount; fill it, hit Save, and it pops back to the view state.
+
+If it still blanks, drop the exact return block of AccountPage.tsx here; I’ll isolate the missing bracket in 10 sec.
+
+
+
+
+
+
+

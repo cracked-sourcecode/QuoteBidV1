@@ -1,0 +1,104 @@
+You are the code-gen assistant inside my Replit workspace **quote-bid**.  
+Create a working front-end slice that meets the spec below.  
+Tech stack is **Next.js 14 (app router) + TypeScript + Tailwind + shadcn/ui + Recharts + Socket.io client**.
+
+────────────────────────────────────────────────────────
+📑  PRODUCT SPEC
+────────────────────────────────────────────────────────
+1.  **/opportunities**  (homepage)
+    • Render a grid of **OpportunityCard** components.
+    • Data comes from `/lib/fixtures/opportunities.ts` for now.
+    • Each card mimics the attached Forbes screenshot:
+         – Outlet logo + name
+         – Status pill (“Open” / “Closed”)
+         – Title + summary
+         – Topic tag chips
+         – Footer: “Posted X days ago · ★score · share icon”
+         – Buttons: **Save** (ghost) + **Pitch & Bid** (orange).
+    • Card is wrapped in `<Link href="/opportunity/[id]">`.
+
+2.  **/opportunity/[id]**  (detail page)
+    Layout = three-panel “Robinhood” style:
+      A. **Header**  – outlet logo, story title, tier badge  
+      B. **Main pane**  – interactive **PriceChart** (Google-Flights look)
+           – Chart shows last 60 price ticks.
+           – Under chart: price bar (“$143 is low vs usual $235-$530”).
+           – A small **SlotsBar** shows `slotsRemaining / slotsTotal`.
+      C. **Side pane**  – sliding **BidTicket** (shadcn `<Sheet side="right">`)
+           – Inputs: bid amount, pitch textarea (max 400 chars)
+           – Shows “Next minimum bid” and live `T-minus` timer
+           – “Review Order” button → just `alert('stub')` for now.
+      • Page must subscribe to a **Socket.io** namespace (`/mock`)
+        that emits `{id, price, slotsRemaining}` every 2 s.
+
+3.  **Theming / UX cues**
+    • Dark mode default (`bg-slate-900 text-slate-100`).
+    • Price badge colours:
+         – Low = green-400, Typical = amber-400, High = rose-400.
+    • Use Tailwind `rounded-2xl shadow-lg` on all cards/panels.
+
+4.  **Mock data & sockets**
+    • `opportunities.ts` exports an array of 5 sample opportunities.
+    • `/mock/socket.ts` exports a tiny Socket.io server that
+      randomly walks price ±$5 and decrements slots every 15 s.
+    • Wrap server in `pages/api/socket.ts` so Next.js spins it up
+      when dev server starts.
+
+5.  **Type safety**
+    • Define `Opportunity` and `PriceTick` types in `/types/index.ts`.
+    • Use Zod schema for runtime validation of socket payloads.
+
+6.  **Storybook**
+    • Add Storybook stories for OpportunityCard, PriceChart, BidTicket.
+
+────────────────────────────────────────────────────────
+🗂️  FILE / FOLDER MAP
+────────────────────────────────────────────────────────
+/app
+ ├─ layout.tsx  (global Nav & Tailwind imports)
+ ├─ page.tsx    (/opportunities)
+ └─ opportunity/[id]/page.tsx
+/components
+ ├─ OpportunityCard.tsx
+ ├─ SlotsBar.tsx
+ ├─ PriceBadge.tsx
+ ├─ PriceChart.tsx
+ └─ BidTicket.tsx
+/lib
+ └─ fixtures/opportunities.ts
+/types
+ └─ index.ts
+/pages/api
+ └─ socket.ts          (Socket.io mock server)
+/mock
+ └─ socket.ts          (helper to start mock price stream)
+/stories
+ └─ *.stories.tsx
+tailwind.config.ts
+.env.example            (NEXT_PUBLIC_SOCKET_NS etc.)
+
+────────────────────────────────────────────────────────
+🔧  IMPLEMENTATION NOTES
+────────────────────────────────────────────────────────
+•  Use `Link` from `next/link` for navigation.
+•  PriceChart: `<ResponsiveContainer><LineChart>` from Recharts;
+   DO NOT specify colours – accept library defaults.
+•  BidTicket: shadcn `<Sheet>` + `<Input>` + `<Textarea>` components.
+•  Countdown timer: `const deadline = new Date(...);` + `useEffect`
+   with `setInterval(1000)` → display `mm:ss`.
+•  Socket client lives in `usePriceFeed(id)` zustand store so
+   multiple components share the same data stream.
+•  No real Stripe/LLM calls yet—just stub functions in `/lib/api.ts`.
+
+────────────────────────────────────────────────────────
+🎯  ACCEPTANCE
+────────────────────────────────────────────────────────
+Running `npm run dev` should show:
+1.  List page with 5 opportunity cards.
+2.  Clicking a card navigates to `/opportunity/[id]`
+    where the chart animates every 2 s and the
+    slots bar counts down.
+3.  “Review Order” pops an alert with JSON of the form
+    `{id, bidAmount, pitch}`.
+
+Generate all code now; use best practices and tight linting.

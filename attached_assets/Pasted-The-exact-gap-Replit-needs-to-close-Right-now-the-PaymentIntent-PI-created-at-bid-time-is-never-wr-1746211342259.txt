@@ -1,0 +1,191 @@
+The exact gap Replit needs to close
+Right now the PaymentIntent (PI) created at bid‑time is never written to your database, so neither Coverage Manager nor Billing Manager has any way to “know” which Stripe object to capture later. Everything that follows breaks because:
+
+Pitch/Placement record lacks a paymentIntentId field.
+
+Coverage Manager → Billing Manager status changes travel through your own tables, but Stripe is a separate universe.
+
+Admin UI tries to call /capture with no PI reference, so you end up hunting for it manually inside the Stripe dashboard.
+
+Add a single pointer, and the whole flow links up automatically.
+
+1 — Save the PaymentIntent as soon as the bid is placed
+mermaid
+Copy
+Edit
+sequenceDiagram
+  participant FE as React Client
+  participant API as /api
+  participant Stripe as Stripe
+
+  FE->>API: POST /pitch (bidPrice, opportunityId, userId)
+  API->>Stripe: paymentIntents.create({capture_method:'manual', ...})
+  Stripe-->>API: {id:'pi_...', status:'requires_capture'}
+  API->>DB: INSERT INTO pitch (..., payment_intent_id='pi_...')
+  API-->>FE: 200 Created
+Database patch
+
+sql
+Copy
+Edit
+ALTER TABLE pitch
+  ADD COLUMN payment_intent_id varchar(64) NOT NULL,
+  ADD COLUMN authorization_expires_at timestamptz NOT NULL;
+Set authorization_expires_at = now() + interval '7 days' (Stripe’s auth window).
+
+2 — Propagate that ID through the workflow
+Coverage Manager simply transitions pitch.status → "Successful"; no extra Stripe work.
+
+Billing Manager query becomes:
+
+sql
+Copy
+Edit
+SELECT p.id,
+       u.name AS customer,
+       o.publication,
+       o.headline,
+       p.bid_price,
+       p.payment_intent_id
+FROM   pitch p
+JOIN   users u         ON u.id = p.user_id
+JOIN   opportunity o   ON o.id = p.opportunity_id
+WHERE  p.status = 'Successful';
+Return payment_intent_id to the front‑end so the Bill Now modal shows the correct PI.
+
+3 — Capture endpoint (server‑side only)
+ts
+Copy
+Edit
+POST /api/admin/billing/capture
+Body: { pitchId: 123 }
+
+→ Look up pitch
+→ Validate: status === 'Successful'
+→ stripe.paymentIntents.capture(pitch.payment_intent_id)
+→ On success:
+     UPDATE pitch
+       SET status = 'Billed',
+           billed_at = NOW(),
+           stripe_charge_id = charge.id
+→ Send receipt email via Stripe or your own service
+Edge cases
+
+Scenario	Handle like this
+PI expired (400 expired)	Mark billing_error = 'auth_expired'; surface “Ask client to rebid.”
+Insufficient funds (requires_payment_method)	Keep status Successful, show Retry Card button that invokes stripe.paymentIntents.confirm with a new PM.
+Webhook mismatch	Implement listener for payment_intent.captured and reconcile any orphan events.
+
+4 — How Stripe metadata helps (optional)
+You’re already passing
+
+json
+Copy
+Edit
+"metadata": {
+  "pitchType": "media_coverage",
+  "userId": "24"
+}
+That’s great for audit trails, but don’t rely on it as the DB → Stripe join; the authoritative link should flow from your DB → Stripe, not the other way round. Use metadata only for sanity‑checking in dashboards.
+
+5 — Quick “definition of done” checklist for Replit
+ payment_intent_id + authorization_expires_at columns in pitch table
+
+ Bid creation endpoint writes PI ID to DB
+
+ Coverage Manager leaves PI ID untouched
+
+ Billing Manager table & modal receive PI ID from API
+
+ /api/admin/billing/capture performs server‑side capture and updates DB
+
+ Stripe webhook (payment_intent.captured) syncs back to DB (safety net)
+
+ UI handles expired & insufficient‑funds states gracefully
+
+Ship those six boxes and the admin team will never need to bounce out to the Stripe dashboard again.
+
+
+
+
+
+
+
+You said:
+GIVE me what to say to replit to fix it
+
+
+ChatGPT said:
+Message to Replit Dev Team — “Billing Sync Hotfix”
+
+Hey team—here’s exactly what we need to push by EOD to make Bill Now work end‑to‑end.
+
+1. DB patch (Pitch table)
+sql
+Copy
+Edit
+ALTER TABLE pitch
+  ADD COLUMN payment_intent_id varchar(64) NOT NULL,
+  ADD COLUMN authorization_expires_at timestamptz NOT NULL;
+authorization_expires_at = NOW() + INTERVAL '7 days'.
+
+2. Bid endpoint
+Create the PaymentIntent with capture_method:'manual'.
+
+Immediately persist:
+
+payment_intent_id
+
+authorization_expires_at
+
+existing bid fields
+into pitch.
+
+3. Coverage → Billing hand‑off
+No code change—just make sure the query that powers Billing Manager now selects payment_intent_id so the front‑end can pass it to the capture call.
+
+4. New capture API
+css
+Copy
+Edit
+POST /api/admin/billing/capture
+Body: { pitchId }
+Server logic:
+
+ts
+Copy
+Edit
+const pitch = await db.pitch.find(pitchId);
+assert(pitch.status === 'Successful');
+
+await stripe.paymentIntents.capture(pitch.payment_intent_id);
+
+await db.pitch.update(pitchId, {
+  status: 'Billed',
+  billed_at: now(),
+  stripe_charge_id: <charge.id>,
+});
+Return 200 on success; surface Stripe error messages to the UI.
+
+5. Edge‑case handling
+Expired PI → return 400 & set billing_error='auth_expired'.
+
+Insufficient funds (requires_payment_method) → keep status Successful, send back flag so admin sees “Retry Card”.
+
+Add webhook listener for payment_intent.captured as a double‑check.
+
+6. Front‑end tweaks
+Add Bill Now column + modal (we already scoped the modal contents last ticket).
+
+Modal POSTs to /capture; on 200, toast “Payment captured” and swap status to Billed.
+
+Ship these six steps and we’re done bouncing to the Stripe dashboard.
+
+—Ben
+
+
+
+
+
+
+

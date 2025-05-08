@@ -1,0 +1,117 @@
+Bug Report & Fix Spec — “Draft vs. Pending” desync
+1 · Replication steps
+Step	Result you see	Result you expect
+Submit a pitch → server inserts pitches.status = 'pending'	Admin Portal shows Pending (✅)
+My Pitches list still shows “Draft – complete your pitch!” (❌)	Both views show Pitch Pending
+Open Pitch‑Status modal from My Pitches	Header correctly highlights “Pitch Pending”
+Next‑Steps box wrongly says “Your pitch is in draft status. Complete it and submit …” (❌)	Next‑Steps copy for pending (“We’ve received your pitch; you can still edit until we send it.”)
+Published‑by line on the card	“Published by reporter: Unknown Publication …” (❌)	“Opportunity posted by Forbes · 6 May 2025”
+
+2 · Root‑cause hypothesis
+Dual source‑of‑truth:
+
+pitches.status (enum) — already “pending”.
+
+A client‑side flag (isDraft, contentStatus, or undefined check) still evaluates true because pitch.body === null or pitch.is_submitted === false.
+
+The My Pitches component renders Draft if either condition hits.
+
+Opportunity‑publication join missing in the pitches GET — front‑end falls back to “Unknown Publication”.
+
+Static copy map in PitchStatusModal.tsx hard‑codes the Draft message as the default for any status not explicitly handled.
+
+3 · Fix plan
+3.1 API contracts
+ts
+Copy
+Edit
+// GET /api/pitches
+type PitchDTO = {
+  id: string
+  title: string
+  publication: { id: string; name: string; logoUrl: string }
+  bidAmount: number
+  status: 'draft' | 'pending' | 'sent_to_reporter' | 'reporter_interested' |
+          'reporter_not_interested' | 'successful_coverage'
+  // remove / stop sending legacy flags like isDraft, isSubmitted
+}
+Action: update controller to SELECT p.*, pubs.name AS publication_name … JOIN publications pubs ON ….
+
+3.2 Single status gate on the client
+ts
+Copy
+Edit
+// utils/pitchStage.ts
+export function getStage(pitch: PitchDTO): PitchDTO['status'] {
+  return pitch.status;          // nothing else
+}
+MyPitchesCard.tsx
+
+tsx
+Copy
+Edit
+const stage = getStage(pitch);
+
+if (stage === 'pending') return <PendingCard {...}/>
+else if (stage === 'draft') return <DraftCard {...}/>
+…
+Remove any lines like const isDraft = !pitch.isSubmitted.
+
+3.3 Copy table (central file)
+ts
+Copy
+Edit
+export const stageCopy = {
+  draft: {
+    banner: 'In‑progress pitch: complete your pitch!',
+    action: 'Edit Draft',
+  },
+  pending: {
+    banner: 'Pitch received – you can still edit until we send it to the reporter.',
+    action: 'Edit Pitch',
+  },
+  sent_to_reporter: {
+    banner: 'Pitch sent – awaiting reporter feedback.',
+    action: null,
+  },
+  reporter_interested: { … },
+  reporter_not_interested: { … },
+  successful_coverage: { … },
+} satisfies Record<PitchDTO['status'], {...}>
+Both My Pitches list and PitchStatusModal consume this object, so copy stays consistent.
+
+3.4 Guard editing
+tsx
+Copy
+Edit
+const canEdit = stage === 'draft' || stage === 'pending';
+Disable “Edit Draft/Edit Pitch” button otherwise.
+
+3.5 Unit & e2e tests
+API returns correct status + publication.
+
+My‑Pitches renders the right banner for each enum value.
+
+Cypress flow: submit → card flips to pending without reload; change via admin API → card updates to sent to reporter in < 3 s.
+
+4 · Copy fixes (exact text)
+Stage	Banner (My Pitches)	Modal • Next Steps
+pending	Pitch received – you can still edit until we send it to the reporter.	“Your pitch is pending internal review. Feel free to tweak any details before we push it live.”
+sent_to_reporter	Pitch sent – awaiting reporter feedback.	“We’ve launched your pitch. We’ll notify you as soon as the reporter responds.”
+
+5 · Checklist for Replit hand‑off
+ Remove legacy isDraft/ isSubmitted flags end‑to‑end.
+
+ Expose publication join in /api/pitches.
+
+ Refactor stage logic to rely solely on pitches.status.
+
+ Centralise copy in stageCopy.ts.
+
+ Update cards + modal to read from copy map.
+
+ Add Jest unit tests + Cypress scenario.
+
+ Verify: submitting → pending banner renders correctly; admin change propagates; publication names show.
+
+Ship this patch and the “Draft stuck” bug is gone.

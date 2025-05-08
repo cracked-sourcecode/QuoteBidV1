@@ -1,0 +1,169 @@
+🛠 Admin Portal – Billing & Coverage Management
+Purpose:
+Enable seamless billing and delivery for successful media placements. Admins must be able to:
+
+View placements that triggered billing
+
+Search customers
+
+Bill via Stripe
+
+Notify clients with premium UX
+
+1. 🔧 Placement Dashboard
+A real-time grid showing all published placements that require billing.
+
+Filters & Sorting:
+
+Customer name
+
+Outlet (e.g., Forbes, WSJ)
+
+Bid price range (e.g., $200 – $5,000+)
+
+Publication date
+
+Status Color Tags:
+
+🟢 Paid
+
+🟡 Pending Invoice
+
+🔴 Failed Charge
+
+2. 💳 Customer Billing Center
+Search & manage customer billing records.
+
+Fields to Search:
+
+Customer name
+
+Email
+
+Company name
+
+Access Shortcuts:
+
+Placement history (paid/unpaid)
+
+Stripe payment records
+
+Notifications sent
+
+Stripe portal (link out)
+
+3. 🔔 Client Notification Flow – The “Winning Moment”
+Triggered upon successful billing and article publication.
+
+Automated Email/SMS:
+Subject: 🎉 Your Expertise Was Featured in [Forbes]!
+
+Body:
+
+Congrats [First Name]! Your bid of $1,200 secured your spot in this breaking story:
+→ [Article Title] – [Publication]
+→ [Live Link to Article]*
+
+A receipt for $1,200 has been charged to your card on file.
+Thank you for trusting our marketplace!
+
+Included UI Elements:
+
+Publication logo
+
+Screenshot of the placement (auto-generated)
+
+Social sharing buttons (LinkedIn, Twitter)
+
+PDF download link
+
+4. 🎁 Premium Delivery Experience
+Client Portal (Post-Placement)
+
+plaintext
+Copy
+Edit
+[Publication Logo]  
+✅ PLACEMENT CONFIRMED  
+
+📰 Your Contribution:  
+"Bitcoin will hit $100K by 2025," says [Name],  
+CEO of [Company].  
+
+📊 Performance Metrics:  
+- Reach: 2.1M  
+- Social Shares: 4,200+  
+- Backlinks: 3 (Ahrefs DR 92)  
+
+🔗 Quick Actions:  
+- Download PDF Press Clip  
+- Share on LinkedIn  
+- Add to Media Kit  
+5. 💼 Admin Billing Actions
+One-Click Flow:
+
+Step 1: Search customer
+
+Step 2: View placements
+
+Step 3: Click “Bill Now”
+
+Stripe Modal Includes:
+
+Card on file (last 4 digits)
+
+Bid price
+
+Invoice description (e.g., “Forbes 10/15 Feature”)
+
+Automatically Logs:
+
+Client billing history
+
+Revenue reporting
+
+CSV export for accounting
+
+Fail-Safes:
+
+If card fails:
+
+Email/SMS alert to client
+
+3 retry attempts in 7 days
+
+Final fallback: Manual PDF invoice
+
+6. 🖥 Sample Admin UI Layout
+plaintext
+Copy
+Edit
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔍 SEARCH CUSTOMERS | [Search Bar]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Name]           [Company]    [Latest Placement]  [Amount]  [Status]   [Action]
+──────────────────────────────────────────────────────────────────────
+Elon Musk        Tesla        WSJ 10/15           $2,400    🟢 Paid     View
+Bill Gates       Microsoft    Forbes 10/12        $1,750    🟡 Pending  ⚡ Bill Now
+Mark Zuckerberg  Meta         Bloomberg 10/10     $3,100    🔴 Failed   ❗ Retry
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 Today's Billable: $18,200 | 📅 October Total: $142,800
+7. 🧩 Tech Stack
+Stripe Billing:
+
+Auto-charge w/ 3D Secure
+
+Custom invoices w/ placement metadata
+
+PDF Generator:
+
+Auto-generate branded press clips
+
+Social Share API:
+
+Pre-drafted social posts for LinkedIn, Twitter
+
+Accounting Sync:
+
+QuickBooks / Xero integrations
+

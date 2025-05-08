@@ -1,0 +1,110 @@
+You are my pair-programmer for the project **quote-bid**.
+Create a Next.js 14 (app router) front-end that **visually
+demonstrates the pricing math** behind QuoteBid, even while the
+real back-end is still in-flight.
+
+────────────────────────────────────────────────────────
+📌  HIGH-LEVEL STORY TO CAPTURE IN CODE COMMENTS
+────────────────────────────────────────────────────────
+•  Each PR opportunity has S identical quote slots.
+•  Before the deadline the price follows a **convex ladder**
+   P_n = P_0 + n·Δ   (English auction increments).
+•  In the final τ minutes the price flips to a **convex-in-time
+   exponential decay**
+          P(t) = max( P_floor ,
+                     P_cut · e^(−λ·(τ−t)/S) )
+  so price drops slowly at first then accelerates — the same
+  ‘fire-sale’ curve used in Dutch NFT auctions and airline
+  clearance pricing.
+•  Bid probability is logistic in (quality score, price). We are
+  NOT implementing that model today, but you MUST label a
+  placeholder function in /lib/math.ts explaining the formula:
+      Pr = exp(θ1·q + θ2·p) / Σ exp(...)
+•  Nightly self-tuning adjusts Δ and λ; leave TODOs in the
+  constants file that show the optimisation objective:
+      argmin_{Δ,λ} Σ (real_yield – theory)^2.
+
+────────────────────────────────────────────────────────
+📊  MOCK DATA SPEC  (goes in /lib/fixtures/opportunities.ts)
+────────────────────────────────────────────────────────
+export interface Opportunity {
+  id: string;              // uuid
+  outlet: string;          // "Forbes"
+  title: string;           // "Stock-Market Story"
+  tier: 1|2|3;             // sets P0 & Δ
+  slotsTotal: number;      // S
+  slotsRemaining: number;  // updates via WS
+  basePrice: number;       // P0
+  increment: number;       // Δ
+  floorPrice: number;      // P_floor
+  cutoffPrice: number;     // P_cut (price when Dutch starts)
+  deadline: string;        // ISO timestamp
+  postedAt: string;        // for “Posted X days ago”
+  topicTag: string;        // "#Capital Markets"
+}
+Create at least 5 sample objects with realistic numbers (Tier-1
+starts $200, Δ=$50, S=3, etc.).
+
+────────────────────────────────────────────────────────
+📈  MOCK PRICE STREAM  (pages/api/socket.ts)
+────────────────────────────────────────────────────────
+Build a small Socket.io server that:
+  – On connection receives {oppId}.
+  – Every 2 s publishes
+        { id, price, slotsRemaining, timestamp }
+    where `price` walks ±$5 until Dutch phase triggers, then
+    decays by   price *= exp(−λ·dt/S) with λ=0.08.
+  – Decrements slotsRemaining every 15 s until 0.
+**Add top-of-file comments summarising the formula so anyone who
+opens the file understands the convex ladder → convex decay
+transition.**
+
+────────────────────────────────────────────────────────
+🖥️  UI PAGES
+────────────────────────────────────────────────────────
+1.  /opportunities  (grid)
+    • <OpportunityCard/> component renders outlet logo,
+      title, tag, status pill, price badge (“low / typical /
+      high” based on historical range), slots bar.
+    • Comment: explains that card price is current P_n.
+
+2.  /opportunity/[id]  (detail)
+    • Header with logo + tier badge.
+    • <PriceChart/> (Recharts LineChart) subscribes to WS.
+      Inline comment block describes why the curve bends.
+    • Under chart: Google-Flights-style valuation bar,
+      explicitly showing $low … $typical … $high thresholds.
+    • Right side: <BidTicket/> (shadcn Sheet) mimicking
+      Robinhood order ticket.  Includes TODO for real Stripe.
+    • Countdown timer shows time → deadline; label it “switches
+      engine from English to Dutch at τ=15 % of window”.
+
+3.  Accessibility: aria-live on price badge, keyboard support.
+
+────────────────────────────────────────────────────────
+📂  FILE TREE TO GENERATE
+────────────────────────────────────────────────────────
+/app                 Next.js routes
+/components          UI pieces (cards, chart, bars)
+/lib
+   ├── fixtures      sample data
+   ├── math.ts       ⟵ put formulas + TODOs here
+   └── ws.ts         socket client (use zustand store)
+/pages/api/socket.ts mock Socket.io server
+/styles              Tailwind base
+/storybook           stories for key components
+tailwind.config.ts
+.env.example         NEXT_PUBLIC_SOCKET_NS=/api/socket
+
+────────────────────────────────────────────────────────
+✅  ACCEPTANCE TEST
+────────────────────────────────────────────────────────
+Running `npm run dev` (or `pnpm dev`) must show:
+  • Opportunity grid with live-updating price badges.
+  • Clicking a card opens detail page; chart animates,
+    slots bar shrinks, timer counts down, ticket opens.
+  • README.md explains ladder+decay math in plain English.
+
+Generate code **with descriptive comments** so anyone reading
+the repo understands *why* each mock function exists and how it
+reflects the convex revenue-management maths.
