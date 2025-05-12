@@ -9,6 +9,7 @@ import { useSignupWizard } from '@/contexts/SignupWizardContext';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
 import { INDUSTRY_OPTIONS } from "@/lib/constants";
+import { useLocation } from 'wouter';
 
 interface ProfileStepProps {
   onComplete: (jwt: string) => void;
@@ -40,6 +41,8 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const email = getSignupEmail();
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [, navigate] = useLocation();
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -100,14 +103,28 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
         });
       }
       clearSignupData();
-      toast({ title: 'Profile Complete', description: 'Your profile has been set up successfully!' });
-      onComplete('');
+      setShowSuccess(true);
     } catch (error: any) {
       toast({ title: 'Profile Update Error', description: error.message || 'There was an error updating your profile. Please try again.', variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
     }
+    setIsLoading(false);
   };
+
+  if (showSuccess) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-8 bg-white rounded-2xl shadow-lg max-w-2xl mx-auto mt-8">
+        <div className="text-5xl mb-4">🎉</div>
+        <h2 className="text-3xl font-bold mb-2 text-center">Welcome to QuoteBid!</h2>
+        <p className="text-lg text-gray-700 mb-6 text-center">Your account has been created successfully.<br />You now have full access to the QuoteBid marketplace.</p>
+        <Button
+          className="bg-[#004684] hover:bg-[#003a70] text-white px-8 py-3 text-lg font-semibold"
+          onClick={() => navigate('/opportunities')}
+        >
+          Continue to Dashboard
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-lg max-w-4xl mx-auto mt-8">
