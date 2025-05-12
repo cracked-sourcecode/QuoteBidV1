@@ -34,7 +34,7 @@ import { storeSignupEmail, storeSignupData } from "@/lib/signup-wizard";
 import { SignupWizardProvider } from "@/contexts/SignupWizardContext";
 import { SignupWizard } from "@/components/signup/SignupWizard";
 import validator from "validator";
-import { isValidPhoneNumber } from "libphonenumber-js";
+import { isValidPhoneNumber, parsePhoneNumberFromString } from "libphonenumber-js";
 import { useRef } from "react";
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
@@ -45,7 +45,9 @@ const registerSchema = insertUserSchema.extend({
   companyName: z.string().min(1, {
     message: "Company name is required",
   }),
-  phone: z.string().optional(),
+  phone: z.string().min(1, {
+    message: "Phone number is required",
+  }),
   industry: z.string().min(1, {
     message: "Industry is required",
   }),
@@ -159,6 +161,9 @@ export default function AuthPage() {
             </Link>
             <p className="mt-2 text-gray-600">Connect with top media outlets</p>
           </div>
+          {activeTab === "register" && (
+            <h2 className="text-2xl font-bold mb-4 text-center">Create Your Account</h2>
+          )}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-8">
               <TabsTrigger value="register" onClick={() => navigate("/auth?tab=register")}>Sign Up</TabsTrigger>
@@ -166,8 +171,6 @@ export default function AuthPage() {
             </TabsList>
             <TabsContent value="register">
               <div>
-                <h2 className="text-2xl font-bold mb-2 text-center">Create Your Account</h2>
-                <p className="text-gray-600 text-center mb-6">Say goodbye to PR agencies — and the friction, hassle, and inconsistent results. No retainers, no fixed fees — just direct access to coverage opportunities. Bid freely, pay only for the placements you win, and take full control of your PR.</p>
                 <RegisterForm />
               </div>
             </TabsContent>
@@ -369,9 +372,19 @@ function RegisterForm() {
           <FormField control={form.control} name="username" render={({ field }) => (
             <FormItem className="flex-1">
               <FormLabel>Username</FormLabel>
-              <FormControl><Input placeholder="johndoe" {...field} /></FormControl>
-              {formatErrors.username && <div className="text-red-500 text-xs mt-1">{formatErrors.username}</div>}
-              {uniqueError.username && !formatErrors.username && <div className="text-red-500 text-xs mt-1">{uniqueError.username}</div>}
+              <FormControl>
+                <Input
+                  placeholder="johndoe"
+                  {...field}
+                  onChange={e => field.onChange(e.target.value.toLowerCase())}
+                />
+              </FormControl>
+              {/* Show format error if present, else uniqueness error */}
+              {formatErrors.username ? (
+                <div className="text-red-500 text-xs mt-1">{formatErrors.username}</div>
+              ) : uniqueError.username ? (
+                <div className="text-red-500 text-xs mt-1">{uniqueError.username}</div>
+              ) : null}
               {pending.username && <div className="text-xs text-gray-500 mt-1">Checking…</div>}
               <FormMessage />
             </FormItem>
@@ -381,8 +394,12 @@ function RegisterForm() {
           <FormItem>
             <FormLabel>Email</FormLabel>
             <FormControl><Input placeholder="john.doe@example.com" {...field} /></FormControl>
-            {formatErrors.email && <div className="text-red-500 text-xs mt-1">{formatErrors.email}</div>}
-            {uniqueError.email && !formatErrors.email && <div className="text-red-500 text-xs mt-1">{uniqueError.email}</div>}
+            {/* Show format error if present, else uniqueness error */}
+            {formatErrors.email ? (
+              <div className="text-red-500 text-xs mt-1">{formatErrors.email}</div>
+            ) : uniqueError.email ? (
+              <div className="text-red-500 text-xs mt-1">{uniqueError.email}</div>
+            ) : null}
             {pending.email && <div className="text-xs text-gray-500 mt-1">Checking…</div>}
             <FormMessage />
           </FormItem>
@@ -401,36 +418,31 @@ function RegisterForm() {
               <PhoneInput
                 country={'us'}
                 value={field.value}
-                onChange={value => form.setValue('phone', value)}
+                onChange={value => {
+                  // Parse and store E.164 format
+                  const phoneNumber = parsePhoneNumberFromString('+' + value);
+                  form.setValue('phone', phoneNumber ? phoneNumber.number : '+' + value);
+                }}
                 inputProps={{
                   name: 'phone',
                   required: true,
                   autoFocus: false,
                   autoComplete: 'tel',
-                  placeholder: '+1 212 555 1212',
+                  placeholder: 'Enter your phone number'
                 }}
-                inputStyle={{
-                  width: '100%',
-                  fontSize: '16px',
-                  color: '#222',
-                  background: '#fff',
-                  borderColor: '#e5e7eb',
-                  borderRadius: '8px',
-                  paddingLeft: '48px',
-                }}
-                buttonStyle={{
-                  border: 'none',
-                  background: 'none',
-                }}
-                containerStyle={{
-                  width: '100%',
-                }}
-                specialLabel={''}
-                enableSearch
+                containerClass="w-full"
+                inputClass="w-full"
+                buttonClass="border-r-0"
+                dropdownClass="z-50"
               />
             </FormControl>
-            {formatErrors.phone && <div className="text-red-500 text-xs mt-1">{formatErrors.phone}</div>}
-            {uniqueError.phone && !formatErrors.phone && <div className="text-red-500 text-xs mt-1">{uniqueError.phone}</div>}
+            <div className="text-gray-500 text-xs mt-1">Select a country code and enter a phone number.</div>
+            {/* Show format error if present, else uniqueness error */}
+            {formatErrors.phone ? (
+              <div className="text-red-500 text-xs mt-1">{formatErrors.phone}</div>
+            ) : uniqueError.phone ? (
+              <div className="text-red-500 text-xs mt-1">{uniqueError.phone}</div>
+            ) : null}
             {pending.phone && <div className="text-xs text-gray-500 mt-1">Checking…</div>}
             <FormMessage />
           </FormItem>
@@ -458,6 +470,7 @@ function RegisterForm() {
             <FormItem className="flex-1">
               <FormLabel>Password</FormLabel>
               <FormControl><Input type="password" {...field} /></FormControl>
+              {/* Show format error if present */}
               {formatErrors.password && <div className="text-red-500 text-xs mt-1">{formatErrors.password}</div>}
               <FormMessage />
             </FormItem>
@@ -466,6 +479,7 @@ function RegisterForm() {
             <FormItem className="flex-1">
               <FormLabel>Confirm Password</FormLabel>
               <FormControl><Input type="password" {...field} /></FormControl>
+              {/* Show format error if present */}
               {formatErrors.passwordConfirm && <div className="text-red-500 text-xs mt-1">{formatErrors.passwordConfirm}</div>}
               <FormMessage />
             </FormItem>
@@ -489,6 +503,10 @@ function RegisterForm() {
         >
           {loading ? "Creating Account..." : "Create Account"}
         </Button>
+        {/* At the bottom of the form, show a generic message if the button is disabled and there are no visible errors */}
+        {!canSubmit && !Object.values(formatErrors).some(Boolean) && !Object.values(uniqueError).some(Boolean) && !anyPending && (
+          <div className="text-red-500 text-xs text-center mt-2">Please check all fields and try again.</div>
+        )}
       </form>
     </Form>
   );
