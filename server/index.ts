@@ -18,11 +18,16 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./db";
+import { checkUnique } from "./routes/public/checkUnique";
 
 // Initialize database connection
 initializeDatabase();
 
 const app = express();
+
+/* ----------   PUBLIC ENDPOINTS (no auth)   ---------- */
+app.get("/api/users/check-unique", checkUnique);
+app.get("/api/test-public", (_req, res) => res.json({ ok: true }));
 
 // Middleware setup for most routes (except Stripe webhook which needs raw body)
 // The stripe webhook route will be defined with its own body parser in routes.ts

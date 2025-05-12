@@ -33,6 +33,9 @@ import { ProfileStep } from "@/components/signup/ProfileStep";
 import { storeSignupEmail, storeSignupData } from "@/lib/signup-wizard";
 import { SignupWizardProvider } from "@/contexts/SignupWizardContext";
 import { SignupWizard } from "@/components/signup/SignupWizard";
+import validator from "validator";
+import { isValidPhoneNumber } from "libphonenumber-js";
+import { useRef } from "react";
 
 // Extended schema for registration with password confirmation
 const registerSchema = insertUserSchema.extend({
@@ -64,6 +67,9 @@ const loginSchema = z.object({
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 type LoginFormValues = z.infer<typeof loginSchema>;
+
+type FieldKey = "username" | "email" | "phone" | "password" | "passwordConfirm";
+type UniqueKey = "username" | "email" | "phone";
 
 function CheckCircleIcon() {
   return (
@@ -226,15 +232,114 @@ function RegisterForm() {
       agreeTerms: false,
     },
   });
+  // --- New validation state ---
+  const [formatErrors, setFormatErrors] = useState<Record<FieldKey, string>>({
+    username: "",
+    email: "",
+    phone: "",
+    password: "",
+    passwordConfirm: "",
+  });
+  const [unique, setUnique] = useState<Record<UniqueKey, null | boolean>>({
+    username: null,
+    email: null,
+    phone: null,
+  });
+  const [uniqueError, setUniqueError] = useState<Record<UniqueKey, string>>({
+    username: "",
+    email: "",
+    phone: "",
+  });
+  const [pending, setPending] = useState<Record<UniqueKey, boolean>>({
+    username: false,
+    email: false,
+    phone: false,
+  });
+  const lastChecked = useRef<Record<UniqueKey, string>>({ username: "", email: "", phone: "" });
+  // --- End new validation state ---
   const [loading, setLoading] = useState(false);
 
+  // Format validation helpers
+  const usernameRegex = /^[a-z0-9_]{4,30}$/;
+  const strongPwd = /^(?=.*\d)(?=.*[!@#$%^&*])[\S]{8,}$/;
+
+  // Format validation
+  function validateField(name: string, value: string, passwordValue?: string) {
+    switch (name) {
+      case "username":
+        if (!usernameRegex.test(value))
+          return "Username must be 4-30 chars, lower-case, and only a-z, 0-9, _.";
+        return "";
+      case "email":
+        if (!validator.isEmail(value))
+          return "Enter a valid email address.";
+        return "";
+      case "phone":
+        if (!isValidPhoneNumber(value))
+          return "Enter a valid phone number (E.164, e.g. +12125551212).";
+        return "";
+      case "password":
+        if (!strongPwd.test(value))
+          return "Password must be 8+ chars and include a number & special character.";
+        return "";
+      case "passwordConfirm":
+        if (value !== passwordValue)
+          return "Passwords do not match.";
+        return "";
+      default:
+        return "";
+    }
+  }
+
+  // Real-time format and uniqueness check
+  useEffect(() => {
+    const values = form.getValues();
+    // Validate format
+    const newFormatErrors = { ...formatErrors };
+    (Object.keys(newFormatErrors) as FieldKey[]).forEach((key) => {
+      newFormatErrors[key] = validateField(key, values[key], values.password);
+    });
+    setFormatErrors(newFormatErrors);
+    // Uniqueness check for username/email/phone
+    (["username", "email", "phone"] as UniqueKey[]).forEach((field) => {
+      const value = values[field];
+      if (
+        !newFormatErrors[field] &&
+        value &&
+        value !== lastChecked.current[field]
+      ) {
+        setPending((p) => ({ ...p, [field]: true }));
+        setUniqueError((e) => ({ ...e, [field]: "" }));
+        fetch(`/api/users/check-unique?field=${field}&value=${encodeURIComponent(value)}`)
+          .then((res) => res.json())
+          .then((data) => {
+            setUnique((u) => ({ ...u, [field]: data.unique }));
+            setUniqueError((e) => ({ ...e, [field]: data.unique ? "" : `${field.charAt(0).toUpperCase() + field.slice(1)} already exists.` }));
+            lastChecked.current[field] = value;
+          })
+          .catch(() => {
+            setUnique((u) => ({ ...u, [field]: false }));
+            setUniqueError((e) => ({ ...e, [field]: "Error checking uniqueness." }));
+          })
+          .finally(() => setPending((p) => ({ ...p, [field]: false })));
+      }
+    });
+    // eslint-disable-next-line
+  }, [form.watch("username"), form.watch("email"), form.watch("phone"), form.watch("password"), form.watch("passwordConfirm")]);
+
+  // Button enable logic
+  const values = form.getValues();
+  const allRequiredFilled = values.username && values.email && values.phone && values.password && values.passwordConfirm;
+  const allFormatsValid = Object.values(formatErrors).every((e) => !e);
+  const allUnique = Object.values(unique).every((v) => v !== false && v !== null);
+  const anyPending = Object.values(pending).some((v) => v);
+  const canSubmit = allRequiredFilled && allFormatsValid && allUnique && !anyPending;
+
   async function onSubmit(values: RegisterFormValues) {
-    console.log("RegisterForm onSubmit called", values);
     setLoading(true);
     try {
       storeSignupData(values);
       storeSignupEmail(values.email);
-      // Force navigation using window.location
       window.location.href = "/auth?tab=signup&step=1";
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -247,7 +352,6 @@ function RegisterForm() {
     <Form {...form}>
       <form 
         onSubmit={e => {
-          console.log("Form submit event");
           form.handleSubmit(onSubmit)(e);
         }} 
         className="space-y-4"
@@ -264,6 +368,9 @@ function RegisterForm() {
             <FormItem className="flex-1">
               <FormLabel>Username</FormLabel>
               <FormControl><Input placeholder="johndoe" {...field} /></FormControl>
+              {formatErrors.username && <div className="text-red-500 text-xs mt-1">{formatErrors.username}</div>}
+              {uniqueError.username && !formatErrors.username && <div className="text-red-500 text-xs mt-1">{uniqueError.username}</div>}
+              {pending.username && <div className="text-xs text-gray-500 mt-1">Checking…</div>}
               <FormMessage />
             </FormItem>
           )} />
@@ -272,6 +379,9 @@ function RegisterForm() {
           <FormItem>
             <FormLabel>Email</FormLabel>
             <FormControl><Input placeholder="john.doe@example.com" {...field} /></FormControl>
+            {formatErrors.email && <div className="text-red-500 text-xs mt-1">{formatErrors.email}</div>}
+            {uniqueError.email && !formatErrors.email && <div className="text-red-500 text-xs mt-1">{uniqueError.email}</div>}
+            {pending.email && <div className="text-xs text-gray-500 mt-1">Checking…</div>}
             <FormMessage />
           </FormItem>
         )} />
@@ -286,6 +396,9 @@ function RegisterForm() {
           <FormItem>
             <FormLabel>Phone Number (Optional)</FormLabel>
             <FormControl><Input placeholder="(555) 123-4567" {...field} /></FormControl>
+            {formatErrors.phone && <div className="text-red-500 text-xs mt-1">{formatErrors.phone}</div>}
+            {uniqueError.phone && !formatErrors.phone && <div className="text-red-500 text-xs mt-1">{uniqueError.phone}</div>}
+            {pending.phone && <div className="text-xs text-gray-500 mt-1">Checking…</div>}
             <FormMessage />
           </FormItem>
         )} />
@@ -312,6 +425,7 @@ function RegisterForm() {
             <FormItem className="flex-1">
               <FormLabel>Password</FormLabel>
               <FormControl><Input type="password" {...field} /></FormControl>
+              {formatErrors.password && <div className="text-red-500 text-xs mt-1">{formatErrors.password}</div>}
               <FormMessage />
             </FormItem>
           )} />
@@ -319,6 +433,7 @@ function RegisterForm() {
             <FormItem className="flex-1">
               <FormLabel>Confirm Password</FormLabel>
               <FormControl><Input type="password" {...field} /></FormControl>
+              {formatErrors.passwordConfirm && <div className="text-red-500 text-xs mt-1">{formatErrors.passwordConfirm}</div>}
               <FormMessage />
             </FormItem>
           )} />
@@ -337,8 +452,7 @@ function RegisterForm() {
         <Button 
           type="submit" 
           className="w-full" 
-          disabled={loading}
-          onClick={() => console.log("Create Account button clicked")}
+          disabled={!canSubmit || loading}
         >
           {loading ? "Creating Account..." : "Create Account"}
         </Button>

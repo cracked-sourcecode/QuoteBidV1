@@ -29,6 +29,33 @@ import signupStageRouter from './routes/signupStage';
 // Sample pitches import removed
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // --- PUBLIC ENDPOINTS (must be before any middleware) ---
+  app.get('/api/test-public', (req, res) => res.json({ ok: true }));
+
+  app.get('/api/users/check-unique', async (req, res) => {
+    try {
+      const { field, value } = req.query;
+      if (!field || !value || typeof field !== 'string' || typeof value !== 'string') {
+        return res.status(400).json({ error: 'Invalid field or value' });
+      }
+      type ValidField = 'username' | 'email' | 'phone';
+      if (!['username', 'email', 'phone'].includes(field)) {
+        return res.status(400).json({ error: 'Invalid field name' });
+      }
+      const validField = field as ValidField;
+      const column = validField === 'phone' ? 'phone_number' : validField;
+      const existingUser = await getDb()
+        .select()
+        .from(users)
+        .where(sql`LOWER(${users[column]}) = LOWER(${value})`)
+        .limit(1);
+      return res.json({ unique: existingUser.length === 0 });
+    } catch (error: unknown) {
+      console.error('Error checking uniqueness:', error);
+      return res.status(500).json({ error: 'Failed to check uniqueness' });
+    }
+  });
+
   // API Routes for pitch messages
   app.get('/api/pitch-messages/:pitchId', requireAdminAuth, async (req, res) => {
     try {
@@ -128,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up regular user authentication
   setupAuth(app);
-
+  
   // Setup signup wizard routes
   app.use('/api/signup-stage', signupStageRouter);
   
