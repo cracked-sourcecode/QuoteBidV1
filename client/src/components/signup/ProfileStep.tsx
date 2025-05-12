@@ -4,21 +4,39 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Upload } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { advanceSignupStage, getSignupEmail, updateSignupProfile } from '@/lib/signup-wizard';
+import { advanceSignupStage, getSignupEmail, updateSignupProfile, getSignupData, clearSignupData } from '@/lib/signup-wizard';
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
 import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/use-auth';
+import { INDUSTRY_OPTIONS } from "@/lib/constants";
 
 interface ProfileStepProps {
   onComplete: (jwt: string) => void;
 }
 
+const AvatarSVG = () => (
+  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="32" cy="32" r="32" fill="#E5E7EB" />
+    <circle cx="32" cy="26" r="12" fill="#A0AEC0" />
+    <ellipse cx="32" cy="48" rx="16" ry="8" fill="#A0AEC0" />
+  </svg>
+);
+
 export function ProfileStep({ onComplete }: ProfileStepProps) {
   const { toast } = useToast();
   const { refreshStage } = useSignupWizard();
+  const { registerMutation } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [fullName, setFullName] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [location, setLocation] = useState('');
+  const [title, setTitle] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [bio, setBio] = useState('');
+  const [linkedin, setLinkedin] = useState('');
+  const [website, setWebsite] = useState('');
+  const [twitter, setTwitter] = useState('');
+  const [instagram, setInstagram] = useState('');
+  const [doFollow, setDoFollow] = useState('None');
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const email = getSignupEmail();
@@ -27,8 +45,6 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setAvatar(file);
-      
-      // Create a preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarPreview(reader.result as string);
@@ -39,179 +55,174 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!email) {
-      toast({
-        title: 'Error',
-        description: 'Email not found. Please restart the signup process.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Email not found. Please restart the signup process.', variant: 'destructive' });
       return;
     }
-    
-    if (!fullName.trim()) {
-      toast({
-        title: 'Full Name Required',
-        description: 'Please enter your full name to complete your profile.',
-        variant: 'destructive',
-      });
+    if (!fullName.trim() || !location.trim() || !industry.trim() || !bio.trim()) {
+      toast({ title: 'Required Fields', description: 'Please fill out all required fields.', variant: 'destructive' });
       return;
     }
-    
     setIsLoading(true);
-    
     try {
-      // Update profile information
-      const profileData = {
+      // Gather all data from localStorage
+      const registrationData = getSignupData();
+      const agreementData = JSON.parse(localStorage.getItem('signup_agreement') || '{}');
+      const paymentData = JSON.parse(localStorage.getItem('signup_payment') || '{}');
+      if (!registrationData || !agreementData || !paymentData) {
+        throw new Error('Some signup data is missing. Please restart the signup process.');
+      }
+      // Compose the full registration payload
+      const payload = {
+        ...registrationData,
+        ...agreementData,
+        ...paymentData,
         fullName,
-        company_name: companyName,
-        phone_number: phoneNumber,
+        location,
+        title,
+        industry,
+        bio,
+        linkedin,
+        website,
+        twitter,
+        instagram,
+        doFollow,
       };
-      
-      await updateSignupProfile(email, profileData);
-      
-      // If avatar was uploaded, handle that separately
+      // Create the account
+      await registerMutation.mutateAsync(payload);
+      // Optionally upload avatar
       if (avatar) {
         const formData = new FormData();
         formData.append('avatar', avatar);
-        
-        // Using a temporary endpoint that doesn't require authentication
         await fetch(`/api/signup-stage/${encodeURIComponent(email)}/avatar`, {
           method: 'POST',
           body: formData,
         });
       }
-      
-      // Advance signup stage
-      await advanceSignupStage(email, 'profile');
-      
-      // Refresh the context state
-      await refreshStage();
-      
-      // Get JWT token
-      const response = await apiRequest('POST', `/api/signup-stage/${encodeURIComponent(email)}/complete`, {});
-      const data = await response.json();
-      
-      toast({
-        title: 'Profile Complete',
-        description: 'Your profile has been set up successfully!',
-      });
-      
-      // Call the onComplete callback with the JWT token
-      onComplete(data.token);
-      
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast({
-        title: 'Profile Update Error',
-        description: 'There was an error updating your profile. Please try again.',
-        variant: 'destructive',
-      });
+      clearSignupData();
+      toast({ title: 'Profile Complete', description: 'Your profile has been set up successfully!' });
+      onComplete('');
+    } catch (error: any) {
+      toast({ title: 'Profile Update Error', description: error.message || 'There was an error updating your profile. Please try again.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4">Complete Your Profile</h2>
-      
-      <div className="mb-6">
-        <p className="text-gray-600 mb-4">
-          Please provide the following information to complete your profile setup.
-        </p>
-        
-        <div className="space-y-4">
-          {/* Full Name */}
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name *</Label>
-            <Input
-              id="fullName"
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Enter your full name"
-              required
-            />
+    <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-lg max-w-4xl mx-auto mt-8">
+      <h2 className="text-2xl font-bold mb-2">Complete Your Expert Profile</h2>
+      <p className="text-gray-600 mb-6">Tell us about your expertise so journalists can find you for the perfect media opportunities</p>
+      <div className="flex flex-col md:flex-row gap-8">
+        {/* Left: Profile Photo & Why box */}
+        <div className="md:w-1/3 flex flex-col items-center">
+          <div className="mb-4 flex flex-col items-center justify-center w-full">
+            <div className="relative w-28 h-28 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center mx-auto">
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Profile preview" className="w-full h-full object-cover" />
+              ) : (
+                <AvatarSVG />
+              )}
+            </div>
+            <label htmlFor="avatar-upload" className="block mt-2 w-full">
+              <Button asChild type="button" variant="outline" className="w-full">
+                <span>Upload Photo</span>
+              </Button>
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+            </label>
+            <div className="text-xs text-gray-500 mt-1 text-center">Professional headshots get 7x more responses</div>
           </div>
-          
-          {/* Company Name */}
-          <div className="space-y-2">
-            <Label htmlFor="companyName">Company Name</Label>
-            <Input
-              id="companyName"
-              type="text"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Enter your company name"
-            />
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4 w-full">
+            <div className="font-semibold mb-2">Why complete your profile?</div>
+            <ul className="text-sm space-y-2">
+              <li className="flex items-center gap-2 text-green-700"><span>✔️</span> Get discovered by top-tier journalists</li>
+              <li className="flex items-center gap-2 text-green-700"><span>✔️</span> Build your media presence and authority</li>
+              <li className="flex items-center gap-2 text-green-700"><span>✔️</span> Automated matching with relevant opportunities</li>
+              <li className="flex items-center gap-2 text-green-700"><span>✔️</span> Journalists see your full profile before pitching</li>
+            </ul>
           </div>
-          
-          {/* Phone Number */}
-          <div className="space-y-2">
-            <Label htmlFor="phoneNumber">Phone Number</Label>
-            <Input
-              id="phoneNumber"
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="Enter your phone number"
-            />
-          </div>
-          
-          {/* Avatar Upload */}
-          <div className="space-y-2">
-            <Label htmlFor="avatar">Profile Picture (Optional)</Label>
-            <div className="flex items-center space-x-4">
-              <div 
-                className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border"
+        </div>
+        {/* Right: Profile Form */}
+        <div className="md:w-2/3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <Label htmlFor="fullName">Full Name *</Label>
+              <Input id="fullName" type="text" value={fullName} onChange={e => setFullName(e.target.value)} required placeholder="Your full name" />
+            </div>
+            <div>
+              <Label htmlFor="location">Location *</Label>
+              <Input id="location" type="text" value={location} onChange={e => setLocation(e.target.value)} required placeholder="City, State, Country" />
+            </div>
+            <div>
+              <Label htmlFor="title">Professional Title</Label>
+              <Input id="title" type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="CEO, Founder, Expert, etc." />
+              <div className="text-xs text-gray-500 mt-1">Your professional title (e.g., "CEO of QuoteBid", "Finance Expert", etc.)</div>
+            </div>
+            <div>
+              <Label htmlFor="industry">Primary Industry *</Label>
+              <select
+                id="industry"
+                value={industry}
+                onChange={e => setIndustry(e.target.value)}
+                required
+                className="w-full p-2 border rounded-md"
               >
-                {avatarPreview ? (
-                  <img 
-                    src={avatarPreview} 
-                    alt="Avatar preview" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Upload className="h-6 w-6 text-gray-400" />
-                )}
-              </div>
-              
-              <div className="flex-1">
-                <Input
-                  id="avatar"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="text-sm"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Upload a profile picture (JPG, PNG, max 5MB)
-                </p>
-              </div>
+                <option value="">Select your industry</option>
+                {INDUSTRY_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="bio">Professional Bio *</Label>
+              <textarea id="bio" value={bio} onChange={e => setBio(e.target.value)} required placeholder="Describe your expertise, experience, and what makes you a valuable source for journalists..." className="w-full p-2 border rounded-md min-h-[80px]" />
+              <div className="text-xs text-gray-500 mt-1">This bio will be visible to journalists looking for expert sources</div>
             </div>
           </div>
-        </div>
-        
-        <div className="text-sm text-gray-500 mt-6 mb-6">
-          * Required field
-        </div>
-        
-        <div className="flex justify-end">
-          <Button
-            type="submit"
-            className="bg-[#004684] hover:bg-[#003a70] text-white"
-            disabled={isLoading || !fullName.trim()}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              "Complete Setup"
-            )}
-          </Button>
+          <div className="mb-6">
+            <div className="font-semibold mb-2">Online Presence</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="linkedin">LinkedIn</Label>
+                <Input id="linkedin" type="url" value={linkedin} onChange={e => setLinkedin(e.target.value)} placeholder="https://linkedin.com/in/username" />
+              </div>
+              <div>
+                <Label htmlFor="website">Website</Label>
+                <Input id="website" type="url" value={website} onChange={e => setWebsite(e.target.value)} placeholder="https://yourwebsite.com" />
+              </div>
+              <div>
+                <Label htmlFor="twitter">X / Twitter</Label>
+                <Input id="twitter" type="url" value={twitter} onChange={e => setTwitter(e.target.value)} placeholder="https://x.com/username" />
+              </div>
+              <div>
+                <Label htmlFor="instagram">Instagram</Label>
+                <Input id="instagram" type="url" value={instagram} onChange={e => setInstagram(e.target.value)} placeholder="https://instagram.com/username" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <Label htmlFor="doFollow">Do-Follow Link (For article placements)</Label>
+              <select id="doFollow" value={doFollow} onChange={e => setDoFollow(e.target.value)} className="w-full p-2 border rounded-md">
+                <option value="None">None</option>
+                <option value="LinkedIn">LinkedIn</option>
+                <option value="Website">Website</option>
+                <option value="Twitter">Twitter</option>
+                <option value="Instagram">Instagram</option>
+              </select>
+              <div className="text-xs text-gray-500 mt-1">Select which link to include at the end of quotes in articles</div>
+            </div>
+          </div>
+          <div className="flex justify-end mt-8">
+            <Button type="submit" className="bg-[#004684] hover:bg-[#003a70] text-white" disabled={isLoading}>
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Complete & Start Using QuoteBid
+            </Button>
+          </div>
         </div>
       </div>
     </form>

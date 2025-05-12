@@ -113,7 +113,9 @@ function Router() {
             return <Home />;
           }}
         </Route>
-        <Route path="/auth" component={AuthPage} />
+        <Route path="/auth">
+          {({ location }: { location: string }) => <AuthPage key={location} />}
+        </Route>
         <Route path="/logout" component={LogoutHandler} />
         <Route path="/admin-logout" component={AdminLogoutHandler} />
         <Route path="/admin-login" component={AdminLogin} />

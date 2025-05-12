@@ -89,13 +89,11 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5050
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5050;
+  // Use environment variable for port, default to 5050
+  const port = process.env.WS_PORT ? Number(process.env.WS_PORT) : 5050;
   server.listen({
     port,
-    host: "127.0.0.1",
+    host: "0.0.0.0",
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);

@@ -13,7 +13,7 @@ interface AgreementStepProps {
 
 export function AgreementStep({ onComplete }: AgreementStepProps) {
   const { toast } = useToast();
-  const { refreshStage } = useSignupWizard();
+  const { refreshStage, setStage } = useSignupWizard();
   const [isLoading, setIsLoading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [hasAgreed, setHasAgreed] = useState(false);
@@ -22,6 +22,7 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
   const email = getSignupEmail();
 
   useEffect(() => {
+    setStage('agreement'); // Ensure progress bar is on step 1
     // Fetch the agreement text
     fetch('/api/onboarding/agreement.html')
       .then(response => response.text())
@@ -36,7 +37,7 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
           variant: 'destructive',
         });
       });
-  }, [toast]);
+  }, [toast, setStage]);
 
   const clearSignature = () => {
     if (sigRef.current) {
@@ -50,15 +51,6 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
 
   const handleSubmit = async () => {
     try {
-      if (!email) {
-        toast({
-          title: 'Error',
-          description: 'Email not found. Please restart the signup process.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
       if (!fullName.trim() || fullName.length < 3) {
         toast({
           title: 'Full Name Required',
@@ -67,7 +59,6 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
         });
         return;
       }
-
       if (!hasAgreed) {
         toast({
           title: 'Agreement Required',
@@ -76,7 +67,6 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
         });
         return;
       }
-
       if (isSignatureEmpty()) {
         toast({
           title: 'Signature Required',
@@ -85,32 +75,18 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
         });
         return;
       }
-
       setIsLoading(true);
-      
       // Store the name for later use
       storeSignupName(fullName);
-      
       // Get signature as data URL
       const signature = sigRef.current?.toDataURL();
-      
-      // Advance the signup stage with the full name and signature data
-      await advanceSignupStage(email, 'agreement', { 
-        fullName, 
-        signature 
-      });
-      
-      // Refresh the wizard stage in the context
-      await refreshStage();
-      
+      // Store agreement data in localStorage
+      localStorage.setItem('signup_agreement', JSON.stringify({ fullName, signature }));
       toast({
         title: 'Agreement Accepted',
         description: 'You have successfully signed the agreement.',
       });
-      
-      // Call the onComplete callback to move to the next step
       onComplete();
-      
     } catch (error) {
       console.error('Error submitting agreement:', error);
       toast({

@@ -30,6 +30,9 @@ import { INDUSTRY_OPTIONS } from "../lib/constants";
 import { AgreementStep } from "@/components/signup/AgreementStep";
 import { PaymentStep } from "@/components/signup/PaymentStep";
 import { ProfileStep } from "@/components/signup/ProfileStep";
+import { storeSignupEmail, storeSignupData } from "@/lib/signup-wizard";
+import { SignupWizardProvider } from "@/contexts/SignupWizardContext";
+import { SignupWizard } from "@/components/signup/SignupWizard";
 
 // Extended schema for registration with password confirmation
 const registerSchema = insertUserSchema.extend({
@@ -73,22 +76,56 @@ function CheckCircleIcon() {
 
 export default function AuthPage() {
   const [location, navigate] = useLocation();
-  const urlParams = new URLSearchParams(window.location.search);
-  const tab = urlParams.get("tab") || "signup";
+
+  // Add this state to force re-render on URL change
+  const [search, setSearch] = useState(window.location.search);
+
+  useEffect(() => {
+    const onPopState = () => setSearch(window.location.search);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  // Also update search when navigate is called
+  useEffect(() => {
+    setSearch(window.location.search);
+  }, [location]);
+
+  // Parse query params from the actual browser location (now from state)
+  const urlParams = new URLSearchParams(search);
+  const tab = (urlParams.get("tab") || "register").trim().toLowerCase();
   const step = urlParams.get("step");
+
+  // Giant debug log at the top
+  console.log("AUTH PAGE RENDER", { location, windowLocation: window.location.href });
+
+  // Giant debug log before the wizard block
+  console.log("CHECKING WIZARD BLOCK", { 
+    tab, 
+    step, 
+    typeOfTab: typeof tab, 
+    typeOfStep: typeof step, 
+    tabEqualsSignup: tab === "signup", 
+    stepTruthy: !!step,
+    location,
+    urlParams: window.location.search
+  });
 
   // Helper to update the step in the URL
   const goToStep = (stepNum: number) => {
-    urlParams.set("tab", "signup");
-    urlParams.set("step", String(stepNum));
-    navigate(`/auth?${urlParams.toString()}`);
+    window.location.href = `/auth?tab=signup&step=${stepNum}`;
   };
 
-  // If step param is present, show the wizard
   if (tab === "signup" && step) {
-    if (step === "1") return <AgreementStep onComplete={() => goToStep(2)} />;
-    if (step === "2") return <PaymentStep onComplete={() => goToStep(3)} />;
-    if (step === "3") return <ProfileStep onComplete={() => navigate("/dashboard")} />;
+    return (
+      <SignupWizardProvider>
+        <SignupWizard>
+          {step === "1" && <AgreementStep onComplete={() => goToStep(2)} />}
+          {step === "2" && <PaymentStep onComplete={() => goToStep(3)} />}
+          {step === "3" && <ProfileStep onComplete={() => navigate("/dashboard")} />}
+        </SignupWizard>
+      </SignupWizardProvider>
+    );
   }
 
   // Otherwise, show the classic tabbed UI
@@ -174,6 +211,7 @@ export default function AuthPage() {
 function RegisterForm() {
   const { toast } = useToast();
   const { registerMutation } = useAuth();
+  const [, navigate] = useLocation();
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -191,12 +229,15 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(values: RegisterFormValues) {
+    console.log("RegisterForm onSubmit called", values);
     setLoading(true);
     try {
-      await registerMutation.mutateAsync(values);
-      toast({ title: "Registration successful!", description: "You can now log in." });
+      storeSignupData(values);
+      storeSignupEmail(values.email);
+      // Force navigation using window.location
+      window.location.href = "/auth?tab=signup&step=1";
     } catch (err: any) {
-      toast({ title: "Registration failed", description: err.message, variant: "destructive" });
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -204,7 +245,13 @@ function RegisterForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form 
+        onSubmit={e => {
+          console.log("Form submit event");
+          form.handleSubmit(onSubmit)(e);
+        }} 
+        className="space-y-4"
+      >
         <div className="flex space-x-2">
           <FormField control={form.control} name="fullName" render={({ field }) => (
             <FormItem className="flex-1">
@@ -287,7 +334,12 @@ function RegisterForm() {
             <FormMessage />
           </FormItem>
         )} />
-        <Button type="submit" className="w-full" disabled={loading}>
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={loading}
+          onClick={() => console.log("Create Account button clicked")}
+        >
           {loading ? "Creating Account..." : "Create Account"}
         </Button>
       </form>

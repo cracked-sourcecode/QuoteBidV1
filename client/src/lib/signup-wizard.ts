@@ -100,11 +100,28 @@ export function getSignupName(): string | null {
 }
 
 /**
+ * Helper function to store registration data in localStorage during signup flow
+ * This is used to store the initial registration data before account creation
+ */
+export function storeSignupData(data: any): void {
+  localStorage.setItem('signup_data', JSON.stringify(data));
+}
+
+/**
+ * Get registration data from localStorage during signup flow
+ */
+export function getSignupData(): any | null {
+  const data = localStorage.getItem('signup_data');
+  return data ? JSON.parse(data) : null;
+}
+
+/**
  * Clear signup data from localStorage after signup is complete or abandoned
  */
 export function clearSignupData(): void {
   localStorage.removeItem('signup_email');
   localStorage.removeItem('signup_name');
+  localStorage.removeItem('signup_data');
 }
 
 /**

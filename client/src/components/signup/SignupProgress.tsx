@@ -1,79 +1,63 @@
 import React from 'react';
 import { Check } from 'lucide-react';
-import { SignupStage } from '@/lib/signup-wizard';
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
 
 export function SignupProgress() {
   const { currentStage } = useSignupWizard();
-  // Define the stages and their order - remove 'ready' stage per punch list item #6
   const stages = [
     { id: 'agreement', label: 'Agreement' },
     { id: 'payment', label: 'Payment' },
     { id: 'profile', label: 'Profile' },
   ];
-
-  // Find the index of the current stage
   const currentIndex = stages.findIndex(stage => stage.id === currentStage);
+  const percent = ((currentIndex) / (stages.length - 1)) * 100;
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between">
+    <div className="mb-10 w-full max-w-2xl mx-auto">
+      {/* Modern filled progress bar */}
+      <div className="relative h-4 flex items-center">
+        {/* Background bar */}
+        <div className="absolute left-0 right-0 h-4 bg-gray-200 rounded-full" />
+        {/* Filled bar */}
+        <div
+          className="absolute left-0 h-4 bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-500"
+          style={{ width: `${percent}%`, maxWidth: '100%' }}
+        />
+        {/* Step icons */}
         {stages.map((stage, index) => {
-          // Determine if this stage is active, completed, or upcoming
           const isActive = index === currentIndex;
           const isCompleted = index < currentIndex;
-          const isUpcoming = index > currentIndex;
-
           return (
-            <div 
-              key={stage.id} 
-              className="flex flex-col items-center relative"
-              style={{ width: index === 0 || index === stages.length - 1 ? 'auto' : '100%' }}
+            <div
+              key={stage.id}
+              className="absolute"
+              style={{ left: `calc(${(index) / (stages.length - 1) * 100}% - 20px)` }}
             >
-              {/* Stage indicator circle - reduced size per punch list item #3 */}
-              <div 
-                className={`w-6 h-6 rounded-full flex items-center justify-center z-10 border-2 text-sm ${
-                  isActive
-                    ? 'bg-white text-[#004684] border-[#004684] font-bold'
-                    : isCompleted
-                      ? 'bg-green-500 text-white border-green-500'
-                      : 'bg-white text-gray-500 border-neutral-300'
-                }`}
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center border-4 text-lg font-bold shadow transition-all duration-300
+                  ${isCompleted ? 'bg-green-500 border-green-500 text-white' :
+                    isActive ? 'bg-white border-green-500 text-green-600' :
+                    'bg-white border-gray-300 text-gray-400'}`}
               >
-                {isCompleted ? (
-                  <Check className="h-3 w-3" />
-                ) : (
-                  <span>{index + 1}</span>
-                )}
+                {isCompleted ? <Check className="h-6 w-6" /> : index + 1}
               </div>
-              
-              {/* Stage label */}
-              <span 
-                className={`mt-2 text-sm ${
-                  isActive
-                    ? 'text-[#004684] font-bold'
-                    : isCompleted
-                      ? 'text-green-500 font-medium'
-                      : 'text-gray-500'
-                }`}
-              >
-                {stage.label}
-              </span>
-              
-              {/* Connector line with increased contrast per punch list item #3 */}
-              {index < stages.length - 1 && (
-                <div 
-                  className="absolute top-3 w-full h-0.5 left-1/2"
-                  style={{
-                    background: isCompleted
-                      ? 'linear-gradient(to right, #22c55e, #22c55e)'
-                      : isActive
-                        ? 'linear-gradient(to right, #004684, #e5e7eb)'
-                        : '#d1d5db' // neutral-300 for better contrast
-                  }}
-                />
-              )}
             </div>
+          );
+        })}
+      </div>
+      {/* Step labels */}
+      <div className="flex justify-between mt-2 px-1">
+        {stages.map((stage, index) => {
+          const isActive = index === currentIndex;
+          const isCompleted = index < currentIndex;
+          return (
+            <span
+              key={stage.id}
+              className={`text-base text-center w-24 ${isActive ? 'text-green-700 font-semibold' : isCompleted ? 'text-green-500' : 'text-gray-500'}`}
+              style={{ minWidth: 60 }}
+            >
+              {stage.label}
+            </span>
           );
         })}
       </div>
