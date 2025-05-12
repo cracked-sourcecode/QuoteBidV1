@@ -36,6 +36,8 @@ import { SignupWizard } from "@/components/signup/SignupWizard";
 import validator from "validator";
 import { isValidPhoneNumber } from "libphonenumber-js";
 import { useRef } from "react";
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
 
 // Extended schema for registration with password confirmation
 const registerSchema = insertUserSchema.extend({
@@ -394,8 +396,39 @@ function RegisterForm() {
         )} />
         <FormField control={form.control} name="phone" render={({ field }) => (
           <FormItem>
-            <FormLabel>Phone Number (Optional)</FormLabel>
-            <FormControl><Input placeholder="(555) 123-4567" {...field} /></FormControl>
+            <FormLabel>Phone Number</FormLabel>
+            <FormControl>
+              <PhoneInput
+                country={'us'}
+                value={field.value}
+                onChange={value => form.setValue('phone', value)}
+                inputProps={{
+                  name: 'phone',
+                  required: true,
+                  autoFocus: false,
+                  autoComplete: 'tel',
+                  placeholder: '+1 212 555 1212',
+                }}
+                inputStyle={{
+                  width: '100%',
+                  fontSize: '16px',
+                  color: '#222',
+                  background: '#fff',
+                  borderColor: '#e5e7eb',
+                  borderRadius: '8px',
+                  paddingLeft: '48px',
+                }}
+                buttonStyle={{
+                  border: 'none',
+                  background: 'none',
+                }}
+                containerStyle={{
+                  width: '100%',
+                }}
+                specialLabel={''}
+                enableSearch
+              />
+            </FormControl>
             {formatErrors.phone && <div className="text-red-500 text-xs mt-1">{formatErrors.phone}</div>}
             {uniqueError.phone && !formatErrors.phone && <div className="text-red-500 text-xs mt-1">{uniqueError.phone}</div>}
             {pending.phone && <div className="text-xs text-gray-500 mt-1">Checking…</div>}
