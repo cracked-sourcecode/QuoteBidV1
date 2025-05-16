@@ -26,9 +26,66 @@ import { saveAgreementPDF, regenerateAgreementsPDF, createAgreementPDF, generate
 import { serveAgreementPDF, handleAgreementUpload } from './handlers/agreement-handlers';
 import { handleGeneratePDF, handleSignupAgreementUpload, serveAgreementHTML } from './handlers/signup-wizard-handlers';
 import signupStageRouter from './routes/signupStage';
+import { hashPassword } from './utils/passwordUtils';
+import jwt from 'jsonwebtoken';
 // Sample pitches import removed
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // --- PUBLIC REGISTRATION ENDPOINT (must be before any middleware) ---
+  app.post('/api/auth/register', async (req: Request, res: Response) => {
+    const { email, password, username, fullName, companyName, phone, industry } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+    if (!password) return res.status(400).json({ message: 'Password is required' });
+    if (!username) return res.status(400).json({ message: 'Username is required' });
+    if (!fullName) return res.status(400).json({ message: 'Full name is required' });
+    if (!companyName) return res.status(400).json({ message: 'Company name is required' });
+    if (!phone) return res.status(400).json({ message: 'Phone number is required' });
+    if (!industry) return res.status(400).json({ message: 'Industry is required' });
+    try {
+      let [user] = await getDb().select().from(users).where(eq(users.email, email));
+      if (user) {
+        return res.status(400).json({ message: 'User with this email already exists' });
+      }
+      const hashedPassword = await hashPassword(password);
+      await getDb().insert(users).values({
+        username,
+        fullName,
+        email,
+        password: hashedPassword,
+        company_name: companyName,
+        phone_number: phone,
+        industry,
+        signup_stage: 'agreement',
+        profileCompleted: false,
+        premiumStatus: 'free',
+        subscription_status: 'inactive'
+      });
+      [user] = await getDb().select().from(users).where(eq(users.email, email));
+      const token = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          signup_stage: user.signup_stage,
+          wizard: true
+        },
+        process.env.JWT_SECRET || 'quotebid_secret',
+        { expiresIn: '7d' }
+      );
+      res.cookie('token', token, { httpOnly: true, sameSite: 'lax' });
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          signup_stage: user.signup_stage
+        }
+      });
+    } catch (error: any) {
+      console.error('Error registering user:', error);
+      res.status(500).json({ message: 'Failed to register user' });
+    }
+  });
+
   // --- PUBLIC ENDPOINTS (must be before any middleware) ---
   app.get('/api/test-public', (req, res) => res.json({ ok: true }));
 

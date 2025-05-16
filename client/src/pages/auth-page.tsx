@@ -120,7 +120,7 @@ export default function AuthPage() {
     location,
     urlParams: window.location.search
   });
-
+    
   // Helper to update the step in the URL
   const goToStep = (stepNum: number) => {
     window.location.href = `/auth?tab=signup&step=${stepNum}`;
@@ -239,10 +239,10 @@ function RegisterForm() {
   });
   // --- New validation state ---
   const [formatErrors, setFormatErrors] = useState<Record<FieldKey, string>>({
-    username: "",
+      username: "",
     email: "",
     phone: "",
-    password: "",
+      password: "",
     passwordConfirm: "",
   });
   const [unique, setUnique] = useState<Record<UniqueKey, null | boolean>>({
@@ -294,8 +294,8 @@ function RegisterForm() {
       default:
         return "";
     }
-  }
-
+      }
+      
   // Real-time format and uniqueness check
   useEffect(() => {
     const values = form.getValues();
@@ -343,6 +343,23 @@ function RegisterForm() {
   async function onSubmit(values: RegisterFormValues) {
     setLoading(true);
     try {
+      // Create user immediately
+      const response = await apiRequest("POST", "/api/auth/register", {
+        email: values.email,
+        password: values.password,
+        username: values.username,
+        fullName: values.fullName,
+        companyName: values.companyName,
+        phone: values.phone,
+        industry: values.industry
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Registration failed");
+      }
+
+      // Store data for the wizard
       storeSignupData(values);
       storeSignupEmail(values.email);
       window.location.href = "/auth?tab=signup&step=1";
@@ -364,21 +381,21 @@ function RegisterForm() {
         <div className="flex space-x-2">
           <FormField control={form.control} name="fullName" render={({ field }) => (
             <FormItem className="flex-1">
-              <FormLabel>Full Name</FormLabel>
+                            <FormLabel>Full Name</FormLabel>
               <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
+                            <FormMessage />
+                          </FormItem>
           )} />
           <FormField control={form.control} name="username" render={({ field }) => (
             <FormItem className="flex-1">
-              <FormLabel>Username</FormLabel>
-              <FormControl>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
                 <Input
                   placeholder="johndoe"
                   {...field}
                   onChange={e => field.onChange(e.target.value.toLowerCase())}
                 />
-              </FormControl>
+                            </FormControl>
               {/* Show format error if present, else uniqueness error */}
               {formatErrors.username ? (
                 <div className="text-red-500 text-xs mt-1">{formatErrors.username}</div>
@@ -386,13 +403,13 @@ function RegisterForm() {
                 <div className="text-red-500 text-xs mt-1">{uniqueError.username}</div>
               ) : null}
               {pending.username && <div className="text-xs text-gray-500 mt-1">Checking…</div>}
-              <FormMessage />
-            </FormItem>
+                            <FormMessage />
+                          </FormItem>
           )} />
-        </div>
+                    </div>
         <FormField control={form.control} name="email" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Email</FormLabel>
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
             <FormControl><Input placeholder="john.doe@example.com" {...field} /></FormControl>
             {/* Show format error if present, else uniqueness error */}
             {formatErrors.email ? (
@@ -401,20 +418,20 @@ function RegisterForm() {
               <div className="text-red-500 text-xs mt-1">{uniqueError.email}</div>
             ) : null}
             {pending.email && <div className="text-xs text-gray-500 mt-1">Checking…</div>}
-            <FormMessage />
-          </FormItem>
+                          <FormMessage />
+                        </FormItem>
         )} />
         <FormField control={form.control} name="companyName" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Company Name</FormLabel>
+                        <FormItem>
+                          <FormLabel>Company Name</FormLabel>
             <FormControl><Input placeholder="Acme Inc." {...field} /></FormControl>
-            <FormMessage />
-          </FormItem>
+                          <FormMessage />
+                        </FormItem>
         )} />
         <FormField control={form.control} name="phone" render={({ field }) => (
-          <FormItem>
+                        <FormItem>
             <FormLabel>Phone Number</FormLabel>
-            <FormControl>
+                          <FormControl>
               <PhoneInput
                 country={'us'}
                 value={field.value}
@@ -435,7 +452,7 @@ function RegisterForm() {
                 buttonClass="border-r-0"
                 dropdownClass="z-50"
               />
-            </FormControl>
+                          </FormControl>
             <div className="text-gray-500 text-xs mt-1">Select a country code and enter a phone number.</div>
             {/* Show format error if present, else uniqueness error */}
             {formatErrors.phone ? (
@@ -444,71 +461,71 @@ function RegisterForm() {
               <div className="text-red-500 text-xs mt-1">{uniqueError.phone}</div>
             ) : null}
             {pending.phone && <div className="text-xs text-gray-500 mt-1">Checking…</div>}
-            <FormMessage />
-          </FormItem>
+                          <FormMessage />
+                        </FormItem>
         )} />
         <FormField control={form.control} name="industry" render={({ field }) => (
-          <FormItem>
+                        <FormItem>
             <FormLabel>Industry<span className="text-red-500">*</span></FormLabel>
             <Select onValueChange={field.onChange} value={field.value}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your industry" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select your industry" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
                 {INDUSTRY_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
         )} />
         <div className="flex space-x-2">
           <FormField control={form.control} name="password" render={({ field }) => (
             <FormItem className="flex-1">
-              <FormLabel>Password</FormLabel>
+                            <FormLabel>Password</FormLabel>
               <FormControl><Input type="password" {...field} /></FormControl>
               {/* Show format error if present */}
               {formatErrors.password && <div className="text-red-500 text-xs mt-1">{formatErrors.password}</div>}
-              <FormMessage />
-            </FormItem>
+                            <FormMessage />
+                          </FormItem>
           )} />
           <FormField control={form.control} name="passwordConfirm" render={({ field }) => (
             <FormItem className="flex-1">
-              <FormLabel>Confirm Password</FormLabel>
+                            <FormLabel>Confirm Password</FormLabel>
               <FormControl><Input type="password" {...field} /></FormControl>
               {/* Show format error if present */}
               {formatErrors.passwordConfirm && <div className="text-red-500 text-xs mt-1">{formatErrors.passwordConfirm}</div>}
-              <FormMessage />
-            </FormItem>
+                            <FormMessage />
+                          </FormItem>
           )} />
-        </div>
+                    </div>
         <FormField control={form.control} name="agreeTerms" render={({ field }) => (
           <FormItem>
             <div className="flex items-center space-x-2">
-              <FormControl>
+                          <FormControl>
                 <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-              </FormControl>
+                          </FormControl>
               <FormLabel>I agree to the <a href="#" className="underline">terms and conditions</a></FormLabel>
             </div>
-            <FormMessage />
-          </FormItem>
+                            <FormMessage />
+                        </FormItem>
         )} />
-        <Button 
-          type="submit" 
+                    <Button 
+                      type="submit" 
           className="w-full" 
           disabled={!canSubmit || loading}
-        >
+                    >
           {loading ? "Creating Account..." : "Create Account"}
-        </Button>
+                    </Button>
         {/* At the bottom of the form, show a generic message if the button is disabled and there are no visible errors */}
         {!canSubmit && !Object.values(formatErrors).some(Boolean) && !Object.values(uniqueError).some(Boolean) && !anyPending && (
           <div className="text-red-500 text-xs text-center mt-2">Please check all fields and try again.</div>
         )}
-      </form>
-    </Form>
+                  </form>
+                </Form>
   );
 }
 
@@ -540,26 +557,26 @@ function LoginForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField control={form.control} name="username" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Username</FormLabel>
+                        <FormItem>
+                          <FormLabel>Username</FormLabel>
             <FormControl><Input placeholder="johndoe" {...field} /></FormControl>
-            <FormMessage />
-          </FormItem>
+                          <FormMessage />
+                        </FormItem>
         )} />
         <FormField control={form.control} name="password" render={({ field }) => (
-          <FormItem>
+                        <FormItem>
             <div className="flex justify-between items-center mb-1">
-              <FormLabel>Password</FormLabel>
+                            <FormLabel>Password</FormLabel>
               <a href="#" className="text-sm text-blue-700 hover:underline">Forgot password?</a>
-            </div>
+                          </div>
             <FormControl><Input type="password" {...field} /></FormControl>
-            <FormMessage />
-          </FormItem>
+                          <FormMessage />
+                        </FormItem>
         )} />
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Logging in..." : "Log In"}
-        </Button>
-      </form>
-    </Form>
+                    </Button>
+                  </form>
+                </Form>
   );
 }

@@ -20,11 +20,18 @@ import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./db";
 import { checkUnique } from "./routes/public/checkUnique";
 import path from 'path';
+import cors from 'cors';
 
 // Initialize database connection
 initializeDatabase();
 
 const app = express();
+
+// Add CORS middleware before any routes
+app.use(cors({
+  origin: 'http://localhost:5050',
+  credentials: true,
+}));
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));

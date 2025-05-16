@@ -1,12 +1,11 @@
 import React from 'react';
-import { Check } from 'lucide-react';
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
 
 export function SignupProgress() {
   const { currentStage } = useSignupWizard();
   const stages = [
     { id: 'agreement', label: 'Agreement' },
-    { id: 'payment', label: 'Payment' },
+    { id: 'payment', label: 'Subscribe' },
     { id: 'profile', label: 'Profile' },
   ];
   const currentIndex = stages.findIndex(stage => stage.id === currentStage);
@@ -14,7 +13,6 @@ export function SignupProgress() {
 
   return (
     <div className="mb-10 w-full max-w-2xl mx-auto">
-      {/* Modern filled progress bar */}
       <div className="relative h-4 flex items-center">
         {/* Background bar */}
         <div className="absolute left-0 right-0 h-4 bg-gray-200 rounded-full" />
@@ -24,42 +22,41 @@ export function SignupProgress() {
           style={{ width: `${percent}%`, maxWidth: '100%' }}
         />
         {/* Step icons */}
-        {stages.map((stage, index) => {
-          const isActive = index === currentIndex;
-          const isCompleted = index < currentIndex;
-          return (
-            <div
-              key={stage.id}
-              className="absolute"
-              style={{ left: `calc(${(index) / (stages.length - 1) * 100}% - 20px)` }}
-            >
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center border-4 text-lg font-bold shadow transition-all duration-300
-                  ${isCompleted ? 'bg-green-500 border-green-500 text-white' :
-                    isActive ? 'bg-white border-green-500 text-green-600' :
-                    'bg-white border-gray-300 text-gray-400'}`}
+        <ol className="flex items-center w-full relative z-10">
+          {stages.map((stage, index) => {
+            const isActive = index === currentIndex;
+            const isCompleted = index < currentIndex;
+            return (
+              <li
+                key={stage.id}
+                className={`flex-1 flex flex-col items-center relative ${index < stages.length - 1 ? 'mr-2' : ''}`}
               >
-                {isCompleted ? <Check className="h-6 w-6" /> : index + 1}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {/* Step labels */}
-      <div className="flex justify-between mt-2 px-1">
-        {stages.map((stage, index) => {
-          const isActive = index === currentIndex;
-          const isCompleted = index < currentIndex;
-          return (
-            <span
-              key={stage.id}
-              className={`text-base text-center w-24 ${isActive ? 'text-green-700 font-semibold' : isCompleted ? 'text-green-500' : 'text-gray-500'}`}
-              style={{ minWidth: 60 }}
-            >
-              {stage.label}
-            </span>
-          );
-        })}
+                <div
+                  className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
+                    isActive
+                      ? 'border-green-600 bg-white text-green-600'
+                      : isCompleted
+                      ? 'border-green-400 bg-green-400 text-white'
+                      : 'border-gray-300 bg-white text-gray-400'
+                  } font-bold text-lg transition-colors duration-200`}
+                >
+                  {index + 1}
+                </div>
+                <span
+                  className={`mt-2 text-xs font-semibold ${
+                    isActive
+                      ? 'text-green-700'
+                      : isCompleted
+                      ? 'text-green-500'
+                      : 'text-gray-400'
+                  }`}
+                >
+                  {stage.label}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
       </div>
     </div>
   );

@@ -124,8 +124,8 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
         </Button>
       </div>
     );
-  }
-
+    }
+  
   return (
     <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-lg max-w-4xl mx-auto mt-8">
       <h2 className="text-2xl font-bold mb-2">Complete Your Expert Profile</h2>
@@ -180,7 +180,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
               <Label htmlFor="title">Professional Title</Label>
               <Input id="title" type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="CEO, Founder, Expert, etc." />
               <div className="text-xs text-gray-500 mt-1">Your professional title (e.g., "CEO of QuoteBid", "Finance Expert", etc.)</div>
-            </div>
+          </div>
             <div>
               <Label htmlFor="industry">Primary Industry *</Label>
               <select

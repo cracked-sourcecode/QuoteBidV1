@@ -26,7 +26,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
-  const { refreshStage } = useSignupWizard();
+  const { refreshStage, setStage } = useSignupWizard();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const email = getSignupEmail();
@@ -53,8 +53,20 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
       if (!paymentMethod) throw new Error('Failed to create payment method');
       // Store payment method ID in localStorage
       localStorage.setItem('signup_payment', JSON.stringify({ paymentMethodId: paymentMethod.id }));
-      toast({ title: 'Payment Information Saved', description: 'Your payment method is saved for registration.' });
-      onComplete();
+
+      // First complete the current stage (payment)
+      const completeCurrentStage = await advanceSignupStage(email, 'payment', { paymentMethodId: paymentMethod.id });
+      console.log('Complete current stage response:', completeCurrentStage);
+      
+      if (completeCurrentStage.stage === 'profile') {
+        setStage('profile');
+        toast({ title: 'Payment Information Saved', description: 'Your payment method is saved for registration.' });
+        onComplete();
+      } else {
+        const backendMsg = completeCurrentStage.message || 'Failed to advance to profile step.';
+        setErrorMessage(backendMsg);
+        throw new Error(backendMsg);
+      }
     } catch (error: any) {
       setErrorMessage(error.message || 'There was an error processing your payment. Please try again.');
       toast({ title: 'Payment Error', description: error.message || 'There was an error processing your payment. Please try again.', variant: 'destructive' });
@@ -80,7 +92,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
               <CardNumberElement options={{
                 style: { base: { fontSize: '16px', color: '#424770', '::placeholder': { color: '#aab7c4' } }, invalid: { color: '#9e2146' } },
               }} className="stripe-input px-3 py-2 border rounded-md w-full" />
-            </div>
+                </div>
             <div className="flex gap-4 mb-4">
               <div className="flex-1">
                 <label className="block text-xs mb-1">Expiration</label>
@@ -93,8 +105,8 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                 <CardCvcElement options={{
                   style: { base: { fontSize: '16px', color: '#424770', '::placeholder': { color: '#aab7c4' } }, invalid: { color: '#9e2146' } },
                 }} className="stripe-input px-3 py-2 border rounded-md w-full" />
-              </div>
-            </div>
+          </div>
+        </div>
             <div className="text-xs text-green-600 mt-1">Your card information is encrypted</div>
           </div>
           {/* Error message */}

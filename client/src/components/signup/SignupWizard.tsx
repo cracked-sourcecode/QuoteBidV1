@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SignupProgress } from './SignupProgress';
 import { Logo } from '../common/Logo';
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
@@ -9,7 +9,7 @@ interface SignupWizardProps {
 
 const STAGE_LABELS = [
   { id: 'agreement', label: 'Agreement' },
-  { id: 'payment', label: 'Payment' },
+  { id: 'payment', label: 'Subscribe' },
   { id: 'profile', label: 'Profile' },
 ];
 
@@ -19,6 +19,18 @@ export function SignupWizard({ children }: SignupWizardProps) {
   const stepText = currentIndex >= 0
     ? `Step ${currentIndex + 1} of 3: ${STAGE_LABELS[currentIndex].label}`
     : '';
+
+  // Prevent browser back navigation during signup
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href);
+    const handlePopState = (event: PopStateEvent) => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">

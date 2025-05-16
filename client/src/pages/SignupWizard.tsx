@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { SignupWizard as SignupWizardComponent } from '@/components/signup/SignupWizard';
 import { Button } from '@/components/ui/button';
@@ -8,17 +8,42 @@ import { SignupWizardProvider, useSignupWizard } from '@/contexts/SignupWizardCo
 import { AgreementStep } from '@/components/signup/AgreementStep';
 import { PaymentStep } from '@/components/signup/PaymentStep';
 import { ProfileStep } from '@/components/signup/ProfileStep';
+import { post } from '@/lib/api';
 
 function SignupWizardContent() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { currentStage } = useSignupWizard();
-  const [email, setEmail] = React.useState('');
+  const { currentStage, setStage, email } = useSignupWizard();
+  const [inputEmail, setInputEmail] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
-  const [isStarted, setIsStarted] = React.useState(currentStage !== 'agreement');
 
-  const handleStartSignup = () => {
-    if (!email || !email.includes('@')) {
+  // Map stage to step number
+  const stageOrder = ['agreement', 'payment', 'profile'];
+  const currentStep = stageOrder.indexOf(currentStage) + 1;
+
+  // Update highest step reached in localStorage
+  useEffect(() => {
+    const prev = Number(localStorage.getItem('signup_highest_step') || '1');
+    if (currentStep > prev) {
+      localStorage.setItem('signup_highest_step', String(currentStep));
+    }
+  }, [currentStep]);
+
+  // Prevent navigating back to previous steps via URL or reload
+  useEffect(() => {
+    const highestStep = Number(localStorage.getItem('signup_highest_step') || '1');
+    const url = new URL(window.location.href);
+    const stepParam = url.searchParams.get('step');
+    if (stepParam && Number(stepParam) < highestStep) {
+      url.searchParams.set('step', String(highestStep));
+      window.history.replaceState(null, '', url.toString());
+      // Optionally, update the context stage as well
+      setStage(stageOrder[highestStep - 1]);
+    }
+  }, [currentStage, setStage]);
+
+  const handleStartSignup = async () => {
+    if (!inputEmail || !inputEmail.includes('@')) {
       toast({
         title: 'Invalid Email',
         description: 'Please enter a valid email address to begin.',
@@ -27,89 +52,96 @@ function SignupWizardContent() {
       return;
     }
     setIsLoading(true);
-    setIsStarted(true);
+    try {
+      await post('/api/auth/register', { email: inputEmail });
+      setStage('agreement');
+    } catch (err: any) {
+      toast({ title: 'Signup Error', description: err.message, variant: 'destructive' });
+    }
     setIsLoading(false);
   };
 
-  const handleAgreementComplete = () => setIsStarted(true);
-  const handlePaymentComplete = () => setIsStarted(true);
+  const handleAgreementComplete = () => setStage('payment');
+  const handlePaymentComplete = () => setStage('profile');
   const handleProfileComplete = (jwt: string) => {
+    setStage('ready');
     localStorage.setItem('token', jwt);
     setTimeout(() => {
       setLocation('/opportunities');
     }, 1500);
   };
 
-  if (!isStarted) {
-    return (
-      <div className="bg-white shadow-md rounded-lg p-8 mb-8">
-        <h1 className="text-2xl font-bold mb-6 text-center">Welcome to QuoteBid</h1>
-        <p className="mb-6 text-center">
-          Enter your email address to start the streamlined signup process.
-        </p>
-        <div className="mb-6">
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email Address
-          </label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 border rounded-md"
-            placeholder="Enter your email address"
-            required
-          />
+  // Show email entry form only if no email and at agreement step
+  if (currentStage === 'agreement' && !email) {
+      return (
+        <div className="bg-white shadow-md rounded-lg p-8 mb-8">
+          <h1 className="text-2xl font-bold mb-6 text-center">Welcome to QuoteBid</h1>
+          <p className="mb-6 text-center">
+            Enter your email address to start the streamlined signup process.
+          </p>
+          <div className="mb-6">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email Address
+            </label>
+            <input
+              type="email"
+              id="email"
+            value={inputEmail}
+            onChange={(e) => setInputEmail(e.target.value)}
+              className="w-full p-2 border rounded-md"
+              placeholder="Enter your email address"
+              required
+            />
+          </div>
+          <div className="flex justify-center">
+            <Button 
+              onClick={handleStartSignup}
+              className="bg-[#004684] hover:bg-[#003a70] px-8"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Start Signup Process"
+              )}
+            </Button>
+          </div>
         </div>
-        <div className="flex justify-center">
-          <Button 
-            onClick={handleStartSignup}
-            className="bg-[#004684] hover:bg-[#003a70] px-8"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              "Start Signup Process"
-            )}
-          </Button>
-        </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  switch (currentStage) {
-    case 'agreement':
-      return <AgreementStep onComplete={handleAgreementComplete} />;
-    case 'payment':
-      return <PaymentStep onComplete={handlePaymentComplete} />;
-    case 'profile':
-      return <ProfileStep onComplete={handleProfileComplete} />;
-    case 'ready':
-      return (
-        <div className="bg-white shadow-md rounded-lg p-8 mb-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">Setup Complete!</h1>
-          <p className="mb-6">Redirecting you to the dashboard...</p>
-          <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-        </div>
-      );
-    default:
-      return (
-        <div className="bg-white shadow-md rounded-lg p-8 mb-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
-          <p className="mb-6">We couldn't determine your current signup stage.</p>
-          <Button 
-            onClick={() => setIsStarted(false)}
-            className="bg-[#004684] hover:bg-[#003a70] px-8"
-          >
-            Restart Signup
-          </Button>
-        </div>
-      );
-  }
+    switch (currentStage) {
+      case 'agreement':
+        return <AgreementStep onComplete={handleAgreementComplete} />;
+      case 'payment':
+        return <PaymentStep onComplete={handlePaymentComplete} />;
+      case 'profile':
+        return <ProfileStep onComplete={handleProfileComplete} />;
+      case 'ready':
+        return (
+          <div className="bg-white shadow-md rounded-lg p-8 mb-8 text-center">
+            <h1 className="text-2xl font-bold mb-4">Setup Complete!</h1>
+            <p className="mb-6">Redirecting you to the dashboard...</p>
+            <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+          </div>
+        );
+      default:
+        return (
+          <div className="bg-white shadow-md rounded-lg p-8 mb-8 text-center">
+            <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
+            <p className="mb-6">We couldn't determine your current signup stage.</p>
+            <Button 
+            onClick={() => setStage('agreement')}
+              className="bg-[#004684] hover:bg-[#003a70] px-8"
+            >
+              Restart Signup
+            </Button>
+          </div>
+        );
+    }
 }
 
 export default function SignupWizard() {

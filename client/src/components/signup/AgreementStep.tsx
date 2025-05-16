@@ -6,12 +6,15 @@ import { advanceSignupStage, getSignupEmail, storeSignupName } from '@/lib/signu
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
 import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from 'react-signature-canvas';
+import { useSignupGuard } from '@/hooks/useSignupGuard';
+import { patch } from '@/lib/api';
 
 interface AgreementStepProps {
   onComplete: () => void;
 }
 
 export function AgreementStep({ onComplete }: AgreementStepProps) {
+  useSignupGuard('AGREEMENT');
   const { toast } = useToast();
   const { refreshStage, setStage } = useSignupWizard();
   const [isLoading, setIsLoading] = useState(false);
@@ -22,10 +25,24 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
   const agreementContentRef = useRef<HTMLDivElement>(null);
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
   const [canSign, setCanSign] = useState(false);
+  const [showScrollToast, setShowScrollToast] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     setStage('agreement'); // Ensure progress bar is on step 1
   }, [setStage]);
+
+  // Debug: log all button enabling conditions
+  useEffect(() => {
+    console.log({
+      canSign,
+      hasAgreed,
+      fullName,
+      fullNameLength: fullName.length,
+      signatureEmpty: isSignatureEmpty(),
+      isLoading
+    });
+  }, [canSign, hasAgreed, fullName, isLoading]);
 
   const clearSignature = () => {
     if (sigRef.current) {
@@ -41,66 +58,69 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
   const handleAgreementScroll = () => {
     const el = agreementContentRef.current;
     if (el) {
-      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
+      // Less sensitive threshold: within 40px of the bottom
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
       setScrolledToBottom(atBottom);
       setCanSign(atBottom);
+      if (atBottom && showScrollToast) setShowScrollToast(false);
+    }
+  };
+
+  // Show toast if user tries to interact before scrolling
+  const handleBlockedInteraction = () => {
+    if (!canSign) {
+      setShowScrollToast(true);
+      setTimeout(() => setShowScrollToast(false), 2500);
     }
   };
 
   const handleSubmit = async () => {
+    console.log('handleSubmit called', {
+      canSign,
+      hasAgreed,
+      fullName,
+      fullNameLength: fullName.length,
+      signatureEmpty: isSignatureEmpty(),
+      isLoading
+    });
+    if (!hasAgreed || !fullName || isSignatureEmpty()) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please fill in all required fields and agree to the terms.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage('');
+
     try {
-      if (!fullName.trim() || fullName.length < 3) {
-        toast({
-          title: 'Full Name Required',
-          description: 'Please enter your full legal name before continuing.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      if (!hasAgreed) {
-        toast({
-          title: 'Agreement Required',
-          description: 'Please confirm that you agree to the terms.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      if (isSignatureEmpty()) {
-        toast({
-          title: 'Signature Required',
-          description: 'Please sign the agreement before continuing.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      setIsLoading(true);
-      // Store the name for later use
-      storeSignupName(fullName);
       // Get signature as data URL
-      const signature = sigRef.current?.toDataURL();
+      const signature = sigRef.current?.toDataURL() || '';
       // Get current timestamp
       const signedAt = new Date().toISOString();
-      // Fetch public IP address
-      let ipAddress = '';
-      try {
-        const res = await fetch('https://api.ipify.org?format=json');
-        const data = await res.json();
-        ipAddress = data.ip;
-      } catch (err) {
-        ipAddress = 'unavailable';
-      }
+      // Get IP address
+      const ipAddress = await fetch('https://api.ipify.org?format=json').then(res => res.json()).then(data => data.ip);
+
       // Store agreement data in localStorage
-      localStorage.setItem('signup_agreement', JSON.stringify({ fullName, signature, signedAt, ipAddress }));
-      toast({
-        title: 'Agreement Accepted',
-        description: 'You have successfully signed the agreement.',
-      });
+      localStorage.setItem('signup_agreement', JSON.stringify({ 
+        fullName, 
+        signature, 
+        signedAt, 
+        ipAddress 
+      }));
+      
+      // PATCH backend to update signup_stage to AGREEMENT
+      await patch('/api/auth/stage', { stage: 'AGREEMENT' });
+      setStage('payment');
       onComplete();
     } catch (error) {
-      console.error('Error submitting agreement:', error);
+      console.error('Error saving agreement:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to save agreement');
       toast({
-        title: 'Submission Error',
-        description: 'There was an error submitting your agreement. Please try again.',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save agreement',
         variant: 'destructive',
       });
     } finally {
@@ -196,7 +216,13 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Agreement Card */}
-      <div className="flex-1 flex items-center justify-center py-8">
+      <div className="flex-1 flex items-center justify-center py-8 relative">
+        {/* Persistent banner until canSign is true */}
+        {!canSign && (
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 z-50 bg-yellow-100 border border-yellow-300 text-yellow-800 px-6 py-3 rounded-xl shadow-lg animate-fade-in">
+            <span className="font-semibold">Please scroll to the bottom of the agreement to enable signing.</span>
+          </div>
+        )}
         <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl px-0 md:px-12 py-8 flex flex-col gap-8">
           <div className="mb-2 px-6 md:px-0">
             <h2 className="text-2xl font-bold mb-2">Platform Access Agreement</h2>
@@ -236,6 +262,7 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
                 placeholder="Enter your full legal name"
                 required
                 aria-disabled={!canSign}
+                onFocus={handleBlockedInteraction}
               />
             </div>
             <div className="flex-1 flex flex-col">
@@ -245,6 +272,7 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
                   ref={sigRef}
                   penColor="#000"
                   canvasProps={{ className: 'w-full h-[220px] cursor-crosshair bg-white rounded-lg' }}
+                  onBegin={handleBlockedInteraction}
                 />
                 {!canSign && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-white/70 rounded-lg">
@@ -297,9 +325,9 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
             </div>
             <Button
               type="button"
-              className={`w-full bg-[#004684] hover:bg-[#003a70] text-white text-lg font-semibold transition-opacity duration-200 ${canSign && hasAgreed && fullName.length >= 3 && !isSignatureEmpty() ? 'opacity-100' : 'opacity-40 cursor-not-allowed'}`}
-              aria-disabled={!canSign || !hasAgreed || fullName.length < 3 || isSignatureEmpty() || isLoading}
-              disabled={isLoading || !hasAgreed || fullName.length < 3 || isSignatureEmpty() || !canSign}
+              className={`w-full bg-[#004684] hover:bg-[#003a70] text-white text-lg font-semibold transition-opacity duration-200 ${canSign && hasAgreed && fullName.length >= 2 && !isSignatureEmpty() ? 'opacity-100' : 'opacity-40 cursor-not-allowed'}`}
+              aria-disabled={!canSign || !hasAgreed || fullName.length < 2 || isSignatureEmpty() || isLoading}
+              disabled={isLoading || !hasAgreed || fullName.length < 2 || isSignatureEmpty() || !canSign}
               onClick={handleSubmit}
               tabIndex={canSign ? 0 : -1}
             >
