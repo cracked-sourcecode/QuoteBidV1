@@ -19,11 +19,15 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./db";
 import { checkUnique } from "./routes/public/checkUnique";
+import path from 'path';
 
 // Initialize database connection
 initializeDatabase();
 
 const app = express();
+
+// Serve static files from the uploads directory
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 /* ----------   PUBLIC ENDPOINTS (no auth)   ---------- */
 app.get("/api/users/check-unique", checkUnique);

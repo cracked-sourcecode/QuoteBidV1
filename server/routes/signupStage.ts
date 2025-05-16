@@ -8,6 +8,7 @@ import path from 'path';
 import fs from 'fs';
 import multer from 'multer';
 import jwt from 'jsonwebtoken';
+import PDFDocument from 'pdfkit';
 
 // Initialize Stripe client
 function getStripeClient() {
@@ -131,21 +132,51 @@ router.post('/:email/advance', async (req: Request, res: Response) => {
     
     // Special handling for agreement stage
     if (action === 'agreement') {
-      const { fullName, signature } = req.body;
-      // Store the signature as agreement_signed if available, fallback to fullName
-      const agreementValue = signature || fullName;
+      const { fullName, signature, signedAt, ipAddress } = req.body;
       
-      if (agreementValue) {
+      if (!fullName || !signature || !signedAt) {
+        return res.status(400).json({ 
+          message: 'Full name, signature, and signing timestamp are required',
+          success: false 
+        });
+      }
+
+      try {
+        // Generate a unique filename for the PDF
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const pdfFilename = `agreement-${email}-${timestamp}.pdf`;
+        const pdfPath = path.join(process.cwd(), 'uploads', 'agreements', pdfFilename);
+        
+        // Ensure the agreements directory exists
+        const uploadDir = path.join(process.cwd(), 'uploads', 'agreements');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        // Create PDF content
+        const pdfContent = await generateAgreementPDF(fullName, signature, signedAt);
+        fs.writeFileSync(pdfPath, pdfContent);
+
+        // Store the agreement details
         await getDb().query(`
           UPDATE users 
           SET agreement_signed = $1,
-              signup_stage = $2
-          WHERE email = $3;
-        `, [agreementValue, nextStage, decodeURIComponent(email)]);
+              agreement_pdf_url = $2,
+              agreement_signed_at = $3,
+              agreement_ip_address = $4,
+              signup_stage = $5
+          WHERE email = $6;
+        `, [fullName, `/uploads/agreements/${pdfFilename}`, signedAt, ipAddress, nextStage, decodeURIComponent(email)]);
         
         return res.status(200).json({
           stage: nextStage,
           nextStage: actionIndex < VALID_STAGES.length - 1 ? VALID_STAGES[actionIndex + 1] : undefined
+        });
+      } catch (error) {
+        console.error('Error generating agreement PDF:', error);
+        return res.status(500).json({ 
+          message: 'Failed to generate agreement PDF',
+          success: false 
         });
       }
     } 
@@ -541,5 +572,50 @@ router.post('/:email/complete', async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Internal server error', success: false });
   }
 });
+
+// Helper to convert data URL to Buffer
+function dataUrlToBuffer(dataUrl: string): Buffer | null {
+  const matches = dataUrl.match(/^data:.+\/([a-zA-Z0-9+]+);base64,(.*)$/);
+  if (!matches) return null;
+  return Buffer.from(matches[2], 'base64');
+}
+
+// Function to generate agreement PDF
+async function generateAgreementPDF(fullName: string, signature: string, signedAt: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument();
+    const chunks: Buffer[] = [];
+
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    // Add content to PDF
+    doc.fontSize(20).text('Agreement', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).text(`Signed by: ${fullName}`);
+    doc.text(`Date: ${new Date(signedAt).toLocaleString()}`);
+    doc.moveDown();
+    doc.text('Signature:');
+    const signatureBuffer = dataUrlToBuffer(signature);
+    if (signatureBuffer) {
+      doc.image(signatureBuffer, {
+        fit: [300, 100],
+        align: 'center'
+      });
+    } else {
+      doc.text('[Signature not available]');
+    }
+    doc.moveDown();
+    doc.text('Terms and Conditions:');
+    doc.fontSize(10).text(`
+      1. By signing this agreement, you agree to our terms of service.
+      2. You understand that this is a legally binding document.
+      3. You confirm that all information provided is accurate.
+    `);
+
+    doc.end();
+  });
+}
 
 export default router;
