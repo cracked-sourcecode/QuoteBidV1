@@ -155,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up regular user authentication
   setupAuth(app);
-  
+
   // Setup signup wizard routes
   app.use('/api/signup-stage', signupStageRouter);
   

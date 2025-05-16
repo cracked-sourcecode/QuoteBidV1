@@ -9,6 +9,7 @@ import fs from 'fs';
 import multer from 'multer';
 import jwt from 'jsonwebtoken';
 import PDFDocument from 'pdfkit';
+import { hashPassword } from '../utils/passwordUtils';
 
 // Initialize Stripe client
 function getStripeClient() {
@@ -617,5 +618,92 @@ async function generateAgreementPDF(fullName: string, signature: string, signedA
     doc.end();
   });
 }
+
+// Get signup progress
+router.get('/api/auth/progress', async (req: Request, res: Response) => {
+  // Assume req.user.id is available from auth middleware
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+  const [user] = await getDb().select().from(users).where(eq(users.id, userId));
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  res.json({ stage: user.signup_stage });
+});
+
+// Update signup stage
+router.patch('/api/auth/stage', async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const { stage } = req.body;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+  if (!stage) return res.status(400).json({ message: 'Stage required' });
+  await getDb().update(users).set({ signup_stage: stage }).where(eq(users.id, userId));
+  res.json({ success: true });
+});
+
+// Register endpoint: create user if not exists, set signup_stage, and issue JWT
+router.post('/api/auth/register', async (req: Request, res: Response) => {
+  const { email, password, username, fullName, companyName, phone, industry } = req.body;
+  
+  if (!email) return res.status(400).json({ message: 'Email is required' });
+  if (!password) return res.status(400).json({ message: 'Password is required' });
+  if (!username) return res.status(400).json({ message: 'Username is required' });
+  if (!fullName) return res.status(400).json({ message: 'Full name is required' });
+  if (!companyName) return res.status(400).json({ message: 'Company name is required' });
+  if (!phone) return res.status(400).json({ message: 'Phone number is required' });
+  if (!industry) return res.status(400).json({ message: 'Industry is required' });
+
+  try {
+    // Check if user exists
+    let [user] = await getDb().select().from(users).where(eq(users.email, email));
+    if (user) {
+      return res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    // Hash the password
+    const hashedPassword = await hashPassword(password);
+
+    // Create user with all required fields
+    await getDb().insert(users).values({
+      username,
+      fullName,
+      email,
+      password: hashedPassword,
+      company_name: companyName,
+      phone_number: phone,
+      industry,
+      signup_stage: 'REGISTERED',
+      profileCompleted: false,
+      premiumStatus: 'free',
+      subscription_status: 'inactive'
+    });
+
+    // Get the created user
+    [user] = await getDb().select().from(users).where(eq(users.email, email));
+
+    // Issue JWT (wizard-only)
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        signup_stage: user.signup_stage,
+        wizard: true // mark as wizard-only
+      },
+      process.env.JWT_SECRET || 'quotebid_secret',
+      { expiresIn: '7d' }
+    );
+
+    res.cookie('token', token, { httpOnly: true, sameSite: 'lax' });
+    res.json({ 
+      success: true, 
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        signup_stage: user.signup_stage 
+      } 
+    });
+  } catch (error) {
+    console.error('Error registering user:', error);
+    res.status(500).json({ message: 'Failed to register user' });
+  }
+});
 
 export default router;
