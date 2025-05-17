@@ -421,6 +421,8 @@ export default function AccountPage() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
       {/* Main Content - Adjusted margin to account for sidebar */}
       <div className="ml-72 flex-1 p-8">
