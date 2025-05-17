@@ -113,8 +113,8 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
         ipAddress 
       }));
       
-      // PATCH backend to update signup_stage to AGREEMENT
-      await patch('/api/auth/stage', { stage: 'AGREEMENT' });
+      // PATCH backend to update signup_stage to agreement
+      await patch('/api/auth/stage', { stage: 'agreement' });
       setStage('payment');
       setLocation('/auth?tab=signup&step=2', { replace: true });
       onComplete();
