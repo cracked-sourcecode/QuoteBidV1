@@ -145,7 +145,8 @@ export function generateProfessionalPDF(user: any): string {
 }
 
 /**
- * Save base64 PDF data to file system and store URL reference in database
+ * Save the PDF to disk and return its relative path.
+ * Database updates are handled elsewhere.
  */
 /**
  * Utility function to create a fresh agreement PDF from a template
