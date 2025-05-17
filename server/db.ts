@@ -20,7 +20,7 @@ export function initializeDatabase() {
   console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
   console.log('DATABASE_URL length:', process.env.DATABASE_URL?.length);
   console.log('First 10 chars of DATABASE_URL:', process.env.DATABASE_URL?.substring(0, 10));
-  console.log('Last 10 chars of DATABASE_URL:', process.env.DATABASE_URL?.substring(-10));
+  console.log('Last 10 chars of DATABASE_URL:', process.env.DATABASE_URL?.slice(-10));
   console.log('===================================');
 
   if (!process.env.DATABASE_URL) {
