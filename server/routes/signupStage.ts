@@ -619,8 +619,8 @@ async function generateAgreementPDF(fullName: string, signature: string, signedA
   });
 }
 
-// Update signup stage
-router.patch('/api/auth/stage', async (req: Request, res: Response) => {
+// Update signup stage (not used by wizard, kept for backward compatibility)
+router.patch('/stage', async (req: Request, res: Response) => {
   const userId = req.user?.id;
   const { stage } = req.body;
   if (!userId) return res.status(401).json({ message: 'Unauthorized' });
