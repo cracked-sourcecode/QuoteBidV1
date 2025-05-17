@@ -13,6 +13,7 @@ import { Loader2, CheckCircle, Lock } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { advanceSignupStage, getSignupEmail } from '@/lib/signup-wizard';
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
+import { useSignupGuard } from '@/hooks/useSignupGuard';
 import { apiRequest } from '@/lib/queryClient';
 
 // Get Stripe public key from environment variables
@@ -157,6 +158,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
 }
 
 export function PaymentStep({ onComplete }: PaymentStepProps) {
+  useSignupGuard('SUBSCRIPTION');
   return (
     <Elements stripe={stripePromise}>
       <CheckoutForm onComplete={onComplete} />

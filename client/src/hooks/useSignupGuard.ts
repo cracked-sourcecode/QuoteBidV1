@@ -19,18 +19,22 @@ export function useSignupGuard(requiredStage: string) {
               default: return 1;
             }
           };
+          const step = enumToStep(data.stage);
+          if (typeof step === 'number') {
+            localStorage.setItem('signup_highest_step', String(step));
+          }
           if (data.stage === 'COMPLETED') {
-            setLocation('/dashboard');
+            setLocation('/dashboard', { replace: true });
           } else {
-            setLocation(`/auth?tab=signup&step=${enumToStep(data.stage)}`);
+            setLocation(`/auth?tab=signup&step=${step}`, { replace: true });
           }
         }
       })
       .catch((err) => {
         // If not authenticated, redirect to register
         if (err.message && err.message.includes('401')) {
-          setLocation('/auth?tab=register');
+          setLocation('/auth?tab=register', { replace: true });
         }
       });
   }, [requiredStage, setLocation]);
-} 
+}

@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SignupProgress } from './SignupProgress';
 import { Logo } from '../common/Logo';
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
+import { useLocation } from 'wouter';
+import { Loader2 } from 'lucide-react';
 
 interface SignupWizardProps {
   children: React.ReactNode;
@@ -15,22 +17,43 @@ const STAGE_LABELS = [
 
 export function SignupWizard({ children }: SignupWizardProps) {
   const { currentStage } = useSignupWizard();
+  const [, navigate] = useLocation();
+  const [redirecting, setRedirecting] = useState(false);
+  const stageOrder = ['agreement', 'payment', 'profile'];
   const currentIndex = STAGE_LABELS.findIndex(s => s.id === currentStage);
+  const currentStep = stageOrder.indexOf(currentStage) + 1;
   const stepText = currentIndex >= 0
     ? `Step ${currentIndex + 1} of 3: ${STAGE_LABELS[currentIndex].label}`
     : '';
 
-  // Prevent browser back navigation during signup
+  const enforceLocation = () => {
+    const highest = Number(localStorage.getItem('signup_highest_step') || String(currentStep));
+    const url = new URL(window.location.href);
+    const tab = url.searchParams.get('tab');
+    const stepParam = Number(url.searchParams.get('step') || '1');
+    if (tab !== 'signup' || stepParam < highest) {
+      setRedirecting(true);
+      navigate(`/auth?tab=signup&step=${highest}`, { replace: true });
+    }
+  };
+
   useEffect(() => {
-    window.history.pushState(null, '', window.location.href);
-    const handlePopState = (event: PopStateEvent) => {
-      window.history.pushState(null, '', window.location.href);
-    };
+    enforceLocation();
+  }, [currentStep]);
+
+  useEffect(() => {
+    const handlePopState = () => enforceLocation();
     window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  if (redirecting) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">

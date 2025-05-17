@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { SignupWizard as SignupWizardComponent } from '@/components/signup/SignupWizard';
 import { Button } from '@/components/ui/button';
@@ -16,10 +16,31 @@ function SignupWizardContent() {
   const { currentStage, setStage, email } = useSignupWizard();
   const [inputEmail, setInputEmail] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   // Map stage to step number
   const stageOrder = ['agreement', 'payment', 'profile'];
   const currentStep = stageOrder.indexOf(currentStage) + 1;
+
+  // Enforce tab and step on back navigation
+  const enforceLocation = () => {
+    const highest = Number(localStorage.getItem('signup_highest_step') || String(currentStep));
+    const url = new URL(window.location.href);
+    const tab = url.searchParams.get('tab');
+    const stepParam = Number(url.searchParams.get('step') || '1');
+    if (tab !== 'signup' || stepParam < highest) {
+      setRedirecting(true);
+      setLocation(`/auth?tab=signup&step=${highest}`, { replace: true });
+    }
+  };
+
+  useEffect(() => enforceLocation(), [currentStep]);
+
+  useEffect(() => {
+    const handlePop = () => enforceLocation();
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, []);
 
   // Update highest step reached in localStorage
   useEffect(() => {
@@ -35,12 +56,11 @@ function SignupWizardContent() {
     const url = new URL(window.location.href);
     const stepParam = url.searchParams.get('step');
     if (stepParam && Number(stepParam) < highestStep) {
-      url.searchParams.set('step', String(highestStep));
-      window.history.replaceState(null, '', url.toString());
-      // Optionally, update the context stage as well
+      setRedirecting(true);
       setStage(stageOrder[highestStep - 1]);
+      setLocation(`/auth?tab=signup&step=${highestStep}`, { replace: true });
     }
-  }, [currentStage, setStage]);
+  }, [currentStage, setStage, setLocation]);
 
   const handleStartSignup = async () => {
     if (!inputEmail || !inputEmail.includes('@')) {
@@ -67,9 +87,17 @@ function SignupWizardContent() {
     setStage('ready');
     localStorage.setItem('token', jwt);
     setTimeout(() => {
-      setLocation('/opportunities');
+      setLocation('/opportunities', { replace: true });
     }, 1500);
   };
+
+  if (redirecting) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   // Show email entry form only if no email and at agreement step
   if (currentStage === 'agreement' && !email) {

@@ -106,6 +106,15 @@ export default function AuthPage() {
   const tab = (urlParams.get("tab") || "register").trim().toLowerCase();
   const step = urlParams.get("step");
 
+  useEffect(() => {
+    const highest = Number(localStorage.getItem('signup_highest_step') || '0');
+    if (highest > 0) {
+      if (tab !== 'signup' || (step && Number(step) < highest)) {
+        navigate(`/auth?tab=signup&step=${highest}`, { replace: true });
+      }
+    }
+  }, [tab, step, navigate]);
+
   // Giant debug log at the top
   console.log("AUTH PAGE RENDER", { location, windowLocation: window.location.href });
 
@@ -123,7 +132,7 @@ export default function AuthPage() {
     
   // Helper to update the step in the URL
   const goToStep = (stepNum: number) => {
-    window.location.href = `/auth?tab=signup&step=${stepNum}`;
+    navigate(`/auth?tab=signup&step=${stepNum}`, { replace: true });
   };
 
   if (tab === "signup" && step) {
@@ -132,7 +141,7 @@ export default function AuthPage() {
         <SignupWizard>
           {step === "1" && <AgreementStep onComplete={() => goToStep(2)} />}
           {step === "2" && <PaymentStep onComplete={() => goToStep(3)} />}
-          {step === "3" && <ProfileStep onComplete={() => navigate("/dashboard")} />}
+          {step === "3" && <ProfileStep onComplete={() => navigate("/dashboard", { replace: true })} />}
         </SignupWizard>
       </SignupWizardProvider>
     );
@@ -362,7 +371,7 @@ function RegisterForm() {
       // Store data for the wizard
       storeSignupData(values);
       storeSignupEmail(values.email);
-      window.location.href = "/auth?tab=signup&step=1";
+      navigate("/auth?tab=signup&step=1", { replace: true });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
