@@ -106,6 +106,19 @@ export default function AuthPage() {
   const tab = (urlParams.get("tab") || "register").trim().toLowerCase();
   const step = urlParams.get("step");
 
+  // Prevent navigating back to earlier signup steps
+  useEffect(() => {
+    if (tab === "signup" && step) {
+      const stepNum = parseInt(step, 10);
+      const stored = parseInt(localStorage.getItem("signup_highest_step") || "0", 10);
+      if (stored > stepNum) {
+        navigate(`/auth?tab=signup&step=${stored}`, { replace: true });
+      } else if (stepNum > stored) {
+        localStorage.setItem("signup_highest_step", String(stepNum));
+      }
+    }
+  }, [tab, step]);
+
   // Giant debug log at the top
   console.log("AUTH PAGE RENDER", { location, windowLocation: window.location.href });
 
@@ -123,7 +136,8 @@ export default function AuthPage() {
 
   // Helper to update the step in the URL
   const goToStep = (stepNum: number) => {
-    window.location.href = `/auth?tab=signup&step=${stepNum}`;
+    localStorage.setItem('signup_highest_step', String(stepNum));
+    navigate(`/auth?tab=signup&step=${stepNum}`, { replace: true });
   };
 
   if (tab === "signup" && step) {
@@ -345,7 +359,8 @@ function RegisterForm() {
     try {
       storeSignupData(values);
       storeSignupEmail(values.email);
-      window.location.href = "/auth?tab=signup&step=1";
+      localStorage.setItem('signup_highest_step', '1');
+      navigate("/auth?tab=signup&step=1", { replace: true });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
