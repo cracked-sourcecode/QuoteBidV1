@@ -227,6 +227,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up regular user authentication
   setupAuth(app);
 
+  // Endpoint to report the current signup stage for the authenticated user
+  app.get('/api/auth/progress', (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const stage = (req.user as any).signup_stage || 'agreement';
+    res.json({ stage });
+  });
+
+  // Endpoint to update the signup stage for the authenticated user
+  app.patch('/api/auth/stage', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const { stage } = req.body as { stage?: string };
+    if (!stage) {
+      return res.status(400).json({ message: 'Stage required' });
+    }
+    await getDb()
+      .update(users)
+      .set({ signup_stage: stage })
+      .where(eq(users.id, req.user.id));
+    res.json({ success: true });
+  });
+
   // Signup stage router is already registered above; duplicate registration removed
   // to avoid redundant handlers after auth setup.
   
