@@ -944,7 +944,8 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Build query with all conditions
-      const drafts = await getDb.select()
+      const drafts = await getDb()
+        .select()
         .from(pitches)
         .where(and(...conditions))
         .orderBy(desc(pitches.updatedAt));
