@@ -86,47 +86,57 @@ function CheckCircleIcon() {
 
 export default function AuthPage() {
   const [location, navigate] = useLocation();
-
-  // Add this state to force re-render on URL change
   const [search, setSearch] = useState(window.location.search);
+  const [highestStep, setHighestStep] = useState(1);
 
+  // Track highest step reached
   useEffect(() => {
-    const onPopState = () => setSearch(window.location.search);
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
+    const storedStep = localStorage.getItem('signup_highest_step');
+    if (storedStep) {
+      setHighestStep(parseInt(storedStep));
+    }
   }, []);
 
-  // Also update search when navigate is called
+  // Handle URL changes
+  useEffect(() => {
+    const onPopState = () => {
+      setSearch(window.location.search);
+      const urlParams = new URLSearchParams(window.location.search);
+      const step = urlParams.get("step");
+      if (step && parseInt(step) < highestStep) {
+        window.location.replace(`/auth?tab=signup&step=${highestStep}`);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [highestStep]);
+
+  // Update search when location changes
   useEffect(() => {
     setSearch(window.location.search);
   }, [location]);
 
-  // Parse query params from the actual browser location (now from state)
+  // Parse query params
   const urlParams = new URLSearchParams(search);
   const tab = (urlParams.get("tab") || "register").trim().toLowerCase();
   const step = urlParams.get("step");
 
-  // Giant debug log at the top
-  console.log("AUTH PAGE RENDER", { location, windowLocation: window.location.href });
-
-  // Giant debug log before the wizard block
-  console.log("CHECKING WIZARD BLOCK", { 
-    tab, 
-    step, 
-    typeOfTab: typeof tab, 
-    typeOfStep: typeof step, 
-    tabEqualsSignup: tab === "signup", 
-    stepTruthy: !!step,
-    location,
-    urlParams: window.location.search
-  });
-    
   // Helper to update the step in the URL
   const goToStep = (stepNum: number) => {
-    window.location.href = `/auth?tab=signup&step=${stepNum}`;
+    if (stepNum > highestStep) {
+      setHighestStep(stepNum);
+      localStorage.setItem('signup_highest_step', String(stepNum));
+    }
+    window.location.replace(`/auth?tab=signup&step=${stepNum}`);
   };
 
   if (tab === "signup" && step) {
+    const currentStep = parseInt(step);
+    if (currentStep < highestStep) {
+      window.location.replace(`/auth?tab=signup&step=${highestStep}`);
+      return null;
+    }
+
     return (
       <SignupWizardProvider>
         <SignupWizard>

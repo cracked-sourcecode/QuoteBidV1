@@ -8,13 +8,14 @@ import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from 'react-signature-canvas';
 import { useSignupGuard } from '@/hooks/useSignupGuard';
 import { patch } from '@/lib/api';
+import { useLocation } from 'wouter';
 
 interface AgreementStepProps {
   onComplete: () => void;
 }
 
 export function AgreementStep({ onComplete }: AgreementStepProps) {
-  useSignupGuard('AGREEMENT');
+  useSignupGuard('agreement');
   const { toast } = useToast();
   const { refreshStage, setStage } = useSignupWizard();
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +28,7 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
   const [canSign, setCanSign] = useState(false);
   const [showScrollToast, setShowScrollToast] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     setStage('agreement'); // Ensure progress bar is on step 1
@@ -114,6 +116,7 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
       // PATCH backend to update signup_stage to AGREEMENT
       await patch('/api/auth/stage', { stage: 'AGREEMENT' });
       setStage('payment');
+      setLocation('/auth?tab=signup&step=2', { replace: true });
       onComplete();
     } catch (error) {
       console.error('Error saving agreement:', error);

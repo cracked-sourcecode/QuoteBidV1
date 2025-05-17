@@ -32,6 +32,24 @@ export function SignupWizardProvider({ children }: { children: ReactNode }) {
     try {
       const stageInfo = await getUserSignupStage(storedEmail);
       setCurrentStage(stageInfo.stage);
+
+      // Update highest step in localStorage
+      const stageToStep = (stage: SignupStage) => {
+        switch (stage) {
+          case 'agreement': return 1;
+          case 'payment': return 2;
+          case 'profile': return 3;
+          case 'ready': return 4;
+          default: return 1;
+        }
+      };
+
+      const currentStep = stageToStep(stageInfo.stage);
+      const highestStep = parseInt(localStorage.getItem('signup_highest_step') || '1');
+      
+      if (currentStep > highestStep) {
+        localStorage.setItem('signup_highest_step', String(currentStep));
+      }
     } catch (error) {
       console.error('Error fetching current signup stage:', error);
     }
@@ -39,6 +57,24 @@ export function SignupWizardProvider({ children }: { children: ReactNode }) {
 
   const setStage = (stage: SignupStage) => {
     setCurrentStage(stage);
+    
+    // Update highest step in localStorage
+    const stageToStep = (stage: SignupStage) => {
+      switch (stage) {
+        case 'agreement': return 1;
+        case 'payment': return 2;
+        case 'profile': return 3;
+        case 'ready': return 4;
+        default: return 1;
+      }
+    };
+
+    const newStep = stageToStep(stage);
+    const highestStep = parseInt(localStorage.getItem('signup_highest_step') || '1');
+    
+    if (newStep > highestStep) {
+      localStorage.setItem('signup_highest_step', String(newStep));
+    }
   };
 
   const value = {

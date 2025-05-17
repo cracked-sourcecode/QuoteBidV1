@@ -10,6 +10,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
 import { INDUSTRY_OPTIONS } from "@/lib/constants";
 import { useLocation } from 'wouter';
+import { useSignupGuard } from '@/hooks/useSignupGuard';
 
 interface ProfileStepProps {
   onComplete: (jwt: string) => void;
@@ -24,6 +25,7 @@ const AvatarSVG = () => (
 );
 
 export function ProfileStep({ onComplete }: ProfileStepProps) {
+  useSignupGuard('profile');
   const { toast } = useToast();
   const { refreshStage } = useSignupWizard();
   const { registerMutation } = useAuth();
@@ -118,13 +120,13 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
         <p className="text-lg text-gray-700 mb-6 text-center">Your account has been created successfully.<br />You now have full access to the QuoteBid marketplace.</p>
         <Button
           className="bg-[#004684] hover:bg-[#003a70] text-white px-8 py-3 text-lg font-semibold"
-          onClick={() => navigate('/opportunities')}
+          onClick={() => navigate('/opportunities', { replace: true })}
         >
           Continue to Dashboard
         </Button>
       </div>
     );
-    }
+  }
   
   return (
     <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-lg max-w-4xl mx-auto mt-8">

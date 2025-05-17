@@ -14,6 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import { advanceSignupStage, getSignupEmail } from '@/lib/signup-wizard';
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
 import { apiRequest } from '@/lib/queryClient';
+import { useSignupGuard } from '@/hooks/useSignupGuard';
+import { useLocation } from 'wouter';
 
 // Get Stripe public key from environment variables
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
@@ -30,6 +32,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const email = getSignupEmail();
+  const [, setLocation] = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +63,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
       
       if (completeCurrentStage.stage === 'profile') {
         setStage('profile');
+        setLocation('/auth?tab=signup&step=3', { replace: true });
         toast({ title: 'Payment Information Saved', description: 'Your payment method is saved for registration.' });
         onComplete();
       } else {
@@ -157,6 +161,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
 }
 
 export function PaymentStep({ onComplete }: PaymentStepProps) {
+  useSignupGuard('payment');
   return (
     <Elements stripe={stripePromise}>
       <CheckoutForm onComplete={onComplete} />

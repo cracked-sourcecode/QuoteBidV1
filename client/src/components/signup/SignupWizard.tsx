@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { SignupProgress } from './SignupProgress';
 import { Logo } from '../common/Logo';
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
+import { useLocation } from 'wouter';
 
 interface SignupWizardProps {
   children: React.ReactNode;
@@ -15,22 +16,33 @@ const STAGE_LABELS = [
 
 export function SignupWizard({ children }: SignupWizardProps) {
   const { currentStage } = useSignupWizard();
+  const [, setLocation] = useLocation();
   const currentIndex = STAGE_LABELS.findIndex(s => s.id === currentStage);
+  const currentStep = currentIndex + 1;
   const stepText = currentIndex >= 0
-    ? `Step ${currentIndex + 1} of 3: ${STAGE_LABELS[currentIndex].label}`
+    ? `Step ${currentStep} of 3: ${STAGE_LABELS[currentIndex].label}`
     : '';
 
-  // Prevent browser back navigation during signup
+  // Handle navigation
   useEffect(() => {
-    window.history.pushState(null, '', window.location.href);
-    const handlePopState = (event: PopStateEvent) => {
-      window.history.pushState(null, '', window.location.href);
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, []);
+    // Get current step from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlStep = parseInt(urlParams.get('step') || '1');
+    
+    // Get highest step from localStorage
+    const highestStep = parseInt(localStorage.getItem('signup_highest_step') || '1');
+
+    // If trying to go back, force forward
+    if (urlStep < highestStep) {
+      setLocation(`/auth?tab=signup&step=${highestStep}`, { replace: true });
+      return;
+    }
+
+    // If on wrong step, redirect
+    if (urlStep !== currentStep) {
+      setLocation(`/auth?tab=signup&step=${currentStep}`, { replace: true });
+    }
+  }, [currentStep, setLocation]);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
