@@ -92,23 +92,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/users/check-unique', async (req, res) => {
     try {
       const { field, value } = req.query;
+      console.log('► [check-unique] field:', field, 'value:', value);
+
       if (!field || !value || typeof field !== 'string' || typeof value !== 'string') {
+        console.log('► [check-unique] Invalid field or value');
         return res.status(400).json({ error: 'Invalid field or value' });
       }
       type ValidField = 'username' | 'email' | 'phone';
       if (!['username', 'email', 'phone'].includes(field)) {
+        console.log('► [check-unique] Invalid field name:', field);
         return res.status(400).json({ error: 'Invalid field name' });
       }
       const validField = field as ValidField;
       const column = validField === 'phone' ? 'phone_number' : validField;
-      const existingUser = await getDb()
-        .select()
-        .from(users)
-        .where(sql`LOWER(${users[column]}) = LOWER(${value})`)
-        .limit(1);
+
+      // Defensive: check DB connection
+      let existingUser;
+      try {
+        existingUser = await getDb()
+          .select()
+          .from(users)
+          .where(sql`LOWER(${users[column]}) = LOWER(${value})`)
+          .limit(1);
+      } catch (dbErr) {
+        console.error('► [check-unique] DB error:', dbErr);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      console.log('► [check-unique] Found:', existingUser.length);
       return res.json({ unique: existingUser.length === 0 });
-    } catch (error: unknown) {
-      console.error('Error checking uniqueness:', error);
+    } catch (error) {
+      console.error('► [check-unique] General error:', error);
       return res.status(500).json({ error: 'Failed to check uniqueness' });
     }
   });

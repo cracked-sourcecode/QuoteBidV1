@@ -33,30 +33,23 @@ export function useSignupGuard(requiredStage: string) {
             default: return 1;
           }
         };
-
-        const serverStep = stageToStep(data.stage);
-        
-        // If server step is ahead, update local storage
-        if (typeof serverStep === 'number' && serverStep > highestStep) {
-          localStorage.setItem('signup_highest_step', String(serverStep));
+        const step = stageToStep(data.stage);
+        if (typeof step === 'number' && step > highestStep) {
+          localStorage.setItem('signup_highest_step', String(step));
         }
-
-        // If completed, go to dashboard
         if (data.stage === 'COMPLETED') {
           setLocation('/dashboard', { replace: true });
           return;
         }
-
-        // If on wrong step, redirect
         if (data.stage !== requiredStage) {
-          setLocation(`/auth?tab=signup&step=${stageToStep(data.stage)}`, { replace: true });
+          setLocation(`/auth?tab=signup&step=${step}`, { replace: true });
         }
       })
       .catch((err) => {
         // If not authenticated, redirect to register
-        if (err.message?.includes('401')) {
+        if (err.message && err.message.includes('401')) {
           setLocation('/auth?tab=register', { replace: true });
         }
       });
   }, [requiredStage, setLocation]);
-} 
+}

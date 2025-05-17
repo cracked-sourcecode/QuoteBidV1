@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SignupProgress } from './SignupProgress';
 import { Logo } from '../common/Logo';
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
 import { useLocation } from 'wouter';
+import { Loader2 } from 'lucide-react';
 
 interface SignupWizardProps {
   children: React.ReactNode;
@@ -16,33 +17,43 @@ const STAGE_LABELS = [
 
 export function SignupWizard({ children }: SignupWizardProps) {
   const { currentStage } = useSignupWizard();
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
+  const [redirecting, setRedirecting] = useState(false);
+  const stageOrder = ['agreement', 'payment', 'profile'];
   const currentIndex = STAGE_LABELS.findIndex(s => s.id === currentStage);
-  const currentStep = currentIndex + 1;
+  const currentStep = stageOrder.indexOf(currentStage) + 1;
   const stepText = currentIndex >= 0
     ? `Step ${currentStep} of 3: ${STAGE_LABELS[currentIndex].label}`
     : '';
 
-  // Handle navigation
+  const enforceLocation = () => {
+    const highest = Number(localStorage.getItem('signup_highest_step') || String(currentStep));
+    const url = new URL(window.location.href);
+    const tab = url.searchParams.get('tab');
+    const stepParam = Number(url.searchParams.get('step') || '1');
+    if (tab !== 'signup' || stepParam < highest) {
+      setRedirecting(true);
+      navigate(`/auth?tab=signup&step=${highest}`, { replace: true });
+    }
+  };
+
   useEffect(() => {
-    // Get current step from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlStep = parseInt(urlParams.get('step') || '1');
-    
-    // Get highest step from localStorage
-    const highestStep = parseInt(localStorage.getItem('signup_highest_step') || '1');
+    enforceLocation();
+  }, [currentStep]);
 
-    // If trying to go back, force forward
-    if (urlStep < highestStep) {
-      setLocation(`/auth?tab=signup&step=${highestStep}`, { replace: true });
-      return;
-    }
+  useEffect(() => {
+    const handlePopState = () => enforceLocation();
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
-    // If on wrong step, redirect
-    if (urlStep !== currentStep) {
-      setLocation(`/auth?tab=signup&step=${currentStep}`, { replace: true });
-    }
-  }, [currentStep, setLocation]);
+  if (redirecting) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">

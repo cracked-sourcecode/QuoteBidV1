@@ -17,6 +17,7 @@ function SignupWizardContent() {
   const { currentStage, setStage, email } = useSignupWizard();
   const [inputEmail, setInputEmail] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
+  const [redirecting, setRedirecting] = React.useState(false);
 
   // Map stage to step number
   const stageOrder: SignupStage[] = ['agreement', 'payment', 'profile'];
@@ -121,6 +122,16 @@ function SignupWizardContent() {
       setLocation('/opportunities');
     }, 1500);
   };
+
+  if (redirecting) {
+    return (
+      <div className="bg-white shadow-md rounded-lg p-8 mb-8 text-center">
+        <h1 className="text-2xl font-bold mb-4">Redirecting...</h1>
+        <p className="mb-6">Please wait while we redirect you to the correct step.</p>
+        <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+      </div>
+    );
+  }
 
   // If no email, show email input
   if (!email) {
