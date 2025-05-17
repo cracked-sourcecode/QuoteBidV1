@@ -1,32 +1,34 @@
-import React from 'react';
-import PitchProgressTracker from './pitch-progress-tracker';
-import { PitchStatus } from '@/utils/pitchStage';
+import React from "react";
+import { render } from "@testing-library/react";
+import PitchProgressTracker from "./pitch-progress-tracker";
+import { PitchStatus } from "@/utils/pitchStage";
 
-// Simple Jest snapshot test file for the PitchStepper component
-// This can be run with the Jest testing framework
+/**
+ * Jest test for the PitchProgressTracker component using
+ * React Testing Library. For each stage we render the component
+ * with sample props and verify the output via snapshot.
+ */
 
-export function createSnapshotTest(stage: PitchStatus) {
-  return (
-    <PitchProgressTracker 
-      currentStage={stage} 
-      pitch={{ paymentIntentId: 'pi_test123' }}
-    />
-  );
-}
+describe("PitchProgressTracker", () => {
+  const renderTracker = (stage: PitchStatus) =>
+    render(
+      <PitchProgressTracker
+        currentStage={stage}
+        pitch={{ paymentIntentId: "pi_test123" }}
+      />
+    );
 
-// Export test instances for each stage
-export const DraftStage = () => createSnapshotTest('draft');
-export const PendingStage = () => createSnapshotTest('pending');
-export const SentStage = () => createSnapshotTest('sent_to_reporter');
-export const InterestedStage = () => createSnapshotTest('reporter_interested');
-export const DeclinedStage = () => createSnapshotTest('reporter_not_interested');
-export const SuccessfulStage = () => createSnapshotTest('successful_coverage');
+  const stages: PitchStatus[] = [
+    "draft",
+    "pending",
+    "sent_to_reporter",
+    "reporter_interested",
+    "reporter_not_interested",
+    "successful_coverage",
+  ];
 
-// A follow-up badge example
-export const InterestedWithFollowUp = () => (
-  <PitchProgressTracker 
-    currentStage='reporter_interested'
-    needsFollowUp={true} 
-    pitch={{ paymentIntentId: 'pi_test123' }} 
-  />
-);
+  it.each(stages)("renders correctly at %s stage", (stage) => {
+    const { container } = renderTracker(stage as PitchStatus);
+    expect(container).toMatchSnapshot();
+  });
+});
