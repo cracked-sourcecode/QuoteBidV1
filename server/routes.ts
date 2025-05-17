@@ -198,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/onboarding/agreement.pdf', serveAgreementPDF);
   app.post('/api/onboarding/agreement/upload', handleAgreementUpload);
   
-  // Register signup stage routes
+  // Register signup stage routes once before auth setup
   app.use('/api/signup-stage', signupStageRouter);
   
   // Serve the agreement HTML template
@@ -213,8 +213,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up regular user authentication
   setupAuth(app);
 
-  // Setup signup wizard routes
-  app.use('/api/signup-stage', signupStageRouter);
+  // Signup stage router is already registered above; duplicate registration removed
+  // to avoid redundant handlers after auth setup.
   
   // Setup PDF generation endpoints for the agreement
   app.post('/api/generate-pdf', handleGeneratePDF);
