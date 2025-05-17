@@ -125,6 +125,30 @@ export function clearSignupData(): void {
 }
 
 /**
+ * Persist the user's current signup step. Used by the auth wizard
+ * to prevent navigating backwards through the flow.
+ */
+export function storeSignupStep(step: number): void {
+  localStorage.setItem('signup_step', String(step));
+}
+
+/**
+ * Retrieve the highest signup step the user has reached.
+ */
+export function getSignupStep(): number {
+  const raw = localStorage.getItem('signup_step');
+  const num = raw ? parseInt(raw, 10) : NaN;
+  return Number.isNaN(num) ? 1 : num;
+}
+
+/**
+ * Clear the stored signup step when the process is finished.
+ */
+export function clearSignupStep(): void {
+  localStorage.removeItem('signup_step');
+}
+
+/**
  * Helper function to redirect user to the appropriate page based on their signup stage
  * @param stage Current signup stage
  * @returns The URL to redirect to

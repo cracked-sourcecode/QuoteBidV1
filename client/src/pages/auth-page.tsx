@@ -30,7 +30,13 @@ import { INDUSTRY_OPTIONS } from "../lib/constants";
 import { AgreementStep } from "@/components/signup/AgreementStep";
 import { PaymentStep } from "@/components/signup/PaymentStep";
 import { ProfileStep } from "@/components/signup/ProfileStep";
-import { storeSignupEmail, storeSignupData } from "@/lib/signup-wizard";
+import {
+  storeSignupEmail,
+  storeSignupData,
+  storeSignupStep,
+  getSignupStep,
+  clearSignupStep
+} from "@/lib/signup-wizard";
 import { SignupWizardProvider } from "@/contexts/SignupWizardContext";
 import { SignupWizard } from "@/components/signup/SignupWizard";
 import validator from "validator";
@@ -106,6 +112,23 @@ export default function AuthPage() {
   const tab = (urlParams.get("tab") || "register").trim().toLowerCase();
   const step = urlParams.get("step");
 
+  // Prevent navigating back to an earlier signup step or tab
+  useEffect(() => {
+    const stored = getSignupStep();
+    if (tab === "signup" && step) {
+      const stepNum = parseInt(step, 10);
+      if (stored > stepNum) {
+        navigate(`/auth?tab=signup&step=${stored}`, { replace: true });
+        return;
+      }
+      if (stored < stepNum) {
+        storeSignupStep(stepNum);
+      }
+    } else if (stored > 1) {
+      navigate(`/auth?tab=signup&step=${stored}`, { replace: true });
+    }
+  }, [tab, step, navigate]);
+
   // Giant debug log at the top
   console.log("AUTH PAGE RENDER", { location, windowLocation: window.location.href });
 
@@ -121,9 +144,10 @@ export default function AuthPage() {
     urlParams: window.location.search
   });
 
-  // Helper to update the step in the URL
+  // Helper to update the step in the URL and persist progress
   const goToStep = (stepNum: number) => {
-    window.location.href = `/auth?tab=signup&step=${stepNum}`;
+    storeSignupStep(stepNum);
+    navigate(`/auth?tab=signup&step=${stepNum}`, { replace: true });
   };
 
   if (tab === "signup" && step) {
@@ -132,7 +156,14 @@ export default function AuthPage() {
         <SignupWizard>
           {step === "1" && <AgreementStep onComplete={() => goToStep(2)} />}
           {step === "2" && <PaymentStep onComplete={() => goToStep(3)} />}
-          {step === "3" && <ProfileStep onComplete={() => navigate("/dashboard")} />}
+          {step === "3" && (
+            <ProfileStep
+              onComplete={() => {
+                clearSignupStep();
+                navigate("/dashboard");
+              }}
+            />
+          )}
         </SignupWizard>
       </SignupWizardProvider>
     );
@@ -345,7 +376,8 @@ function RegisterForm() {
     try {
       storeSignupData(values);
       storeSignupEmail(values.email);
-      window.location.href = "/auth?tab=signup&step=1";
+      storeSignupStep(1);
+      navigate("/auth?tab=signup&step=1", { replace: true });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
