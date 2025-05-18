@@ -19,6 +19,7 @@ import { requireAdmin } from "./middleware/admin";
 import { registerAdmin, deleteAdminUser, createDefaultAdmin } from "./admin-auth";
 import { setupAdminAuth, requireAdminAuth } from "./admin-auth-middleware";
 import { enforceOnboarding } from "./middleware/enforceOnboarding";
+import { jwtAuth } from "./middleware/jwtAuth";
 import upload from './middleware/upload';
 import path from 'path';
 import fs from 'fs';
@@ -254,6 +255,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up regular user authentication
   setupAuth(app);
+  // Allow JWT-based auth for API requests
+  app.use(jwtAuth);
 
   // Endpoint to report the current signup stage for the authenticated user
   app.get('/api/auth/progress', (req: Request, res: Response) => {

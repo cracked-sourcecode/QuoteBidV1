@@ -10,6 +10,7 @@ import path from "path";
 import fs from "fs";
 import connectPg from "connect-pg-simple";
 import { getPool } from "./db";
+import jwt from 'jsonwebtoken';
 
 // Path to uploads directory for avatars
 const uploadsPath = path.join(process.cwd(), "uploads");
@@ -108,7 +109,15 @@ export function setupAuth(app: Express) {
       req.login(user, (err) => {
         if (err) return next(err);
         const { password, ...userWithoutPassword } = user;
-        res.status(201).json({ success: true, user: userWithoutPassword });
+        const token = jwt.sign(
+          {
+            id: user.id,
+            email: user.email,
+          },
+          process.env.JWT_SECRET || 'quotebid_secret',
+          { expiresIn: '7d' }
+        );
+        res.status(201).json({ success: true, user: userWithoutPassword, token });
       });
     } catch (err) {
       next(err);
@@ -125,7 +134,15 @@ export function setupAuth(app: Express) {
       req.login(user, (err) => {
         if (err) return next(err);
         const { password, ...userWithoutPassword } = user;
-        res.status(200).json({ success: true, user: userWithoutPassword });
+        const token = jwt.sign(
+          {
+            id: user.id,
+            email: user.email,
+          },
+          process.env.JWT_SECRET || 'quotebid_secret',
+          { expiresIn: '7d' }
+        );
+        res.status(200).json({ success: true, user: userWithoutPassword, token });
       });
     })(req, res, next);
   });
