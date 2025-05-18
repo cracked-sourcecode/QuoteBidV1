@@ -611,6 +611,7 @@ router.post('/:email/complete', async (req: Request, res: Response) => {
       process.env.JWT_SECRET || 'quotebid_secret',
       { expiresIn: '7d' }
     );
+    
     // No need to call req.login; JWT is returned for authentication
 
     return res.status(200).json({

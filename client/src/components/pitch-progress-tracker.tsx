@@ -147,7 +147,7 @@ export default function PitchProgressTracker({
           );
 
           return (
-            <div className="flex flex-col items-center" key={stage}>
+            <div className="flex flex-col items-center" key={stage + '-' + idx}>
               <div 
                 className={circleCls}
                 aria-current={current ? "step" : undefined}
