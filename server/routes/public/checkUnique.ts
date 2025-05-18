@@ -26,14 +26,36 @@ export async function checkUnique(
     }
 
     const column = fieldMap[field];
+    
+    // Normalize the input value based on field type
+    let normalizedValue = value;
+    if (field === 'email' || field === 'username') {
+      normalizedValue = value.toLowerCase().trim();
+    } else if (field === 'phone') {
+      // Remove non-numeric characters from phone number for consistent comparison
+      normalizedValue = value.replace(/\D/g, '');
+      // Ensure we're not searching with an empty string
+      if (normalizedValue.length === 0) {
+        return res.json({ unique: false, error: 'Invalid phone format' });
+      }
+    }
+
+    // Use a simplified query that only selects the id to avoid schema issues
+    // with fields that might not exist in the database
     const result = await getDb()
-      .select()
+      .select({ id: users.id })
       .from(users)
-      .where(sql`LOWER(${users[column]}) = LOWER(${value})`)
+      .where(
+        field === 'phone' 
+          ? sql`REPLACE(REPLACE(REPLACE(${users.phone_number}, '+', ''), '-', ''), ' ', '') LIKE ${'%' + normalizedValue + '%'}`
+          : sql`LOWER(${users[column]}) = LOWER(${normalizedValue})`
+      )
       .limit(1);
 
     res.json({ unique: result.length === 0 });
   } catch (err) {
-    next(err);
+    console.error('Error in checkUnique:', err);
+    // Return a safe response even in case of errors
+    res.status(500).json({ error: "Failed to check uniqueness", unique: false });
   }
 } 

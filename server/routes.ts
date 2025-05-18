@@ -107,21 +107,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validField = field as ValidField;
       const column = validField === 'phone' ? 'phone_number' : validField;
 
+      // Normalize the input value based on field type
+      let normalizedValue = value;
+      if (validField === 'email' || validField === 'username') {
+        normalizedValue = value.toLowerCase().trim();
+      } else if (validField === 'phone') {
+        // Remove non-numeric characters from phone number for consistent comparison
+        normalizedValue = value.replace(/\D/g, '');
+        // Ensure we're not searching with an empty string
+        if (normalizedValue.length === 0) {
+          return res.json({ unique: false, error: 'Invalid phone format' });
+        }
+      }
+
       // Defensive: check DB connection
-      let existingUser;
+      let existingUser = [];
       try {
-        existingUser = await getDb()
-          .select()
-          .from(users)
-          .where(sql`LOWER(${users[column]}) = LOWER(${value})`)
-          .limit(1);
+        // For username and email: case-insensitive search
+        if (validField === 'email' || validField === 'username') {
+          existingUser = await getDb()
+            .select()
+            .from(users)
+            .where(sql`LOWER(${users[column]}) = LOWER(${normalizedValue})`)
+            .limit(1);
+        } 
+        // For phone: search for the normalized phone number
+        else if (validField === 'phone') {
+          existingUser = await getDb()
+            .select()
+            .from(users)
+            .where(sql`REPLACE(REPLACE(REPLACE(REPLACE(${users.phone_number}, '+', ''), '-', ''), ' ', ''), '()', '') LIKE ${'%' + normalizedValue + '%'}`)
+            .limit(1);
+        }
       } catch (dbErr) {
         console.error('► [check-unique] DB error:', dbErr);
         return res.status(500).json({ error: 'Database error' });
       }
 
-      console.log('► [check-unique] Found:', existingUser.length);
-      return res.json({ unique: existingUser.length === 0 });
+      console.log('► [check-unique] Found:', existingUser?.length || 0);
+      return res.json({ unique: !existingUser || existingUser.length === 0 });
     } catch (error) {
       console.error('► [check-unique] General error:', error);
       return res.status(500).json({ error: 'Failed to check uniqueness' });
