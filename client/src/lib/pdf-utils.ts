@@ -1,5 +1,6 @@
 import { getSignupEmail } from './signup-wizard';
 import { apiRequest } from './queryClient';
+import { apiFetch } from '@/lib/apiFetch';
 
 interface SignatureInfo {
   signature: string;
@@ -21,7 +22,7 @@ export async function generateAgreementPDF(
 ): Promise<Blob> {
   try {
     // Use an external PDF generation service
-    const response = await fetch('/api/generate-pdf', {
+    const response = await apiFetch('/api/generate-pdf', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -66,7 +67,7 @@ export async function uploadAgreementPDF(userId: number, pdfData: Blob): Promise
       formData.append('userId', userId.toString());
     }
 
-    const response = await fetch('/api/upload-agreement', {
+    const response = await apiFetch('/api/upload-agreement', {
       method: 'POST',
       body: formData,
     });
@@ -89,7 +90,7 @@ export async function uploadAgreementPDF(userId: number, pdfData: Blob): Promise
  */
 export async function downloadAgreementPDF(userId: number): Promise<Blob> {
   try {
-    const response = await fetch(`/api/download-agreement/${userId}`);
+    const response = await apiFetch(`/api/download-agreement/${userId}`);
     
     if (!response.ok) {
       throw new Error('Failed to download agreement');

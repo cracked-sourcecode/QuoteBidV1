@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/apiFetch";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -19,7 +20,7 @@ export async function apiRequest(
 ): Promise<Response> {
   // Allow custom config to override defaults (for FormData, etc.)
   if (options?.customConfig) {
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method,
       credentials: "include",
       ...options.customConfig
@@ -30,12 +31,10 @@ export async function apiRequest(
   }
   
   // Standard JSON request
-  const token = localStorage.getItem("token");
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     method,
     headers: {
       ...(data ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
@@ -51,7 +50,7 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    const res = await apiFetch(queryKey[0] as string, {
       credentials: "include",
     });
 

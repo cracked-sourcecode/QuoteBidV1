@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { apiFetch } from "@/lib/apiFetch";
 import { 
   Card, 
   CardContent, 
@@ -425,7 +426,7 @@ export default function OpportunitiesManager() {
                                         formData.append('logo', file);
                                         
                                         try {
-                                          const res = await fetch('/api/upload/publication-logo', {
+                                          const res = await apiFetch('/api/upload/publication-logo', {
                                             method: 'POST',
                                             credentials: 'include',
                                             body: formData

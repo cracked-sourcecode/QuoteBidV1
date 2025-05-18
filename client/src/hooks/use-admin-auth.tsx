@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { AdminUser } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiFetch } from "@/lib/apiFetch";
 import { useToast } from "@/hooks/use-toast";
 
 type AdminLoginData = {
@@ -41,7 +42,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     queryFn: async () => {
       try {
         console.log("Checking admin authentication status...");
-        const res = await fetch("/api/admin/current", {
+        const res = await apiFetch("/api/admin/current", {
           credentials: "include",
           headers: {
             "Cache-Control": "no-cache",

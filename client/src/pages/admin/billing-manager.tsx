@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { apiFetch } from '@/lib/apiFetch';
 import { Loader2, CreditCard } from 'lucide-react';
 import { 
   Dialog,
@@ -80,7 +81,7 @@ const BillingManager = () => {
         formData.append('articleUrl', data.articleUrl);
         
         // Upload the file first
-        const uploadRes = await fetch(`/api/admin/placements/${data.placementId}/upload`, {
+        const uploadRes = await apiFetch(`/api/admin/placements/${data.placementId}/upload`, {
           method: 'POST',
           body: formData,
         });
