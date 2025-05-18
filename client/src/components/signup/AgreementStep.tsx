@@ -7,7 +7,6 @@ import { useSignupWizard } from '@/contexts/SignupWizardContext';
 import { useToast } from "@/hooks/use-toast";
 import SignatureCanvas from 'react-signature-canvas';
 import { useSignupGuard } from '@/hooks/useSignupGuard';
-import { patch } from '@/lib/api';
 import { useLocation } from 'wouter';
 
 interface AgreementStepProps {
@@ -17,7 +16,7 @@ interface AgreementStepProps {
 export function AgreementStep({ onComplete }: AgreementStepProps) {
   useSignupGuard('agreement');
   const { toast } = useToast();
-  const { refreshStage, setStage } = useSignupWizard();
+  const { setStage } = useSignupWizard();
   const [isLoading, setIsLoading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [hasAgreed, setHasAgreed] = useState(false);
@@ -113,11 +112,24 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
         ipAddress 
       }));
       
-      // PATCH backend to update signup_stage to AGREEMENT
-      await patch('/api/auth/stage', { stage: 'AGREEMENT' });
-      setStage('payment');
-      setLocation('/auth?tab=signup&step=2', { replace: true });
-      onComplete();
+      if (!email) {
+        throw new Error('Signup email not found.');
+      }
+
+      const result = await advanceSignupStage(email, 'agreement', {
+        fullName,
+        signature,
+        signedAt,
+        ipAddress,
+      });
+
+      if (result.stage === 'payment') {
+        setStage('payment');
+        setLocation('/auth?tab=signup&step=2', { replace: true });
+        onComplete();
+      } else {
+        throw new Error(result.message || 'Failed to advance signup stage');
+      }
     } catch (error) {
       console.error('Error saving agreement:', error);
       setErrorMessage(error instanceof Error ? error.message : 'Failed to save agreement');

@@ -25,12 +25,16 @@ export function useSignupGuard(requiredStage: string) {
         // Map stage to step number
         const stageToStep = (stage: string) => {
           switch (stage) {
-            case 'REGISTERED': return 1;
-            case 'AGREEMENT': return 2;
-            case 'SUBSCRIPTION':
-            case 'PROFILE': return 3;
-            case 'COMPLETED': return 'dashboard';
-            default: return 1;
+            case 'agreement':
+              return 1;
+            case 'payment':
+              return 2;
+            case 'profile':
+              return 3;
+            case 'ready':
+              return 'dashboard';
+            default:
+              return 1;
           }
         };
         const step = stageToStep(data.stage);

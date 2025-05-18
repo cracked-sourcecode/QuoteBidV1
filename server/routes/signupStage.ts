@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import { Request, Response, Router } from 'express';
 import { getDb } from '../db';
-import { users } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { users, signupState } from '@shared/schema';
+import { eq, sql, and } from 'drizzle-orm';
 import Stripe from 'stripe';
 import path from 'path';
 import fs from 'fs';
@@ -58,6 +58,54 @@ const router = Router();
 
 // Allowed signup stages in order
 const VALID_STAGES = ['agreement', 'payment', 'profile', 'ready', 'legacy'];
+
+export async function startSignup(req: Request, res: Response) {
+  const { email, username, phone, password } = req.body as { email: string; username: string; phone: string; password: string };
+  if (!email || !username || !phone || !password) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  const db = getDb();
+
+  // Check for existing user by email/username/phone
+  const existing = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(sql`LOWER(${users.email}) = LOWER(${email}) OR LOWER(${users.username}) = LOWER(${username}) OR ${users.phone_number} = ${phone}`)
+    .limit(1);
+
+  if (existing.length) {
+    const userId = existing[0].id as number;
+    const [state] = await db.select().from(signupState).where(eq(signupState.userId, userId));
+    if (state && state.status !== 'completed') {
+      await db.transaction(async (tx) => {
+        await tx.delete(signupState).where(eq(signupState.userId, userId));
+        await tx.delete(users).where(eq(users.id, userId));
+      });
+    } else {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+  }
+
+  const hashed = await hashPassword(password);
+
+  let newId: number | undefined;
+  await db.transaction(async (tx) => {
+    const inserted = await tx.insert(users).values({
+      email,
+      username,
+      phone_number: phone,
+      password: hashed,
+      signup_stage: 'agreement',
+    }).returning({ id: users.id });
+    newId = inserted[0].id as number;
+    await tx.insert(signupState).values({ userId: newId! });
+  });
+
+  return res.status(201).json({ userId: newId, step: 'agreement' });
+}
+
+router.post('/start', startSignup);
 
 // Get the current signup stage for a user
 router.get('/:email', async (req: Request, res: Response) => {
@@ -158,16 +206,17 @@ router.post('/:email/advance', async (req: Request, res: Response) => {
         const pdfContent = await generateAgreementPDF(fullName, signature, signedAt);
         fs.writeFileSync(pdfPath, pdfContent);
 
-        // Store the agreement details
-        await getDb().query(`
-          UPDATE users 
-          SET agreement_signed = $1,
-              agreement_pdf_url = $2,
-              agreement_signed_at = $3,
-              agreement_ip_address = $4,
-              signup_stage = $5
-          WHERE email = $6;
-        `, [fullName, `/uploads/agreements/${pdfFilename}`, signedAt, ipAddress, nextStage, decodeURIComponent(email)]);
+        // Store the agreement details using Drizzle ORM
+        await getDb()
+          .update(users)
+          .set({
+            agreementPdfUrl: `/uploads/agreements/${pdfFilename}`,
+            agreementSignedAt: new Date(signedAt),
+            agreementIpAddress: ipAddress,
+            signup_stage: nextStage,
+            hasSignedAgreement: true,
+          })
+          .where(eq(users.email, decodeURIComponent(email)));
         
         return res.status(200).json({
           stage: nextStage,
@@ -313,35 +362,41 @@ router.patch('/:email/profile', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Update the allowed profile fields
-    const allowedFields = [
-      'fullName', 
-      'company_name', 
-      'phone_number', 
-      'industry', 
-      'title', 
-      'location', 
-      'bio'
-    ];
-    
-    const updateData = Object.keys(profileData)
-      .filter(key => allowedFields.includes(key))
-      .reduce((obj, key) => {
-        obj[key] = profileData[key];
-        return obj;
-      }, {});
-    
-    if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ 
-        message: 'No valid profile fields provided',
-        success: false 
-      });
+    // Map incoming fields to database column names
+    const fieldMap: Record<string, string> = {
+      fullName: 'fullName',
+      company_name: 'company_name',
+      phone_number: 'phone_number',
+      industry: 'industry',
+      title: 'title',
+      location: 'location',
+      bio: 'bio',
+      linkedin: 'linkedIn',
+      website: 'website',
+      twitter: 'twitter',
+      instagram: 'instagram',
+      doFollow: 'doFollowLink',
+    };
+
+    const updateData: Record<string, any> = {};
+    for (const key of Object.keys(profileData)) {
+      const dbField = fieldMap[key];
+      if (dbField) {
+        updateData[dbField] = profileData[key];
+      }
     }
     
-    // Update the user's profile
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        message: 'No valid profile fields provided',
+        success: false
+      });
+    }
+
+    // Mark profile as completed and update fields
     await getDb()
       .update(users)
-      .set(updateData)
+      .set({ ...updateData, profileCompleted: true })
       .where(eq(users.id, user.id));
     
     return res.status(200).json({ success: true });
@@ -407,7 +462,7 @@ router.post('/:email/avatar', upload.single('avatar'), async (req: Request, res:
     
     await getDb()
       .update(users)
-      .set({ avatarUrl: avatarPath })
+      .set({ avatar: avatarPath })
       .where(eq(users.id, user.id));
     
     return res.status(200).json({ success: true, path: avatarPath });
@@ -539,11 +594,12 @@ router.post('/:email/complete', async (req: Request, res: Response) => {
     // Update the user's signup stage to 'ready'
     await getDb()
       .update(users)
-      .set({ 
-        signup_stage: 'ready', 
+      .set({
+        signup_stage: 'ready',
         hasAgreedToTerms: true,
         hasCompletedPayment: true,
-        hasCompletedProfile: true
+        hasCompletedProfile: true,
+        profileCompleted: true
       })
       .where(eq(users.id, user.id));
     
@@ -619,8 +675,8 @@ async function generateAgreementPDF(fullName: string, signature: string, signedA
   });
 }
 
-// Update signup stage
-router.patch('/api/auth/stage', async (req: Request, res: Response) => {
+// Update signup stage (not used by wizard, kept for backward compatibility)
+router.patch('/stage', async (req: Request, res: Response) => {
   const userId = req.user?.id;
   const { stage } = req.body;
   if (!userId) return res.status(401).json({ message: 'Unauthorized' });

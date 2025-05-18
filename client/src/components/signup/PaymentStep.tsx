@@ -161,7 +161,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
 }
 
 export function PaymentStep({ onComplete }: PaymentStepProps) {
-  useSignupGuard('SUBSCRIPTION');
+  useSignupGuard('payment');
   return (
     <Elements stripe={stripePromise}>
       <CheckoutForm onComplete={onComplete} />

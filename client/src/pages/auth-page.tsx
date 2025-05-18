@@ -30,7 +30,8 @@ import { INDUSTRY_OPTIONS } from "../lib/constants";
 import { AgreementStep } from "@/components/signup/AgreementStep";
 import { PaymentStep } from "@/components/signup/PaymentStep";
 import { ProfileStep } from "@/components/signup/ProfileStep";
-import { storeSignupEmail, storeSignupData } from "@/lib/signup-wizard";
+import { storeSignupEmail, storeSignupData, getSignupData } from "@/lib/signup-wizard";
+import { post } from "@/lib/api";
 import { SignupWizardProvider } from "@/contexts/SignupWizardContext";
 import { SignupWizard } from "@/components/signup/SignupWizard";
 import validator from "validator";
@@ -130,6 +131,19 @@ export default function AuthPage() {
     navigate(`/auth?tab=signup&step=${stepNum}`, { replace: true });
   };
 
+  const handleWizardComplete = async (token: string) => {
+    const signupData = getSignupData();
+    if (signupData?.username && signupData?.password) {
+      try {
+        await post('/api/login', { username: signupData.username, password: signupData.password });
+      } catch (err) {
+        console.error('Auto-login failed:', err);
+      }
+    }
+    localStorage.setItem('token', token);
+    navigate('/opportunities', { replace: true });
+  };
+
   // Ensure we're on the correct tab and step
   useEffect(() => {
     const highest = Number(localStorage.getItem('signup_highest_step') || '0');
@@ -152,7 +166,7 @@ export default function AuthPage() {
         <SignupWizard>
           {step === "1" && <AgreementStep onComplete={() => goToStep(2)} />}
           {step === "2" && <PaymentStep onComplete={() => goToStep(3)} />}
-          {step === "3" && <ProfileStep onComplete={() => navigate("/dashboard", { replace: true })} />}
+          {step === "3" && <ProfileStep onComplete={handleWizardComplete} />}
         </SignupWizard>
       </SignupWizardProvider>
     );
@@ -382,7 +396,7 @@ function RegisterForm() {
       // Store data for the wizard
       storeSignupData(values);
       storeSignupEmail(values.email);
-      navigate("/auth?tab=signup&step=1", { replace: true });
+      navigate("/signup-wizard?step=1", { replace: true });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
