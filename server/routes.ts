@@ -27,6 +27,7 @@ import { serveAgreementPDF, handleAgreementUpload } from './handlers/agreement-h
 import { handleGeneratePDF, handleSignupAgreementUpload, serveAgreementHTML } from './handlers/signup-wizard-handlers';
 import signupStageRouter from './routes/signupStage';
 import signupStateRouter from './routes/signupState';
+import signupRouter from './routes/signup';
 import { hashPassword } from './utils/passwordUtils';
 import jwt from 'jsonwebtoken';
 // Sample pitches import removed
@@ -216,6 +217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register signup stage routes once before auth setup
   app.use('/api/signup-stage', signupStageRouter);
   app.use('/api/signup/state', signupStateRouter);
+  app.use('/api/signup', signupRouter);
   
   // Serve the agreement HTML template
   app.get('/api/onboarding/agreement.html', serveAgreementHTML);
