@@ -456,7 +456,7 @@ router.post('/:email/avatar', upload.single('avatar'), async (req: Request, res:
     
     await getDb()
       .update(users)
-      .set({ avatarUrl: avatarPath })
+      .set({ avatar: avatarPath })
       .where(eq(users.id, user.id));
     
     return res.status(200).json({ success: true, path: avatarPath });
