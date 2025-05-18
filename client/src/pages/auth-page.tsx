@@ -89,6 +89,7 @@ export default function AuthPage() {
   const [location, navigate] = useLocation();
   const [search, setSearch] = useState(window.location.search);
   const [highestStep, setHighestStep] = useState(1);
+  const { toast } = useToast();
 
   // Track highest step reached
   useEffect(() => {
@@ -138,6 +139,7 @@ export default function AuthPage() {
         await post('/api/login', { username: signupData.username, password: signupData.password });
       } catch (err) {
         console.error('Auto-login failed:', err);
+        toast({ title: 'Auto-login failed', description: 'Please log in manually', variant: 'destructive' });
       }
     }
     localStorage.setItem('token', token);
