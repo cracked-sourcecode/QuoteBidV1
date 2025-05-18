@@ -614,8 +614,15 @@ router.post('/:email/complete', async (req: Request, res: Response) => {
       { expiresIn: '7d' }
     );
     
-    return res.status(200).json({ 
-      success: true, 
+    // Also log the user in via session
+    await new Promise<void>((resolve, reject) => {
+      req.login(user, (err) => {
+        if (err) reject(err); else resolve();
+      });
+    });
+
+    return res.status(200).json({
+      success: true,
       token,
       user: {
         id: user.id,
