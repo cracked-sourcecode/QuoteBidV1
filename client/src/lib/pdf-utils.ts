@@ -8,6 +8,7 @@ interface SignatureInfo {
   timestamp: string;
   formattedDate: string;
   formattedTime: string;
+  ipAddress?: string;
 }
 
 /**
@@ -34,6 +35,7 @@ export async function generateAgreementPDF(
         timestamp: signatureInfo.timestamp,
         formattedDate: signatureInfo.formattedDate,
         formattedTime: signatureInfo.formattedTime,
+        ipAddress: signatureInfo.ipAddress,
       }),
     });
 
@@ -54,7 +56,11 @@ export async function generateAgreementPDF(
  * @param pdfData PDF data as a Blob
  * @returns Response from the server
  */
-export async function uploadAgreementPDF(userId: number, pdfData: Blob): Promise<any> {
+export async function uploadAgreementPDF(
+  userId: number,
+  pdfData: Blob,
+  ipAddress?: string
+): Promise<any> {
   try {
     const formData = new FormData();
     formData.append('pdf', pdfData, 'agreement.pdf');
@@ -65,6 +71,10 @@ export async function uploadAgreementPDF(userId: number, pdfData: Blob): Promise
       formData.append('email', email);
     } else {
       formData.append('userId', userId.toString());
+    }
+
+    if (ipAddress) {
+      formData.append('ipAddress', ipAddress);
     }
 
     const response = await apiFetch('/api/upload-agreement', {
