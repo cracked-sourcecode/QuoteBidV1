@@ -44,8 +44,9 @@ export function setupAuth(app: Express) {
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       secure: process.env.NODE_ENV === "production",
-      httpOnly: true
-    }
+      httpOnly: true,
+      sameSite: "lax",
+    },
   };
 
   app.set("trust proxy", 1);
@@ -106,9 +107,8 @@ export function setupAuth(app: Express) {
       // Log the user in
       req.login(user, (err) => {
         if (err) return next(err);
-        // Return user without password
         const { password, ...userWithoutPassword } = user;
-        res.status(201).json(userWithoutPassword);
+        res.status(201).json({ success: true, user: userWithoutPassword });
       });
     } catch (err) {
       next(err);
@@ -124,9 +124,8 @@ export function setupAuth(app: Express) {
       
       req.login(user, (err) => {
         if (err) return next(err);
-        // Return user without password
         const { password, ...userWithoutPassword } = user;
-        res.status(200).json(userWithoutPassword);
+        res.status(200).json({ success: true, user: userWithoutPassword });
       });
     })(req, res, next);
   });
