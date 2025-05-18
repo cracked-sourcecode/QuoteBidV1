@@ -48,9 +48,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Login failed");
       }
-      return await res.json();
+      return (await res.json()) as { user: SelectUser } | SelectUser;
     },
-    onSuccess: (user: SelectUser) => {
+    onSuccess: (data: { user: SelectUser } | SelectUser) => {
+      const user = "user" in data ? data.user : data;
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Login successful",
@@ -79,9 +80,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Registration failed");
       }
-      return await res.json();
+      return (await res.json()) as { user: SelectUser } | SelectUser;
     },
-    onSuccess: (user: SelectUser) => {
+    onSuccess: (data: { user: SelectUser } | SelectUser) => {
+      const user = "user" in data ? data.user : data;
       queryClient.setQueryData(["/api/user"], user);
     },
     onError: (error: Error) => {
