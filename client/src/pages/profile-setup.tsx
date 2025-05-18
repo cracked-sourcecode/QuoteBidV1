@@ -6,6 +6,7 @@ import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { apiFetch } from '@/lib/apiFetch';
 import { insertUserSchema } from '@shared/schema';
 import { SignupWizard } from '@/components/signup/SignupWizard';
 
@@ -185,7 +186,7 @@ export default function ProfileSetup() {
         const formData = new FormData();
         formData.append('avatar', avatarFile);
         
-        const response = await fetch(`/api/users/${user.id}/avatar`, {
+        const response = await apiFetch(`/api/users/${user.id}/avatar`, {
           method: 'POST',
           body: formData,
         });

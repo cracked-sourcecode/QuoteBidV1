@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { apiFetch } from '@/lib/apiFetch';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +21,7 @@ export default function AdminLoginTest() {
     setError(null);
     
     try {
-      const response = await fetch('/api/admin/login', {
+      const response = await apiFetch('/api/admin/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

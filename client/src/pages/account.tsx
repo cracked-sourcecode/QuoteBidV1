@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { toast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { apiFetch } from '@/lib/apiFetch';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
 import { format } from 'date-fns';
 import { Link } from 'wouter';
@@ -279,7 +280,7 @@ export default function AccountPage() {
           formData.append('avatar', avatarFile);
           
           console.log('Sending avatar upload request to:', `/api/users/${user.id}/avatar`);
-          const response = await fetch(`/api/users/${user.id}/avatar`, {
+          const response = await apiFetch(`/api/users/${user.id}/avatar`, {
             method: 'POST',
             body: formData,
           });
