@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import { Request, Response, Router } from 'express';
 import { getDb } from '../db';
-import { users } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { users, signupState } from '@shared/schema';
+import { eq, sql, and } from 'drizzle-orm';
 import Stripe from 'stripe';
 import path from 'path';
 import fs from 'fs';
@@ -58,6 +58,54 @@ const router = Router();
 
 // Allowed signup stages in order
 const VALID_STAGES = ['agreement', 'payment', 'profile', 'ready', 'legacy'];
+
+export async function startSignup(req: Request, res: Response) {
+  const { email, username, phone, password } = req.body as { email: string; username: string; phone: string; password: string };
+  if (!email || !username || !phone || !password) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  const db = getDb();
+
+  // Check for existing user by email/username/phone
+  const existing = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(sql`LOWER(${users.email}) = LOWER(${email}) OR LOWER(${users.username}) = LOWER(${username}) OR ${users.phone_number} = ${phone}`)
+    .limit(1);
+
+  if (existing.length) {
+    const userId = existing[0].id as number;
+    const [state] = await db.select().from(signupState).where(eq(signupState.userId, userId));
+    if (state && state.status !== 'completed') {
+      await db.transaction(async (tx) => {
+        await tx.delete(signupState).where(eq(signupState.userId, userId));
+        await tx.delete(users).where(eq(users.id, userId));
+      });
+    } else {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+  }
+
+  const hashed = await hashPassword(password);
+
+  let newId: number | undefined;
+  await db.transaction(async (tx) => {
+    const inserted = await tx.insert(users).values({
+      email,
+      username,
+      phone_number: phone,
+      password: hashed,
+      signup_stage: 'agreement',
+    }).returning({ id: users.id });
+    newId = inserted[0].id as number;
+    await tx.insert(signupState).values({ userId: newId! });
+  });
+
+  return res.status(201).json({ userId: newId, step: 'agreement' });
+}
+
+router.post('/start', startSignup);
 
 // Get the current signup stage for a user
 router.get('/:email', async (req: Request, res: Response) => {

@@ -22,6 +22,12 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const signupState = pgTable("signup_state", {
+  userId: integer("user_id").primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  status: text("status").default('started'),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 
 // Regular users table
 export const users = pgTable("users", {
@@ -56,6 +62,8 @@ export const users = pgTable("users", {
   company_name: text("company_name"),
   phone_number: text("phone_number"),
   subscription_status: text("subscription_status").default("inactive"),
+  isPaid: boolean("is_paid").default(false),
+  hasSignedAgreement: boolean("has_signed_agreement").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -200,6 +208,7 @@ export const insertPitchSchema = createInsertSchema(pitches).omit({ id: true, cr
     billingError: z.string().optional(),
   });
 export const insertSavedOpportunitySchema = createInsertSchema(savedOpportunities).omit({ id: true, createdAt: true });
+export const insertSignupStateSchema = createInsertSchema(signupState).omit({ updatedAt: true });
 export const insertPlacementSchema = createInsertSchema(placements)
   .omit({ id: true, createdAt: true, chargedAt: true })
   .extend({
@@ -241,6 +250,8 @@ export type InsertPitch = z.infer<typeof insertPitchSchema>;
 
 export type SavedOpportunity = typeof savedOpportunities.$inferSelect;
 export type InsertSavedOpportunity = z.infer<typeof insertSavedOpportunitySchema>;
+export type SignupState = typeof signupState.$inferSelect;
+export type InsertSignupState = z.infer<typeof insertSignupStateSchema>;
 
 export type Placement = typeof placements.$inferSelect;
 export type InsertPlacement = z.infer<typeof insertPlacementSchema>;
@@ -249,17 +260,25 @@ export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 // Define relationships between tables
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ many, one }) => ({
   bids: many(bids),
   pitches: many(pitches),
   savedOpportunities: many(savedOpportunities),
   placements: many(placements),
   notifications: many(notifications),
+  signupState: one(signupState),
 }));
 
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   user: one(users, {
     fields: [notifications.userId],
+    references: [users.id],
+  }),
+}));
+
+export const signupStateRelations = relations(signupState, ({ one }) => ({
+  user: one(users, {
+    fields: [signupState.userId],
     references: [users.id],
   }),
 }));
