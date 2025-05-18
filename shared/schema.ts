@@ -58,7 +58,7 @@ export const users = pgTable("users", {
   stripeSubscriptionId: text("stripe_subscription_id"),
   premiumStatus: text("premium_status").default("free"),
   premiumExpiry: timestamp("premium_expiry"),
-  signup_stage: text("signup_stage").default("REGISTERED"),
+  signup_stage: text("signup_stage").default('agreement'),
   company_name: text("company_name"),
   phone_number: text("phone_number"),
   subscription_status: text("subscription_status").default("inactive"),
