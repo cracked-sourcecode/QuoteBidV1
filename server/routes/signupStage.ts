@@ -206,16 +206,17 @@ router.post('/:email/advance', async (req: Request, res: Response) => {
         const pdfContent = await generateAgreementPDF(fullName, signature, signedAt);
         fs.writeFileSync(pdfPath, pdfContent);
 
-        // Store the agreement details
-        await getDb().query(`
-          UPDATE users 
-          SET agreement_signed = $1,
-              agreement_pdf_url = $2,
-              agreement_signed_at = $3,
-              agreement_ip_address = $4,
-              signup_stage = $5
-          WHERE email = $6;
-        `, [fullName, `/uploads/agreements/${pdfFilename}`, signedAt, ipAddress, nextStage, decodeURIComponent(email)]);
+        // Store the agreement details using Drizzle ORM
+        await getDb()
+          .update(users)
+          .set({
+            agreementPdfUrl: `/uploads/agreements/${pdfFilename}`,
+            agreementSignedAt: new Date(signedAt),
+            agreementIpAddress: ipAddress,
+            signup_stage: nextStage,
+            hasSignedAgreement: true,
+          })
+          .where(eq(users.email, decodeURIComponent(email)));
         
         return res.status(200).json({
           stage: nextStage,
