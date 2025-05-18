@@ -31,6 +31,7 @@ import signupStateRouter from './routes/signupState';
 import signupRouter from './routes/signup';
 import { hashPassword } from './utils/passwordUtils';
 import jwt from 'jsonwebtoken';
+import ensureAuth from './middleware/ensureAuth';
 // Sample pitches import removed
 
 export async function registerRoutes(app: Express): Promise<Server> {
