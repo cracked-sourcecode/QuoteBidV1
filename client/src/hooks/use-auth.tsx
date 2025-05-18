@@ -13,9 +13,9 @@ type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
-  loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
+  loginMutation: UseMutationResult<{ user: SelectUser, token?: string } | SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
+  registerMutation: UseMutationResult<{ user: SelectUser, token?: string } | SelectUser, Error, InsertUser>;
   isProfileComplete: () => boolean;
 };
 
@@ -48,10 +48,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Login failed");
       }
-      return (await res.json()) as { user: SelectUser } | SelectUser;
+      return (await res.json()) as { user: SelectUser, token?: string } | SelectUser;
     },
-    onSuccess: (data: { user: SelectUser } | SelectUser) => {
+    onSuccess: (data: { user: SelectUser, token?: string } | SelectUser) => {
       const user = "user" in data ? data.user : data;
+      // Store token if present
+      if ("token" in data && data.token) {
+        localStorage.setItem("token", data.token);
+      }
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Login successful",
@@ -80,10 +84,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Registration failed");
       }
-      return (await res.json()) as { user: SelectUser } | SelectUser;
+      return (await res.json()) as { user: SelectUser, token?: string } | SelectUser;
     },
-    onSuccess: (data: { user: SelectUser } | SelectUser) => {
+    onSuccess: (data: { user: SelectUser, token?: string } | SelectUser) => {
       const user = "user" in data ? data.user : data;
+      // Store token if present
+      if ("token" in data && data.token) {
+        localStorage.setItem("token", data.token);
+      }
       queryClient.setQueryData(["/api/user"], user);
     },
     onError: (error: Error) => {

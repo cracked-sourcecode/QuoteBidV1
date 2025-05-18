@@ -30,9 +30,13 @@ export async function apiRequest(
   }
   
   // Standard JSON request
+  const token = localStorage.getItem("token");
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: {
+      ...(data ? { "Content-Type": "application/json" } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
