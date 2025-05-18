@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { SignupWizard as SignupWizardComponent } from '@/components/signup/SignupWizard';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SignupWizardProvider, useSignupWizard } from '@/contexts/SignupWizardContext';
@@ -9,13 +11,26 @@ import { AgreementStep } from '@/components/signup/AgreementStep';
 import { PaymentStep } from '@/components/signup/PaymentStep';
 import { ProfileStep } from '@/components/signup/ProfileStep';
 import { post } from '@/lib/api';
-import { SignupStage } from '@/lib/signup-wizard';
+import { SignupStage, storeSignupEmail, storeSignupData } from '@/lib/signup-wizard';
+import { INDUSTRY_OPTIONS } from '@/lib/constants';
 
 function SignupWizardContent() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { currentStage, setStage, email } = useSignupWizard();
   const [inputEmail, setInputEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [username, setUsername] = React.useState('');
+  const [fullName, setFullName] = React.useState('');
+  const [companyName, setCompanyName] = React.useState('');
+  const [phone, setPhone] = React.useState('');
+  const [industry, setIndustry] = React.useState('');
+  const [savedEmail, setSavedEmail] = React.useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('signup_email');
+    }
+    return null;
+  });
   const [isLoading, setIsLoading] = React.useState(false);
   const [redirecting, setRedirecting] = React.useState(false);
 
@@ -95,17 +110,20 @@ function SignupWizardContent() {
   }, [currentStage, setStage, currentStep]);
 
   const handleStartSignup = async () => {
-    if (!inputEmail || !inputEmail.includes('@')) {
+    if (!inputEmail || !inputEmail.includes('@') || !password || !username || !fullName || !companyName || !phone || !industry) {
       toast({
-        title: 'Invalid Email',
-        description: 'Please enter a valid email address to begin.',
+        title: 'Missing Information',
+        description: 'Please fill out all required fields to begin.',
         variant: 'destructive',
       });
       return;
     }
     setIsLoading(true);
     try {
-      await post('/api/auth/register', { email: inputEmail });
+      await post('/api/auth/register', { email: inputEmail, password, username, fullName, companyName, phone, industry });
+      storeSignupEmail(inputEmail);
+      storeSignupData({ email: inputEmail, password, username, fullName, companyName, phone, industry });
+      setSavedEmail(inputEmail);
       setStage('agreement');
     } catch (err: any) {
       toast({ title: 'Signup Error', description: err.message, variant: 'destructive' });
@@ -133,24 +151,68 @@ function SignupWizardContent() {
     );
   }
 
-  // If no email, show email input
-  if (!email) {
+  // If no email, show registration form
+  if (!email && !savedEmail) {
     return (
       <div className="bg-white shadow-md rounded-lg p-8 mb-8">
         <h1 className="text-2xl font-bold mb-6">Start Your QuoteBid Journey</h1>
         <div className="space-y-4">
           <div>
+            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+              Full Name
+            </label>
+            <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+              Username
+            </label>
+            <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} />
+          </div>
+          <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email Address
             </label>
-            <input
+            <Input
               id="email"
               type="email"
               value={inputEmail}
               onChange={(e) => setInputEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#004684] focus:border-[#004684]"
               placeholder="Enter your email"
             />
+          </div>
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              Password
+            </label>
+            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-1">
+              Company Name
+            </label>
+            <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+              Phone
+            </label>
+            <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="industry" className="block text-sm font-medium text-gray-700 mb-1">
+              Industry
+            </label>
+            <Select value={industry} onValueChange={(v) => setIndustry(v)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select your industry" />
+              </SelectTrigger>
+              <SelectContent>
+                {INDUSTRY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Button
             onClick={handleStartSignup}
