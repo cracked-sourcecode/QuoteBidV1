@@ -382,7 +382,7 @@ function RegisterForm() {
       // Store data for the wizard
       storeSignupData(values);
       storeSignupEmail(values.email);
-      navigate("/auth?tab=signup&step=1", { replace: true });
+      navigate("/signup-wizard?step=1", { replace: true });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
