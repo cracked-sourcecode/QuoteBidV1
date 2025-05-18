@@ -362,35 +362,41 @@ router.patch('/:email/profile', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Update the allowed profile fields
-    const allowedFields = [
-      'fullName', 
-      'company_name', 
-      'phone_number', 
-      'industry', 
-      'title', 
-      'location', 
-      'bio'
-    ];
-    
-    const updateData = Object.keys(profileData)
-      .filter(key => allowedFields.includes(key))
-      .reduce((obj, key) => {
-        obj[key] = profileData[key];
-        return obj;
-      }, {});
-    
-    if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ 
-        message: 'No valid profile fields provided',
-        success: false 
-      });
+    // Map incoming fields to database column names
+    const fieldMap: Record<string, string> = {
+      fullName: 'fullName',
+      company_name: 'company_name',
+      phone_number: 'phone_number',
+      industry: 'industry',
+      title: 'title',
+      location: 'location',
+      bio: 'bio',
+      linkedin: 'linkedIn',
+      website: 'website',
+      twitter: 'twitter',
+      instagram: 'instagram',
+      doFollow: 'doFollowLink',
+    };
+
+    const updateData: Record<string, any> = {};
+    for (const key of Object.keys(profileData)) {
+      const dbField = fieldMap[key];
+      if (dbField) {
+        updateData[dbField] = profileData[key];
+      }
     }
     
-    // Update the user's profile
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        message: 'No valid profile fields provided',
+        success: false
+      });
+    }
+
+    // Mark profile as completed and update fields
     await getDb()
       .update(users)
-      .set(updateData)
+      .set({ ...updateData, profileCompleted: true })
       .where(eq(users.id, user.id));
     
     return res.status(200).json({ success: true });
@@ -456,7 +462,7 @@ router.post('/:email/avatar', upload.single('avatar'), async (req: Request, res:
     
     await getDb()
       .update(users)
-      .set({ avatarUrl: avatarPath })
+      .set({ avatar: avatarPath })
       .where(eq(users.id, user.id));
     
     return res.status(200).json({ success: true, path: avatarPath });
@@ -588,11 +594,12 @@ router.post('/:email/complete', async (req: Request, res: Response) => {
     // Update the user's signup stage to 'ready'
     await getDb()
       .update(users)
-      .set({ 
-        signup_stage: 'ready', 
+      .set({
+        signup_stage: 'ready',
         hasAgreedToTerms: true,
         hasCompletedPayment: true,
-        hasCompletedProfile: true
+        hasCompletedProfile: true,
+        profileCompleted: true
       })
       .where(eq(users.id, user.id));
     

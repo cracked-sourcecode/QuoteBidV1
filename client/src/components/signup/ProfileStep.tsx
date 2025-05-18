@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Upload } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { getSignupEmail, updateSignupProfile, clearSignupData } from '@/lib/signup-wizard';
+import { getSignupEmail, getSignupData, updateSignupProfile, clearSignupData } from '@/lib/signup-wizard';
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
 import { post } from '@/lib/api';
 import { INDUSTRY_OPTIONS } from "@/lib/constants";
@@ -88,6 +88,17 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
       }
       const completeRes = await post(`/api/signup-stage/${encodeURIComponent(email)}/complete`, {});
       if (completeRes.success) {
+        const signupInfo = getSignupData();
+        if (signupInfo?.username && signupInfo?.password) {
+          try {
+            await post('/api/login', {
+              username: signupInfo.username,
+              password: signupInfo.password,
+            });
+          } catch (e) {
+            console.warn('Auto login failed:', e);
+          }
+        }
         clearSignupData();
         onComplete(completeRes.token);
       } else {
