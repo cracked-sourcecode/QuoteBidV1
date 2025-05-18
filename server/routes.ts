@@ -982,6 +982,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all opportunities with publications
   app.get("/api/opportunities", async (req: Request, res: Response) => {
     try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ 
+          message: "Authentication required to view opportunities" 
+        });
+      }
+
       const opportunities = await storage.getOpportunitiesWithPublications();
       res.json(opportunities);
     } catch (error: any) {
@@ -996,6 +1003,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get single opportunity with publication
   app.get("/api/opportunities/:id", async (req: Request, res: Response) => {
     try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ 
+          message: "Authentication required to view opportunities" 
+        });
+      }
+
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid opportunity ID" });
@@ -1042,6 +1056,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get bid information for an opportunity
   app.get("/api/opportunities/:id/bid-info", async (req: Request, res: Response) => {
     try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ 
+          message: "Authentication required to view bid information" 
+        });
+      }
+
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid opportunity ID" });
@@ -1086,6 +1107,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get price history for an opportunity
   app.get("/api/opportunities/:id/price-history", async (req: Request, res: Response) => {
     try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ 
+          message: "Authentication required to view price history" 
+        });
+      }
+
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid opportunity ID" });
@@ -1152,6 +1180,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Search opportunities
   app.get("/api/opportunities/search/:query", async (req: Request, res: Response) => {
     try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ 
+          message: "Authentication required to search opportunities" 
+        });
+      }
+
       const query = req.params.query;
       const opportunities = await storage.searchOpportunities(query);
       res.json(opportunities);
