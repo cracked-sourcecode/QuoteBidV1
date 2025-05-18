@@ -280,12 +280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Signup stage router is already registered above; duplicate registration removed
   // to avoid redundant handlers after auth setup.
-  
-  // Setup PDF generation endpoints for the agreement
-  app.post('/api/generate-pdf', handleGeneratePDF);
-  app.get('/api/onboarding/agreement.html', serveAgreementHTML);
 
-  
   // Set up admin authentication
   setupAdminAuth(app);
   
