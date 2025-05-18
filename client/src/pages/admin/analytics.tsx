@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/apiFetch";
 import {
   Card,
   CardContent,
@@ -64,7 +65,7 @@ export default function AdminAnalytics() {
   const { data: userActivity, isLoading: userActivityLoading } = useQuery({
     queryKey: ['/api/admin/user-activity'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/user-activity');
+      const res = await apiFetch('/api/admin/user-activity');
       if (!res.ok) throw new Error('Failed to fetch user activity');
       return res.json();
     },
@@ -73,7 +74,7 @@ export default function AdminAnalytics() {
   const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ['/api/admin/users'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/users');
+      const res = await apiFetch('/api/admin/users');
       if (!res.ok) throw new Error('Failed to fetch users');
       return res.json();
     },
@@ -82,7 +83,7 @@ export default function AdminAnalytics() {
   const { data: opportunities, isLoading: opportunitiesLoading } = useQuery({
     queryKey: ['/api/opportunities'],
     queryFn: async () => {
-      const res = await fetch('/api/opportunities');
+      const res = await apiFetch('/api/opportunities');
       if (!res.ok) throw new Error('Failed to fetch opportunities');
       return res.json();
     },
@@ -91,7 +92,7 @@ export default function AdminAnalytics() {
   const { data: pitches, isLoading: pitchesLoading } = useQuery({
     queryKey: ['/api/admin/pitches'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/pitches');
+      const res = await apiFetch('/api/admin/pitches');
       if (!res.ok) throw new Error('Failed to fetch pitches');
       return res.json();
     },

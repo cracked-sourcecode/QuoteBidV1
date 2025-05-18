@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiFetch } from '@/lib/apiFetch';
 import { useLocation } from 'wouter';
 import { Search, Filter, SlidersHorizontal, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -37,7 +38,7 @@ export default function OpportunitiesPage() {
   useEffect(() => {
     const fetchOpportunities = async () => {
       try {
-        const response = await fetch('/api/opportunities');
+        const response = await apiFetch('/api/opportunities');
         
         if (!response.ok) {
           throw new Error('Failed to fetch opportunities');

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiFetch } from '@/lib/apiFetch';
 import { useAuth } from '@/hooks/use-auth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -76,7 +77,7 @@ export default function AccountPage() {
     setIsSaving(true);
     try {
       // Call the actual API endpoint
-      const response = await fetch(`/api/users/${user.id}/industry`, {
+      const response = await apiFetch(`/api/users/${user.id}/industry`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
