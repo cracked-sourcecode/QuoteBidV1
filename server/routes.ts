@@ -26,6 +26,8 @@ import { saveAgreementPDF, regenerateAgreementsPDF, createAgreementPDF, generate
 import { serveAgreementPDF, handleAgreementUpload } from './handlers/agreement-handlers';
 import { handleGeneratePDF, handleSignupAgreementUpload, serveAgreementHTML } from './handlers/signup-wizard-handlers';
 import signupStageRouter from './routes/signupStage';
+import signupStateRouter from './routes/signupState';
+import signupRouter from './routes/signup';
 import { hashPassword } from './utils/passwordUtils';
 import jwt from 'jsonwebtoken';
 // Sample pitches import removed
@@ -106,21 +108,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validField = field as ValidField;
       const column = validField === 'phone' ? 'phone_number' : validField;
 
+      // Normalize the input value based on field type
+      let normalizedValue = value;
+      if (validField === 'email' || validField === 'username') {
+        normalizedValue = value.toLowerCase().trim();
+      } else if (validField === 'phone') {
+        // Remove non-numeric characters from phone number for consistent comparison
+        normalizedValue = value.replace(/\D/g, '');
+        // Ensure we're not searching with an empty string
+        if (normalizedValue.length === 0) {
+          return res.json({ unique: false, error: 'Invalid phone format' });
+        }
+      }
+
       // Defensive: check DB connection
-      let existingUser;
+      let existingUser = [];
       try {
-        existingUser = await getDb()
-          .select()
-          .from(users)
-          .where(sql`LOWER(${users[column]}) = LOWER(${value})`)
-          .limit(1);
+        // For username and email: case-insensitive search
+        if (validField === 'email' || validField === 'username') {
+          existingUser = await getDb()
+            .select()
+            .from(users)
+            .where(sql`LOWER(${users[column]}) = LOWER(${normalizedValue})`)
+            .limit(1);
+        } 
+        // For phone: search for the normalized phone number
+        else if (validField === 'phone') {
+          existingUser = await getDb()
+            .select()
+            .from(users)
+            .where(sql`REPLACE(REPLACE(REPLACE(REPLACE(${users.phone_number}, '+', ''), '-', ''), ' ', ''), '()', '') LIKE ${'%' + normalizedValue + '%'}`)
+            .limit(1);
+        }
       } catch (dbErr) {
         console.error('► [check-unique] DB error:', dbErr);
         return res.status(500).json({ error: 'Database error' });
       }
 
-      console.log('► [check-unique] Found:', existingUser.length);
-      return res.json({ unique: existingUser.length === 0 });
+      console.log('► [check-unique] Found:', existingUser?.length || 0);
+      return res.json({ unique: !existingUser || existingUser.length === 0 });
     } catch (error) {
       console.error('► [check-unique] General error:', error);
       return res.status(500).json({ error: 'Failed to check uniqueness' });
@@ -214,6 +240,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register signup stage routes once before auth setup
   app.use('/api/signup-stage', signupStageRouter);
+  app.use('/api/signup/state', signupStateRouter);
+  app.use('/api/signup', signupRouter);
   
   // Serve the agreement HTML template
   app.get('/api/onboarding/agreement.html', serveAgreementHTML);
@@ -227,14 +255,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up regular user authentication
   setupAuth(app);
 
+  // Endpoint to report the current signup stage for the authenticated user
+  app.get('/api/auth/progress', (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const stage = (req.user as any).signup_stage || 'agreement';
+    res.json({ stage });
+  });
+
+  // Endpoint to update the signup stage for the authenticated user
+  app.patch('/api/auth/stage', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const { stage } = req.body as { stage?: string };
+    if (!stage) {
+      return res.status(400).json({ message: 'Stage required' });
+    }
+    await getDb()
+      .update(users)
+      .set({ signup_stage: stage })
+      .where(eq(users.id, req.user.id));
+    res.json({ success: true });
+  });
+
   // Signup stage router is already registered above; duplicate registration removed
   // to avoid redundant handlers after auth setup.
-  
-  // Setup PDF generation endpoints for the agreement
-  app.post('/api/generate-pdf', handleGeneratePDF);
-  app.get('/api/onboarding/agreement.html', serveAgreementHTML);
 
-  
   // Set up admin authentication
   setupAdminAuth(app);
   

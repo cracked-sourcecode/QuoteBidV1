@@ -1,3 +1,4 @@
+import React from "react";
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { FileText, Send, Star, Trophy, AlertTriangle } from "lucide-react";

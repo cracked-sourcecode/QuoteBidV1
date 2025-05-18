@@ -4,12 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Upload } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { advanceSignupStage, getSignupEmail, updateSignupProfile, getSignupData, clearSignupData } from '@/lib/signup-wizard';
+import { getSignupEmail, getSignupData, updateSignupProfile, clearSignupData } from '@/lib/signup-wizard';
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
-import { apiRequest } from '@/lib/queryClient';
-import { useAuth } from '@/hooks/use-auth';
+import { post } from '@/lib/api';
 import { INDUSTRY_OPTIONS } from "@/lib/constants";
-import { useLocation } from 'wouter';
 import { useSignupGuard } from '@/hooks/useSignupGuard';
 
 interface ProfileStepProps {
@@ -28,7 +26,6 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
   useSignupGuard('profile');
   const { toast } = useToast();
   const { refreshStage } = useSignupWizard();
-  const { registerMutation } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [location, setLocation] = useState('');
@@ -43,8 +40,6 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const email = getSignupEmail();
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [, navigate] = useLocation();
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -70,18 +65,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
     }
     setIsLoading(true);
     try {
-      // Gather all data from localStorage
-      const registrationData = getSignupData();
-      const agreementData = JSON.parse(localStorage.getItem('signup_agreement') || '{}');
-      const paymentData = JSON.parse(localStorage.getItem('signup_payment') || '{}');
-      if (!registrationData || !agreementData || !paymentData) {
-        throw new Error('Some signup data is missing. Please restart the signup process.');
-      }
-      // Compose the full registration payload
-      const payload = {
-        ...registrationData,
-        ...agreementData,
-        ...paymentData,
+      await updateSignupProfile(email, {
         fullName,
         location,
         title,
@@ -92,9 +76,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
         twitter,
         instagram,
         doFollow,
-      };
-      // Create the account
-      await registerMutation.mutateAsync(payload);
+      });
       // Optionally upload avatar
       if (avatar) {
         const formData = new FormData();
@@ -104,29 +86,30 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
           body: formData,
         });
       }
-      clearSignupData();
-      setShowSuccess(true);
+      const completeRes = await post(`/api/signup-stage/${encodeURIComponent(email)}/complete`, {});
+      if (completeRes.success) {
+        const signupInfo = getSignupData();
+        if (signupInfo?.username && signupInfo?.password) {
+          try {
+            await post('/api/login', {
+              username: signupInfo.username,
+              password: signupInfo.password,
+            });
+          } catch (e) {
+            console.warn('Auto login failed:', e);
+          }
+        }
+        clearSignupData();
+        onComplete(completeRes.token);
+      } else {
+        throw new Error('Failed to complete signup');
+      }
     } catch (error: any) {
       toast({ title: 'Profile Update Error', description: error.message || 'There was an error updating your profile. Please try again.', variant: 'destructive' });
     }
     setIsLoading(false);
   };
 
-  if (showSuccess) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] p-8 bg-white rounded-2xl shadow-lg max-w-2xl mx-auto mt-8">
-        <div className="text-5xl mb-4">🎉</div>
-        <h2 className="text-3xl font-bold mb-2 text-center">Welcome to QuoteBid!</h2>
-        <p className="text-lg text-gray-700 mb-6 text-center">Your account has been created successfully.<br />You now have full access to the QuoteBid marketplace.</p>
-        <Button
-          className="bg-[#004684] hover:bg-[#003a70] text-white px-8 py-3 text-lg font-semibold"
-          onClick={() => navigate('/opportunities', { replace: true })}
-        >
-          Continue to Dashboard
-        </Button>
-      </div>
-    );
-  }
   
   return (
     <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-lg max-w-4xl mx-auto mt-8">
