@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/apiFetch";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 
@@ -16,7 +17,7 @@ export default function SubscriptionRedirect() {
     }
 
     // Get the checkout URL and redirect
-    fetch(`/api/get-checkout-url?session_id=${sessionId}`)
+    apiFetch(`/api/get-checkout-url?session_id=${sessionId}`)
       .then(response => {
         if (!response.ok) {
           throw new Error("Failed to get checkout URL");

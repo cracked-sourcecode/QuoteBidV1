@@ -5,6 +5,7 @@ import session from "express-session";
 import { hashPassword, comparePasswords } from "./utils/passwordUtils";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
+import { ensureAuth } from './middleware/ensureAuth';
 import { z } from "zod";
 import path from "path";
 import fs from "fs";
@@ -154,19 +155,15 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+  app.get("/api/user", ensureAuth, (req, res) => {
     // Return user without password
     const { password, ...userWithoutPassword } = req.user as SelectUser;
     res.json(userWithoutPassword);
   });
 
   // Add PATCH endpoint for user profile updates
-  app.patch("/api/user", async (req, res, next) => {
+  app.patch("/api/user", ensureAuth, async (req, res, next) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
       
       const userId = req.user.id;
       

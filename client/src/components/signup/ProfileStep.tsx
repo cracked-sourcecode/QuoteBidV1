@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getSignupEmail, getSignupData, updateSignupProfile, clearSignupData } from '@/lib/signup-wizard';
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
 import { post } from '@/lib/api';
+import { apiFetch } from '@/lib/apiFetch';
 import { INDUSTRY_OPTIONS } from "@/lib/constants";
 import { useSignupGuard } from '@/hooks/useSignupGuard';
 
@@ -81,7 +82,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
       if (avatar) {
         const formData = new FormData();
         formData.append('avatar', avatar);
-        await fetch(`/api/signup-stage/${encodeURIComponent(email)}/avatar`, {
+        await apiFetch(`/api/signup-stage/${encodeURIComponent(email)}/avatar`, {
           method: 'POST',
           body: formData,
         });

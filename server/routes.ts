@@ -20,6 +20,7 @@ import { registerAdmin, deleteAdminUser, createDefaultAdmin } from "./admin-auth
 import { setupAdminAuth, requireAdminAuth } from "./admin-auth-middleware";
 import { enforceOnboarding } from "./middleware/enforceOnboarding";
 import { jwtAuth } from "./middleware/jwtAuth";
+import { ensureAuth } from "./middleware/ensureAuth";
 import upload from './middleware/upload';
 import path from 'path';
 import fs from 'fs';
@@ -260,19 +261,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(jwtAuth);
 
   // Endpoint to report the current signup stage for the authenticated user
-  app.get('/api/auth/progress', (req: Request, res: Response) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  app.get('/api/auth/progress', ensureAuth, (req: Request, res: Response) => {
     const stage = (req.user as any).signup_stage || 'agreement';
     res.json({ stage });
   });
 
   // Endpoint to update the signup stage for the authenticated user
-  app.patch('/api/auth/stage', async (req: Request, res: Response) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  app.patch('/api/auth/stage', ensureAuth, async (req: Request, res: Response) => {
     const { stage } = req.body as { stage?: string };
     if (!stage) {
       return res.status(400).json({ message: 'Stage required' });

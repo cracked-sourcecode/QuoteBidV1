@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiFetch } from '@/lib/apiFetch';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, FileText, Mic, Check, X, ChevronDown, List, LayoutGrid, Send } from 'lucide-react';
 import { format } from 'date-fns';
@@ -98,7 +99,7 @@ export default function AdminPitchesList({ filter = 'all' }: AdminPitchesListPro
     queryKey: ['/api/admin/pitches'],
     queryFn: async () => {
       console.log('Fetching admin pitches...');
-      const res = await fetch('/api/admin/pitches', {
+      const res = await apiFetch('/api/admin/pitches', {
         method: 'GET',
         credentials: 'include',
         headers: {
