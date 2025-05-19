@@ -1,4 +1,4 @@
-run = "npm start"
+run = "npm install && npm run build && npm start"
 hidden = [".build", "node_modules"]
 modules = ["nodejs-20:v8-20230920-bd784b9"]
 
@@ -8,6 +8,7 @@ channel = "stable-22_11"
 [env]
 PATH = "/home/runner/$REPL_SLUG/.config/npm/node_global/bin:/home/runner/$REPL_SLUG/node_modules/.bin"
 npm_config_prefix = "/home/runner/$REPL_SLUG/.config/npm/node_global"
+NODE_ENV = "production"
 
 [packager]
 language = "nodejs"
@@ -27,5 +28,5 @@ syntax = "javascript"
 start = "typescript-language-server --stdio"
 
 [deployment]
-run = ["sh", "-c", "npm start"]
+run = ["sh", "-c", "npm install && npm run build && npm start"]
 deploymentTarget = "cloudrun" 
