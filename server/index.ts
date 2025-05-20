@@ -107,11 +107,7 @@ app.use((req, res, next) => {
 
   // Use environment variable for port, default to 5050
   const port = process.env.WS_PORT ? Number(process.env.WS_PORT) : 5050;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  server.listen(port, '0.0.0.0', () => {
+    log(`serving on http://192.168.1.21:${port}`);
   });
 })();
