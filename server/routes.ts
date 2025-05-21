@@ -22,6 +22,7 @@ import { enforceOnboarding } from "./middleware/enforceOnboarding";
 import { jwtAuth } from "./middleware/jwtAuth";
 import { ensureAuth } from "./middleware/ensureAuth";
 import upload from './middleware/upload';
+import pdfUpload from './middleware/pdfUpload';
 import path from 'path';
 import fs from 'fs';
 import { saveAgreementPDF, regenerateAgreementsPDF, createAgreementPDF, generateProfessionalPDF } from './pdf-utils';
@@ -252,7 +253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/generate-pdf', handleGeneratePDF);
   
   // Upload signed agreement
-  app.post('/api/upload-agreement', upload.single('pdf'), handleSignupAgreementUpload);
+  app.post('/api/upload-agreement', pdfUpload.single('pdf'), handleSignupAgreementUpload);
   
   // Set up regular user authentication
   setupAuth(app);
