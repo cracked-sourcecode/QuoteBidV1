@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { getDb } from '../db';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import cookie from 'cookie';
 
 /**
  * Middleware to authenticate requests using a JWT token.
@@ -15,9 +16,14 @@ export async function jwtAuth(req: Request, _res: Response, next: NextFunction) 
   if (req.user) return next();
 
   const authHeader = req.headers['authorization'];
-  const token = authHeader?.startsWith('Bearer ')
+  let token = authHeader?.startsWith('Bearer ')
     ? authHeader.slice(7)
     : undefined;
+
+  if (!token && req.headers.cookie) {
+    const cookies = cookie.parse(req.headers.cookie);
+    token = cookies.token;
+  }
 
   if (!token) return next();
 

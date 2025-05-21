@@ -143,6 +143,7 @@ export function setupAuth(app: Express) {
           process.env.JWT_SECRET || 'quotebid_secret',
           { expiresIn: '7d' }
         );
+        res.cookie('token', token, { httpOnly: true, sameSite: 'lax' });
         res.status(200).json({ success: true, user: userWithoutPassword, token });
       });
     })(req, res, next);
@@ -151,6 +152,7 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
+      res.clearCookie('token');
       res.sendStatus(200);
     });
   });
