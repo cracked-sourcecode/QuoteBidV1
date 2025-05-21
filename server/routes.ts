@@ -5082,5 +5082,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // Register /api/user route here
+  app.get("/api/user", ensureAuth, (req, res) => {
+    console.log('Authorization header:', req.headers['authorization']);
+    console.log('req.user:', req.user);
+    // Return user without password
+    const { password, ...userWithoutPassword } = req.user as any;
+    res.json(userWithoutPassword);
+  });
+  
   return httpServer;
 }
