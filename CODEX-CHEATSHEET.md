@@ -28,6 +28,7 @@ STRIPE_SECRET=sk_test_•••
 # Other required variables
 NODE_ENV=development
 SESSION_SECRET=local_development_secret
+JWT_SECRET=quotebid_secret
 ```
 
 You can use the provided script to generate a basic .env file:
