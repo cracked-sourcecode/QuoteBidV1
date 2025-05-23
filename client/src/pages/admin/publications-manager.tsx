@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
+import { apiFetch } from '@/lib/apiFetch';
 import { Publication, InsertPublication, Opportunity } from '@shared/schema';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -77,7 +78,7 @@ export default function PublicationsManager() {
   const { data: publications, isLoading, isError } = useQuery({
     queryKey: ['/api/publications'],
     queryFn: async () => {
-      const response = await fetch('/api/publications');
+      const response = await apiFetch('/api/publications');
       if (!response.ok) {
         throw new Error('Failed to fetch publications');
       }
@@ -89,7 +90,7 @@ export default function PublicationsManager() {
   const { data: opportunities, isLoading: isLoadingOpportunities } = useQuery({
     queryKey: ['/api/admin/opportunities'],
     queryFn: async () => {
-      const response = await fetch('/api/admin/opportunities');
+      const response = await apiFetch('/api/admin/opportunities');
       if (!response.ok) {
         throw new Error('Failed to fetch opportunities');
       }
@@ -159,7 +160,7 @@ export default function PublicationsManager() {
       const formData = new FormData();
       formData.append('logo', file);
       
-      const response = await fetch('/api/upload/publication-logo', {
+      const response = await apiFetch('/api/upload/publication-logo', {
         method: 'POST',
         body: formData,
       });
@@ -181,7 +182,7 @@ export default function PublicationsManager() {
   // Create publication mutation
   const createMutation = useMutation({
     mutationFn: async (publication: InsertPublication) => {
-      const response = await fetch('/api/admin/publications', {
+      const response = await apiFetch('/api/admin/publications', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -219,7 +220,7 @@ export default function PublicationsManager() {
   // Update publication mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<Publication> }) => {
-      const response = await fetch(`/api/admin/publications/${id}`, {
+      const response = await apiFetch(`/api/admin/publications/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -258,7 +259,7 @@ export default function PublicationsManager() {
   // Delete publication mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`/api/admin/publications/${id}`, {
+      const response = await apiFetch(`/api/admin/publications/${id}`, {
         method: 'DELETE',
       });
       
@@ -386,7 +387,7 @@ export default function PublicationsManager() {
   const { data: allPitches, isLoading: isLoadingPitches } = useQuery({
     queryKey: ['/api/admin/pitches'],
     queryFn: async () => {
-      const response = await fetch('/api/admin/pitches');
+      const response = await apiFetch('/api/admin/pitches');
       if (!response.ok) {
         throw new Error('Failed to fetch pitches');
       }

@@ -60,7 +60,7 @@ const router = Router();
 const VALID_STAGES = ['agreement', 'payment', 'profile', 'ready', 'legacy'];
 
 export async function startSignup(req: Request, res: Response) {
-  const { email, username, phone, password } = req.body as { email: string; username: string; phone: string; password: string };
+  const { email, username, phone, password, name } = req.body as { email: string; username: string; phone: string; password: string; name?: string };
   if (!email || !username || !phone || !password) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
@@ -94,6 +94,7 @@ export async function startSignup(req: Request, res: Response) {
     const inserted = await tx.insert(users).values({
       email,
       username,
+      fullName: name || username,
       phone_number: phone,
       password: hashed,
       signup_stage: 'agreement',
@@ -301,8 +302,7 @@ router.post('/:email/advance', async (req: Request, res: Response) => {
             stripeCustomerId: customerId,
             stripeSubscriptionId: subscription.id,
             subscription_status: subscription.status,
-            signup_stage: nextStage,
-            hasCompletedPayment: true
+            signup_stage: nextStage
           })
           .where(eq(users.id, user.id));
         
@@ -318,7 +318,7 @@ router.post('/:email/advance', async (req: Request, res: Response) => {
         console.error('Error processing payment:', error);
         return res.status(500).json({ 
           message: 'Error processing payment',
-          error: error.message
+          error: (error as Error).message
         });
       }
     }
@@ -596,32 +596,32 @@ router.post('/:email/complete', async (req: Request, res: Response) => {
       .update(users)
       .set({
         signup_stage: 'ready',
-        hasAgreedToTerms: true,
-        hasCompletedPayment: true,
-        hasCompletedProfile: true,
         profileCompleted: true
       })
       .where(eq(users.id, user.id));
     
     // Generate a JWT token for the user
+    const role = user.isAdmin ? 'admin' : 'user';
     const token = jwt.sign(
       { 
         id: user.id, 
         email: user.email, 
-        role: user.role || 'user' 
+        role
       }, 
       process.env.JWT_SECRET || 'quotebid_secret',
       { expiresIn: '7d' }
     );
     
-    return res.status(200).json({ 
-      success: true, 
+    // No need to call req.login; JWT is returned for authentication
+
+    return res.status(200).json({
+      success: true,
       token,
       user: {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
-        role: user.role
+        role
       }
     });
   } catch (error) {

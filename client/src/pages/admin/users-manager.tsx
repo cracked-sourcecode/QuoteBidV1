@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { apiFetch } from "@/lib/apiFetch";
 import { 
   Card, 
   CardContent, 
@@ -535,7 +536,7 @@ export default function UsersManager() {
                       className="flex items-center"
                       onClick={async () => {
                         try {
-                          const response = await fetch(`/api/admin/regenerate-agreements?userId=${selectedUser.id}`, {
+                          const response = await apiFetch(`/api/admin/regenerate-agreements?userId=${selectedUser.id}`, {
                             method: 'POST',
                           });
                           
