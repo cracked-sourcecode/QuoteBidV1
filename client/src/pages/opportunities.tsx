@@ -197,7 +197,7 @@ export default function OpportunitiesPage() {
       />
       {/* Header with gradient background */}
       <div className="px-4 sm:px-6 lg:px-8 py-8 border-b border-gray-200 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50">
-        <div className="max-w-4xl">
+        <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Media Opportunities</h1>
           <p className="text-gray-700 text-base">
             Browse open opportunities from top publications and lock in your bid before prices increase. Our marketplace connects you with premium media outlets to showcase your expertise.
