@@ -1,5 +1,6 @@
 import { Switch, Route, Redirect, useLocation, Link } from "wouter";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/apiFetch";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -332,7 +333,7 @@ function Router() {
                                 const { data: opportunities, isLoading } = useQuery({
                                   queryKey: ['/api/opportunities'],
                                   queryFn: async () => {
-                                    const res = await fetch('/api/opportunities');
+                                    const res = await apiFetch('/api/opportunities');
                                     if (!res.ok) throw new Error('Failed to fetch opportunities');
                                     return res.json();
                                   },
@@ -380,7 +381,7 @@ function Router() {
                                 const { data: pitches, isLoading } = useQuery({
                                   queryKey: ['/api/admin/pitches'],
                                   queryFn: async () => {
-                                    const res = await fetch('/api/admin/pitches');
+                                    const res = await apiFetch('/api/admin/pitches');
                                     if (!res.ok) throw new Error('Failed to fetch pitches');
                                     return res.json();
                                   },
@@ -428,7 +429,7 @@ function Router() {
                                 const { data: activity, isLoading } = useQuery({
                                   queryKey: ['/api/admin/user-activity'],
                                   queryFn: async () => {
-                                    const res = await fetch('/api/admin/user-activity');
+                                    const res = await apiFetch('/api/admin/user-activity');
                                     if (!res.ok) throw new Error('Failed to fetch user activity');
                                     return res.json();
                                   },
@@ -463,7 +464,7 @@ function Router() {
                                     const { data } = useQuery({
                                       queryKey: ['/api/admin/user-activity'],
                                       queryFn: async () => {
-                                        const res = await fetch('/api/admin/user-activity');
+                                        const res = await apiFetch('/api/admin/user-activity');
                                         if (!res.ok) throw new Error('Failed to fetch user activity');
                                         return res.json();
                                       },
@@ -484,7 +485,7 @@ function Router() {
                                     const { data } = useQuery({
                                       queryKey: ['/api/admin/user-activity'],
                                       queryFn: async () => {
-                                        const res = await fetch('/api/admin/user-activity');
+                                        const res = await apiFetch('/api/admin/user-activity');
                                         if (!res.ok) throw new Error('Failed to fetch user activity');
                                         return res.json();
                                       },
@@ -515,7 +516,7 @@ function Router() {
                                 const { data: users, isLoading } = useQuery({
                                   queryKey: ['/api/admin/users'],
                                   queryFn: async () => {
-                                    const res = await fetch('/api/admin/users');
+                                    const res = await apiFetch('/api/admin/users');
                                     if (!res.ok) throw new Error('Failed to fetch users');
                                     return res.json();
                                   },

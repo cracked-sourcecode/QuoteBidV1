@@ -12,7 +12,18 @@ import { jsPDF } from 'jspdf';
  */
 export async function handleGeneratePDF(req: Request, res: Response) {
   try {
-    const { htmlContent, signature, name, timestamp, formattedDate, formattedTime } = req.body;
+    const {
+      htmlContent,
+      signature,
+      name,
+      timestamp,
+      formattedDate,
+      formattedTime,
+      ipAddress
+    } = req.body;
+
+    const clientIp =
+      ipAddress || req.ip || req.socket.remoteAddress || undefined;
     
     if (!htmlContent || !signature || !name) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -35,11 +46,17 @@ export async function handleGeneratePDF(req: Request, res: Response) {
         pdf.text(`Name: ${name}`, 20, 40);
         pdf.text(`Date: ${formattedDate}`, 20, 50);
         pdf.text(`Time: ${formattedTime}`, 20, 60);
-        
+
+        let yPos = 70;
+        if (clientIp) {
+          pdf.text(`IP: ${clientIp}`, 20, yPos);
+          yPos += 10;
+        }
+
         // Add the signature image
         if (signature) {
           const imgData = signature.split(',')[1];
-          pdf.addImage(imgData, 'PNG', 20, 70, 160, 60);
+          pdf.addImage(imgData, 'PNG', 20, yPos, 160, 60);
         }
         
         // Send the generated PDF
@@ -60,7 +77,7 @@ export async function handleGeneratePDF(req: Request, res: Response) {
 export async function handleSignupAgreementUpload(req: Request, res: Response) {
   try {
     const { pdf } = req.files as any;
-    const { email } = req.body;
+    const { email, ipAddress } = req.body;
     
     if (!pdf || !email) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -96,7 +113,7 @@ export async function handleSignupAgreementUpload(req: Request, res: Response) {
       .set({
         agreementPdfUrl: `/uploads/agreements/${filename}`,
         agreementSignedAt: new Date(),
-        agreementIpAddress: req.ip || req.socket.remoteAddress || 'Unknown',
+        agreementIpAddress: ipAddress || req.ip || req.socket.remoteAddress || 'Unknown',
         hasAgreedToTerms: true
       })
       .where(eq(users.id, user.id));

@@ -8,8 +8,18 @@ jest.mock('../db', () => ({
 }));
 import { getDb } from '../db';
 
+jest.mock('../scripts/cleanupIncompleteSignups', () => ({
+  cleanupIncompleteSignups: jest.fn().mockResolvedValue(undefined)
+}));
+
+// Improved mock chain for Drizzle ORM
+const mockWhere = jest.fn().mockResolvedValue([]);
+const mockLimit = jest.fn().mockReturnThis();
+const mockFrom = jest.fn(() => ({ where: mockWhere, limit: mockLimit }));
+const mockSelect = jest.fn(() => ({ from: mockFrom }));
+
 const mockDb: any = {
-  select: jest.fn(),
+  select: mockSelect,
   insert: jest.fn(),
   delete: jest.fn(),
   update: jest.fn(),
@@ -51,7 +61,7 @@ describe('signup flow', () => {
   });
 
   test('cleanup removes stale users', async () => {
-    mockDb.select.mockResolvedValueOnce([{ id: 1 }]);
+    mockDb.select.mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve([{ id: 1 }]) }) });
     const del = jest.fn();
     mockDb.transaction.mockImplementation(async (cb: any) => {
       await cb({ delete: del });

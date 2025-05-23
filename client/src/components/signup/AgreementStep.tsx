@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { apiFetch } from '@/lib/apiFetch';
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from 'lucide-react';
@@ -102,7 +103,7 @@ export function AgreementStep({ onComplete }: AgreementStepProps) {
       // Get current timestamp
       const signedAt = new Date().toISOString();
       // Get IP address
-      const ipAddress = await fetch('https://api.ipify.org?format=json').then(res => res.json()).then(data => data.ip);
+      const ipAddress = await apiFetch('https://api.ipify.org?format=json').then(res => res.json()).then(data => data.ip);
 
       // Store agreement data in localStorage
       localStorage.setItem('signup_agreement', JSON.stringify({ 

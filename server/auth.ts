@@ -2,15 +2,16 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
+import { hashPassword, comparePasswords } from "./utils/passwordUtils";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
+import { ensureAuth } from './middleware/ensureAuth';
 import { z } from "zod";
 import path from "path";
 import fs from "fs";
 import connectPg from "connect-pg-simple";
 import { getPool } from "./db";
+import jwt from 'jsonwebtoken';
 
 // Path to uploads directory for avatars
 const uploadsPath = path.join(process.cwd(), "uploads");
@@ -31,20 +32,6 @@ declare global {
 }
 
 const PostgresSessionStore = connectPg(session);
-const scryptAsync = promisify(scrypt);
-
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}
-
-async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
-}
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
@@ -59,8 +46,9 @@ export function setupAuth(app: Express) {
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       secure: process.env.NODE_ENV === "production",
-      httpOnly: true
-    }
+      httpOnly: true,
+      sameSite: "lax",
+    },
   };
 
   app.set("trust proxy", 1);
@@ -121,9 +109,16 @@ export function setupAuth(app: Express) {
       // Log the user in
       req.login(user, (err) => {
         if (err) return next(err);
-        // Return user without password
         const { password, ...userWithoutPassword } = user;
-        res.status(201).json(userWithoutPassword);
+        const token = jwt.sign(
+          {
+            id: user.id,
+            email: user.email,
+          },
+          process.env.JWT_SECRET || 'quotebid_secret',
+          { expiresIn: '7d' }
+        );
+        res.status(201).json({ success: true, user: userWithoutPassword, token });
       });
     } catch (err) {
       next(err);
@@ -139,9 +134,17 @@ export function setupAuth(app: Express) {
       
       req.login(user, (err) => {
         if (err) return next(err);
-        // Return user without password
         const { password, ...userWithoutPassword } = user;
-        res.status(200).json(userWithoutPassword);
+        const token = jwt.sign(
+          {
+            id: user.id,
+            email: user.email,
+          },
+          process.env.JWT_SECRET || 'quotebid_secret',
+          { expiresIn: '7d' }
+        );
+        res.cookie('token', token, { httpOnly: true, sameSite: 'lax' });
+        res.status(200).json({ success: true, user: userWithoutPassword, token });
       });
     })(req, res, next);
   });
@@ -149,23 +152,20 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
+      res.clearCookie('token');
       res.sendStatus(200);
     });
   });
 
-  app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+  app.get("/api/user", ensureAuth, (req, res) => {
     // Return user without password
     const { password, ...userWithoutPassword } = req.user as SelectUser;
     res.json(userWithoutPassword);
   });
 
   // Add PATCH endpoint for user profile updates
-  app.patch("/api/user", async (req, res, next) => {
+  app.patch("/api/user", ensureAuth, async (req, res, next) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
       
       const userId = req.user.id;
       

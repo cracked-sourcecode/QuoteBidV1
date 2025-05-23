@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
+import { apiFetch } from '@/lib/apiFetch';
 
 export default function SubscriptionSuccess() {
   const [, navigate] = useLocation();
@@ -53,7 +54,7 @@ export default function SubscriptionSuccess() {
         console.log('Verifying payment with data:', { sessionId, paymentIntentId });
         
         // Check if user is authenticated first
-        const userResponse = await fetch('/api/user');
+        const userResponse = await apiFetch('/api/user');
         console.log('User auth check response:', userResponse.status);
         
         if (!userResponse.ok) {

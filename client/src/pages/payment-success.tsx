@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { apiFetch } from "@/lib/apiFetch";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ export default function PaymentSuccess() {
     // Mark user as having premium access
     const updateUserStatus = async () => {
       try {
-        await fetch(`/api/users/${user.id}/update-premium-status`, {
+        await apiFetch(`/api/users/${user.id}/update-premium-status`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

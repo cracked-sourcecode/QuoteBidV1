@@ -19,7 +19,10 @@ import { requireAdmin } from "./middleware/admin";
 import { registerAdmin, deleteAdminUser, createDefaultAdmin } from "./admin-auth";
 import { setupAdminAuth, requireAdminAuth } from "./admin-auth-middleware";
 import { enforceOnboarding } from "./middleware/enforceOnboarding";
+import { jwtAuth } from "./middleware/jwtAuth";
+import { ensureAuth } from "./middleware/ensureAuth";
 import upload from './middleware/upload';
+import pdfUpload from './middleware/pdfUpload';
 import path from 'path';
 import fs from 'fs';
 import { saveAgreementPDF, regenerateAgreementsPDF, createAgreementPDF, generateProfessionalPDF } from './pdf-utils';
@@ -250,25 +253,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/generate-pdf', handleGeneratePDF);
   
   // Upload signed agreement
-  app.post('/api/upload-agreement', upload.single('pdf'), handleSignupAgreementUpload);
+  app.post('/api/upload-agreement', pdfUpload.single('pdf'), handleSignupAgreementUpload);
   
   // Set up regular user authentication
   setupAuth(app);
+  // Allow JWT-based auth for API requests
+  app.use(jwtAuth);
 
   // Endpoint to report the current signup stage for the authenticated user
-  app.get('/api/auth/progress', (req: Request, res: Response) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  app.get('/api/auth/progress', ensureAuth, (req: Request, res: Response) => {
     const stage = (req.user as any).signup_stage || 'agreement';
     res.json({ stage });
   });
 
   // Endpoint to update the signup stage for the authenticated user
-  app.patch('/api/auth/stage', async (req: Request, res: Response) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
+  app.patch('/api/auth/stage', ensureAuth, async (req: Request, res: Response) => {
     const { stage } = req.body as { stage?: string };
     if (!stage) {
       return res.status(400).json({ message: 'Stage required' });
@@ -979,6 +978,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all opportunities with publications
   app.get("/api/opportunities", async (req: Request, res: Response) => {
     try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ 
+          message: "Authentication required to view opportunities" 
+        });
+      }
+
       const opportunities = await storage.getOpportunitiesWithPublications();
       res.json(opportunities);
     } catch (error: any) {
@@ -993,6 +999,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get single opportunity with publication
   app.get("/api/opportunities/:id", async (req: Request, res: Response) => {
     try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ 
+          message: "Authentication required to view opportunities" 
+        });
+      }
+
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid opportunity ID" });
@@ -1039,6 +1052,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get bid information for an opportunity
   app.get("/api/opportunities/:id/bid-info", async (req: Request, res: Response) => {
     try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ 
+          message: "Authentication required to view bid information" 
+        });
+      }
+
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid opportunity ID" });
@@ -1083,6 +1103,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get price history for an opportunity
   app.get("/api/opportunities/:id/price-history", async (req: Request, res: Response) => {
     try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ 
+          message: "Authentication required to view price history" 
+        });
+      }
+
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid opportunity ID" });
@@ -1149,6 +1176,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Search opportunities
   app.get("/api/opportunities/search/:query", async (req: Request, res: Response) => {
     try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ 
+          message: "Authentication required to search opportunities" 
+        });
+      }
+
       const query = req.params.query;
       const opportunities = await storage.searchOpportunities(query);
       res.json(opportunities);
@@ -5046,6 +5080,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       clients.delete(ws);
       console.log('WebSocket client disconnected');
     });
+  });
+  
+  // Register /api/user route here
+  app.get("/api/user", ensureAuth, (req, res) => {
+    console.log('Authorization header:', req.headers['authorization']);
+    console.log('req.user:', req.user);
+    // Return user without password
+    const { password, ...userWithoutPassword } = req.user as any;
+    res.json(userWithoutPassword);
   });
   
   return httpServer;

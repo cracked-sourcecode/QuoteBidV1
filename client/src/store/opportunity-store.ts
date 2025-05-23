@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Opportunity, PriceTick, BidInfo } from '@shared/types/opportunity';
 import { generatePriceHistory, sampleOpportunities } from '@/lib/fixtures/opportunities';
+import { apiFetch } from '@/lib/apiFetch';
 
 interface OpportunityState {
   // Current selected opportunity
@@ -41,7 +42,7 @@ const useOpportunityStore = create<OpportunityState>((set, get) => ({
     
     try {
       // Fetch the opportunity from the API
-      const response = await fetch(`/api/opportunities/${opportunityId}`, {
+      const response = await apiFetch(`/api/opportunities/${opportunityId}`, {
         credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache',
@@ -74,7 +75,7 @@ const useOpportunityStore = create<OpportunityState>((set, get) => ({
     try {
       // Try to fetch price history from API
       try {
-        const response = await fetch(`/api/opportunities/${opportunityId}/price-history`, {
+        const response = await apiFetch(`/api/opportunities/${opportunityId}/price-history`, {
           credentials: 'include'
         });
         
@@ -129,7 +130,7 @@ const useOpportunityStore = create<OpportunityState>((set, get) => ({
     try {
       // Try to fetch bid info from API
       try {
-        const response = await fetch(`/api/opportunities/${opportunityId}/bid-info`, {
+        const response = await apiFetch(`/api/opportunities/${opportunityId}/bid-info`, {
           credentials: 'include'
         });
         
@@ -176,7 +177,7 @@ const useOpportunityStore = create<OpportunityState>((set, get) => ({
       // Submit the bid to the API
       console.log('Submitting bid:', { opportunityId, bidAmount, pitch, paymentIntentId });
       
-      const response = await fetch('/api/pitches', {
+      const response = await apiFetch('/api/pitches', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

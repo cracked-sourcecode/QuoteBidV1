@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/apiFetch";
 import { Link, useLocation } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -89,6 +90,7 @@ export default function AuthPage() {
   const [location, navigate] = useLocation();
   const [search, setSearch] = useState(window.location.search);
   const [highestStep, setHighestStep] = useState(1);
+  const { toast } = useToast();
 
   // Track highest step reached
   useEffect(() => {
@@ -138,6 +140,7 @@ export default function AuthPage() {
         await post('/api/login', { username: signupData.username, password: signupData.password });
       } catch (err) {
         console.error('Auto-login failed:', err);
+        toast({ title: 'Auto-login failed', description: 'Please log in manually', variant: 'destructive' });
       }
     }
     localStorage.setItem('token', token);
@@ -349,7 +352,7 @@ function RegisterForm() {
       ) {
         setPending((p) => ({ ...p, [field]: true }));
         setUniqueError((e) => ({ ...e, [field]: "" }));
-        fetch(`/api/users/check-unique?field=${field}&value=${encodeURIComponent(value)}`)
+        apiFetch(`/api/users/check-unique?field=${field}&value=${encodeURIComponent(value)}`)
           .then((res) => res.json())
           .then((data) => {
             setUnique((u) => ({ ...u, [field]: data.unique }));

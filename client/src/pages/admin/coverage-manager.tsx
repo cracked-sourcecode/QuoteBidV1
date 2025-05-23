@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { apiFetch } from '@/lib/apiFetch';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, RefreshCw, CheckCircle, Link, Share2, FileText, ExternalLink } from 'lucide-react';
 import { 
@@ -102,7 +103,7 @@ const CoverageManager = () => {
         formData.append('articleUrl', data.articleUrl);
         
         // Upload the file
-        const uploadRes = await fetch(`/api/admin/placements/${data.placementId}/upload`, {
+        const uploadRes = await apiFetch(`/api/admin/placements/${data.placementId}/upload`, {
           method: 'POST',
           body: formData,
         });
