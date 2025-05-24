@@ -192,7 +192,7 @@ export default function QuoteBidSignUp() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch("/auth/signup/start", {
+      const res = await fetch("/api/auth/signup/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -297,7 +297,14 @@ export default function QuoteBidSignUp() {
                 placeholder="Username"
                 className="rounded-xl border border-gray-200 px-5 py-4 focus:ring-2 focus:ring-[#7B5FFF] bg-[#F7F6FD] placeholder-gray-400 text-base w-full font-medium"
                 value={form.username}
-                onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase() }))}
+                onChange={e => {
+                  const lower = e.target.value.toLowerCase();
+                  const syntheticEvent = {
+                    ...e,
+                    target: { ...e.target, value: lower, name: 'username' }
+                  } as React.ChangeEvent<HTMLInputElement>;
+                  handleChange(syntheticEvent);
+                }}
                 autoComplete="username"
               />
               {uniqueError.username && (
@@ -549,6 +556,10 @@ function RegisterForm() {
       case "email":
         if (!validator.isEmail(value))
           return "Enter a valid email address.";
+        // Extra check: TLD must be only letters
+        const tldMatch = value.match(/\.([a-zA-Z]+)$/);
+        if (!tldMatch) return "Enter a valid email address.";
+        if (!/^[a-zA-Z]{2,}$/.test(tldMatch[1])) return "Enter a valid email address.";
         return "";
       case "phone":
         if (!isValidPhoneNumber(value))
