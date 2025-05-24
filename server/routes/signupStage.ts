@@ -60,19 +60,19 @@ const router = Router();
 const VALID_STAGES = ['payment', 'profile', 'ready', 'legacy'];
 
 export async function startSignup(req: Request, res: Response) {
-  const { email, username, phone, password, name, hasAgreedToTerms } = req.body as { 
-    email: string; 
-    username: string; 
-    phone: string; 
-    password: string; 
+  const { email, username, phone, password, name, companyName, industry, hasAgreedToTerms } = req.body as {
+    email: string;
+    username: string;
+    phone: string;
+    password: string;
     name?: string;
+    companyName?: string;
+    industry?: string;
     hasAgreedToTerms: boolean;
   };
-  
   if (!email || !username || !phone || !password || !hasAgreedToTerms) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
-
   // Validate username format
   const usernameRegex = /^[a-z0-9]{4,30}$/;
   if (!usernameRegex.test(username)) {
@@ -81,16 +81,13 @@ export async function startSignup(req: Request, res: Response) {
       field: 'username'
     });
   }
-
   const db = getDb();
-
   // Check for existing user by email/username/phone
   const existing = await db
     .select({ id: users.id })
     .from(users)
     .where(sql`LOWER(${users.email}) = LOWER(${email}) OR LOWER(${users.username}) = LOWER(${username}) OR ${users.phone_number} = ${phone}`)
     .limit(1);
-
   if (existing.length) {
     const userId = existing[0].id as number;
     const [state] = await db.select().from(signupState).where(eq(signupState.userId, userId));
@@ -103,9 +100,7 @@ export async function startSignup(req: Request, res: Response) {
       return res.status(400).json({ message: 'User already exists' });
     }
   }
-
   const hashed = await hashPassword(password);
-
   let newId: number | undefined;
   await db.transaction(async (tx) => {
     const inserted = await tx.insert(users).values({
@@ -113,6 +108,8 @@ export async function startSignup(req: Request, res: Response) {
       username: username.toLowerCase(), // Ensure username is stored in lowercase
       fullName: name || username,
       phone_number: phone,
+      company_name: companyName,
+      industry,
       password: hashed,
       signup_stage: 'payment',
       hasAgreedToTerms: true
@@ -120,7 +117,6 @@ export async function startSignup(req: Request, res: Response) {
     newId = inserted[0].id as number;
     await tx.insert(signupState).values({ userId: newId! });
   });
-
   return res.status(201).json({ userId: newId, step: 'payment' });
 }
 

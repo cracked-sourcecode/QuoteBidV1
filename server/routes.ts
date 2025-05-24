@@ -28,7 +28,7 @@ import fs from 'fs';
 import { saveAgreementPDF, regenerateAgreementsPDF, createAgreementPDF, generateProfessionalPDF } from './pdf-utils';
 import { serveAgreementPDF, handleAgreementUpload } from './handlers/agreement-handlers';
 import { handleGeneratePDF, handleSignupAgreementUpload, serveAgreementHTML } from './handlers/signup-wizard-handlers';
-import signupStageRouter from './routes/signupStage';
+import signupStageRouter, { startSignup } from './routes/signupStage';
 import signupStateRouter from './routes/signupState';
 import signupRouter from './routes/signup';
 import { hashPassword } from './utils/passwordUtils';
@@ -102,6 +102,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to register user' });
     }
   });
+
+  // New unified signup endpoint used by the frontend signup screen
+  app.post('/api/auth/signup/start', startSignup);
 
   // --- PUBLIC ENDPOINTS (must be before any middleware) ---
   app.get('/api/test-public', (req, res) => res.json({ ok: true }));
