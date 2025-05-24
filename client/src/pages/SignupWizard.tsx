@@ -130,12 +130,28 @@ function SignupWizardContent() {
         password,
         username: username.toLowerCase(),
         name: fullName,
+um7klu-codex/fix-ui-connection-for-sign-up-form
+        company: companyName,
+
         companyName,
+ new-signup-process
         phone,
         industry,
       });
       storeSignupEmail(inputEmail);
+um7klu-codex/fix-ui-connection-for-sign-up-form
+      storeSignupData({
+        email: inputEmail,
+        password,
+        username: username.toLowerCase(),
+        fullName,
+        companyName,
+        phone,
+        industry,
+      });
+
       storeSignupData({ email: inputEmail, password, username: username.toLowerCase(), name: fullName, companyName, phone, industry });
+ new-signup-process
       setSavedEmail(inputEmail);
       localStorage.setItem('signup_highest_step', '2');
       setStage('payment');

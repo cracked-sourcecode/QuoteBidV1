@@ -103,7 +103,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+ um7klu-codex/fix-ui-connection-for-sign-up-form
+  // Unified signup start endpoint used by new registration flow
+
   // New unified signup endpoint used by the frontend signup screen
+  new-signup-process
   app.post('/api/auth/signup/start', startSignup);
 
   // --- PUBLIC ENDPOINTS (must be before any middleware) ---
