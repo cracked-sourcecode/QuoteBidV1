@@ -302,7 +302,8 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false);
 
   // Format validation helpers
-  const usernameRegex = /^[a-z0-9_]{4,30}$/;
+  // Only allow lowercase letters and numbers for usernames
+  const usernameRegex = /^[a-z0-9]+$/;
   const strongPwd = /^(?=.*\d)(?=.*[!@#$%^&*])[\S]{8,}$/;
 
   // Format validation
@@ -381,11 +382,11 @@ function RegisterForm() {
     setLoading(true);
     try {
       // Create user immediately
-      const response = await apiRequest("POST", "/api/auth/register", {
+      const response = await apiRequest("POST", "/api/auth/signup/start", {
         email: values.email,
         password: values.password,
-        username: values.username,
-        fullName: values.fullName,
+        username: values.username.toLowerCase(),
+        name: values.fullName,
         companyName: values.companyName,
         phone: values.phone,
         industry: values.industry
@@ -399,7 +400,8 @@ function RegisterForm() {
       // Store data for the wizard
       storeSignupData(values);
       storeSignupEmail(values.email);
-      navigate("/signup-wizard?step=1", { replace: true });
+      localStorage.setItem('signup_highest_step', '2');
+      navigate("/auth?tab=signup&step=2", { replace: true });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {

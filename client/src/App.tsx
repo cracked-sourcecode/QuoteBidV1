@@ -18,6 +18,7 @@ import SubscriptionSuccess from "@/pages/subscription-success";
 import SubscriptionRedirect from "@/pages/subscription-redirect";
 import ProfileSetup from "@/pages/profile-setup";
 import SignupWizard from "@/pages/SignupWizard";
+import RegisterPage from "@/pages/register";
 import AuthPage from "@/pages/auth-page";
 import Account from "@/pages/account";
 // Profile page removed as requested
@@ -124,6 +125,7 @@ function Router() {
         <Route path="/admin/login-test" component={AdminLoginTest} />
         <Route path="/admin/create-admin" component={AdminCreateAdmin} />
         <Route path="/signup-wizard" component={SignupWizard} />
+        <Route path="/register" component={RegisterPage} />
         
         {/* Routes that require authentication */}
         <ProtectedRoute path="/agreement" component={() => <Agreement />} />
