@@ -42,11 +42,11 @@ describe('signup flow', () => {
         insert: jest.fn().mockReturnValue({ returning: jest.fn().mockResolvedValueOnce([{ id: 2 }]) })
       });
     });
-    const req: any = { body: { email: 'a@a.com', username: 'a', phone: '1', password: 'p' } };
+    const req: any = { body: { email: 'a@a.com', username: 'a', phone: '1', password: 'p', name: 'Test User' } };
     const res: any = { status: jest.fn(() => res), json: jest.fn() };
     await startSignup(req, res);
     expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({ userId: 2, step: 'agreement' });
+    expect(res.json).toHaveBeenCalledWith({ userId: 2, step: 'payment' });
   });
 
   test('status cannot regress', async () => {
