@@ -10,7 +10,6 @@ interface SignupWizardProps {
 }
 
 const STAGE_LABELS = [
-  { id: 'agreement', label: 'Agreement' },
   { id: 'payment', label: 'Subscribe' },
   { id: 'profile', label: 'Profile' },
 ];
@@ -19,11 +18,11 @@ export function SignupWizard({ children }: SignupWizardProps) {
   const { currentStage } = useSignupWizard();
   const [, navigate] = useLocation();
   const [redirecting, setRedirecting] = useState(false);
-  const stageOrder = ['agreement', 'payment', 'profile'];
+  const stageOrder = ['payment', 'profile'];
   const currentIndex = STAGE_LABELS.findIndex(s => s.id === currentStage);
   const currentStep = stageOrder.indexOf(currentStage) + 1;
   const stepText = currentIndex >= 0
-    ? `Step ${currentStep} of 3: ${STAGE_LABELS[currentIndex].label}`
+    ? `Step ${currentStep} of 2: ${STAGE_LABELS[currentIndex].label}`
     : '';
 
   const enforceLocation = () => {

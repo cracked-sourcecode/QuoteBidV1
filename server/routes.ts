@@ -72,7 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         company_name: companyName,
         phone_number: phone,
         industry,
-        signup_stage: 'agreement',
+        signup_stage: 'payment',
         profileCompleted: false,
         premiumStatus: 'free',
         subscription_status: 'inactive'
@@ -88,9 +88,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         process.env.JWT_SECRET || 'quotebid_secret',
         { expiresIn: '7d' }
       );
-      res.cookie('token', token, { httpOnly: true, sameSite: 'lax' });
       res.json({
         success: true,
+        token,
         user: {
           id: user.id,
           email: user.email,

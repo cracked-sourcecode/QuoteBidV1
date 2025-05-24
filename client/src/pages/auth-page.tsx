@@ -28,7 +28,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../hooks/use-auth";
 import { INDUSTRY_OPTIONS } from "../lib/constants";
-import { AgreementStep } from "@/components/signup/AgreementStep";
 import { PaymentStep } from "@/components/signup/PaymentStep";
 import { ProfileStep } from "@/components/signup/ProfileStep";
 import { storeSignupEmail, storeSignupData, getSignupData } from "@/lib/signup-wizard";
@@ -39,7 +38,6 @@ import validator from "validator";
 import { isValidPhoneNumber, parsePhoneNumberFromString } from "libphonenumber-js";
 import { useRef } from "react";
 import PhoneInput from 'react-phone-input-2';
-import 'react-phone-input-2/lib/style.css';
 import { Check, Sparkles, Mic, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -104,17 +102,43 @@ export default function QuoteBidSignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   // Uniqueness state
-  const [unique, setUnique] = useState({ username: null, email: null, phone: null });
+  const [unique, setUnique] = useState<{ username: boolean | null, email: boolean | null, phone: boolean | null }>({ username: null, email: null, phone: null });
   const [uniqueError, setUniqueError] = useState({ username: '', email: '', phone: '' });
   const [pending, setPending] = useState({ username: false, email: false, phone: false });
   const lastChecked = useRef({ username: '', email: '', phone: '' });
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [termsError, setTermsError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    // Uniqueness check for username/email/phone
-    const field = e.target.name as 'username' | 'email' | 'phone';
-    if (["username", "email", "phone"].includes(field)) {
-      const value = e.target.value;
+    let value = e.target.value;
+    let field = e.target.name as 'username' | 'email' | 'phone';
+    // Special handling for phone: always store and check normalized E.164
+    if (field === 'phone') {
+      const parsed = parsePhoneNumberFromString(value, 'US');
+      if (parsed && parsed.isValid()) {
+        value = parsed.number; // E.164 format
+      }
+      setForm((f) => ({ ...f, [field]: value }));
+      setUniqueError((err) => ({ ...err, [field]: '' }));
+      if (value && value !== lastChecked.current[field]) {
+        setPending((p) => ({ ...p, [field]: true }));
+        fetch(`/api/users/check-unique?field=phone&value=${encodeURIComponent(value)}`)
+          .then((res) => res.json())
+          .then((data) => {
+            setUnique((u) => ({ ...u, [field]: data.unique }));
+            setUniqueError((err) => ({ ...err, [field]: data.unique ? '' : 'Phone already exists.' }));
+            lastChecked.current[field] = value;
+          })
+          .catch(() => {
+            setUnique((u) => ({ ...u, [field]: false }));
+            setUniqueError((err) => ({ ...err, [field]: 'Error checking uniqueness.' }));
+          })
+          .finally(() => setPending((p) => ({ ...p, [field]: false })));
+      }
+      return;
+    }
+    setForm((f) => ({ ...f, [field]: value }));
+    if (["username", "email"].includes(field)) {
       setUniqueError((err) => ({ ...err, [field]: '' }));
       if (value && value !== lastChecked.current[field]) {
         setPending((p) => ({ ...p, [field]: true }));
@@ -137,6 +161,17 @@ export default function QuoteBidSignUp() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setTermsError('');
+    if (!agreedToTerms) {
+      setTermsError('You must agree to the Terms of Service.');
+      return;
+    }
+    // Block submission if phone is not valid
+    if (!isValidPhoneNumber(form.phone)) {
+      setUniqueError((err) => ({ ...err, phone: 'Enter a valid phone number.' }));
+      setError('Please fix the errors above before submitting.');
+      return;
+    }
     // Block submission if any uniqueness check is pending or failed
     if (pending.username || pending.email || pending.phone || unique.username === false || unique.email === false || unique.phone === false) {
       setUniqueError((err) => ({
@@ -151,6 +186,10 @@ export default function QuoteBidSignUp() {
     if (form.password !== form.confirm) {
       return setError("Passwords do not match");
     }
+    if (!form.fullName.trim()) {
+      setError('Full name is required');
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch("/auth/signup/start", {
@@ -161,7 +200,8 @@ export default function QuoteBidSignUp() {
           username: form.username,
           phone: form.phone,
           password: form.password,
-          name: form.fullName,
+          name: form.fullName.trim() || form.username,
+          hasAgreedToTerms: true
         }),
       });
       if (!res.ok) throw new Error((await res.json()).message || "Signup failed");
@@ -231,8 +271,8 @@ export default function QuoteBidSignUp() {
         </div>
       </div>
       {/* Right: Form Card */}
-      <div className="flex flex-col justify-center items-center w-full lg:w-1/2 min-h-screen">
-        <div className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl px-12 py-12" style={{boxShadow: '0 8px 40px 0 rgba(80,63,205,0.10)'}}>
+      <div className="flex flex-col justify-center items-center w-full lg:w-1/2 min-h-[80vh]">
+        <div className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl px-12 py-5" style={{boxShadow: '0 8px 40px 0 rgba(80,63,205,0.10)'}}>
           <h2 className="text-4xl font-extrabold text-center mb-2 bg-gradient-to-r from-[#5B6EE1] to-[#7C3AED] bg-clip-text text-transparent" style={{letterSpacing: '-0.01em'}}>Join QuoteBid</h2>
           <p className="text-center text-gray-400 mb-8 text-base">Start connecting with top journalists today</p>
           {error && (
@@ -257,7 +297,7 @@ export default function QuoteBidSignUp() {
                 placeholder="Username"
                 className="rounded-xl border border-gray-200 px-5 py-4 focus:ring-2 focus:ring-[#7B5FFF] bg-[#F7F6FD] placeholder-gray-400 text-base w-full font-medium"
                 value={form.username}
-                onChange={handleChange}
+                onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase() }))}
                 autoComplete="username"
               />
               {uniqueError.username && (
@@ -289,16 +329,71 @@ export default function QuoteBidSignUp() {
                 <div className="text-red-500 text-xs mt-0.5 col-span-2">{uniqueError.email}</div>
               )}
             </div>
-            <input
-              aria-label="Phone Number"
-              name="phone"
-              required
-              placeholder="+1 (555) 123-4567"
-              className="rounded-xl border border-gray-200 px-5 py-4 focus:ring-2 focus:ring-[#7B5FFF] bg-[#F7F6FD] placeholder-gray-400 text-base w-full font-medium"
-              value={form.phone}
-              onChange={handleChange}
-              autoComplete="tel"
-            />
+            <div className="relative">
+              <PhoneInput
+                country={'us'}
+                value={form.phone}
+                onChange={phone => {
+                  const phoneNumber = parsePhoneNumberFromString('+' + phone);
+                  if (phoneNumber && phoneNumber.isValid()) {
+                    setForm(f => ({ ...f, phone: phoneNumber.number }));
+                    setUniqueError(err => ({ ...err, phone: '' }));
+                    if (phoneNumber.number !== lastChecked.current.phone) {
+                      setPending(p => ({ ...p, phone: true }));
+                      fetch(`/api/users/check-unique?field=phone&value=${encodeURIComponent(phoneNumber.number)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                          setUnique(u => ({ ...u, phone: data.unique }));
+                          setUniqueError(err => ({ ...err, phone: data.unique ? '' : 'Phone already exists.' }));
+                          lastChecked.current.phone = phoneNumber.number;
+                        })
+                        .catch(() => {
+                          setUnique(u => ({ ...u, phone: false }));
+                          setUniqueError(err => ({ ...err, phone: 'Error checking uniqueness.' }));
+                        })
+                        .finally(() => setPending(p => ({ ...p, phone: false })));
+                    }
+                  }
+                }}
+                inputProps={{
+                  name: 'phone',
+                  required: true,
+                  autoComplete: 'tel',
+                  placeholder: 'Enter your phone number',
+                  style: {
+                    borderRadius: '0.75rem',
+                    border: '1px solid #E5E7EB',
+                    background: '#F7F6FD',
+                    padding: '1rem 1.25rem',
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    fontFamily: 'Inter, sans-serif',
+                    color: '#222',
+                    width: '100%',
+                    outline: 'none',
+                  },
+                  className: 'focus:ring-2 focus:ring-[#7B5FFF] placeholder-gray-400',
+                }}
+                buttonStyle={{
+                  border: 'none',
+                  background: 'transparent',
+                  paddingLeft: '0.5rem',
+                  paddingRight: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: '100%',
+                }}
+                containerStyle={{
+                  width: '100%',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+                dropdownStyle={{
+                  zIndex: 50,
+                  fontFamily: 'Inter, sans-serif',
+                }}
+                inputClass=""
+              />
+            </div>
             {uniqueError.phone && (
               <div className="text-red-500 text-xs mt-0.5">{uniqueError.phone}</div>
             )}
@@ -364,9 +459,24 @@ export default function QuoteBidSignUp() {
                 </button>
               </div>
             </div>
+            <div className="flex items-center mt-6 mb-4">
+              <input
+                type="checkbox"
+                id="terms"
+                checked={agreedToTerms}
+                onChange={e => setAgreedToTerms(e.target.checked)}
+                className="accent-[#7B5FFF] w-5 h-5 border-4 border-[#D1D5DB] rounded-none transition-all duration-150 mr-3 outline-none focus:outline-none"
+                required
+              />
+              <label htmlFor="terms" className="text-base font-medium text-gray-700 select-none">
+                I agree to the{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#7B5FFF] underline font-semibold">Terms of Service</a>
+              </label>
+            </div>
+            {termsError && <div className="text-red-500 text-xs mb-2 font-medium">{termsError}</div>}
             <button
               type="submit"
-              disabled={submitting || pending.username || pending.email || pending.phone || unique.username === false || unique.email === false || unique.phone === false}
+              disabled={submitting || pending.username || pending.email || pending.phone || unique.username === false || unique.email === false || unique.phone === false || !agreedToTerms}
               className="w-full py-4 text-lg font-semibold rounded-xl bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] hover:opacity-90 flex items-center justify-center gap-2 shadow-xl"
               style={{boxShadow: "0 8px 32px 0 rgba(80, 63, 205, 0.13)"}}
             >
@@ -410,11 +520,7 @@ function RegisterForm() {
       password: "",
     passwordConfirm: "",
   });
-  const [unique, setUnique] = useState<Record<UniqueKey, null | boolean>>({
-    username: null,
-    email: null,
-    phone: null,
-  });
+  const [unique, setUnique] = useState<{ username: boolean | null, email: boolean | null, phone: boolean | null }>({ username: null, email: null, phone: null });
   const [uniqueError, setUniqueError] = useState<Record<UniqueKey, string>>({
     username: "",
     email: "",
@@ -430,7 +536,7 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false);
 
   // Format validation helpers
-  const usernameRegex = /^[a-z0-9_]{4,30}$/;
+  const usernameRegex = /^[a-z0-9]{4,30}$/;
   const strongPwd = /^(?=.*\d)(?=.*[!@#$%^&*])[\S]{8,}$/;
 
   // Format validation
@@ -438,7 +544,7 @@ function RegisterForm() {
     switch (name) {
       case "username":
         if (!usernameRegex.test(value))
-          return "Username must be 4-30 chars, lower-case, and only a-z, 0-9, _.";
+          return "Username must be 4-30 characters, lowercase letters and numbers only.";
         return "";
       case "email":
         if (!validator.isEmail(value))
@@ -459,7 +565,7 @@ function RegisterForm() {
       default:
         return "";
     }
-      }
+  }
       
   // Real-time format and uniqueness check
   useEffect(() => {
@@ -623,14 +729,40 @@ function RegisterForm() {
                 inputProps={{
                   name: 'phone',
                   required: true,
-                  autoFocus: false,
                   autoComplete: 'tel',
-                  placeholder: 'Enter your phone number'
+                  placeholder: 'Enter your phone number',
+                  style: {
+                    borderRadius: '0.75rem',
+                    border: '1px solid #E5E7EB',
+                    background: '#F7F6FD',
+                    padding: '1rem 1.25rem',
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    fontFamily: 'Inter, sans-serif',
+                    color: '#222',
+                    width: '100%',
+                    outline: 'none',
+                  },
+                  className: 'focus:ring-2 focus:ring-[#7B5FFF] placeholder-gray-400',
                 }}
-                containerClass="w-full"
-                inputClass="w-full"
-                buttonClass="border-r-0"
-                dropdownClass="z-50"
+                buttonStyle={{
+                  border: 'none',
+                  background: 'transparent',
+                  paddingLeft: '0.5rem',
+                  paddingRight: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: '100%',
+                }}
+                containerStyle={{
+                  width: '100%',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+                dropdownStyle={{
+                  zIndex: 50,
+                  fontFamily: 'Inter, sans-serif',
+                }}
+                inputClass=""
               />
             </FormControl>
             {formatErrors.phone ? (

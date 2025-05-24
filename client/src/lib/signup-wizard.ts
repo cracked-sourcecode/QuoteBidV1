@@ -1,6 +1,6 @@
 import { apiRequest } from "./queryClient";
 
-export type SignupStage = 'agreement' | 'payment' | 'profile' | 'ready' | 'legacy';
+export type SignupStage = 'payment' | 'profile' | 'ready' | 'legacy';
 
 export interface SignupStageInfo {
   stage: SignupStage;
@@ -30,7 +30,7 @@ export async function getUserSignupStage(email: string): Promise<SignupStageInfo
     return await response.json();
   } catch (error) {
     console.error('Error fetching signup stage:', error);
-    return { stage: 'agreement' }; // Default to the first stage on error
+    return { stage: 'payment' }; // Default to the first stage on error
   }
 }
 
@@ -131,8 +131,6 @@ export function clearSignupData(): void {
  */
 export function getRedirectUrlForStage(stage: SignupStage): string {
   switch (stage) {
-    case 'agreement':
-      return '/agreement';
     case 'payment':
       return '/payment';
     case 'profile':
@@ -141,6 +139,6 @@ export function getRedirectUrlForStage(stage: SignupStage): string {
     case 'legacy':
       return '/';
     default:
-      return '/agreement';
+      return '/payment';
   }
 }

@@ -7,8 +7,12 @@ if (!process.env.DATABASE_URL) {
 export default defineConfig({
   schema: "./shared/schema.ts",
   out: "./migrations",
-  driver: "pg",
+  dialect: "postgresql",
   dbCredentials: {
-    connectionString: process.env.DATABASE_URL!,
+    host: process.env.PGHOST!,
+    user: process.env.PGUSER!,
+    password: process.env.PGPASSWORD!,
+    database: process.env.PGDATABASE!,
+    port: Number(process.env.PGPORT!),
   },
 });

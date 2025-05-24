@@ -57,12 +57,29 @@ const upload = multer({
 const router = Router();
 
 // Allowed signup stages in order
-const VALID_STAGES = ['agreement', 'payment', 'profile', 'ready', 'legacy'];
+const VALID_STAGES = ['payment', 'profile', 'ready', 'legacy'];
 
 export async function startSignup(req: Request, res: Response) {
-  const { email, username, phone, password, name } = req.body as { email: string; username: string; phone: string; password: string; name?: string };
-  if (!email || !username || !phone || !password) {
+  const { email, username, phone, password, name, hasAgreedToTerms } = req.body as { 
+    email: string; 
+    username: string; 
+    phone: string; 
+    password: string; 
+    name?: string;
+    hasAgreedToTerms: boolean;
+  };
+  
+  if (!email || !username || !phone || !password || !hasAgreedToTerms) {
     return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  // Validate username format
+  const usernameRegex = /^[a-z0-9]{4,30}$/;
+  if (!usernameRegex.test(username)) {
+    return res.status(400).json({ 
+      message: 'Username must be 4-30 characters, lowercase letters and numbers only',
+      field: 'username'
+    });
   }
 
   const db = getDb();
@@ -93,17 +110,18 @@ export async function startSignup(req: Request, res: Response) {
   await db.transaction(async (tx) => {
     const inserted = await tx.insert(users).values({
       email,
-      username,
+      username: username.toLowerCase(), // Ensure username is stored in lowercase
       fullName: name || username,
       phone_number: phone,
       password: hashed,
-      signup_stage: 'agreement',
+      signup_stage: 'payment',
+      hasAgreedToTerms: true
     }).returning({ id: users.id });
     newId = inserted[0].id as number;
     await tx.insert(signupState).values({ userId: newId! });
   });
 
-  return res.status(201).json({ userId: newId, step: 'agreement' });
+  return res.status(201).json({ userId: newId, step: 'payment' });
 }
 
 router.post('/start', startSignup);
@@ -162,7 +180,7 @@ router.post('/:email/advance', async (req: Request, res: Response) => {
     }
     
     // Determine the next stage
-    const currentStage = user.signup_stage || 'agreement';
+    const currentStage = user.signup_stage || 'payment';
     const currentIndex = VALID_STAGES.indexOf(currentStage);
     const actionIndex = VALID_STAGES.indexOf(action);
     
@@ -178,149 +196,6 @@ router.post('/:email/advance', async (req: Request, res: Response) => {
     let nextStage = currentStage;
     if (action === currentStage && actionIndex < VALID_STAGES.length - 1) {
       nextStage = VALID_STAGES[actionIndex + 1];
-    }
-    
-    // Special handling for agreement stage
-    if (action === 'agreement') {
-      const { fullName, signature, signedAt, ipAddress } = req.body;
-      
-      if (!fullName || !signature || !signedAt) {
-        return res.status(400).json({ 
-          message: 'Full name, signature, and signing timestamp are required',
-          success: false 
-        });
-      }
-
-      try {
-        // Generate a unique filename for the PDF
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const pdfFilename = `agreement-${email}-${timestamp}.pdf`;
-        const pdfPath = path.join(process.cwd(), 'uploads', 'agreements', pdfFilename);
-        
-        // Ensure the agreements directory exists
-        const uploadDir = path.join(process.cwd(), 'uploads', 'agreements');
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-
-        // Create PDF content
-        const pdfContent = await generateAgreementPDF(fullName, signature, signedAt);
-        fs.writeFileSync(pdfPath, pdfContent);
-
-        // Store the agreement details using Drizzle ORM
-        await getDb()
-          .update(users)
-          .set({
-            agreementPdfUrl: `/uploads/agreements/${pdfFilename}`,
-            agreementSignedAt: new Date(signedAt),
-            agreementIpAddress: ipAddress,
-            signup_stage: nextStage,
-            hasSignedAgreement: true,
-          })
-          .where(eq(users.email, decodeURIComponent(email)));
-        
-        return res.status(200).json({
-          stage: nextStage,
-          nextStage: actionIndex < VALID_STAGES.length - 1 ? VALID_STAGES[actionIndex + 1] : undefined
-        });
-      } catch (error) {
-        console.error('Error generating agreement PDF:', error);
-        return res.status(500).json({ 
-          message: 'Failed to generate agreement PDF',
-          success: false 
-        });
-      }
-    } 
-    
-    // Special handling for payment stage
-    if (action === 'payment') {
-      const { paymentMethodId } = req.body;
-      
-      if (!paymentMethodId) {
-        return res.status(400).json({ 
-          message: 'Payment method ID is required',
-          success: false 
-        });
-      }
-      
-      try {
-        // Find user by email
-        const [user] = await getDb()
-          .select()
-          .from(users)
-          .where(eq(users.email, decodeURIComponent(email)));
-        
-        if (!user) {
-          return res.status(404).json({ message: 'User not found' });
-        }
-        
-        // Check if the user already has a Stripe customer ID
-        let customerId = user.stripeCustomerId;
-        
-        if (!customerId) {
-          // Create a new customer in Stripe
-          const customer = await stripe.customers.create({
-            email: user.email,
-            name: user.fullName || user.username,
-            payment_method: paymentMethodId,
-            invoice_settings: {
-              default_payment_method: paymentMethodId,
-            },
-          });
-          customerId = customer.id;
-        } else {
-          // Update the customer's payment method
-          await stripe.customers.update(customerId, {
-            invoice_settings: {
-              default_payment_method: paymentMethodId,
-            },
-          });
-          
-          // Attach the payment method to the customer
-          await stripe.paymentMethods.attach(paymentMethodId, {
-            customer: customerId,
-          });
-        }
-        
-        // Create a subscription
-        const priceId = process.env.STRIPE_PRICE_ID;
-        
-        if (!priceId) {
-          throw new Error('STRIPE_PRICE_ID is not configured');
-        }
-        
-        const subscription = await stripe.subscriptions.create({
-          customer: customerId,
-          items: [{ price: priceId }],
-          default_payment_method: paymentMethodId,
-        });
-        
-        // Update the user record with subscription information
-        await getDb()
-          .update(users)
-          .set({ 
-            stripeCustomerId: customerId,
-            stripeSubscriptionId: subscription.id,
-            subscription_status: subscription.status,
-            signup_stage: nextStage
-          })
-          .where(eq(users.id, user.id));
-        
-        return res.status(200).json({
-          stage: nextStage,
-          nextStage: actionIndex < VALID_STAGES.length - 1 ? VALID_STAGES[actionIndex + 1] : undefined,
-          subscription: {
-            id: subscription.id,
-            status: subscription.status
-          }
-        });
-      } catch (error) {
-        console.error('Error processing payment:', error);
-        return res.status(500).json({ 
-          message: 'Error processing payment',
-          error: (error as Error).message
-        });
-      }
     }
     
     // Regular stage update
@@ -408,11 +283,8 @@ router.patch('/:email/profile', async (req: Request, res: Response) => {
 
 // Helper function to determine signup stage based on user data
 function determineSignupStage(user: any) {
-  // If using the legacy boolean flags system, convert to the new stage system
   if (user.signup_stage) {
-    // Use the new stage field if it exists
     const currentStageIndex = VALID_STAGES.indexOf(user.signup_stage);
-    
     return {
       stage: user.signup_stage,
       nextStage: currentStageIndex < VALID_STAGES.length - 1 
@@ -420,11 +292,8 @@ function determineSignupStage(user: any) {
         : undefined
     };
   }
-  
-  // Fallback logic based on old boolean flags for backwards compatibility
-  if (!user.hasAgreedToTerms) {
-    return { stage: 'agreement', nextStage: 'payment' };
-  } else if (!user.hasCompletedPayment) {
+  // Fallback logic for legacy users
+  if (!user.hasCompletedPayment) {
     return { stage: 'payment', nextStage: 'profile' };
   } else if (!user.hasCompletedProfile) {
     return { stage: 'profile', nextStage: 'ready' };

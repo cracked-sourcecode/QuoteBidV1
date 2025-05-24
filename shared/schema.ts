@@ -4,7 +4,7 @@ import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 // Define signup stage enum
-export const signupStageEnum = pgEnum('signup_stage', ['agreement', 'payment', 'profile', 'ready']);
+export const signupStageEnum = pgEnum('signup_stage', ['payment', 'profile', 'ready']);
 
 // Notifications table for user alerts and updates
 export const notifications = pgTable("notifications", {
@@ -51,19 +51,16 @@ export const users = pgTable("users", {
   pastPrLinks: text("past_pr_links"),
   profileCompleted: boolean("profile_completed").default(false),
   isAdmin: boolean("is_admin").default(false), // Flag to identify admin users
-  agreementPdfUrl: text("agreement_pdf_url"),
-  agreementSignedAt: timestamp("agreement_signed_at"),
-  agreementIpAddress: text("agreement_ip_address"),
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
   premiumStatus: text("premium_status").default("free"),
   premiumExpiry: timestamp("premium_expiry"),
-  signup_stage: text("signup_stage").default('agreement'),
+  signup_stage: text("signup_stage").default('payment'),
   company_name: text("company_name"),
   phone_number: text("phone_number"),
   subscription_status: text("subscription_status").default("inactive"),
   isPaid: boolean("is_paid").default(false),
-  hasSignedAgreement: boolean("has_signed_agreement").default(false),
+  hasAgreedToTerms: boolean("has_agreed_to_terms").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -179,7 +176,15 @@ export const placements = pgTable("placements", {
 });
 
 // Insert schemas
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
+export const insertUserSchema = createInsertSchema(users)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    username: z.string()
+      .min(4, "Username must be at least 4 characters")
+      .max(30, "Username must be at most 30 characters")
+      .regex(/^[a-z0-9]{4,30}$/, "Username must contain only lowercase letters and numbers")
+      .transform(val => val.toLowerCase()), // Ensure username is stored in lowercase
+  });
 export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({ id: true, createdAt: true });
 export const insertPublicationSchema = createInsertSchema(publications).omit({ id: true, createdAt: true });
 export const insertOpportunitySchema = createInsertSchema(opportunities)
