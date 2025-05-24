@@ -29,7 +29,14 @@ export async function checkUnique(
     
     // Normalize the input value based on field type
     let normalizedValue = value;
-    if (field === 'email' || field === 'username') {
+    if (field === 'email') {
+      // Validate email format and TLD
+      const emailRegex = /^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(value)) {
+        return res.status(400).json({ unique: false, error: 'Invalid email format' });
+      }
+      normalizedValue = value.toLowerCase().trim();
+    } else if (field === 'username') {
       normalizedValue = value.toLowerCase().trim();
     } else if (field === 'phone') {
       // Remove non-numeric characters from phone number for consistent comparison
