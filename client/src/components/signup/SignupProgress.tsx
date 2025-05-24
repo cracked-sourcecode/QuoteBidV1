@@ -4,7 +4,6 @@ import { useSignupWizard } from '@/contexts/SignupWizardContext';
 export function SignupProgress() {
   const { currentStage } = useSignupWizard();
   const stages = [
-    { id: 'agreement', label: 'Agreement' },
     { id: 'payment', label: 'Subscribe' },
     { id: 'profile', label: 'Profile' },
   ];

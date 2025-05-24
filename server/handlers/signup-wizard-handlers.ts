@@ -6,6 +6,8 @@ import { generateProfessionalPDF, createAgreementPDF } from '../pdf-utils';
 import path from 'path';
 import fs from 'fs';
 import { jsPDF } from 'jspdf';
+import { hashPassword } from '../utils/passwordUtils';
+import { signupState } from '@shared/schema';
 
 /**
  * Generate PDF agreement from HTML content with signature
@@ -111,9 +113,6 @@ export async function handleSignupAgreementUpload(req: Request, res: Response) {
     await getDb()
       .update(users)
       .set({
-        agreementPdfUrl: `/uploads/agreements/${filename}`,
-        agreementSignedAt: new Date(),
-        agreementIpAddress: ipAddress || req.ip || req.socket.remoteAddress || 'Unknown',
         hasAgreedToTerms: true
       })
       .where(eq(users.id, user.id));
@@ -213,5 +212,61 @@ export async function serveAgreementHTML(req: Request, res: Response) {
   } catch (error) {
     console.error('Error serving agreement HTML:', error);
     res.status(500).json({ message: 'Error serving agreement template' });
+  }
+}
+
+/**
+ * Start the signup process
+ */
+export async function handleSignupStart(req: Request, res: Response) {
+  try {
+    const { email, username, phone, password, name, hasAgreedToTerms } = req.body;
+    
+    if (!email || !username || !phone || !password || !hasAgreedToTerms) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+    
+    // Find user by email
+    const [user] = await getDb()
+      .select()
+      .from(users)
+      .where(eq(users.email, email));
+    
+    if (user) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+    
+    const hashed = await hashPassword(password);
+    
+    // Create new user
+    const [newUser] = await getDb()
+      .insert(users)
+      .values({
+        email,
+        username,
+        fullName: name || username,
+        phone_number: phone,
+        password: hashed,
+        signup_stage: 'payment',
+        hasAgreedToTerms: true
+      })
+      .returning();
+    
+    // Create signup state
+    await getDb()
+      .insert(signupState)
+      .values({
+        userId: newUser.id,
+        status: 'started'
+      });
+    
+    res.status(201).json({
+      success: true,
+      userId: newUser.id,
+      step: 'payment'
+    });
+  } catch (error) {
+    console.error('Error starting signup:', error);
+    res.status(500).json({ message: 'Error starting signup process' });
   }
 }

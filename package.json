@@ -124,6 +124,7 @@
     "@types/passport-local": "^1.0.38",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.7",
+    "@types/react-helmet": "^6.1.11",
     "@types/supertest": "^6.0.3",
     "@types/testing-library__react": "^10.0.1",
     "@types/validator": "^13.15.0",

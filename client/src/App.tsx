@@ -12,7 +12,6 @@ import OpportunityDetail from "@/pages/opportunity-detail";
 import MyPitches from "@/pages/my-pitches";
 import PitchHistory from "@/pages/pitch-history";
 import Subscribe from "@/pages/subscribe";
-import Agreement from "@/pages/agreement";
 import PaymentSuccess from "@/pages/payment-success"; 
 import SubscriptionSuccess from "@/pages/subscription-success";
 import SubscriptionRedirect from "@/pages/subscription-redirect";
@@ -22,12 +21,7 @@ import RegisterPage from "@/pages/register";
 import AuthPage from "@/pages/auth-page";
 import Account from "@/pages/account";
 // Profile page removed as requested
-import AdminLogin from "@/pages/admin-login";
-import AdminRegister from "@/pages/admin-register";
-import AdminLoginTest from "@/pages/admin/login-test";
-import AdminCreateAdmin from "@/pages/admin/create-admin";
 import Navbar from "@/components/navbar";
-import AdminHeader from "@/components/admin-header";
 import SubscriptionGuard from "@/components/subscription-guard";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { AdminAuthProvider, useAdminAuth } from "@/hooks/use-admin-auth";
@@ -44,6 +38,11 @@ import CoverageManager from "@/pages/admin/coverage-manager";
 import AgreementsViewer from "@/pages/admin/agreements-viewer";
 import AdminAnalytics from "@/pages/admin/analytics";
 import PublicationsManager from "@/pages/admin/publications-manager";
+import LoginPage from "@/pages/login-page";
+import QuoteBidSignUp from "@/pages/auth-page";
+import TermsOfService from "@/pages/TermsOfService";
+import AdminLoginTest from "@/pages/admin/login-test";
+import CreateAdmin from "@/pages/admin/create-admin";
 
 // Logout component to handle the regular user logout process
 function LogoutHandler() {
@@ -73,23 +72,9 @@ function LogoutHandler() {
 // Admin logout component to handle the admin user logout process
 function AdminLogoutHandler() {
   const [_, navigate] = useLocation();
-  const { adminLogoutMutation } = useAdminAuth();
-  
   useEffect(() => {
-    const performAdminLogout = async () => {
-      try {
-        await adminLogoutMutation.mutateAsync();
-        navigate('/admin-login');
-      } catch (error) {
-        console.error("Admin logout failed:", error);
-        navigate('/admin-login');
-      }
-    };
-    
-    // Call this only once
-    performAdminLogout();
-  }, []); // Remove dependencies to prevent re-triggering
-  
+    navigate('/admin-login');
+  }, []);
   return <div className="flex justify-center items-center h-screen bg-gray-100">
     <div className="bg-white p-8 rounded-lg shadow-lg">
       <h1 className="text-2xl font-bold mb-4 text-center">Logging out of admin account...</h1>
@@ -115,20 +100,22 @@ function Router() {
             return <Home />;
           }}
         </Route>
+        <Route path="/login" component={LoginPage} />
+        <Route path="/register" component={QuoteBidSignUp} />
         <Route path="/auth">
-          {({ location }: { location: string }) => <AuthPage key={location} />}
+          {() => <Redirect to="/login" />}
         </Route>
         <Route path="/logout" component={LogoutHandler} />
         <Route path="/admin-logout" component={AdminLogoutHandler} />
-        <Route path="/admin-login" component={AdminLogin} />
-        <Route path="/admin-register" component={AdminRegister} />
         <Route path="/admin/login-test" component={AdminLoginTest} />
-        <Route path="/admin/create-admin" component={AdminCreateAdmin} />
+        <Route path="/admin/create-admin" component={CreateAdmin} />
         <Route path="/signup-wizard" component={SignupWizard} />
         <Route path="/register" component={RegisterPage} />
+um7klu-codex/fix-ui-connection-for-sign-up-form
+        <Route path="/terms" component={TermsOfService} />
+        new-signup-process
         
         {/* Routes that require authentication */}
-        <ProtectedRoute path="/agreement" component={() => <Agreement />} />
         <ProtectedRoute path="/subscribe" component={() => <Subscribe />} />
         <ProtectedRoute path="/payment-success" component={() => <PaymentSuccess />} />
         <ProtectedRoute path="/subscription-success" component={() => <SubscriptionSuccess />} />
@@ -175,7 +162,6 @@ function Router() {
         {/* Admin routes - only accessible to admin users */}
         <AdminProtectedRoute path="/admin/opportunities" component={() => (
           <>
-            <AdminHeader active="opportunities" />
             <div className="flex">
               <div className="flex-1">
                 <div className="container mx-auto py-8 px-4">
@@ -188,7 +174,6 @@ function Router() {
         
         <AdminProtectedRoute path="/admin/publications" component={() => (
           <>
-            <AdminHeader active="publications" />
             <div className="flex">
               <div className="flex-1">
                 <div className="container mx-auto py-8 px-4">
@@ -201,7 +186,6 @@ function Router() {
         
         <AdminProtectedRoute path="/admin/users" component={() => (
           <>
-            <AdminHeader active="users" />
             <div className="flex">
               <div className="flex-1">
                 <div className="container mx-auto py-8 px-4">
@@ -214,7 +198,6 @@ function Router() {
         
         <AdminProtectedRoute path="/admin/support" component={() => (
           <>
-            <AdminHeader active="support" />
             <div className="flex">
               <div className="flex-1">
                 <div className="container mx-auto py-8 px-4">
@@ -229,7 +212,6 @@ function Router() {
         
         <AdminProtectedRoute path="/admin/billing" component={() => (
           <>
-            <AdminHeader active="billing" />
             <div className="flex">
               <div className="flex-1">
                 <div className="container mx-auto py-8 px-4">
@@ -244,7 +226,6 @@ function Router() {
         
         <AdminProtectedRoute path="/admin/analytics" component={() => (
           <>
-            <AdminHeader active="analytics" />
             <div className="flex">
               <div className="flex-1">
                 <AdminAnalytics />
@@ -259,7 +240,6 @@ function Router() {
           
           return (
             <div className="min-h-screen bg-gray-50">
-              <AdminHeader />
               <div className="flex">
                 <div className="flex-1">
                   <div className="container mx-auto py-8 px-4">

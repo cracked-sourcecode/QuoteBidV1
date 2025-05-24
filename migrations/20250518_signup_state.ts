@@ -11,14 +11,24 @@ export async function up(db: any): Promise<void> {
   await db.execute(sql`
     ALTER TABLE users
       ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT false,
-      ADD COLUMN IF NOT EXISTS has_signed_agreement BOOLEAN DEFAULT false;
+      ADD COLUMN IF NOT EXISTS has_agreed_to_terms BOOLEAN DEFAULT false;
+  `);
+  await db.execute(sql`
+    UPDATE users 
+    SET signup_stage = 'payment' 
+    WHERE signup_stage = 'agreement';
   `);
 }
 
 export async function down(db: any): Promise<void> {
-  await db.execute(sql`ALTER TABLE users DROP COLUMN IF EXISTS has_signed_agreement;`);
+  await db.execute(sql`ALTER TABLE users DROP COLUMN IF EXISTS has_agreed_to_terms;`);
   await db.execute(sql`ALTER TABLE users DROP COLUMN IF EXISTS is_paid;`);
   await db.execute(sql`DROP TABLE IF EXISTS signup_state;`);
+  await db.execute(sql`
+    UPDATE users 
+    SET signup_stage = 'agreement' 
+    WHERE signup_stage = 'payment';
+  `);
 }
 
 export default { up, down };

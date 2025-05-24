@@ -7,7 +7,6 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SignupWizardProvider, useSignupWizard } from '@/contexts/SignupWizardContext';
-import { AgreementStep } from '@/components/signup/AgreementStep';
 import { PaymentStep } from '@/components/signup/PaymentStep';
 import { ProfileStep } from '@/components/signup/ProfileStep';
 import { post } from '@/lib/api';
@@ -35,7 +34,7 @@ function SignupWizardContent() {
   const [redirecting, setRedirecting] = React.useState(false);
 
   // Map stage to step number
-  const stageOrder: SignupStage[] = ['agreement', 'payment', 'profile'];
+  const stageOrder: SignupStage[] = ['payment', 'profile'];
   const currentStep = stageOrder.indexOf(currentStage) + 1;
 
   // Update highest step reached in localStorage
@@ -48,6 +47,12 @@ function SignupWizardContent() {
 
   // Handle browser back button and prevent back navigation
   useEffect(() => {
+    // When rendering on the standalone /register page we don't need to enforce
+    // the legacy query params used by /auth. This allows the new sign up flow to
+    // work without redirecting.
+    if (window.location.pathname.startsWith('/register')) {
+      return;
+    }
     const handlePopState = (event: PopStateEvent) => {
       event.preventDefault();
       const highestStep = Number(localStorage.getItem('signup_highest_step') || '1');
@@ -125,11 +130,16 @@ function SignupWizardContent() {
         password,
         username: username.toLowerCase(),
         name: fullName,
+um7klu-codex/fix-ui-connection-for-sign-up-form
         company: companyName,
+
+        companyName,
+ new-signup-process
         phone,
         industry,
       });
       storeSignupEmail(inputEmail);
+um7klu-codex/fix-ui-connection-for-sign-up-form
       storeSignupData({
         email: inputEmail,
         password,
@@ -139,6 +149,9 @@ function SignupWizardContent() {
         phone,
         industry,
       });
+
+      storeSignupData({ email: inputEmail, password, username: username.toLowerCase(), name: fullName, companyName, phone, industry });
+ new-signup-process
       setSavedEmail(inputEmail);
       localStorage.setItem('signup_highest_step', '2');
       setStage('payment');
@@ -148,7 +161,6 @@ function SignupWizardContent() {
     setIsLoading(false);
   };
 
-  const handleAgreementComplete = () => setStage('payment');
   const handlePaymentComplete = () => setStage('profile');
   const handleProfileComplete = (jwt: string) => {
     setStage('ready');
@@ -252,8 +264,6 @@ function SignupWizardContent() {
 
   // Render current step
   switch (currentStage) {
-    case 'agreement':
-      return <AgreementStep onComplete={handleAgreementComplete} />;
     case 'payment':
       return <PaymentStep onComplete={handlePaymentComplete} />;
     case 'profile':
@@ -272,7 +282,7 @@ function SignupWizardContent() {
           <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
           <p className="mb-6">We couldn't determine your current signup stage.</p>
           <Button 
-            onClick={() => setStage('agreement')}
+            onClick={() => setStage('payment')}
             className="bg-[#004684] hover:bg-[#003a70] px-8"
           >
             Restart Signup
