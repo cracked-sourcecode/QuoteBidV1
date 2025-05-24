@@ -103,7 +103,8 @@ um7klu-codex/fix-ui-connection-for-sign-up-form
   }
   // Validate username format
   const usernameRegex = /^[a-z0-9]{4,30}$/;
-  if (!usernameRegex.test(username)) {
+  const normalizedUsername = username.toLowerCase().trim();
+  if (!usernameRegex.test(normalizedUsername)) {
     return res.status(400).json({ 
       message: 'Username must be 4-30 characters, lowercase letters and numbers only',
       field: 'username'
@@ -115,7 +116,7 @@ um7klu-codex/fix-ui-connection-for-sign-up-form
   const existing = await db
     .select({ id: users.id })
     .from(users)
-    .where(sql`LOWER(${users.email}) = LOWER(${email}) OR LOWER(${users.username}) = LOWER(${username}) OR ${users.phone_number} = ${phone}`)
+    .where(sql`LOWER(${users.email}) = LOWER(${email}) OR LOWER(${users.username}) = ${normalizedUsername} OR ${users.phone_number} = ${phone}`)
     .limit(1);
   if (existing.length) {
     const userId = existing[0].id as number;
