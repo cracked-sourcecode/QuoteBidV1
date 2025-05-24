@@ -128,82 +128,30 @@ export default function Subscribe() {
   });
 
   useEffect(() => {
-    // Check if the user has signed the agreement
-    const signatureData = localStorage.getItem('agreement_signature');
-    
-    if (!signatureData) {
-      // Redirect to agreement page if signature is not found
-      toast({
-        title: "Agreement Required",
-        description: "Please read and sign the platform agreement before subscribing.",
-      });
-      
-      setTimeout(() => {
-        setLocation('/agreement');
-      }, 1500);
-      
-      return;
-    }
-    
-    try {
-      // Verify the signature data is properly formatted
-      const signatureInfo = JSON.parse(signatureData);
-      if (!signatureInfo.signature || !signatureInfo.name || !signatureInfo.timestamp) {
-        throw new Error("Invalid signature data");
-      }
-    } catch (error) {
-      // If there's an error parsing the data or missing fields, redirect to agreement
-      toast({
-        title: "Agreement Error",
-        description: "There was an issue with your agreement signature. Please sign again.",
-        variant: "destructive"
-      });
-      
-      setTimeout(() => {
-        setLocation('/agreement');
-      }, 1500);
-      
-      return;
-    }
-    
-    // Create payment intent for direct subscription
-    const createSubscription = async () => {
+    const initializeSubscription = async () => {
       try {
-        setLoadingSubscription(true);
+        const res = await apiRequest('GET', '/api/subscription/initialize');
         
-        // Create a payment intent for a $1.00 subscription (testing purposes)
-        const response = await apiRequest('POST', '/api/create-payment-intent', {
-          // Fixed at $1.00 for testing as requested
-          amount: 1.00
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to create payment intent');
+        if (!res.ok) {
+          throw new Error('Failed to initialize subscription');
         }
-        
-        const data = await response.json();
-        
-        // Set up embedded payment form with client secret
-        if (data.clientSecret) {
-          setClientSecret(data.clientSecret);
-        } else {
-          throw new Error('No client secret provided for payment');
-        }
-      } catch (error: any) {
-        console.error('Subscription error:', error);
+
+        const data = await res.json();
+        setClientSecret(data.clientSecret);
+      } catch (error) {
+        console.error('Error initializing subscription:', error);
         toast({
-          title: "Subscription Error",
-          description: error.message || "Could not initialize subscription. Please try again.",
+          title: "Error",
+          description: "There was an issue setting up your subscription.",
           variant: "destructive"
         });
       } finally {
         setLoadingSubscription(false);
       }
     };
-
-    createSubscription();
-  }, [toast, setLocation]);
+    
+    initializeSubscription();
+  }, [toast]);
 
   const handlePaymentSuccess = () => {
     setPaymentComplete(true);

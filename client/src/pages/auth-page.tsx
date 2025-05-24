@@ -28,7 +28,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../hooks/use-auth";
 import { INDUSTRY_OPTIONS } from "../lib/constants";
-import { AgreementStep } from "@/components/signup/AgreementStep";
 import { PaymentStep } from "@/components/signup/PaymentStep";
 import { ProfileStep } from "@/components/signup/ProfileStep";
 import { storeSignupEmail, storeSignupData, getSignupData } from "@/lib/signup-wizard";
@@ -39,7 +38,8 @@ import validator from "validator";
 import { isValidPhoneNumber, parsePhoneNumberFromString } from "libphonenumber-js";
 import { useRef } from "react";
 import PhoneInput from 'react-phone-input-2';
-import 'react-phone-input-2/lib/style.css';
+import { Check, Sparkles, Mic, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 // Extended schema for registration with password confirmation
 const registerSchema = insertUserSchema.extend({
@@ -86,169 +86,407 @@ function CheckCircleIcon() {
   );
 }
 
-export default function AuthPage() {
-  const [location, navigate] = useLocation();
-  const [search, setSearch] = useState(window.location.search);
-  const [highestStep, setHighestStep] = useState(1);
-  const { toast } = useToast();
+export default function QuoteBidSignUp() {
+  const [form, setForm] = useState({
+    fullName: "",
+    username: "",
+    email: "",
+    company: "",
+    phone: "",
+    industry: "",
+    password: "",
+    confirm: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  // Uniqueness state
+  const [unique, setUnique] = useState<{ username: boolean | null, email: boolean | null, phone: boolean | null }>({ username: null, email: null, phone: null });
+  const [uniqueError, setUniqueError] = useState({ username: '', email: '', phone: '' });
+  const [pending, setPending] = useState({ username: false, email: false, phone: false });
+  const lastChecked = useRef({ username: '', email: '', phone: '' });
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [termsError, setTermsError] = useState('');
 
-  // Track highest step reached
-  useEffect(() => {
-    const storedStep = localStorage.getItem('signup_highest_step');
-    if (storedStep) {
-      setHighestStep(parseInt(storedStep));
-    }
-  }, []);
-
-  // Handle URL changes
-  useEffect(() => {
-    const onPopState = () => {
-      setSearch(window.location.search);
-      const urlParams = new URLSearchParams(window.location.search);
-      const step = urlParams.get("step");
-      if (step && parseInt(step) < highestStep) {
-        window.location.replace(`/auth?tab=signup&step=${highestStep}`);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    let value = e.target.value;
+    let field = e.target.name as 'username' | 'email' | 'phone';
+    // Special handling for phone: always store and check normalized E.164
+    if (field === 'phone') {
+      const parsed = parsePhoneNumberFromString(value, 'US');
+      if (parsed && parsed.isValid()) {
+        value = parsed.number; // E.164 format
       }
-    };
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, [highestStep]);
-
-  // Update search when location changes
-  useEffect(() => {
-    setSearch(window.location.search);
-  }, [location]);
-
-  // Parse query params
-  const urlParams = new URLSearchParams(search);
-  const tab = (urlParams.get("tab") || "register").trim().toLowerCase();
-  const step = urlParams.get("step");
-
-  // Helper to update the step in the URL
-  const goToStep = (stepNum: number) => {
-    if (stepNum > highestStep) {
-      setHighestStep(stepNum);
-      localStorage.setItem('signup_highest_step', String(stepNum));
+      setForm((f) => ({ ...f, [field]: value }));
+      setUniqueError((err) => ({ ...err, [field]: '' }));
+      if (value && value !== lastChecked.current[field]) {
+        setPending((p) => ({ ...p, [field]: true }));
+        fetch(`/api/users/check-unique?field=phone&value=${encodeURIComponent(value)}`)
+          .then((res) => res.json())
+          .then((data) => {
+            setUnique((u) => ({ ...u, [field]: data.unique }));
+            setUniqueError((err) => ({ ...err, [field]: data.unique ? '' : 'Phone already exists.' }));
+            lastChecked.current[field] = value;
+          })
+          .catch(() => {
+            setUnique((u) => ({ ...u, [field]: false }));
+            setUniqueError((err) => ({ ...err, [field]: 'Error checking uniqueness.' }));
+          })
+          .finally(() => setPending((p) => ({ ...p, [field]: false })));
+      }
+      return;
     }
-    navigate(`/auth?tab=signup&step=${stepNum}`, { replace: true });
+    setForm((f) => ({ ...f, [field]: value }));
+    if (["username", "email"].includes(field)) {
+      setUniqueError((err) => ({ ...err, [field]: '' }));
+      if (value && value !== lastChecked.current[field]) {
+        setPending((p) => ({ ...p, [field]: true }));
+        fetch(`/api/users/check-unique?field=${field}&value=${encodeURIComponent(value)}`)
+          .then((res) => res.json())
+          .then((data) => {
+            setUnique((u) => ({ ...u, [field]: data.unique }));
+            setUniqueError((err) => ({ ...err, [field]: data.unique ? '' : `${field.charAt(0).toUpperCase() + field.slice(1)} already exists.` }));
+            lastChecked.current[field] = value;
+          })
+          .catch(() => {
+            setUnique((u) => ({ ...u, [field]: false }));
+            setUniqueError((err) => ({ ...err, [field]: 'Error checking uniqueness.' }));
+          })
+          .finally(() => setPending((p) => ({ ...p, [field]: false })));
+      }
+    }
   };
 
-  const handleWizardComplete = async (token: string) => {
-    const signupData = getSignupData();
-    if (signupData?.username && signupData?.password) {
-      try {
-        await post('/api/login', { username: signupData.username, password: signupData.password });
-      } catch (err) {
-        console.error('Auto-login failed:', err);
-        toast({ title: 'Auto-login failed', description: 'Please log in manually', variant: 'destructive' });
-      }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setTermsError('');
+    if (!agreedToTerms) {
+      setTermsError('You must agree to the Terms of Service.');
+      return;
     }
-    localStorage.setItem('token', token);
-    navigate('/opportunities', { replace: true });
+    // Block submission if phone is not valid
+    if (!isValidPhoneNumber(form.phone)) {
+      setUniqueError((err) => ({ ...err, phone: 'Enter a valid phone number.' }));
+      setError('Please fix the errors above before submitting.');
+      return;
+    }
+    // Block submission if any uniqueness check is pending or failed
+    if (pending.username || pending.email || pending.phone || unique.username === false || unique.email === false || unique.phone === false) {
+      setUniqueError((err) => ({
+        ...err,
+        username: unique.username === false ? 'Username already exists.' : err.username,
+        email: unique.email === false ? 'Email already exists.' : err.email,
+        phone: unique.phone === false ? 'Phone already exists.' : err.phone,
+      }));
+      setError('Please fix the errors above before submitting.');
+      return;
+    }
+    if (form.password !== form.confirm) {
+      return setError("Passwords do not match");
+    }
+    if (!form.fullName.trim()) {
+      setError('Full name is required');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/auth/signup/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          username: form.username,
+          phone: form.phone,
+          password: form.password,
+          name: form.fullName.trim() || form.username,
+          hasAgreedToTerms: true
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).message || "Signup failed");
+      const { step } = await res.json();
+      window.location.href = `/signup-wizard?step=${step}`;
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  // Ensure we're on the correct tab and step
-  useEffect(() => {
-    const highest = Number(localStorage.getItem('signup_highest_step') || '0');
-    if (highest > 0) {
-      if (tab !== 'signup' || (step && Number(step) < highest)) {
-        navigate(`/auth?tab=signup&step=${highest}`, { replace: true });
-      }
-    }
-  }, [tab, step, navigate]);
-
-  if (tab === "signup" && step) {
-    const currentStep = parseInt(step);
-    if (currentStep < highestStep) {
-      window.location.replace(`/auth?tab=signup&step=${highestStep}`);
-      return null;
-    }
-
-    return (
-      <SignupWizardProvider>
-        <SignupWizard>
-          {step === "1" && <AgreementStep onComplete={() => goToStep(2)} />}
-          {step === "2" && <PaymentStep onComplete={() => goToStep(3)} />}
-          {step === "3" && <ProfileStep onComplete={handleWizardComplete} />}
-        </SignupWizard>
-      </SignupWizardProvider>
-    );
-  }
-
-  // Otherwise, show the classic tabbed UI
-  const [activeTab, setActiveTab] = useState(tab === "login" ? "login" : "register");
-
-  useEffect(() => {
-    setActiveTab(tab === "login" ? "login" : "register");
-  }, [tab]);
-
+  // Full-screen gradient background, card sits on top
   return (
-    <div className="min-h-screen flex">
-      {/* Left: Auth Form */}
-      <div className="flex-1 flex flex-col justify-center items-center bg-white px-8 py-12">
-        <div className="w-full max-w-md">
-          <div className="mb-8 text-center">
-            <Link href="/" className="inline-block">
-              <span className="text-qpurple font-bold text-3xl tracking-tight mr-2">
-                <span>Quote</span><span className="font-extrabold">Bid</span>
+    <div
+      className="min-h-screen w-full flex"
+      style={{
+        fontFamily: 'Inter, sans-serif',
+        background:
+          'linear-gradient(90deg, rgba(30, 22, 60, 0.55) 0%, rgba(0,0,0,0) 40%),' +
+          'radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 60%),' +
+          'radial-gradient(ellipse at 100% 100%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 70%),' +
+          'linear-gradient(135deg, #3B267A 0%, #4B2CA0 40%, #6B3FC9 80%, #A084E8 100%)'
+      }}
+    >
+      {/* Left: Hero Panel */}
+      <div className="hidden lg:flex flex-col justify-center items-end w-1/2 px-2">
+        <div className="max-w-xl w-full">
+          <h1 className="text-6xl font-extrabold leading-tight mb-8 text-white" style={{letterSpacing: '-0.01em'}}>
+            Get Featured in <span className="text-[#FFD84D]">Top Media</span> Outlets
+          </h1>
+          <p className="mb-12 text-xl max-w-xl text-white/90">
+            Join thousands of experts connecting with journalists at <span className="font-semibold">Forbes</span>, <span className="font-semibold">Bloomberg</span>, <span className="font-semibold">TechCrunch</span>, and more.
+          </p>
+          <ul className="space-y-10 text-base">
+            <li className="flex items-center gap-4">
+              <span className="inline-flex items-center justify-center w-11 h-11 rounded-lg bg-white/10 border border-white/20">
+                <svg width="28" height="28" fill="none" stroke="#C7BFFF" strokeWidth="2" className=""><circle cx="14" cy="14" r="10" strokeDasharray="2 2" /><path d="M14 8v6l4 2" stroke="#C7BFFF"/></svg>
               </span>
-              <span className="text-gray-600 font-medium text-sm border-l border-gray-300 pl-2">
-                {activeTab === "register" ? "Sign Up" : "Login"}
+              <span>
+                <span className="font-semibold text-white">Bid on Premium Opportunities</span>
+                <br />
+                <span className="text-sm text-white/70">Set your price and only pay when published</span>
               </span>
-            </Link>
-            <p className="mt-2 text-gray-600">Connect with top media outlets</p>
-          </div>
-          {activeTab === "register" && (
-            <h2 className="text-2xl font-bold mb-4 text-center">Create Your Account</h2>
-          )}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8">
-              <TabsTrigger value="register" onClick={() => navigate("/auth?tab=register")}>Sign Up</TabsTrigger>
-              <TabsTrigger value="login" onClick={() => navigate("/auth?tab=login")}>Login</TabsTrigger>
-            </TabsList>
-            <TabsContent value="register">
-              <div>
-                <RegisterForm />
-              </div>
-            </TabsContent>
-            <TabsContent value="login">
-              <div>
-                <h2 className="text-2xl font-bold mb-2 text-center">Welcome Back</h2>
-                <p className="text-gray-600 text-center mb-6">Log in to access your account and media opportunities</p>
-                <LoginForm />
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </div>
-      {/* Right: Blue Marketing Panel */}
-      <div className="hidden md:flex flex-col justify-center items-center flex-1 bg-[#0A3976] text-white px-12">
-        <div className="max-w-md">
-          <h2 className="text-3xl font-bold mb-4">Get Featured in Top Media Outlets</h2>
-          <p className="mb-8 text-lg">Join our marketplace and connect with journalists from leading publications like Forbes, Business Insider, and more.</p>
-          <ul className="space-y-6">
-            <li className="flex items-start">
-              <span className="mr-3 mt-1"><CheckCircleIcon /></span>
-              <div>
-                <span className="font-semibold">Bid on Opportunities</span>
-                <div className="text-white/80 text-sm">Set your price and only pay if your quote is published.</div>
-              </div>
             </li>
-            <li className="flex items-start">
-              <span className="mr-3 mt-1"><CheckCircleIcon /></span>
-              <div>
-                <span className="font-semibold">AI-Powered Voice Pitches</span>
-                <div className="text-white/80 text-sm">Record your pitch with our AI transcription technology.</div>
-              </div>
+            <li className="flex items-center gap-4">
+              <span className="inline-flex items-center justify-center w-11 h-11 rounded-lg bg-white/10 border border-white/20">
+                <svg width="28" height="28" fill="none" stroke="#C7BFFF" strokeWidth="2" className=""><circle cx="14" cy="14" r="10" strokeDasharray="2 2" /><path d="M10 10l8 8M18 10l-8 8" stroke="#C7BFFF"/></svg>
+              </span>
+              <span>
+                <span className="font-semibold text-white">AI-Powered Voice Pitches</span>
+                <br />
+                <span className="text-sm text-white/70">Record a pitch – we transcribe & attach it automatically</span>
+              </span>
             </li>
-            <li className="flex items-start">
-              <span className="mr-3 mt-1"><CheckCircleIcon /></span>
-              <div>
-                <span className="font-semibold">Verified Media Requests</span>
-                <div className="text-white/80 text-sm">All opportunities are verified by our editorial team.</div>
-              </div>
+            <li className="flex items-center gap-4">
+              <span className="inline-flex items-center justify-center w-11 h-11 rounded-lg bg-white/10 border border-white/20">
+                <ArrowRight className="w-6 h-6 text-[#C7BFFF]" />
+              </span>
+              <span>
+                <span className="font-semibold text-white">Verified Media Requests</span>
+                <br />
+                <span className="text-sm text-white/70">Every opportunity vetted by our editorial team</span>
+              </span>
             </li>
           </ul>
+        </div>
+      </div>
+      {/* Right: Form Card */}
+      <div className="flex flex-col justify-center items-center w-full lg:w-1/2 min-h-[80vh]">
+        <div className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl px-12 py-5" style={{boxShadow: '0 8px 40px 0 rgba(80,63,205,0.10)'}}>
+          <h2 className="text-4xl font-extrabold text-center mb-2 bg-gradient-to-r from-[#5B6EE1] to-[#7C3AED] bg-clip-text text-transparent" style={{letterSpacing: '-0.01em'}}>Join QuoteBid</h2>
+          <p className="text-center text-gray-400 mb-8 text-base">Start connecting with top journalists today</p>
+          {error && (
+            <p className="mb-4 text-sm font-medium text-red-600 text-center">{error}</p>
+          )}
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input
+                aria-label="Full Name"
+                name="fullName"
+                required
+                placeholder="Full Name"
+                className="rounded-xl border border-gray-200 px-5 py-4 focus:ring-2 focus:ring-[#7B5FFF] bg-[#F7F6FD] placeholder-gray-400 text-base w-full font-medium"
+                value={form.fullName}
+                onChange={handleChange}
+                autoComplete="name"
+              />
+              <input
+                aria-label="Username"
+                name="username"
+                required
+                placeholder="Username"
+                className="rounded-xl border border-gray-200 px-5 py-4 focus:ring-2 focus:ring-[#7B5FFF] bg-[#F7F6FD] placeholder-gray-400 text-base w-full font-medium"
+                value={form.username}
+                onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase() }))}
+                autoComplete="username"
+              />
+              {uniqueError.username && (
+                <div className="text-red-500 text-xs mt-0.5 col-span-2">{uniqueError.username}</div>
+              )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input
+                aria-label="Email"
+                type="email"
+                name="email"
+                required
+                placeholder="your@email.com"
+                className="rounded-xl border border-gray-200 px-5 py-4 focus:ring-2 focus:ring-[#7B5FFF] bg-[#F7F6FD] placeholder-gray-400 text-base w-full font-medium"
+                value={form.email}
+                onChange={handleChange}
+                autoComplete="email"
+              />
+              <input
+                aria-label="Company Name"
+                name="company"
+                placeholder="Company Name"
+                className="rounded-xl border border-gray-200 px-5 py-4 focus:ring-2 focus:ring-[#7B5FFF] bg-[#F7F6FD] placeholder-gray-400 text-base w-full font-medium"
+                value={form.company}
+                onChange={handleChange}
+                autoComplete="organization"
+              />
+              {uniqueError.email && (
+                <div className="text-red-500 text-xs mt-0.5 col-span-2">{uniqueError.email}</div>
+              )}
+            </div>
+            <div className="relative">
+              <PhoneInput
+                country={'us'}
+                value={form.phone}
+                onChange={phone => {
+                  const phoneNumber = parsePhoneNumberFromString('+' + phone);
+                  if (phoneNumber && phoneNumber.isValid()) {
+                    setForm(f => ({ ...f, phone: phoneNumber.number }));
+                    setUniqueError(err => ({ ...err, phone: '' }));
+                    if (phoneNumber.number !== lastChecked.current.phone) {
+                      setPending(p => ({ ...p, phone: true }));
+                      fetch(`/api/users/check-unique?field=phone&value=${encodeURIComponent(phoneNumber.number)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                          setUnique(u => ({ ...u, phone: data.unique }));
+                          setUniqueError(err => ({ ...err, phone: data.unique ? '' : 'Phone already exists.' }));
+                          lastChecked.current.phone = phoneNumber.number;
+                        })
+                        .catch(() => {
+                          setUnique(u => ({ ...u, phone: false }));
+                          setUniqueError(err => ({ ...err, phone: 'Error checking uniqueness.' }));
+                        })
+                        .finally(() => setPending(p => ({ ...p, phone: false })));
+                    }
+                  }
+                }}
+                inputProps={{
+                  name: 'phone',
+                  required: true,
+                  autoComplete: 'tel',
+                  placeholder: 'Enter your phone number',
+                  style: {
+                    borderRadius: '0.75rem',
+                    border: '1px solid #E5E7EB',
+                    background: '#F7F6FD',
+                    padding: '1rem 1.25rem',
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    fontFamily: 'Inter, sans-serif',
+                    color: '#222',
+                    width: '100%',
+                    outline: 'none',
+                  },
+                  className: 'focus:ring-2 focus:ring-[#7B5FFF] placeholder-gray-400',
+                }}
+                buttonStyle={{
+                  border: 'none',
+                  background: 'transparent',
+                  paddingLeft: '0.5rem',
+                  paddingRight: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: '100%',
+                }}
+                containerStyle={{
+                  width: '100%',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+                dropdownStyle={{
+                  zIndex: 50,
+                  fontFamily: 'Inter, sans-serif',
+                }}
+                inputClass=""
+              />
+            </div>
+            {uniqueError.phone && (
+              <div className="text-red-500 text-xs mt-0.5">{uniqueError.phone}</div>
+            )}
+            <select
+              name="industry"
+              required
+              className="rounded-xl border border-gray-200 px-5 py-4 bg-[#F7F6FD] focus:ring-2 focus:ring-[#7B5FFF] text-gray-700 text-base w-full font-medium"
+              value={form.industry}
+              onChange={handleChange}
+            >
+              <option value="" disabled>
+                Select your industry
+              </option>
+              {INDUSTRY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="relative">
+                <input
+                  aria-label="Password"
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  required
+                  placeholder="Create Password"
+                  className="rounded-xl border border-gray-200 px-5 py-4 focus:ring-2 focus:ring-[#7B5FFF] bg-[#F7F6FD] placeholder-gray-400 text-base w-full font-medium pr-12"
+                  value={form.password}
+                  onChange={handleChange}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  aria-label="Confirm Password"
+                  type={showConfirm ? "text" : "password"}
+                  name="confirm"
+                  required
+                  placeholder="Confirm Password"
+                  className="rounded-xl border border-gray-200 px-5 py-4 focus:ring-2 focus:ring-[#7B5FFF] bg-[#F7F6FD] placeholder-gray-400 text-base w-full font-medium pr-12"
+                  value={form.confirm}
+                  onChange={handleChange}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                  onClick={() => setShowConfirm((v) => !v)}
+                  aria-label={showConfirm ? "Hide password" : "Show password"}
+                >
+                  {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center mt-6 mb-4">
+              <input
+                type="checkbox"
+                id="terms"
+                checked={agreedToTerms}
+                onChange={e => setAgreedToTerms(e.target.checked)}
+                className="accent-[#7B5FFF] w-5 h-5 border-4 border-[#D1D5DB] rounded-none transition-all duration-150 mr-3 outline-none focus:outline-none"
+                required
+              />
+              <label htmlFor="terms" className="text-base font-medium text-gray-700 select-none">
+                I agree to the{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#7B5FFF] underline font-semibold">Terms of Service</a>
+              </label>
+            </div>
+            {termsError && <div className="text-red-500 text-xs mb-2 font-medium">{termsError}</div>}
+            <button
+              type="submit"
+              disabled={submitting || pending.username || pending.email || pending.phone || unique.username === false || unique.email === false || unique.phone === false || !agreedToTerms}
+              className="w-full py-4 text-lg font-semibold rounded-xl bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] hover:opacity-90 flex items-center justify-center gap-2 shadow-xl"
+              style={{boxShadow: "0 8px 32px 0 rgba(80, 63, 205, 0.13)"}}
+            >
+              {submitting ? "Creating Account…" : "Create Account"}
+              <ArrowRight className="w-5 h-5 ml-1" />
+            </button>
+          </form>
+          <p className="text-center text-sm mt-7 text-gray-400">
+            Already have an account? <a href="/login" className="font-semibold text-[#3B82F6] hover:underline">Sign in here</a>
+          </p>
         </div>
       </div>
     </div>
@@ -282,11 +520,7 @@ function RegisterForm() {
       password: "",
     passwordConfirm: "",
   });
-  const [unique, setUnique] = useState<Record<UniqueKey, null | boolean>>({
-    username: null,
-    email: null,
-    phone: null,
-  });
+  const [unique, setUnique] = useState<{ username: boolean | null, email: boolean | null, phone: boolean | null }>({ username: null, email: null, phone: null });
   const [uniqueError, setUniqueError] = useState<Record<UniqueKey, string>>({
     username: "",
     email: "",
@@ -302,7 +536,7 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false);
 
   // Format validation helpers
-  const usernameRegex = /^[a-z0-9_]{4,30}$/;
+  const usernameRegex = /^[a-z0-9]{4,30}$/;
   const strongPwd = /^(?=.*\d)(?=.*[!@#$%^&*])[\S]{8,}$/;
 
   // Format validation
@@ -310,7 +544,7 @@ function RegisterForm() {
     switch (name) {
       case "username":
         if (!usernameRegex.test(value))
-          return "Username must be 4-30 chars, lower-case, and only a-z, 0-9, _.";
+          return "Username must be 4-30 characters, lowercase letters and numbers only.";
         return "";
       case "email":
         if (!validator.isEmail(value))
@@ -331,7 +565,7 @@ function RegisterForm() {
       default:
         return "";
     }
-      }
+  }
       
   // Real-time format and uniqueness check
   useEffect(() => {
@@ -380,19 +614,38 @@ function RegisterForm() {
   async function onSubmit(values: RegisterFormValues) {
     setLoading(true);
     try {
+      // Block submission if any uniqueness check is pending or failed
+      if (anyPending || !allUnique) {
+        setLoading(false);
+        setUniqueError((e) => ({
+          ...e,
+          username: unique.username === false ? 'Username already exists.' : e.username,
+          email: unique.email === false ? 'Email already exists.' : e.email,
+          phone: unique.phone === false ? 'Phone already exists.' : e.phone,
+        }));
+        return;
+      }
       // Create user immediately
       const response = await apiRequest("POST", "/api/auth/signup/start", {
         email: values.email,
         password: values.password,
         username: values.username.toLowerCase(),
         name: values.fullName,
+ um7klu-codex/fix-ui-connection-for-sign-up-form
         company: values.companyName,
+
+        companyName: values.companyName,
+new-signup-process
         phone: values.phone,
         industry: values.industry,
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        // If backend returns a uniqueness error, show it inline
+        if (errorData.field && ["username", "email", "phone"].includes(errorData.field)) {
+          setUniqueError((e) => ({ ...e, [errorData.field]: errorData.message }));
+        }
         throw new Error(errorData.message || "Registration failed");
       }
 
@@ -400,7 +653,11 @@ function RegisterForm() {
       storeSignupData(values);
       storeSignupEmail(values.email);
       localStorage.setItem('signup_highest_step', '2');
+um7klu-codex/fix-ui-connection-for-sign-up-form
       navigate("/signup-wizard?step=2", { replace: true });
+
+      navigate("/auth?tab=signup&step=2", { replace: true });
+new-signup-process
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -414,156 +671,185 @@ function RegisterForm() {
         onSubmit={e => {
           form.handleSubmit(onSubmit)(e);
         }} 
-        className="space-y-4"
+        className="space-y-6"
       >
-        <div className="flex space-x-2">
+        {/* Row 1: Full Name & Username */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField control={form.control} name="fullName" render={({ field }) => (
-            <FormItem className="flex-1">
-                            <FormLabel>Full Name</FormLabel>
-              <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
-                            <FormMessage />
-                          </FormItem>
+            <FormItem>
+              <FormLabel className="text-sm">Full Name</FormLabel>
+              <FormControl><Input className="w-full" placeholder="John Doe" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
           )} />
           <FormField control={form.control} name="username" render={({ field }) => (
-            <FormItem className="flex-1">
-                            <FormLabel>Username</FormLabel>
-                            <FormControl>
-                <Input
-                  placeholder="johndoe"
-                  {...field}
-                  onChange={e => field.onChange(e.target.value.toLowerCase())}
-                />
-                            </FormControl>
-              {/* Show format error if present, else uniqueness error */}
+            <FormItem>
+              <FormLabel className="text-sm">Username</FormLabel>
+              <FormControl>
+                <Input className="w-full" placeholder="johndoe" {...field} onChange={e => field.onChange(e.target.value.toLowerCase())} />
+              </FormControl>
               {formatErrors.username ? (
-                <div className="text-red-500 text-xs mt-1">{formatErrors.username}</div>
+                <div className="text-red-500 text-xs mt-0.5">{formatErrors.username}</div>
               ) : uniqueError.username ? (
-                <div className="text-red-500 text-xs mt-1">{uniqueError.username}</div>
+                <div className="text-red-500 text-xs mt-0.5">{uniqueError.username}</div>
               ) : null}
-              {pending.username && <div className="text-xs text-gray-500 mt-1">Checking…</div>}
-                            <FormMessage />
-                          </FormItem>
+              {pending.username && <div className="text-xs text-gray-500 mt-0.5">Checking…</div>}
+              <FormMessage />
+            </FormItem>
           )} />
-                    </div>
-        <FormField control={form.control} name="email" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-            <FormControl><Input placeholder="john.doe@example.com" {...field} /></FormControl>
-            {/* Show format error if present, else uniqueness error */}
-            {formatErrors.email ? (
-              <div className="text-red-500 text-xs mt-1">{formatErrors.email}</div>
-            ) : uniqueError.email ? (
-              <div className="text-red-500 text-xs mt-1">{uniqueError.email}</div>
-            ) : null}
-            {pending.email && <div className="text-xs text-gray-500 mt-1">Checking…</div>}
-                          <FormMessage />
-                        </FormItem>
-        )} />
-        <FormField control={form.control} name="companyName" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Company Name</FormLabel>
-            <FormControl><Input placeholder="Acme Inc." {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-        )} />
+        </div>
+
+        {/* Row 2: Email & Company Name */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField control={form.control} name="email" render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm">Email</FormLabel>
+              <FormControl><Input className="w-full" placeholder="john.doe@example.com" {...field} /></FormControl>
+              {formatErrors.email ? (
+                <div className="text-red-500 text-xs mt-0.5">{formatErrors.email}</div>
+              ) : uniqueError.email ? (
+                <div className="text-red-500 text-xs mt-0.5">{uniqueError.email}</div>
+              ) : null}
+              {pending.email && <div className="text-xs text-gray-500 mt-0.5">Checking…</div>}
+              <FormMessage />
+            </FormItem>
+          )} />
+          <FormField control={form.control} name="companyName" render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm">Company Name</FormLabel>
+              <FormControl><Input className="w-full" placeholder="Acme Inc." {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+
+        {/* Row 3: Phone Number (full width) */}
         <FormField control={form.control} name="phone" render={({ field }) => (
-                        <FormItem>
-            <FormLabel>Phone Number</FormLabel>
-                          <FormControl>
+          <FormItem>
+            <FormLabel className="text-sm">Phone Number</FormLabel>
+            <FormControl>
               <PhoneInput
                 country={'us'}
                 value={field.value}
                 onChange={value => {
-                  // Parse and store E.164 format
                   const phoneNumber = parsePhoneNumberFromString('+' + value);
                   form.setValue('phone', phoneNumber ? phoneNumber.number : '+' + value);
                 }}
                 inputProps={{
                   name: 'phone',
                   required: true,
-                  autoFocus: false,
                   autoComplete: 'tel',
-                  placeholder: 'Enter your phone number'
+                  placeholder: 'Enter your phone number',
+                  style: {
+                    borderRadius: '0.75rem',
+                    border: '1px solid #E5E7EB',
+                    background: '#F7F6FD',
+                    padding: '1rem 1.25rem',
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    fontFamily: 'Inter, sans-serif',
+                    color: '#222',
+                    width: '100%',
+                    outline: 'none',
+                  },
+                  className: 'focus:ring-2 focus:ring-[#7B5FFF] placeholder-gray-400',
                 }}
-                containerClass="w-full"
-                inputClass="w-full"
-                buttonClass="border-r-0"
-                dropdownClass="z-50"
+                buttonStyle={{
+                  border: 'none',
+                  background: 'transparent',
+                  paddingLeft: '0.5rem',
+                  paddingRight: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: '100%',
+                }}
+                containerStyle={{
+                  width: '100%',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+                dropdownStyle={{
+                  zIndex: 50,
+                  fontFamily: 'Inter, sans-serif',
+                }}
+                inputClass=""
               />
-                          </FormControl>
-            <div className="text-gray-500 text-xs mt-1">Select a country code and enter a phone number.</div>
-            {/* Show format error if present, else uniqueness error */}
+            </FormControl>
             {formatErrors.phone ? (
-              <div className="text-red-500 text-xs mt-1">{formatErrors.phone}</div>
+              <div className="text-red-500 text-xs mt-0.5">{formatErrors.phone}</div>
             ) : uniqueError.phone ? (
-              <div className="text-red-500 text-xs mt-1">{uniqueError.phone}</div>
+              <div className="text-red-500 text-xs mt-0.5">{uniqueError.phone}</div>
             ) : null}
-            {pending.phone && <div className="text-xs text-gray-500 mt-1">Checking…</div>}
-                          <FormMessage />
-                        </FormItem>
+            {pending.phone && <div className="text-xs text-gray-500 mt-0.5">Checking…</div>}
+            <FormMessage />
+          </FormItem>
         )} />
+
+        {/* Row 4: Industry (full width) */}
         <FormField control={form.control} name="industry" render={({ field }) => (
-                        <FormItem>
-            <FormLabel>Industry<span className="text-red-500">*</span></FormLabel>
+          <FormItem>
+            <FormLabel className="text-sm">Industry<span className="text-red-500">*</span></FormLabel>
             <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select your industry" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select your industry" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
                 {INDUSTRY_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
         )} />
-        <div className="flex space-x-2">
+
+        {/* Row 5: Password & Confirm Password */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField control={form.control} name="password" render={({ field }) => (
-            <FormItem className="flex-1">
-                            <FormLabel>Password</FormLabel>
-              <FormControl><Input type="password" {...field} /></FormControl>
-              {/* Show format error if present */}
-              {formatErrors.password && <div className="text-red-500 text-xs mt-1">{formatErrors.password}</div>}
-                            <FormMessage />
-                          </FormItem>
+            <FormItem>
+              <FormLabel className="text-sm">Password</FormLabel>
+              <FormControl><Input className="w-full" type="password" {...field} /></FormControl>
+              {formatErrors.password && <div className="text-red-500 text-xs mt-0.5">{formatErrors.password}</div>}
+              <FormMessage />
+            </FormItem>
           )} />
           <FormField control={form.control} name="passwordConfirm" render={({ field }) => (
-            <FormItem className="flex-1">
-                            <FormLabel>Confirm Password</FormLabel>
-              <FormControl><Input type="password" {...field} /></FormControl>
-              {/* Show format error if present */}
-              {formatErrors.passwordConfirm && <div className="text-red-500 text-xs mt-1">{formatErrors.passwordConfirm}</div>}
-                            <FormMessage />
-                          </FormItem>
+            <FormItem>
+              <FormLabel className="text-sm">Confirm Password</FormLabel>
+              <FormControl><Input className="w-full" type="password" {...field} /></FormControl>
+              {formatErrors.passwordConfirm && <div className="text-red-500 text-xs mt-0.5">{formatErrors.passwordConfirm}</div>}
+              <FormMessage />
+            </FormItem>
           )} />
-                    </div>
-        <FormField control={form.control} name="agreeTerms" render={({ field }) => (
-          <FormItem>
-            <div className="flex items-center space-x-2">
-                          <FormControl>
-                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                          </FormControl>
-              <FormLabel>I agree to the <a href="#" className="underline">terms and conditions</a></FormLabel>
-            </div>
-                            <FormMessage />
-                        </FormItem>
-        )} />
-                    <Button 
-                      type="submit" 
-          className="w-full" 
-          disabled={!canSubmit || loading}
-                    >
-          {loading ? "Creating Account..." : "Create Account"}
-                    </Button>
-        {/* At the bottom of the form, show a generic message if the button is disabled and there are no visible errors */}
-        {!canSubmit && !Object.values(formatErrors).some(Boolean) && !Object.values(uniqueError).some(Boolean) && !anyPending && (
-          <div className="text-red-500 text-xs text-center mt-2">Please check all fields and try again.</div>
-        )}
-                  </form>
-                </Form>
+        </div>
+
+        {/* Terms and Submit - Full Width */}
+        <div className="space-y-3">
+          <FormField control={form.control} name="agreeTerms" render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center space-x-2">
+                <FormControl>
+                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+                <FormLabel className="text-sm">I agree to the <a href="#" className="underline">terms and conditions</a></FormLabel>
+              </div>
+              <FormMessage />
+            </FormItem>
+          )} />
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={!canSubmit || loading}
+          >
+            {loading ? "Creating Account..." : "Create Account"}
+          </Button>
+          {!canSubmit && !Object.values(formatErrors).some(Boolean) && !Object.values(uniqueError).some(Boolean) && !anyPending && (
+            <div className="text-red-500 text-xs text-center">Please check all fields and try again.</div>
+          )}
+        </div>
+      </form>
+    </Form>
   );
 }
 
@@ -595,26 +881,26 @@ function LoginForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField control={form.control} name="username" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Username</FormLabel>
+          <FormItem>
+            <FormLabel>Username</FormLabel>
             <FormControl><Input placeholder="johndoe" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
+            <FormMessage />
+          </FormItem>
         )} />
         <FormField control={form.control} name="password" render={({ field }) => (
-                        <FormItem>
+          <FormItem>
             <div className="flex justify-between items-center mb-1">
-                            <FormLabel>Password</FormLabel>
+              <FormLabel>Password</FormLabel>
               <a href="#" className="text-sm text-blue-700 hover:underline">Forgot password?</a>
-                          </div>
+            </div>
             <FormControl><Input type="password" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
+            <FormMessage />
+          </FormItem>
         )} />
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Logging in..." : "Log In"}
-                    </Button>
-                  </form>
-                </Form>
+        </Button>
+      </form>
+    </Form>
   );
 }

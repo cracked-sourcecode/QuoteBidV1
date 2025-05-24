@@ -120,74 +120,30 @@ export default function Payment() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
 
-  // Check if the user has already signed the agreement
   useEffect(() => {
-    const checkAgreement = async () => {
+    const initializePayment = async () => {
       if (!user?.id) return;
       
       try {
-        const res = await apiRequest('GET', `/api/users/${user.id}/agreement-pdf`);
+        const res = await apiRequest('GET', `/api/users/${user.id}/subscription`);
         
         if (!res.ok) {
-          // No agreement found, redirect to agreement page
-          toast({
-            title: "Agreement Required",
-            description: "Please read and sign the platform agreement before subscribing.",
-          });
-          
-          setTimeout(() => {
-            setLocation('/agreement');
-          }, 1500);
+          setError('Failed to initialize payment. Please try again.');
+          return;
         }
-      } catch (error) {
-        console.error('Error checking agreement:', error);
-        toast({
-          title: "Error",
-          description: "There was an issue accessing your account information.",
-          variant: "destructive",
-        });
-      }
-    };
-    
-    checkAgreement();
-  }, [user, toast, setLocation]);
 
-  // Create payment intent for subscription
-  useEffect(() => {
-    const createSubscription = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Create a payment intent for the monthly subscription
-        const response = await apiRequest('POST', '/api/create-payment-intent', {
-          amount: 99.99,
-          subscription: true
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to create payment intent');
-        }
-        
-        const data = await response.json();
+        const data = await res.json();
         setClientSecret(data.clientSecret);
       } catch (error) {
-        console.error('Error creating payment intent:', error);
-        setError('Failed to initialize payment. Please try again later.');
-        toast({
-          title: "Payment Setup Error",
-          description: error instanceof Error ? error.message : "There was an issue setting up the payment form.",
-          variant: "destructive",
-        });
+        console.error('Error initializing payment:', error);
+        setError('There was an issue accessing your account information.');
       } finally {
         setLoading(false);
       }
     };
-
-    if (user?.id) {
-      createSubscription();
-    }
-  }, [user, toast]);
+    
+    initializePayment();
+  }, [user]);
 
   if (!user) {
     return (
