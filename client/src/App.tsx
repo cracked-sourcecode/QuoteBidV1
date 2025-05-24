@@ -111,7 +111,9 @@ function Router() {
         <Route path="/admin/create-admin" component={CreateAdmin} />
         <Route path="/signup-wizard" component={SignupWizard} />
         <Route path="/register" component={RegisterPage} />
+um7klu-codex/fix-ui-connection-for-sign-up-form
         <Route path="/terms" component={TermsOfService} />
+        new-signup-process
         
         {/* Routes that require authentication */}
         <ProtectedRoute path="/subscribe" component={() => <Subscribe />} />

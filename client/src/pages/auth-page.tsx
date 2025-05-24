@@ -631,9 +631,13 @@ function RegisterForm() {
         password: values.password,
         username: values.username.toLowerCase(),
         name: values.fullName,
+ um7klu-codex/fix-ui-connection-for-sign-up-form
+        company: values.companyName,
+
         companyName: values.companyName,
+new-signup-process
         phone: values.phone,
-        industry: values.industry
+        industry: values.industry,
       });
 
       if (!response.ok) {
@@ -649,7 +653,11 @@ function RegisterForm() {
       storeSignupData(values);
       storeSignupEmail(values.email);
       localStorage.setItem('signup_highest_step', '2');
+um7klu-codex/fix-ui-connection-for-sign-up-form
+      navigate("/signup-wizard?step=2", { replace: true });
+
       navigate("/auth?tab=signup&step=2", { replace: true });
+new-signup-process
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
