@@ -47,9 +47,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!phone) return res.status(400).json({ message: 'Phone number is required' });
     if (!industry) return res.status(400).json({ message: 'Industry is required' });
     try {
-      let [user] = await getDb().select().from(users).where(eq(users.email, email));
-      if (user) {
-        return res.status(400).json({ message: 'User with this email already exists' });
+      // Check for existing email
+      let [userByEmail] = await getDb().select().from(users).where(eq(users.email, email));
+      if (userByEmail) {
+        return res.status(400).json({ message: 'User with this email already exists', field: 'email' });
+      }
+      // Check for existing username (case-insensitive)
+      let [userByUsername] = await getDb().select().from(users).where(sql`LOWER(${users.username}) = LOWER(${username})`);
+      if (userByUsername) {
+        return res.status(400).json({ message: 'Username already taken', field: 'username' });
+      }
+      // Check for existing phone (normalize to digits only)
+      const normalizedPhone = phone.replace(/\D/g, '');
+      let [userByPhone] = await getDb().select().from(users).where(sql`REPLACE(REPLACE(REPLACE(REPLACE(${users.phone_number}, '+', ''), '-', ''), ' ', ''), '()', '') LIKE ${'%' + normalizedPhone + '%'}`);
+      if (userByPhone) {
+        return res.status(400).json({ message: 'Phone number already in use', field: 'phone' });
       }
       const hashedPassword = await hashPassword(password);
       await getDb().insert(users).values({
@@ -65,7 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         premiumStatus: 'free',
         subscription_status: 'inactive'
       });
-      [user] = await getDb().select().from(users).where(eq(users.email, email));
+      const [user] = await getDb().select().from(users).where(eq(users.email, email));
       const token = jwt.sign(
         {
           id: user.id,

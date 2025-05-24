@@ -44,6 +44,8 @@ import CoverageManager from "@/pages/admin/coverage-manager";
 import AgreementsViewer from "@/pages/admin/agreements-viewer";
 import AdminAnalytics from "@/pages/admin/analytics";
 import PublicationsManager from "@/pages/admin/publications-manager";
+import LoginPage from "@/pages/login-page";
+import QuoteBidSignUp from "@/pages/auth-page";
 
 // Logout component to handle the regular user logout process
 function LogoutHandler() {
@@ -115,8 +117,10 @@ function Router() {
             return <Home />;
           }}
         </Route>
+        <Route path="/login" component={LoginPage} />
+        <Route path="/register" component={QuoteBidSignUp} />
         <Route path="/auth">
-          {({ location }: { location: string }) => <AuthPage key={location} />}
+          {() => <Redirect to="/login" />}
         </Route>
         <Route path="/logout" component={LogoutHandler} />
         <Route path="/admin-logout" component={AdminLogoutHandler} />
