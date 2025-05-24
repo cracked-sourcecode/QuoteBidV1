@@ -48,6 +48,12 @@ function SignupWizardContent() {
 
   // Handle browser back button and prevent back navigation
   useEffect(() => {
+    // When rendering on the standalone /register page we don't need to enforce
+    // the legacy query params used by /auth. This allows the new sign up flow to
+    // work without redirecting.
+    if (window.location.pathname.startsWith('/register')) {
+      return;
+    }
     const handlePopState = (event: PopStateEvent) => {
       event.preventDefault();
       const highestStep = Number(localStorage.getItem('signup_highest_step') || '1');
