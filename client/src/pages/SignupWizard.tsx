@@ -120,11 +120,20 @@ function SignupWizardContent() {
     }
     setIsLoading(true);
     try {
-      await post('/api/auth/register', { email: inputEmail, password, username, fullName, companyName, phone, industry });
+      await post('/api/auth/signup/start', {
+        email: inputEmail,
+        password,
+        username: username.toLowerCase(),
+        name: fullName,
+        companyName,
+        phone,
+        industry,
+      });
       storeSignupEmail(inputEmail);
-      storeSignupData({ email: inputEmail, password, username, fullName, companyName, phone, industry });
+      storeSignupData({ email: inputEmail, password, username: username.toLowerCase(), name: fullName, companyName, phone, industry });
       setSavedEmail(inputEmail);
-      setStage('agreement');
+      localStorage.setItem('signup_highest_step', '2');
+      setStage('payment');
     } catch (err: any) {
       toast({ title: 'Signup Error', description: err.message, variant: 'destructive' });
     }
