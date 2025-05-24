@@ -27,7 +27,15 @@ export function SignupWizard({ children }: SignupWizardProps) {
     : '';
 
   const enforceLocation = () => {
-    const highest = Number(localStorage.getItem('signup_highest_step') || String(currentStep));
+    // Allow the wizard to be used on the standalone /register route without
+    // forcing a redirect to /auth. Only enforce the legacy query params when
+    // the user is already on the /auth page.
+    if (window.location.pathname.startsWith('/register')) {
+      return;
+    }
+    const highest = Number(
+      localStorage.getItem('signup_highest_step') || String(currentStep)
+    );
     const url = new URL(window.location.href);
     const tab = url.searchParams.get('tab');
     const stepParam = Number(url.searchParams.get('step') || '1');
