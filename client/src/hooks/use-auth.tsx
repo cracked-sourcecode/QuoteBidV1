@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Prevent login/auth redirects on specific pages
   const shouldPreventRedirect = (path: string) => {
-    return path === "/" || path.startsWith("/agreement") || path.startsWith("/subscribe") || path.startsWith("/premium");
+    return path === "/" || path.startsWith("/subscribe") || path.startsWith("/premium");
   };
   
   // Handle login and navigation
