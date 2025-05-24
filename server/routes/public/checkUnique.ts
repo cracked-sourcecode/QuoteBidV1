@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { getDb } from "../../db";
 import { users } from "@shared/schema";
 import { sql } from "drizzle-orm";
+import validator from "validator";
 
 const fieldMap = {
   username: "username",
@@ -31,8 +32,11 @@ export async function checkUnique(
     let normalizedValue = value;
     if (field === 'email') {
       // Validate email format and TLD
-      const emailRegex = /^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$/;
-      if (!emailRegex.test(value)) {
+      if (!validator.isEmail(value)) {
+        return res.status(400).json({ unique: false, error: 'Invalid email format' });
+      }
+      const tldMatch = value.match(/\.([a-zA-Z]+)$/);
+      if (!tldMatch || !/^[a-zA-Z]{2,}$/.test(tldMatch[1])) {
         return res.status(400).json({ unique: false, error: 'Invalid email format' });
       }
       normalizedValue = value.toLowerCase().trim();
