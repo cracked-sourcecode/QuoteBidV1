@@ -60,9 +60,32 @@ const router = Router();
 const VALID_STAGES = ['agreement', 'payment', 'profile', 'ready', 'legacy'];
 
 export async function startSignup(req: Request, res: Response) {
-  const { email, username, phone, password, name } = req.body as { email: string; username: string; phone: string; password: string; name?: string };
+  const {
+    email,
+    username,
+    phone,
+    password,
+    name,
+    industry,
+    company,
+  } = req.body as {
+    email: string;
+    username: string;
+    phone: string;
+    password: string;
+    name?: string;
+    industry?: string;
+    company?: string;
+  };
   if (!email || !username || !phone || !password) {
     return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  const normalizedUsername = username.toLowerCase();
+  if (!/^[a-z0-9]+$/.test(normalizedUsername)) {
+    return res.status(400).json({
+      message: 'Username must contain only lowercase letters and numbers',
+    });
   }
 
   const db = getDb();
@@ -93,17 +116,19 @@ export async function startSignup(req: Request, res: Response) {
   await db.transaction(async (tx) => {
     const inserted = await tx.insert(users).values({
       email,
-      username,
-      fullName: name || username,
+      username: normalizedUsername,
+      fullName: name || normalizedUsername,
       phone_number: phone,
+      company_name: company,
+      industry,
       password: hashed,
-      signup_stage: 'agreement',
+      signup_stage: 'payment',
     }).returning({ id: users.id });
     newId = inserted[0].id as number;
-    await tx.insert(signupState).values({ userId: newId! });
+    await tx.insert(signupState).values({ userId: newId!, status: 'payment' });
   });
 
-  return res.status(201).json({ userId: newId, step: 'agreement' });
+  return res.status(201).json({ userId: newId, step: 'payment' });
 }
 
 router.post('/start', startSignup);
