@@ -11,7 +11,7 @@ interface SignupWizardContextType {
 const SignupWizardContext = createContext<SignupWizardContextType | undefined>(undefined);
 
 export function SignupWizardProvider({ children }: { children: ReactNode }) {
-  const [currentStage, setCurrentStage] = useState<SignupStage>('agreement');
+  const [currentStage, setCurrentStage] = useState<SignupStage>('payment');
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,10 +36,9 @@ export function SignupWizardProvider({ children }: { children: ReactNode }) {
       // Update highest step in localStorage
       const stageToStep = (stage: SignupStage) => {
         switch (stage) {
-          case 'agreement': return 1;
-          case 'payment': return 2;
-          case 'profile': return 3;
-          case 'ready': return 4;
+          case 'payment': return 1;
+          case 'profile': return 2;
+          case 'ready': return 3;
           default: return 1;
         }
       };
@@ -61,10 +60,9 @@ export function SignupWizardProvider({ children }: { children: ReactNode }) {
     // Update highest step in localStorage
     const stageToStep = (stage: SignupStage) => {
       switch (stage) {
-        case 'agreement': return 1;
-        case 'payment': return 2;
-        case 'profile': return 3;
-        case 'ready': return 4;
+        case 'payment': return 1;
+        case 'profile': return 2;
+        case 'ready': return 3;
         default: return 1;
       }
     };

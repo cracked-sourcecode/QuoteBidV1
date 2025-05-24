@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import AdminPitchesList from '@/components/admin/admin-pitches-list';
-import AdminLayout from '@/components/admin/admin-layout';
 import { AdminAuthProvider, useAdminAuth } from '@/hooks/use-admin-auth';
 import { Loader2 } from 'lucide-react';
 
 export default function AdminPitchesPage() {
-  const { adminUser, isLoading } = useAdminAuth();
+  const { adminUser, loading } = useAdminAuth();
   const isAdmin = !!adminUser;
-  const isAdminLoading = isLoading;
+  const isAdminLoading = loading;
   const [activeTab, setActiveTab] = useState('all');
 
   if (isAdminLoading) {
@@ -30,7 +29,7 @@ export default function AdminPitchesPage() {
   }
 
   return (
-    <AdminLayout activePage="pitches">
+    <div>
       <Helmet>
         <title>Pitch Management | QuoteBid Admin</title>
       </Helmet>
@@ -51,6 +50,6 @@ export default function AdminPitchesPage() {
           <AdminPitchesList filter={activeTab} />
         </div>
       </div>
-    </AdminLayout>
+    </div>
   );
 }
