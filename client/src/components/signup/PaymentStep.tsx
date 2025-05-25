@@ -82,34 +82,84 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
         throw new Error('Card fields not found');
       }
       
-      // Create payment method
-      const { paymentMethod, error } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: cardNumberElement,
-        billing_details: {
-          email: email,
-        },
+      // Step 1: Create or retrieve subscription
+      const subscriptionResponse = await apiRequest(
+        'POST',
+        '/api/signup-stage/get-or-create-subscription',
+        { email }
+      );
+      
+      if (!subscriptionResponse.ok) {
+        const error = await subscriptionResponse.json();
+        throw new Error(error.message || 'Failed to create subscription');
+      }
+      
+      const { subscriptionId, clientSecret, status, active } = await subscriptionResponse.json();
+      
+      // If subscription is already active, just advance to the next stage
+      if (active && (status === 'active' || status === 'trialing')) {
+        const completeCurrentStage = await advanceSignupStage(email, 'payment', { 
+          subscriptionId,
+          paymentCompleted: true 
+        });
+        
+        if (completeCurrentStage.stage === 'profile') {
+          setStage('profile');
+          toast({ 
+            title: 'Subscription Active', 
+            description: 'Your subscription is already active. Proceeding to profile setup.' 
+          });
+          onComplete();
+          return;
+        }
+      }
+      
+      // Step 2: Confirm the payment
+      if (clientSecret) {
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: {
+            card: cardNumberElement,
+            billing_details: {
+              email: email,
+            },
+          },
+        });
+        
+        if (confirmError) {
+          throw new Error(confirmError.message);
+        }
+        
+        if (paymentIntent?.status !== 'succeeded') {
+          throw new Error('Payment was not successful. Please try again.');
+        }
+        
+        // Step 3: Update the payment status on the backend
+        const updateResponse = await apiRequest(
+          'POST',
+          `/api/signup-stage/${encodeURIComponent(email)}/payment-complete`,
+          { 
+            subscriptionId,
+            paymentIntentId: paymentIntent.id,
+            paymentMethodId: paymentIntent.payment_method
+          }
+        );
+        
+        if (!updateResponse.ok) {
+          console.error('Failed to update payment status');
+        }
+      }
+      
+      // Step 4: Advance to the next stage
+      const completeCurrentStage = await advanceSignupStage(email, 'payment', { 
+        subscriptionId,
+        paymentCompleted: true 
       });
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      if (!paymentMethod) {
-        throw new Error('Failed to create payment method');
-      }
-      
-      // Store payment method ID in localStorage
-      localStorage.setItem('signup_payment', JSON.stringify({ paymentMethodId: paymentMethod.id }));
-
-      // Complete the payment stage
-      const completeCurrentStage = await advanceSignupStage(email, 'payment', { paymentMethodId: paymentMethod.id });
       
       if (completeCurrentStage.stage === 'profile') {
         setStage('profile');
         toast({ 
-          title: 'Payment Information Saved', 
-          description: 'Your payment method has been securely saved.' 
+          title: 'Payment Successful!', 
+          description: 'Your subscription has been activated. Welcome to QuoteBid!' 
         });
         onComplete();
       } else {
@@ -225,6 +275,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
             <a href="/terms" className="underline hover:text-gray-700">Terms of Service</a>
             {' '}and{' '}
             <a href="/privacy" className="underline hover:text-gray-700">Privacy Policy</a>.
+            You will be charged $99.99/month until you cancel.
           </p>
 
           {/* Submit Button */}
@@ -236,10 +287,10 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Processing...
+                Processing Payment...
               </>
             ) : (
-              'Continue to Profile Setup'
+              'Subscribe & Continue ($99.99/month)'
             )}
           </Button>
         </div>
