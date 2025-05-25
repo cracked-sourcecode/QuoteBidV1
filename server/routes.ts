@@ -28,7 +28,7 @@ import fs from 'fs';
 import { saveAgreementPDF, regenerateAgreementsPDF, createAgreementPDF, generateProfessionalPDF } from './pdf-utils';
 import { serveAgreementPDF, handleAgreementUpload } from './handlers/agreement-handlers';
 import { handleGeneratePDF, handleSignupAgreementUpload, serveAgreementHTML } from './handlers/signup-wizard-handlers';
-import signupStageRouter, { startSignup } from './routes/signupStage';
+import { startSignup } from './routes/signupStage';
 import signupStateRouter from './routes/signupState';
 import signupRouter from './routes/signup';
 import { hashPassword } from './utils/passwordUtils';
@@ -103,11 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
- um7klu-codex/fix-ui-connection-for-sign-up-form
   // Unified signup start endpoint used by new registration flow
-
-  // New unified signup endpoint used by the frontend signup screen
-  new-signup-process
   app.post('/api/auth/signup/start', startSignup);
 
   // --- PUBLIC ENDPOINTS (must be before any middleware) ---
@@ -261,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/onboarding/agreement/upload', handleAgreementUpload);
   
   // Register signup stage routes once before auth setup
-  app.use('/api/signup-stage', signupStageRouter);
+  app.use('/api/signup-stage', signupRouter);
   app.use('/api/signup/state', signupStateRouter);
   app.use('/api/signup', signupRouter);
   
