@@ -109,7 +109,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
+      // Clear the JWT token from localStorage
+      localStorage.removeItem("token");
+      
+      // Clear all user-related data from the query cache
       queryClient.setQueryData(["/api/user"], null);
+      queryClient.removeQueries({ queryKey: ["/api/user"] });
+      
       toast({
         title: "Logged out",
         description: "You have been successfully logged out.",
@@ -160,29 +166,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAuth() {
-  const { data: user, isLoading, error } = useQuery({
-    queryKey: ['/api/user'],
-    queryFn: async () => {
-      console.log('[useAuth] Fetching user data...');
-      const token = localStorage.getItem('token');
-      console.log('[useAuth] Token from localStorage:', token ? `exists (length: ${token.length})` : 'missing');
-      
-      const response = await apiFetch('/api/user');
-      console.log('[useAuth] Response status:', response.status);
-      
-      if (!response.ok) {
-        console.log('[useAuth] Response not OK, throwing error');
-        throw new Error('Failed to fetch user');
-      }
-      const data = await response.json();
-      console.log('[useAuth] User data received:', data);
-      return data;
-    },
-    retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  console.log('[useAuth] Current state - user:', user, 'isLoading:', isLoading, 'error:', error);
-
-  return { user, isLoading, error };
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }

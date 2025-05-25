@@ -88,16 +88,7 @@ function Router() {
     <>
       <Switch>
         {/* Public routes - available to everyone */}
-        <Route path="/">
-          {() => {
-            const { user } = useAuth();
-            // Redirect logged-in users to opportunities page, otherwise show the home page
-            if (user) {
-              return <Redirect to="/opportunities" />;
-            }
-            return <Home />;
-          }}
-        </Route>
+        <Route path="/" component={Home} />
         <Route path="/login" component={LoginPage} />
         <Route path="/register" component={RegisterPage} />
         <Route path="/auth">
