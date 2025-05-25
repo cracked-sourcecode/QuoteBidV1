@@ -60,57 +60,30 @@ const router = Router();
 const VALID_STAGES = ['payment', 'profile', 'ready', 'legacy'];
 
 export async function startSignup(req: Request, res: Response) {
- um7klu-codex/fix-ui-connection-for-sign-up-form
-  const {
-    email,
-    username,
-    phone,
-    password,
-    name,
-    industry,
-    company,
-  } = req.body as {
-
   const { email, username, phone, password, name, companyName, industry, hasAgreedToTerms } = req.body as {
-new-signup-process
     email: string;
     username: string;
     phone: string;
     password: string;
     name?: string;
-um7klu-codex/fix-ui-connection-for-sign-up-form
-    industry?: string;
-    company?: string;
-  };
-  if (!email || !username || !phone || !password) {
-    return res.status(400).json({ message: 'Missing required fields' });
-  }
-
-  const normalizedUsername = username.toLowerCase();
-  if (!/^[a-z0-9]+$/.test(normalizedUsername)) {
-    return res.status(400).json({
-      message: 'Username must contain only lowercase letters and numbers',
-    });
-  }
-
-=======
     companyName?: string;
     industry?: string;
     hasAgreedToTerms: boolean;
   };
+
   if (!email || !username || !phone || !password || !hasAgreedToTerms) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
-  // Validate username format
+
   const usernameRegex = /^[a-z0-9]{4,30}$/;
   const normalizedUsername = username.toLowerCase().trim();
   if (!usernameRegex.test(normalizedUsername)) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       message: 'Username must be 4-30 characters, lowercase letters and numbers only',
       field: 'username'
     });
   }
- new-signup-process
+
   const db = getDb();
   // Check for existing user by email/username/phone
   const existing = await db
@@ -135,16 +108,7 @@ um7klu-codex/fix-ui-connection-for-sign-up-form
   await db.transaction(async (tx) => {
     const inserted = await tx.insert(users).values({
       email,
- um7klu-codex/fix-ui-connection-for-sign-up-form
       username: normalizedUsername,
-      fullName: name || normalizedUsername,
-      phone_number: phone,
-      company_name: company,
-      industry,
-      password: hashed,
-      signup_stage: 'payment',
-
-      username: username.toLowerCase(), // Ensure username is stored in lowercase
       fullName: name || username,
       phone_number: phone,
       company_name: companyName,
@@ -152,15 +116,11 @@ um7klu-codex/fix-ui-connection-for-sign-up-form
       password: hashed,
       signup_stage: 'payment',
       hasAgreedToTerms: true
- new-signup-process
     }).returning({ id: users.id });
     newId = inserted[0].id as number;
     await tx.insert(signupState).values({ userId: newId!, status: 'payment' });
   });
- um7klu-codex/fix-ui-connection-for-sign-up-form
 
-
-new-signup-process
   return res.status(201).json({ userId: newId, step: 'payment' });
 }
 
