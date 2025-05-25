@@ -109,12 +109,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
-      // Clear the JWT token from localStorage
+      // Clear the token from localStorage
       localStorage.removeItem("token");
       
-      // Clear all user-related data from the query cache
+      // Clear the user from query cache immediately
       queryClient.setQueryData(["/api/user"], null);
+      
+      // Cancel any outgoing queries
+      queryClient.cancelQueries({ queryKey: ["/api/user"] });
+      
+      // Remove the query from cache entirely
       queryClient.removeQueries({ queryKey: ["/api/user"] });
+      
+      // Invalidate all queries to ensure fresh data
+      queryClient.invalidateQueries();
       
       toast({
         title: "Logged out",
@@ -124,6 +132,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // No navigation here - this is handled by the LogoutHandler component
     },
     onError: (error: Error) => {
+      // Even on error, clear the local state
+      localStorage.removeItem("token");
+      queryClient.setQueryData(["/api/user"], null);
+      queryClient.cancelQueries({ queryKey: ["/api/user"] });
+      queryClient.removeQueries({ queryKey: ["/api/user"] });
+      
       toast({
         title: "Logout failed",
         description: error.message,
@@ -166,9 +180,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  const { data: user, isLoading, error } = useQuery({
+    queryKey: ['/api/user'],
+    queryFn: async () => {
+      console.log('[useAuth] Fetching user data...');
+      const token = localStorage.getItem('token');
+      console.log('[useAuth] Token from localStorage:', token ? `exists (length: ${token.length})` : 'missing');
+      
+      // If no token, don't even try to fetch
+      if (!token) {
+        console.log('[useAuth] No token, returning null');
+        return null;
+      }
+      
+      const response = await apiFetch('/api/user');
+      console.log('[useAuth] Response status:', response.status);
+      
+      if (!response.ok) {
+        console.log('[useAuth] Response not OK, throwing error');
+        // Clear token if unauthorized
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+        }
+        throw new Error('Failed to fetch user');
+      }
+      const data = await response.json();
+      console.log('[useAuth] User data received:', data);
+      return data;
+    },
+    retry: false,
+    staleTime: 0, // Don't cache user data
+    gcTime: 0, // Remove from cache immediately when unused
+  });
+
+  console.log('[useAuth] Current state - user:', user, 'isLoading:', isLoading, 'error:', error);
+
+  return { user: user || null, isLoading, error };
 }

@@ -22,11 +22,11 @@ import Account from "@/pages/account";
 // Profile page removed as requested
 import Navbar from "@/components/navbar";
 import SubscriptionGuard from "@/components/subscription-guard";
-import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { AuthProvider, useAuth, AuthContext } from "@/hooks/use-auth";
 import { AdminAuthProvider, useAdminAuth } from "@/hooks/use-admin-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { AdminProtectedRoute } from "@/lib/admin-protected-route";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import AdminDashboard from "@/pages/admin/index";
 import OpportunitiesManager from "@/pages/admin/opportunities-manager-new";
 import UsersManager from "@/pages/admin/users-manager";
@@ -45,26 +45,41 @@ import CreateAdmin from "@/pages/admin/create-admin";
 // Logout component to handle the regular user logout process
 function LogoutHandler() {
   const [_, navigate] = useLocation();
-  const { logoutMutation } = useAuth();
+  const authContext = useContext(AuthContext);
+  const [hasLoggedOut, setHasLoggedOut] = useState(false);
   
   useEffect(() => {
     const performLogout = async () => {
+      if (hasLoggedOut || !authContext) return; // Prevent double logout
+      
       try {
-        await logoutMutation.mutateAsync();
-        // Redirect to home page after logout instead of auth page
-        navigate('/');
+        setHasLoggedOut(true);
+        await authContext.logoutMutation.mutateAsync();
+        
+        // Wait a bit to ensure all state is cleared
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Use window.location for a clean redirect that forces a full page reload
+        window.location.href = '/';
       } catch (error) {
         console.error("Logout failed:", error);
         // Still redirect to home page if logout fails
-        navigate('/');
+        await new Promise(resolve => setTimeout(resolve, 300));
+        window.location.href = '/';
       }
     };
     
-    // Call this only once
     performLogout();
-  }, []); // Remove dependencies to prevent re-triggering
+  }, [hasLoggedOut, authContext]); // Include dependencies
   
-  return <div className="flex justify-center items-center h-screen">Logging out...</div>;
+  return (
+    <div className="flex justify-center items-center h-screen bg-white">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+        <p className="text-lg">Logging out...</p>
+      </div>
+    </div>
+  );
 }
 
 // Admin logout component to handle the admin user logout process
@@ -88,7 +103,24 @@ function Router() {
     <>
       <Switch>
         {/* Public routes - available to everyone */}
-        <Route path="/" component={Home} />
+        <Route path="/">
+          {() => {
+            const { user, isLoading } = useAuth();
+            
+            // If we're still loading the user state, show the home page
+            // This prevents the white screen during logout
+            if (isLoading) {
+              return <Home />;
+            }
+            
+            // Only redirect if we have a confirmed logged-in user
+            if (user) {
+              return <Redirect to="/opportunities" />;
+            }
+            
+            return <Home />;
+          }}
+        </Route>
         <Route path="/login" component={LoginPage} />
         <Route path="/register" component={RegisterPage} />
         <Route path="/auth">
