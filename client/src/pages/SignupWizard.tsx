@@ -130,28 +130,12 @@ function SignupWizardContent() {
         password,
         username: username.toLowerCase(),
         name: fullName,
-um7klu-codex/fix-ui-connection-for-sign-up-form
-        company: companyName,
-
         companyName,
- new-signup-process
         phone,
         industry,
       });
       storeSignupEmail(inputEmail);
-um7klu-codex/fix-ui-connection-for-sign-up-form
-      storeSignupData({
-        email: inputEmail,
-        password,
-        username: username.toLowerCase(),
-        fullName,
-        companyName,
-        phone,
-        industry,
-      });
-
       storeSignupData({ email: inputEmail, password, username: username.toLowerCase(), name: fullName, companyName, phone, industry });
- new-signup-process
       setSavedEmail(inputEmail);
       localStorage.setItem('signup_highest_step', '2');
       setStage('payment');
@@ -263,32 +247,31 @@ um7klu-codex/fix-ui-connection-for-sign-up-form
   }
 
   // Render current step
-  switch (currentStage) {
-    case 'payment':
-      return <PaymentStep onComplete={handlePaymentComplete} />;
-    case 'profile':
-      return <ProfileStep onComplete={handleProfileComplete} />;
-    case 'ready':
-      return (
-        <div className="bg-white shadow-md rounded-lg p-8 mb-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">Setup Complete!</h1>
-          <p className="mb-6">Redirecting you to the dashboard...</p>
-          <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-        </div>
-      );
-    default:
-      return (
-        <div className="bg-white shadow-md rounded-lg p-8 mb-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
-          <p className="mb-6">We couldn't determine your current signup stage.</p>
-          <Button 
-            onClick={() => setStage('payment')}
-            className="bg-[#004684] hover:bg-[#003a70] px-8"
-          >
-            Restart Signup
-          </Button>
-        </div>
-      );
+  if (currentStage === 'payment') {
+    return <PaymentStep onComplete={handlePaymentComplete} />;
+  } else if (currentStage === 'profile') {
+    return <ProfileStep onComplete={handleProfileComplete} />;
+  } else if (currentStage === 'ready') {
+    setTimeout(() => {
+      setLocation('/opportunities');
+    }, 100);
+    return (
+      <div className="bg-white shadow-md rounded-lg p-8 mb-8 text-center">
+        <h1 className="text-2xl font-bold mb-4">Setup Complete!</h1>
+        <p className="mb-6">Redirecting you to opportunities...</p>
+        <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+      </div>
+    );
+  } else {
+    // If the stage is missing or invalid, restart at payment step
+    setStage('payment');
+    return (
+      <div className="bg-white shadow-md rounded-lg p-8 mb-8 text-center">
+        <h1 className="text-2xl font-bold mb-4">Restarting Signup...</h1>
+        <p className="mb-6">We couldn't determine your current signup stage. Restarting at payment step.</p>
+        <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+      </div>
+    );
   }
 }
 

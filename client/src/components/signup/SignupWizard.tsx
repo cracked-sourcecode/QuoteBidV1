@@ -16,51 +16,12 @@ const STAGE_LABELS = [
 
 export function SignupWizard({ children }: SignupWizardProps) {
   const { currentStage } = useSignupWizard();
-  const [, navigate] = useLocation();
-  const [redirecting, setRedirecting] = useState(false);
   const stageOrder = ['payment', 'profile'];
   const currentIndex = STAGE_LABELS.findIndex(s => s.id === currentStage);
   const currentStep = stageOrder.indexOf(currentStage) + 1;
   const stepText = currentIndex >= 0
     ? `Step ${currentStep} of 2: ${STAGE_LABELS[currentIndex].label}`
     : '';
-
-  const enforceLocation = () => {
-    // Allow the wizard to be used on the standalone /register route without
-    // forcing a redirect to /auth. Only enforce the legacy query params when
-    // the user is already on the /auth page.
-    if (window.location.pathname.startsWith('/register')) {
-      return;
-    }
-    const highest = Number(
-      localStorage.getItem('signup_highest_step') || String(currentStep)
-    );
-    const url = new URL(window.location.href);
-    const tab = url.searchParams.get('tab');
-    const stepParam = Number(url.searchParams.get('step') || '1');
-    if (tab !== 'signup' || stepParam < highest) {
-      setRedirecting(true);
-      navigate(`/auth?tab=signup&step=${highest}`, { replace: true });
-    }
-  };
-
-  useEffect(() => {
-    enforceLocation();
-  }, [currentStep]);
-
-  useEffect(() => {
-    const handlePopState = () => enforceLocation();
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  if (redirecting) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">

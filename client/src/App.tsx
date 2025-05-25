@@ -18,7 +18,6 @@ import SubscriptionRedirect from "@/pages/subscription-redirect";
 import ProfileSetup from "@/pages/profile-setup";
 import SignupWizard from "@/pages/SignupWizard";
 import RegisterPage from "@/pages/register";
-import AuthPage from "@/pages/auth-page";
 import Account from "@/pages/account";
 // Profile page removed as requested
 import Navbar from "@/components/navbar";
@@ -39,7 +38,6 @@ import AgreementsViewer from "@/pages/admin/agreements-viewer";
 import AdminAnalytics from "@/pages/admin/analytics";
 import PublicationsManager from "@/pages/admin/publications-manager";
 import LoginPage from "@/pages/login-page";
-import QuoteBidSignUp from "@/pages/auth-page";
 import TermsOfService from "@/pages/TermsOfService";
 import AdminLoginTest from "@/pages/admin/login-test";
 import CreateAdmin from "@/pages/admin/create-admin";
@@ -101,7 +99,7 @@ function Router() {
           }}
         </Route>
         <Route path="/login" component={LoginPage} />
-        <Route path="/register" component={QuoteBidSignUp} />
+        <Route path="/register" component={RegisterPage} />
         <Route path="/auth">
           {() => <Redirect to="/login" />}
         </Route>
@@ -110,8 +108,6 @@ function Router() {
         <Route path="/admin/login-test" component={AdminLoginTest} />
         <Route path="/admin/create-admin" component={CreateAdmin} />
         <Route path="/signup-wizard" component={SignupWizard} />
-        <Route path="/register" component={RegisterPage} />
-um7klu-codex/fix-ui-connection-for-sign-up-form
         <Route path="/terms" component={TermsOfService} />
         new-signup-process
         

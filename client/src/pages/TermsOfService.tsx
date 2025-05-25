@@ -172,44 +172,6 @@ export default function TermsOfService() {
             </p>
           </section>
         </div>
-        {/* Agreement Checkbox and Button */}
-        <div className="mt-10 flex flex-col items-center">
-          {success ? (
-            <div className="text-green-600 font-semibold text-lg mb-4">Thank you! Your agreement has been recorded.</div>
-          ) : (
-            <>
-              <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-[#7B5FFF] bg-[#F7F6FD] shadow-md mb-4">
-                <input
-                  type="checkbox"
-                  checked={agreed}
-                  onChange={e => setAgreed(e.target.checked)}
-                  className="w-6 h-6 accent-[#7B5FFF] border-2 border-[#7B5FFF] rounded focus:ring-2 focus:ring-[#7B5FFF]"
-                />
-                <span className="text-base md:text-lg font-medium text-[#3B267A]">I have read and agree to the Terms of Service.</span>
-              </label>
-              <button
-                className={`w-full max-w-xs py-3 rounded-xl text-lg font-bold transition-colors shadow-lg ${agreed ? 'bg-gradient-to-r from-[#7B5FFF] to-[#3B267A] text-white hover:opacity-90' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
-                disabled={!agreed || submitting}
-                onClick={async () => {
-                  setSubmitting(true);
-                  setError('');
-                  try {
-                    const res = await fetch('/api/users/agree-terms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agreed: true }) });
-                    if (!res.ok) throw new Error('Failed to record agreement.');
-                    setSuccess(true);
-                  } catch (err: any) {
-                    setError(err.message || 'Something went wrong.');
-                  } finally {
-                    setSubmitting(false);
-                  }
-                }}
-              >
-                {submitting ? 'Submitting…' : 'Agree & Continue'}
-              </button>
-              {error && <div className="text-red-600 mt-2 text-sm font-medium">{error}</div>}
-            </>
-          )}
-        </div>
       </div>
     </div>
   );
