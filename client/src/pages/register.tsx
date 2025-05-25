@@ -5,7 +5,110 @@ import Field from '@/components/FormFieldWrapper';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
-import { isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js';
+
+// Country codes list
+const COUNTRY_CODES = [
+  { code: '+1', country: 'US/Canada', flag: '🇺🇸' },
+  { code: '+44', country: 'UK', flag: '🇬🇧' },
+  { code: '+61', country: 'Australia', flag: '🇦🇺' },
+  { code: '+91', country: 'India', flag: '🇮🇳' },
+  { code: '+86', country: 'China', flag: '🇨🇳' },
+  { code: '+33', country: 'France', flag: '🇫🇷' },
+  { code: '+49', country: 'Germany', flag: '🇩🇪' },
+  { code: '+81', country: 'Japan', flag: '🇯🇵' },
+  { code: '+82', country: 'South Korea', flag: '🇰🇷' },
+  { code: '+39', country: 'Italy', flag: '🇮🇹' },
+  { code: '+34', country: 'Spain', flag: '🇪🇸' },
+  { code: '+31', country: 'Netherlands', flag: '🇳🇱' },
+  { code: '+46', country: 'Sweden', flag: '🇸🇪' },
+  { code: '+47', country: 'Norway', flag: '🇳🇴' },
+  { code: '+45', country: 'Denmark', flag: '🇩🇰' },
+  { code: '+358', country: 'Finland', flag: '🇫🇮' },
+  { code: '+48', country: 'Poland', flag: '🇵🇱' },
+  { code: '+41', country: 'Switzerland', flag: '🇨🇭' },
+  { code: '+43', country: 'Austria', flag: '🇦🇹' },
+  { code: '+32', country: 'Belgium', flag: '🇧🇪' },
+  { code: '+353', country: 'Ireland', flag: '🇮🇪' },
+  { code: '+351', country: 'Portugal', flag: '🇵🇹' },
+  { code: '+30', country: 'Greece', flag: '🇬🇷' },
+  { code: '+420', country: 'Czech Republic', flag: '🇨🇿' },
+  { code: '+36', country: 'Hungary', flag: '🇭🇺' },
+  { code: '+40', country: 'Romania', flag: '🇷🇴' },
+  { code: '+7', country: 'Russia', flag: '🇷🇺' },
+  { code: '+380', country: 'Ukraine', flag: '🇺🇦' },
+  { code: '+90', country: 'Turkey', flag: '🇹🇷' },
+  { code: '+27', country: 'South Africa', flag: '🇿🇦' },
+  { code: '+234', country: 'Nigeria', flag: '🇳🇬' },
+  { code: '+20', country: 'Egypt', flag: '🇪🇬' },
+  { code: '+212', country: 'Morocco', flag: '🇲🇦' },
+  { code: '+216', country: 'Tunisia', flag: '🇹🇳' },
+  { code: '+254', country: 'Kenya', flag: '🇰🇪' },
+  { code: '+255', country: 'Tanzania', flag: '🇹🇿' },
+  { code: '+256', country: 'Uganda', flag: '🇺🇬' },
+  { code: '+233', country: 'Ghana', flag: '🇬🇭' },
+  { code: '+237', country: 'Cameroon', flag: '🇨🇲' },
+  { code: '+225', country: 'Ivory Coast', flag: '🇨🇮' },
+  { code: '+221', country: 'Senegal', flag: '🇸🇳' },
+  { code: '+52', country: 'Mexico', flag: '🇲🇽' },
+  { code: '+55', country: 'Brazil', flag: '🇧🇷' },
+  { code: '+54', country: 'Argentina', flag: '🇦🇷' },
+  { code: '+57', country: 'Colombia', flag: '🇨🇴' },
+  { code: '+51', country: 'Peru', flag: '🇵🇪' },
+  { code: '+56', country: 'Chile', flag: '🇨🇱' },
+  { code: '+58', country: 'Venezuela', flag: '🇻🇪' },
+  { code: '+593', country: 'Ecuador', flag: '🇪🇨' },
+  { code: '+591', country: 'Bolivia', flag: '🇧🇴' },
+  { code: '+595', country: 'Paraguay', flag: '🇵🇾' },
+  { code: '+598', country: 'Uruguay', flag: '🇺🇾' },
+  { code: '+506', country: 'Costa Rica', flag: '🇨🇷' },
+  { code: '+507', country: 'Panama', flag: '🇵🇦' },
+  { code: '+503', country: 'El Salvador', flag: '🇸🇻' },
+  { code: '+502', country: 'Guatemala', flag: '🇬🇹' },
+  { code: '+504', country: 'Honduras', flag: '🇭🇳' },
+  { code: '+505', country: 'Nicaragua', flag: '🇳🇮' },
+  { code: '+509', country: 'Haiti', flag: '🇭🇹' },
+  { code: '+1876', country: 'Jamaica', flag: '🇯🇲' },
+  { code: '+1868', country: 'Trinidad', flag: '🇹🇹' },
+  { code: '+1246', country: 'Barbados', flag: '🇧🇧' },
+  { code: '+1242', country: 'Bahamas', flag: '🇧🇸' },
+  { code: '+62', country: 'Indonesia', flag: '🇮🇩' },
+  { code: '+60', country: 'Malaysia', flag: '🇲🇾' },
+  { code: '+65', country: 'Singapore', flag: '🇸🇬' },
+  { code: '+66', country: 'Thailand', flag: '🇹🇭' },
+  { code: '+84', country: 'Vietnam', flag: '🇻🇳' },
+  { code: '+63', country: 'Philippines', flag: '🇵🇭' },
+  { code: '+92', country: 'Pakistan', flag: '🇵🇰' },
+  { code: '+880', country: 'Bangladesh', flag: '🇧🇩' },
+  { code: '+94', country: 'Sri Lanka', flag: '🇱🇰' },
+  { code: '+977', country: 'Nepal', flag: '🇳🇵' },
+  { code: '+93', country: 'Afghanistan', flag: '🇦🇫' },
+  { code: '+98', country: 'Iran', flag: '🇮🇷' },
+  { code: '+964', country: 'Iraq', flag: '🇮🇶' },
+  { code: '+966', country: 'Saudi Arabia', flag: '🇸🇦' },
+  { code: '+971', country: 'UAE', flag: '🇦🇪' },
+  { code: '+972', country: 'Israel', flag: '🇮🇱' },
+  { code: '+962', country: 'Jordan', flag: '🇯🇴' },
+  { code: '+961', country: 'Lebanon', flag: '🇱🇧' },
+  { code: '+963', country: 'Syria', flag: '🇸🇾' },
+  { code: '+965', country: 'Kuwait', flag: '🇰🇼' },
+  { code: '+968', country: 'Oman', flag: '🇴🇲' },
+  { code: '+974', country: 'Qatar', flag: '🇶🇦' },
+  { code: '+973', country: 'Bahrain', flag: '🇧🇭' },
+  { code: '+967', country: 'Yemen', flag: '🇾🇪' },
+  { code: '+64', country: 'New Zealand', flag: '🇳🇿' },
+  { code: '+679', country: 'Fiji', flag: '🇫🇯' },
+  { code: '+675', country: 'Papua New Guinea', flag: '🇵🇬' },
+  { code: '+677', country: 'Solomon Islands', flag: '🇸🇧' },
+  { code: '+678', country: 'Vanuatu', flag: '🇻🇺' },
+  { code: '+676', country: 'Tonga', flag: '🇹🇴' },
+  { code: '+685', country: 'Samoa', flag: '🇼🇸' },
+  { code: '+686', country: 'Kiribati', flag: '🇰🇮' },
+  { code: '+688', country: 'Tuvalu', flag: '🇹🇻' },
+  { code: '+674', country: 'Nauru', flag: '🇳🇷' },
+  { code: '+682', country: 'Cook Islands', flag: '🇨🇰' },
+  { code: '+687', country: 'New Caledonia', flag: '🇳🇨' },
+  { code: '+689', country: 'French Polynesia', flag: '🇵🇫' },
+].sort((a, b) => a.country.localeCompare(b.country));
 
 // Debounce helper
 function debounce(fn: (...args: any[]) => void, delay: number) {
@@ -30,6 +133,7 @@ export default function RegisterPage() {
     confirmPassword: '',
     agreeTerms: false,
   });
+  const [countryCode, setCountryCode] = useState('+1'); // Default to US/Canada
   const [errors, setErrors] = useState<any>({});
   const ruleToastOpen = useRef({ username: false, email: false, phone: false });
   const [usernameUnique, setUsernameUnique] = useState(true);
@@ -91,16 +195,29 @@ export default function RegisterPage() {
   // Debounced uniqueness check for phone
   const checkPhoneUnique = React.useCallback(
     debounce(async (phone: string) => {
-      if (!phone || !isValidPhoneNumber(phone)) {
+      // Get just the digits from the formatted phone number
+      const digitsOnly = phone.replace(/\D/g, '');
+      
+      // Check minimum length based on country
+      let minLength = 7; // default minimum
+      if (countryCode === '+1') minLength = 10; // US/Canada
+      else if (countryCode === '+44') minLength = 10; // UK
+      else if (countryCode === '+61') minLength = 9; // Australia
+      
+      if (!phone || digitsOnly.length < minLength) {
         setPhoneUnique(true);
         setPhoneChecking(false);
         setPhoneValid(false);
         return;
       }
+      
       setPhoneValid(true);
       setPhoneChecking(true);
+      
       try {
-        const res = await fetch(`/api/users/check-unique?field=phone&value=${encodeURIComponent(phone)}`);
+        // Send the full international number for checking
+        const fullPhone = countryCode + digitsOnly;
+        const res = await fetch(`/api/users/check-unique?field=phone&value=${encodeURIComponent(fullPhone)}`);
         const data = await res.json();
         setPhoneUnique(!!data.unique);
       } catch {
@@ -108,7 +225,7 @@ export default function RegisterPage() {
       }
       setPhoneChecking(false);
     }, 400),
-    []
+    [countryCode]
   );
 
   // Watch username, email, and phone changes
@@ -131,7 +248,18 @@ export default function RegisterPage() {
     if (!/^[a-z0-9_-]{3,30}$/.test(form.username)) errs.username = 'Invalid username.';
     if (!form.email || !/^[^@]+@[^@]+\.[a-zA-Z]{2,}$/.test(form.email)) errs.email = 'Please enter a valid email address.';
     if (!form.companyName) errs.companyName = 'Company name is required.';
-    if (!isValidPhoneNumber(form.phone)) errs.phone = 'Please enter a valid phone number.';
+    
+    // Phone validation based on country
+    const phoneDigits = form.phone.replace(/\D/g, '');
+    let minPhoneLength = 7; // default
+    if (countryCode === '+1') minPhoneLength = 10;
+    else if (countryCode === '+44') minPhoneLength = 10;
+    else if (countryCode === '+61') minPhoneLength = 9;
+    
+    if (!form.phone || phoneDigits.length < minPhoneLength) {
+      errs.phone = `Please enter a valid phone number (${minPhoneLength} digits required).`;
+    }
+    
     if (!form.industry) errs.industry = 'Please select your industry.';
     if (!form.password || form.password.length < 8) errs.password = 'Password must be at least 8 characters.';
     if (form.password !== form.confirmPassword) errs.confirmPassword = 'Passwords do not match.';
@@ -161,15 +289,18 @@ export default function RegisterPage() {
       });
       setTimeout(() => (ruleToastOpen.current.email = false), 4000);
     }
-    if (field === 'phone' && (!form.phone || !isValidPhoneNumber(form.phone)) && !ruleToastOpen.current.phone) {
-      ruleToastOpen.current.phone = true;
-      toast({
-        title: 'Phone requirements',
-        description: 'Please enter a valid phone number.',
-        variant: 'destructive',
-        duration: 4000,
-      });
-      setTimeout(() => (ruleToastOpen.current.phone = false), 4000);
+    if (field === 'phone') {
+      const phoneDigits = form.phone.replace(/\D/g, '');
+      if ((!form.phone || phoneDigits.length < 7) && !ruleToastOpen.current.phone) {
+        ruleToastOpen.current.phone = true;
+        toast({
+          title: 'Phone requirements',
+          description: 'Please enter a valid phone number with country code (e.g., +1 234 567 8900).',
+          variant: 'destructive',
+          duration: 4000,
+        });
+        setTimeout(() => (ruleToastOpen.current.phone = false), 4000);
+      }
     }
   };
 
@@ -177,8 +308,149 @@ export default function RegisterPage() {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
       setForm(f => ({ ...f, [name]: (e.target as HTMLInputElement).checked }));
+    } else if (name === 'phone') {
+      // Only allow digits, spaces, hyphens, and parentheses
+      const cleaned = value.replace(/[^\d\s\-() ]/g, '');
+      
+      // Format phone number as user types
+      const formatted = formatPhoneNumber(cleaned, countryCode);
+      setForm(f => ({ ...f, [name]: formatted }));
     } else {
       setForm(f => ({ ...f, [name]: value }));
+    }
+  };
+
+  // Phone number formatter - formats based on selected country code
+  const formatPhoneNumber = (value: string, selectedCountryCode: string) => {
+    // Remove all formatting to get just digits
+    let digits = value.replace(/\D/g, '');
+    
+    // Format based on selected country code
+    if (selectedCountryCode === '+1') {
+      // US/Canada format - limit to 10 digits
+      digits = digits.slice(0, 10);
+      
+      if (digits.length === 0) return '';
+      if (digits.length <= 3) {
+        return digits;
+      }
+      if (digits.length <= 6) {
+        return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+      }
+      
+      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+    } else if (selectedCountryCode === '+44') {
+      // UK format - typically 10 or 11 digits after country code
+      digits = digits.slice(0, 11);
+      if (digits.length === 0) return '';
+      
+      // Remove leading 0 if present (UK convention)
+      if (digits.startsWith('0')) {
+        digits = digits.slice(1);
+      }
+      
+      // Format based on UK number types
+      if (digits.startsWith('7')) {
+        // Mobile: 7XXX XXXXXX
+        if (digits.length <= 4) return digits;
+        return `${digits.slice(0, 4)} ${digits.slice(4, 10)}`;
+      } else if (digits.startsWith('20')) {
+        // London: 20 XXXX XXXX
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+        return `${digits.slice(0, 2)} ${digits.slice(2, 6)} ${digits.slice(6, 10)}`;
+      } else {
+        // Other areas: XXX XXXX XXXX or XXXX XXXXXX
+        if (digits.length <= 4) return digits;
+        if (digits.length <= 7) return `${digits.slice(0, 4)} ${digits.slice(4)}`;
+        return `${digits.slice(0, 4)} ${digits.slice(4, 10)}`;
+      }
+    } else if (selectedCountryCode === '+61') {
+      // Australia format - 9 digits after country code
+      digits = digits.slice(0, 9);
+      if (digits.length === 0) return '';
+      
+      // Remove leading 0 if present
+      if (digits.startsWith('0')) {
+        digits = digits.slice(1);
+      }
+      
+      // Mobile numbers start with 4
+      if (digits.startsWith('4')) {
+        // Format: 4XX XXX XXX
+        if (digits.length <= 3) return digits;
+        if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+        return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}`;
+      } else {
+        // Landline: X XXXX XXXX
+        if (digits.length <= 1) return digits;
+        if (digits.length <= 5) return `${digits.slice(0, 1)} ${digits.slice(1)}`;
+        return `${digits.slice(0, 1)} ${digits.slice(1, 5)} ${digits.slice(5, 9)}`;
+      }
+    } else if (selectedCountryCode === '+91') {
+      // India - 10 digits
+      digits = digits.slice(0, 10);
+      if (digits.length === 0) return '';
+      
+      // Format: XXXXX XXXXX
+      if (digits.length <= 5) return digits;
+      return `${digits.slice(0, 5)} ${digits.slice(5, 10)}`;
+    } else if (selectedCountryCode === '+86') {
+      // China - 11 digits for mobile
+      digits = digits.slice(0, 11);
+      if (digits.length === 0) return '';
+      
+      // Mobile format: XXX XXXX XXXX
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 7) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7, 11)}`;
+    } else if (selectedCountryCode === '+33') {
+      // France - 9 digits after country code
+      digits = digits.slice(0, 9);
+      if (digits.length === 0) return '';
+      
+      // Remove leading 0 if present
+      if (digits.startsWith('0')) {
+        digits = digits.slice(1);
+      }
+      
+      // Format: X XX XX XX XX
+      const parts = [];
+      if (digits.length > 0) parts.push(digits.slice(0, 1));
+      for (let i = 1; i < digits.length; i += 2) {
+        parts.push(digits.slice(i, i + 2));
+      }
+      return parts.join(' ');
+    } else if (selectedCountryCode === '+49') {
+      // Germany - variable length
+      digits = digits.slice(0, 12);
+      if (digits.length === 0) return '';
+      
+      // Remove leading 0 if present
+      if (digits.startsWith('0')) {
+        digits = digits.slice(1);
+      }
+      
+      // Mobile (15X, 16X, 17X): XXX XXXXXXXX
+      if (digits.match(/^1[567]/)) {
+        if (digits.length <= 3) return digits;
+        return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      } else {
+        // Landline: vary by area code length
+        if (digits.length <= 3) return digits;
+        if (digits.length <= 7) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+        return `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7)}`;
+      }
+    } else {
+      // Generic format - limit to 15 digits (ITU standard)
+      digits = digits.slice(0, 15);
+      if (digits.length === 0) return '';
+      
+      // Format in groups of 3-4
+      if (digits.length <= 4) return digits;
+      if (digits.length <= 7) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      if (digits.length <= 11) return `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7, 11)} ${digits.slice(11)}`;
     }
   };
 
@@ -197,12 +469,19 @@ export default function RegisterPage() {
             username: form.username,
             name: form.fullName,
             companyName: form.companyName,
-            phone: form.phone,
+            phone: countryCode + form.phone.replace(/\D/g, ''), // Combine country code with digits only
             industry: form.industry,
             hasAgreedToTerms: form.agreeTerms,
           }),
         });
         if (res.ok) {
+          const data = await res.json();
+          
+          // Store the JWT token if provided
+          if (data.token) {
+            localStorage.setItem('token', data.token);
+          }
+          
           localStorage.setItem('signup_email', form.email);
           toast({ title: 'Account created!', description: 'Continue to payment...', variant: 'default' });
           setTimeout(() => {
@@ -319,24 +598,30 @@ export default function RegisterPage() {
                 <input name="companyName" value={form.companyName} onChange={handleChange} placeholder="Company Name" className="rounded-xl border border-gray-200 px-5 py-4" style={{background: '#f7f6fd'}} />
               </Field>
               <Field error={errors.phone} className="col-span-2">
-                <input
-                  name="phone"
-                  value={form.phone}
-                  onChange={e => {
-                    // Format as E.164 as the user types
-                    let value = e.target.value.replace(/[^\d+]/g, '');
-                    // Try to format if possible
-                    const phoneObj = parsePhoneNumberFromString(value, 'US');
-                    if (phoneObj) {
-                      value = phoneObj.formatInternational();
-                    }
-                    setForm(f => ({ ...f, phone: value }));
-                  }}
-                  onBlur={() => handleBlur('phone')}
-                  placeholder="Phone"
-                  className="rounded-xl border border-gray-200 px-5 py-4"
-                  style={{background: '#f7f6fd'}}
-                />
+                <div className="flex gap-2">
+                  <select
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    className="rounded-xl border border-gray-200 px-3 py-4 w-32"
+                    style={{ background: '#f7f6fd' }}
+                  >
+                    {COUNTRY_CODES.map(({ code, country, flag }) => (
+                      <option key={code} value={code}>
+                        {flag} {code}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    name="phone"
+                    value={form.phone}
+                    onChange={handleChange}
+                    onBlur={() => handleBlur('phone')}
+                    placeholder="Phone number"
+                    className="rounded-xl border border-gray-200 px-5 py-4 w-full"
+                    style={{ background: '#f7f6fd' }}
+                    required
+                  />
+                </div>
                 {phoneChecking && <div className="text-xs text-gray-400 mt-1">Checking phone number...</div>}
                 {!phoneChecking && !phoneValid && <div className="text-xs text-red-500 mt-1">Please enter a valid phone number.</div>}
                 {!phoneChecking && phoneValid && !phoneUnique && <div className="text-xs text-red-500 mt-1">Phone number is already in use.</div>}

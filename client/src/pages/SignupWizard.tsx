@@ -12,9 +12,10 @@ import { ProfileStep } from '@/components/signup/ProfileStep';
 import { post } from '@/lib/api';
 import { SignupStage, storeSignupEmail, storeSignupData } from '@/lib/signup-wizard';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
+import { queryClient } from '@/lib/queryClient';
 
 function SignupWizardContent() {
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const { currentStage, setStage, email } = useSignupWizard();
   const [inputEmail, setInputEmail] = React.useState('');
@@ -34,7 +35,7 @@ function SignupWizardContent() {
   const [redirecting, setRedirecting] = React.useState(false);
 
   // Map stage to step number
-  const stageOrder: SignupStage[] = ['payment', 'profile'];
+  const stageOrder: SignupStage[] = ['payment', 'profile', 'ready'];
   const currentStep = stageOrder.indexOf(currentStage) + 1;
 
   // Update highest step reached in localStorage
@@ -125,7 +126,7 @@ function SignupWizardContent() {
     }
     setIsLoading(true);
     try {
-      await post('/api/auth/signup/start', {
+      const response = await post('/api/auth/signup/start', {
         email: inputEmail,
         password,
         username: username.toLowerCase(),
@@ -133,7 +134,14 @@ function SignupWizardContent() {
         companyName,
         phone,
         industry,
+        hasAgreedToTerms: true,
       });
+      
+      // Store the JWT token if provided
+      if (response.token) {
+        localStorage.setItem('token', response.token);
+      }
+      
       storeSignupEmail(inputEmail);
       storeSignupData({ email: inputEmail, password, username: username.toLowerCase(), name: fullName, companyName, phone, industry });
       setSavedEmail(inputEmail);
@@ -146,12 +154,29 @@ function SignupWizardContent() {
   };
 
   const handlePaymentComplete = () => setStage('profile');
-  const handleProfileComplete = (jwt: string) => {
+  const handleProfileComplete = async (jwt: string) => {
+    console.log('[SignupWizard] handleProfileComplete called with JWT length:', jwt?.length);
+    
+    // Verify token is in localStorage
+    const storedToken = localStorage.getItem('token');
+    console.log('[SignupWizard] Token verification:', storedToken ? `Token exists (length: ${storedToken.length})` : 'Token missing!');
+    
+    // Set stage to ready
     setStage('ready');
-    localStorage.setItem('token', jwt);
+    
+    // Clear signup data
+    localStorage.removeItem('signup_email');
+    localStorage.removeItem('signup_highest_step');
+    localStorage.removeItem('signup_data');
+    
+    // Invalidate user query to force refetch with new token
+    queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+    
+    // Use client-side navigation after a short delay
     setTimeout(() => {
-      setLocation('/opportunities');
-    }, 1500);
+      console.log('[SignupWizard] Navigating to /opportunities');
+      navigate('/opportunities');
+    }, 2000);
   };
 
   if (redirecting) {
@@ -252,14 +277,20 @@ function SignupWizardContent() {
   } else if (currentStage === 'profile') {
     return <ProfileStep onComplete={handleProfileComplete} />;
   } else if (currentStage === 'ready') {
-    setTimeout(() => {
-      setLocation('/opportunities');
-    }, 100);
+    // The navigation is already handled in handleProfileComplete
     return (
       <div className="bg-white shadow-md rounded-lg p-8 mb-8 text-center">
-        <h1 className="text-2xl font-bold mb-4">Setup Complete!</h1>
-        <p className="mb-6">Redirecting you to opportunities...</p>
-        <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+        <div className="mb-6">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold mb-2 text-green-600">Welcome to QuoteBid!</h1>
+          <p className="text-lg text-gray-600 mb-4">Your account has been successfully created.</p>
+          <p className="text-gray-500">Redirecting you to opportunities in a moment...</p>
+        </div>
+        <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" />
       </div>
     );
   } else {

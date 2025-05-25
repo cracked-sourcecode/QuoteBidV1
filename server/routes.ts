@@ -29,6 +29,7 @@ import { saveAgreementPDF, regenerateAgreementsPDF, createAgreementPDF, generate
 import { serveAgreementPDF, handleAgreementUpload } from './handlers/agreement-handlers';
 import { handleGeneratePDF, handleSignupAgreementUpload, serveAgreementHTML } from './handlers/signup-wizard-handlers';
 import { startSignup } from './routes/signupStage';
+import signupStageRouter from './routes/signupStage';
 import signupStateRouter from './routes/signupState';
 import signupRouter from './routes/signup';
 import { hashPassword } from './utils/passwordUtils';
@@ -140,7 +141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Defensive: check DB connection
-      let existingUser = [];
+      let existingUser: any[] = [];
       try {
         // For username and email: case-insensitive search
         if (validField === 'email' || validField === 'username') {
@@ -256,8 +257,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/onboarding/agreement.pdf', serveAgreementPDF);
   app.post('/api/onboarding/agreement/upload', handleAgreementUpload);
   
-  // Register signup stage routes once before auth setup
-  app.use('/api/signup-stage', signupRouter);
+  // Register signup stage routes before auth setup
+  app.use('/api/signup-stage', signupStageRouter);
   app.use('/api/signup/state', signupStateRouter);
   app.use('/api/signup', signupRouter);
   
@@ -270,10 +271,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Upload signed agreement
   app.post('/api/upload-agreement', pdfUpload.single('pdf'), handleSignupAgreementUpload);
   
-  // Set up regular user authentication
-  setupAuth(app);
   // Allow JWT-based auth for API requests
   app.use(jwtAuth);
+  // Set up regular user authentication
+  setupAuth(app);
 
   // Endpoint to report the current signup stage for the authenticated user
   app.get('/api/auth/progress', ensureAuth, (req: Request, res: Response) => {
@@ -290,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await getDb()
       .update(users)
       .set({ signup_stage: stage })
-      .where(eq(users.id, req.user.id));
+      .where(eq(users.id, req.user!.id));
     res.json({ success: true });
   });
 
@@ -301,11 +302,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAdminAuth(app);
   
   // Apply onboarding enforcement middleware to protected routes
-  const apiRouter = express.Router();
-  app.use('/api', enforceOnboarding, apiRouter);
+  // NOTE: We're NOT applying this to all /api routes anymore
+  // Instead, we'll apply it selectively to routes that need it
   
-  // Notifications API
-  app.get("/api/notifications", async (req: Request, res: Response) => {
+  // Notifications API - these need authentication
+  app.get("/api/notifications", enforceOnboarding, async (req: Request, res: Response) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: 'Not authenticated' });
@@ -5098,9 +5099,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Register /api/user route here
-  app.get("/api/user", ensureAuth, (req, res) => {
-    console.log('Authorization header:', req.headers['authorization']);
-    console.log('req.user:', req.user);
+  app.get("/api/user", jwtAuth, ensureAuth, (req, res) => {
+    console.log('[/api/user] Authorization header:', req.headers['authorization']);
+    console.log('[/api/user] req.user:', req.user);
     // Return user without password
     const { password, ...userWithoutPassword } = req.user as any;
     res.json(userWithoutPassword);

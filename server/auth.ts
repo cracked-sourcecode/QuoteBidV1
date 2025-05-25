@@ -107,17 +107,15 @@ export function setupAuth(app: Express) {
       });
 
       // Log the user in
-      req.login(user, (err) => {
+      req.login(user, async (err) => {
         if (err) return next(err);
         const { password, ...userWithoutPassword } = user;
-        const token = jwt.sign(
-          {
-            id: user.id,
-            email: user.email,
-          },
-          process.env.JWT_SECRET || 'quotebid_secret',
-          { expiresIn: '7d' }
-        );
+        const { signUser } = await import('./lib/jwt');
+        const token = signUser({
+          id: user.id,
+          email: user.email,
+          role: user.isAdmin ? 'admin' : 'user'
+        });
         res.status(201).json({ success: true, user: userWithoutPassword, token });
       });
     } catch (err) {
@@ -132,17 +130,15 @@ export function setupAuth(app: Express) {
         return res.status(401).json({ message: info?.message || "Authentication failed" });
       }
       
-      req.login(user, (err) => {
+      req.login(user, async (err) => {
         if (err) return next(err);
         const { password, ...userWithoutPassword } = user;
-        const token = jwt.sign(
-          {
-            id: user.id,
-            email: user.email,
-          },
-          process.env.JWT_SECRET || 'quotebid_secret',
-          { expiresIn: '7d' }
-        );
+        const { signUser } = await import('./lib/jwt');
+        const token = signUser({
+          id: user.id,
+          email: user.email,
+          role: user.isAdmin ? 'admin' : 'user'
+        });
         res.cookie('token', token, { httpOnly: true, sameSite: 'lax' });
         res.status(200).json({ success: true, user: userWithoutPassword, token });
       });
@@ -157,17 +153,13 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", ensureAuth, (req, res) => {
-    // Return user without password
-    const { password, ...userWithoutPassword } = req.user as SelectUser;
-    res.json(userWithoutPassword);
-  });
+  // Note: /api/user endpoint is defined in routes.ts with proper JWT middleware
 
   // Add PATCH endpoint for user profile updates
   app.patch("/api/user", ensureAuth, async (req, res, next) => {
     try {
       
-      const userId = req.user.id;
+      const userId = req.user!.id;
       
       let userData;
       

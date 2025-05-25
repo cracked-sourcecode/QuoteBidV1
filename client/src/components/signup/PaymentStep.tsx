@@ -57,8 +57,11 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
       localStorage.setItem('signup_payment', JSON.stringify({ paymentMethodId: paymentMethod.id }));
 
       // First complete the current stage (payment)
+      console.log('Calling advanceSignupStage with:', { email, action: 'payment', paymentMethodId: paymentMethod.id });
       const completeCurrentStage = await advanceSignupStage(email, 'payment', { paymentMethodId: paymentMethod.id });
       console.log('Complete current stage response:', completeCurrentStage);
+      console.log('Response stage:', completeCurrentStage.stage);
+      console.log('Expected stage: profile');
       
       if (completeCurrentStage.stage === 'profile') {
         setStage('profile');
@@ -66,6 +69,8 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
         onComplete();
       } else {
         const backendMsg = completeCurrentStage.message || 'Failed to advance to profile step.';
+        console.error('Stage mismatch - expected "profile" but got:', completeCurrentStage.stage);
+        console.error('Full response:', JSON.stringify(completeCurrentStage));
         setErrorMessage(backendMsg);
         throw new Error(backendMsg);
       }

@@ -6,19 +6,24 @@ import { Request, Response, NextFunction } from 'express';
  * without authentication during the onboarding process
  */
 export function enforceOnboarding(req: Request, res: Response, next: NextFunction) {
+  // Skip this middleware entirely for signup-stage routes
+  // These are handled before this middleware is applied
+  if (req.path.startsWith('/signup-stage/') || 
+      req.path === '/signup-stage' ||
+      req.path.startsWith('/signup/') ||
+      req.path === '/signup') {
+    return next();
+  }
+
   // Public paths that should be accessible without authentication
   const publicPaths = [
     // PDF access paths
     '/api/onboarding/agreement.pdf',      // GET – serve the blank PDF
     '/api/onboarding/agreement/upload',   // POST – upload the signed PDF
-    
-    // Signup wizard API paths
-    '/api/signup-stage',                  // Base path for signup stage endpoints
   ];
 
   // Skip authentication checks for public paths
-  // Also check if the path starts with any of the base public paths
-  if (publicPaths.some(path => req.path === path || req.path.startsWith(`${path}/`))) {
+  if (publicPaths.some(path => req.path === path)) {
     return next();
   }
 
