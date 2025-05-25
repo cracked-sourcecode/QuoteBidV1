@@ -30,6 +30,7 @@ import { serveAgreementPDF, handleAgreementUpload } from './handlers/agreement-h
 import { handleGeneratePDF, handleSignupAgreementUpload, serveAgreementHTML } from './handlers/signup-wizard-handlers';
 import { startSignup } from './routes/signupStage';
 import signupStageRouter from './routes/signupStage';
+import createSubscriptionRouter from './routes/createSubscription';
 import signupStateRouter from './routes/signupState';
 import signupRouter from './routes/signup';
 import { hashPassword } from './utils/passwordUtils';
@@ -259,6 +260,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register signup stage routes before auth setup
   app.use('/api/signup-stage', signupStageRouter);
+  // @claude-fix: Add new subscription route
+  app.use('/api/stripe', createSubscriptionRouter);
   app.use('/api/signup/state', signupStateRouter);
   app.use('/api/signup', signupRouter);
   
@@ -4821,6 +4824,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Handle the event
     switch (event.type) {
+      case 'payment_intent.succeeded': {
+        // Handle successful payment intent (for subscription first payment)
+        const paymentIntent = event.data.object;
+        
+        // Check if this is related to a subscription
+        if (paymentIntent.invoice) {
+          try {
+            // Retrieve the invoice to get subscription details
+            const invoice = await stripe.invoices.retrieve(paymentIntent.invoice as string);
+            const subscriptionId = invoice.subscription;
+            const customerId = invoice.customer;
+            
+            if (subscriptionId && customerId) {
+              // Find user with this customer ID
+              const [user] = await getDb().select()
+                .from(users)
+                .where(eq(users.stripeCustomerId, customerId as string));
+                
+              if (user) {
+                // Get subscription details
+                const subscription = await stripe.subscriptions.retrieve(subscriptionId as string);
+                const currentPeriodEnd = new Date((subscription as any).current_period_end * 1000);
+                
+                // Update user with active subscription
+                await getDb().update(users)
+                  .set({
+                    stripeSubscriptionId: subscriptionId as string,
+                    subscription_status: 'active',
+                    premiumStatus: 'active',
+                    premiumExpiry: currentPeriodEnd,
+                    hasCompletedPayment: true
+                  })
+                  .where(eq(users.id, user.id));
+                  
+                console.log(`✅ Payment succeeded for user ${user.id}, subscription ${subscriptionId} activated`);
+              }
+            }
+          } catch (error) {
+            console.error(`Failed to process payment intent success:`, error);
+          }
+        }
+        break;
+      }
+      
       case 'checkout.session.completed': {
         // Payment is successful and the subscription is created
         const session = event.data.object;

@@ -21,8 +21,20 @@ function getStripeClient() {
   });
 }
 
-// Get Stripe instance when needed
-const stripe = getStripeClient();
+// Get Stripe instance when needed - lazy initialization
+let stripe: Stripe | null = null;
+
+function getStripe(): Stripe {
+  if (!stripe) {
+    try {
+      stripe = getStripeClient();
+    } catch (error) {
+      console.error('Failed to initialize Stripe:', error);
+      throw new Error('Payment system is not properly configured. Please contact support.');
+    }
+  }
+  return stripe;
+}
 
 // Configure multer for file uploads
 const upload = multer({
@@ -182,7 +194,7 @@ router.get('/:email', async (req: Request, res: Response) => {
 router.post('/:email/advance', async (req: Request, res: Response) => {
   try {
     const { email } = req.params;
-    const { action } = req.body;
+    const { action, paymentIntentId, subscriptionId } = req.body;
     
     console.log('[ADVANCE] Request for email:', email);
     console.log('[ADVANCE] Action:', action);
@@ -221,6 +233,31 @@ router.post('/:email/advance', async (req: Request, res: Response) => {
       return res.status(400).json({ 
         message: 'Cannot go back to a previous stage',
         stage: currentStage 
+      });
+    }
+    
+    // If we're completing the payment stage, update payment-related fields
+    if (action === 'payment' && (paymentIntentId || subscriptionId)) {
+      const updateData: any = {
+        signup_stage: 'profile',
+        hasCompletedPayment: true
+      };
+      
+      if (subscriptionId) {
+        updateData.stripeSubscriptionId = subscriptionId;
+        updateData.subscription_status = 'active';
+      }
+      
+      await getDb()
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, user.id));
+      
+      console.log('[ADVANCE] Payment completed, user updated with subscription info');
+      
+      return res.status(200).json({
+        stage: 'profile',
+        nextStage: 'ready'
       });
     }
     
@@ -377,6 +414,7 @@ router.post('/:email/avatar', upload.single('avatar'), async (req: Request, res:
   }
 });
 
+// @claude-fix: Deprecated - use /api/stripe/subscription instead
 // Create or retrieve subscription for the user
 router.post('/get-or-create-subscription', async (req: Request, res: Response) => {
   try {
@@ -396,11 +434,22 @@ router.post('/get-or-create-subscription', async (req: Request, res: Response) =
       return res.status(404).json({ message: 'User not found' });
     }
     
+    // Check if Stripe is properly configured
+    try {
+      getStripe(); // This will throw if Stripe is not configured
+    } catch (error) {
+      console.error('Stripe configuration error:', error);
+      return res.status(500).json({ 
+        message: 'Payment system is temporarily unavailable. Please try again later or contact support.',
+        error: 'stripe_config_error'
+      });
+    }
+    
     // If user already has an active subscription
     if (user.stripeSubscriptionId) {
       try {
         // Retrieve the subscription from Stripe
-        const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+        const subscription = await getStripe().subscriptions.retrieve(user.stripeSubscriptionId);
         
         // If subscription is still valid, return the payment intent client secret
         if (subscription.status === 'active' || subscription.status === 'trialing') {
@@ -419,17 +468,25 @@ router.post('/get-or-create-subscription', async (req: Request, res: Response) =
     // Create a customer if the user doesn't have one
     let customerId = user.stripeCustomerId;
     if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        name: user.fullName || user.username,
-      });
-      customerId = customer.id;
-      
-      // Update the user record with the customer ID
-      await getDb()
-        .update(users)
-        .set({ stripeCustomerId: customerId })
-        .where(eq(users.id, user.id));
+      try {
+        const customer = await getStripe().customers.create({
+          email: user.email,
+          name: user.fullName || user.username,
+        });
+        customerId = customer.id;
+        
+        // Update the user record with the customer ID
+        await getDb()
+          .update(users)
+          .set({ stripeCustomerId: customerId })
+          .where(eq(users.id, user.id));
+      } catch (error) {
+        console.error('Error creating Stripe customer:', error);
+        return res.status(500).json({ 
+          message: 'Failed to create payment profile. Please try again.',
+          error: 'customer_creation_error'
+        });
+      }
     }
     
     // Create a new subscription
@@ -437,43 +494,79 @@ router.post('/get-or-create-subscription', async (req: Request, res: Response) =
     const priceId = process.env.STRIPE_PRICE_ID; // Monthly subscription price ID
     
     if (!priceId) {
-      throw new Error('STRIPE_PRICE_ID is not configured');
+      console.error('STRIPE_PRICE_ID is not configured');
+      return res.status(500).json({ 
+        message: 'Payment configuration is incomplete. Please contact support.',
+        error: 'missing_price_id'
+      });
     }
     
-    // Create the subscription with payment_behavior: 'default_incomplete' to collect first payment
-    const subscription = await stripe.subscriptions.create({
-      customer: customerId,
-      items: [{ price: priceId }],
-      payment_behavior: 'default_incomplete',
-      payment_settings: { save_default_payment_method: 'on_subscription' },
-      expand: ['latest_invoice.payment_intent'],
-    });
-    
-    // Update the user record with the subscription ID
-    await getDb()
-      .update(users)
-      .set({ 
-        stripeSubscriptionId: subscription.id,
-        subscription_status: subscription.status,
-      })
-      .where(eq(users.id, user.id));
-    
-    // Get the client secret for the invoice's payment intent
-    const invoice = subscription.latest_invoice as any;
-    const clientSecret = invoice?.payment_intent?.client_secret;
-    
-    if (!clientSecret) {
-      throw new Error('Failed to get client secret from subscription');
+    try {
+      // For subscriptions, we need to use a different approach
+      // First create a SetupIntent to collect payment method
+      const setupIntent = await getStripe().setupIntents.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        usage: 'off_session',
+        metadata: {
+          subscription_price_id: priceId,
+        }
+      });
+      
+      // Create the subscription but don't activate it yet
+      const subscription = await getStripe().subscriptions.create({
+        customer: customerId,
+        items: [{ price: priceId }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: { 
+          save_default_payment_method: 'on_subscription'
+        },
+        metadata: {
+          setup_intent_id: setupIntent.id
+        }
+      });
+      
+      // Update the user record with the subscription ID
+      await getDb()
+        .update(users)
+        .set({ 
+          stripeSubscriptionId: subscription.id,
+          subscription_status: subscription.status,
+        })
+        .where(eq(users.id, user.id));
+      
+      // Return the setup intent client secret for the payment form
+      return res.status(200).json({
+        subscriptionId: subscription.id,
+        clientSecret: setupIntent.client_secret,
+        status: subscription.status,
+        type: 'setup' // Let the frontend know this is a setup intent
+      });
+    } catch (error: any) {
+      console.error('Error creating subscription:', error);
+      
+      // Check for specific Stripe errors
+      if (error.type === 'StripeInvalidRequestError') {
+        if (error.message.includes('price')) {
+          return res.status(500).json({ 
+            message: 'Invalid subscription configuration. Please contact support.',
+            error: 'invalid_price'
+          });
+        }
+      }
+      
+      return res.status(500).json({ 
+        message: 'Failed to create subscription. Please try again.',
+        error: 'subscription_creation_error',
+        details: error.message
+      });
     }
-    
-    return res.status(200).json({
-      subscriptionId: subscription.id,
-      clientSecret: clientSecret,
-      status: subscription.status,
-    });
   } catch (error) {
-    console.error('Error creating subscription:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error('Error in get-or-create-subscription:', error);
+    return res.status(500).json({ 
+      message: 'An unexpected error occurred. Please try again.',
+      error: 'unexpected_error'
+    });
   }
 });
 

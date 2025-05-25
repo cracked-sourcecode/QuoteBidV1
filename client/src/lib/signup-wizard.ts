@@ -16,6 +16,11 @@ interface ProfileUpdateData {
   title?: string;
   location?: string;
   bio?: string;
+  linkedin?: string;
+  website?: string;
+  twitter?: string;
+  instagram?: string;
+  doFollow?: string;
 }
 
 /**
