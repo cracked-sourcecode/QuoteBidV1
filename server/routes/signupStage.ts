@@ -75,6 +75,7 @@ export async function startSignup(req: Request, res: Response) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
 
+  // Validate username format
   const usernameRegex = /^[a-z0-9]{4,30}$/;
   const normalizedUsername = username.toLowerCase().trim();
   if (!usernameRegex.test(normalizedUsername)) {
@@ -91,6 +92,7 @@ export async function startSignup(req: Request, res: Response) {
     .from(users)
     .where(sql`LOWER(${users.email}) = LOWER(${email}) OR LOWER(${users.username}) = ${normalizedUsername} OR ${users.phone_number} = ${phone}`)
     .limit(1);
+
   if (existing.length) {
     const userId = existing[0].id as number;
     const [state] = await db.select().from(signupState).where(eq(signupState.userId, userId));
@@ -103,6 +105,7 @@ export async function startSignup(req: Request, res: Response) {
       return res.status(400).json({ message: 'User already exists' });
     }
   }
+
   const hashed = await hashPassword(password);
   let newId: number | undefined;
   await db.transaction(async (tx) => {
