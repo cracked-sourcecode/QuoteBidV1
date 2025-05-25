@@ -477,47 +477,6 @@ router.post('/get-or-create-subscription', async (req: Request, res: Response) =
   }
 });
 
-// Complete payment and update subscription status
-router.post('/:email/payment-complete', async (req: Request, res: Response) => {
-  try {
-    const { email } = req.params;
-    const { subscriptionId, paymentIntentId, paymentMethodId } = req.body;
-    
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
-    }
-    
-    if (!subscriptionId || !paymentIntentId) {
-      return res.status(400).json({ message: 'Subscription ID and Payment Intent ID are required' });
-    }
-    
-    // Find user by email
-    const [user] = await getDb()
-      .select()
-      .from(users)
-      .where(eq(users.email, decodeURIComponent(email)));
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    // Update the user's payment status
-    await getDb()
-      .update(users)
-      .set({
-        stripeSubscriptionId: subscriptionId,
-        subscription_status: 'active',
-        isPaid: true
-      })
-      .where(eq(users.id, user.id));
-    
-    return res.status(200).json({ success: true });
-  } catch (error) {
-    console.error('Error completing payment:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
 // Complete signup and generate JWT token
 router.post('/:email/complete', async (req: Request, res: Response) => {
   try {

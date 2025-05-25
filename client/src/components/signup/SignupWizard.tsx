@@ -26,25 +26,25 @@ export function SignupWizard({ children }: SignupWizardProps) {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Clean Wizard Header */}
-      <header className="w-full bg-white shadow-none border-none sticky top-0 z-30">
-        <div className="flex flex-col items-center max-w-7xl mx-auto px-8 pt-8 pb-4">
-          <span className="text-2xl font-bold text-[#004684] mb-1">QuoteBid Signup</span>
-          <span className="text-sm text-gray-500 mb-4">{stepText}</span>
+      <header className="w-full bg-white shadow-sm sticky top-0 z-30">
+        <div className="flex flex-col items-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#004684] mb-1">QuoteBid Signup</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mb-4">{stepText}</p>
           {/* Interactive Progress Bar */}
-          <div className="w-full flex justify-center items-center mt-6">
+          <div className="w-full max-w-md flex justify-center items-center">
             <SignupProgress />
           </div>
         </div>
       </header>
       {/* Main content */}
-      <main className="flex-1">
-        <div className="container mx-auto px-4 py-8 max-w-5xl">
+      <main className="flex-1 py-6 sm:py-8 lg:py-12">
+        <div className="w-full">
           {/* Content only, no lower header */}
           {children}
         </div>
       </main>
-      {/* Footer */}
-      <footer className="bg-white py-6 shadow-inner">
+      {/* Footer - Hidden on mobile for payment step */}
+      <footer className="hidden lg:block bg-white py-6 shadow-inner">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center text-sm text-gray-500">
             <div className="mb-2">

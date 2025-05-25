@@ -2,224 +2,101 @@ import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Eye, EyeOff, Mail, Lock } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const [, navigate] = useLocation();
-  const { toast } = useToast();
   const [form, setForm] = useState({ username: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    // Clear error when user starts typing
-    if (error) setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    
     try {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.message || "Login failed");
-      }
-      
-      // Store JWT token if provided
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        
-        // If remember me is checked, store username
-        if (rememberMe) {
-          localStorage.setItem('remembered_username', form.username);
-        } else {
-          localStorage.removeItem('remembered_username');
-        }
-      }
-      
-      toast({
-        title: "Welcome back!",
-        description: "You've successfully logged in.",
-      });
-      
+      if (!res.ok) throw new Error((await res.json()).message || "Login failed");
       navigate("/opportunities");
     } catch (err: any) {
       setError(err.message || "Something went wrong");
-      toast({
-        title: "Login failed",
-        description: err.message || "Please check your credentials and try again.",
-        variant: "destructive",
-      });
     } finally {
       setLoading(false);
     }
   };
 
-  // Load remembered username on mount
-  React.useEffect(() => {
-    const remembered = localStorage.getItem('remembered_username');
-    if (remembered) {
-      setForm(prev => ({ ...prev, username: remembered }));
-      setRememberMe(true);
-    }
-  }, []);
-
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 px-4 py-8">
-      <div className="w-full max-w-md">
-        {/* Logo and Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-2">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600">
+      <Card className="w-full max-w-md shadow-2xl rounded-2xl">
+        <CardContent className="p-8 lg:p-12">
+          <h2 className="text-3xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600 mb-2">
             QuoteBid
-          </h1>
-          <p className="text-gray-600">The PR Marketplace for Media Coverage</p>
-        </div>
-
-        <Card className="shadow-xl border-0">
-          <CardContent className="p-6 sm:p-8">
-            <h2 className="text-2xl font-semibold text-center mb-6 text-gray-900">
-              Welcome Back
-            </h2>
-            
-            <form className="space-y-5" onSubmit={handleSubmit}>
-              {/* Username/Email Field */}
-              <div className="space-y-2">
-                <label htmlFor="username" className="text-sm font-medium text-gray-700">
-                  Username or Email
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <Input
-                    id="username"
-                    name="username"
-                    type="text"
-                    required
-                    placeholder="Enter your username or email"
-                    className="pl-10 h-12 text-base"
-                    value={form.username}
-                    onChange={handleChange}
-                    autoComplete="username"
-                    autoFocus
-                  />
-                </div>
+          </h2>
+          <h3 className="text-xl font-semibold text-center mb-8 text-gray-900">Sign In</h3>
+          {error && <p className="mb-4 text-sm font-medium text-red-600 text-center">{error}</p>}
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <input
+              aria-label="Username"
+              name="username"
+              required
+              placeholder="Username"
+              className="rounded-xl border border-gray-300 px-4 py-3 w-full focus:ring-2 focus:ring-blue-600"
+              value={form.username}
+              onChange={handleChange}
+            />
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label htmlFor="password" className="font-medium text-gray-700">Password</label>
+                <a href="#" className="text-sm text-blue-600 hover:underline">Forgot password?</a>
               </div>
-
-              {/* Password Field */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label htmlFor="password" className="text-sm font-medium text-gray-700">
-                    Password
-                  </label>
-                  <a 
-                    href="/forgot-password" 
-                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
-                  >
-                    Forgot password?
-                  </a>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    required
-                    placeholder="Enter your password"
-                    className="pl-10 pr-12 h-12 text-base"
-                    value={form.password}
-                    onChange={handleChange}
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Remember Me */}
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="remember" 
-                  checked={rememberMe}
-                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+              <div className="relative">
+                <input
+                  aria-label="Password"
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="Enter your password"
+                  className="rounded-xl border border-gray-300 px-4 py-3 w-full focus:ring-2 focus:ring-blue-600 pr-10"
+                  value={form.password}
+                  onChange={handleChange}
                 />
-                <label 
-                  htmlFor="remember" 
-                  className="text-sm text-gray-600 cursor-pointer select-none"
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  Remember me
-                </label>
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.403-3.22 1.125-4.575M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.875-4.575A9.956 9.956 0 0122 9c0 5.523-4.477 10-10 10a9.956 9.956 0 01-4.575-1.125" /></svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm2.021 2.021A9.956 9.956 0 0022 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 1.657.403 3.22 1.125 4.575M9.879 9.879A3 3 0 0115 12m0 0a3 3 0 01-5.121-2.121" /></svg>
+                  )}
+                </button>
               </div>
-
-              {/* Error Message */}
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                  {error}
-                </div>
-              )}
-
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  "Sign In"
-                )}
-              </Button>
-            </form>
-
-            {/* Sign Up Link */}
-            <p className="text-center text-sm mt-6 text-gray-600">
-              Don't have an account?{" "}
-              <a 
-                href="/register" 
-                className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
-              >
-                Sign up for free
-              </a>
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Footer */}
-        <p className="text-center text-xs text-gray-500 mt-8">
-          By signing in, you agree to our{" "}
-          <a href="/terms" className="underline hover:text-gray-700">Terms of Service</a>
-          {" "}and{" "}
-          <a href="/privacy" className="underline hover:text-gray-700">Privacy Policy</a>
-        </p>
-      </div>
+            </div>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 text-base font-medium rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 hover:opacity-90"
+            >
+              {loading ? "Logging in…" : "Log In"}
+            </Button>
+          </form>
+          <p className="text-center text-sm mt-6 text-gray-500">
+            Don&apos;t have an account? <a href="/register" className="font-medium text-blue-600 hover:underline">Create one here</a>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 } 
