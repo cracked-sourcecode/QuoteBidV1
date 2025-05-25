@@ -108,6 +108,7 @@ export async function startSignup(req: Request, res: Response) {
 
   const hashed = await hashPassword(password);
   let newId: number | undefined;
+  let newUser: any;
   await db.transaction(async (tx) => {
     const inserted = await tx.insert(users).values({
       email,
@@ -119,12 +120,31 @@ export async function startSignup(req: Request, res: Response) {
       password: hashed,
       signup_stage: 'payment',
       hasAgreedToTerms: true
-    }).returning({ id: users.id });
-    newId = inserted[0].id as number;
+    }).returning({ id: users.id, email: users.email, isAdmin: users.isAdmin });
+    newUser = inserted[0];
+    newId = newUser.id as number;
     await tx.insert(signupState).values({ userId: newId!, status: 'payment' });
   });
 
-  return res.status(201).json({ userId: newId, step: 'payment' });
+  // Generate a JWT token for the user to authenticate subsequent requests
+  const role = newUser.isAdmin ? 'admin' : 'user';
+  const { signUser } = await import('../lib/jwt');
+  const token = signUser({ 
+    id: newId!, 
+    email: newUser.email, 
+    role
+  });
+
+  return res.status(201).json({ 
+    userId: newId, 
+    step: 'payment',
+    token,
+    user: {
+      id: newId,
+      email: newUser.email,
+      role
+    }
+  });
 }
 
 router.post('/start', startSignup);
@@ -164,6 +184,10 @@ router.post('/:email/advance', async (req: Request, res: Response) => {
     const { email } = req.params;
     const { action } = req.body;
     
+    console.log('[ADVANCE] Request for email:', email);
+    console.log('[ADVANCE] Action:', action);
+    console.log('[ADVANCE] Request body:', req.body);
+    
     if (!email) {
       return res.status(400).json({ message: 'Email is required' });
     }
@@ -182,10 +206,15 @@ router.post('/:email/advance', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
+    console.log('[ADVANCE] Current user stage:', user.signup_stage);
+    
     // Determine the next stage
     const currentStage = user.signup_stage || 'payment';
     const currentIndex = VALID_STAGES.indexOf(currentStage);
     const actionIndex = VALID_STAGES.indexOf(action);
+    
+    console.log('[ADVANCE] Current stage:', currentStage, 'index:', currentIndex);
+    console.log('[ADVANCE] Action stage:', action, 'index:', actionIndex);
     
     // Only allow advancing to the next stage or staying on the same stage
     if (actionIndex < currentIndex) {
@@ -201,6 +230,8 @@ router.post('/:email/advance', async (req: Request, res: Response) => {
       nextStage = VALID_STAGES[actionIndex + 1];
     }
     
+    console.log('[ADVANCE] Next stage will be:', nextStage);
+    
     // Regular stage update
     await getDb()
       .update(users)
@@ -212,6 +243,8 @@ router.post('/:email/advance', async (req: Request, res: Response) => {
       stage: nextStage,
       nextStage: actionIndex < VALID_STAGES.length - 1 ? VALID_STAGES[actionIndex + 1] : undefined
     };
+    
+    console.log('[ADVANCE] Returning:', updatedStageInfo);
     
     return res.status(200).json(updatedStageInfo);
   } catch (error) {
@@ -474,15 +507,15 @@ router.post('/:email/complete', async (req: Request, res: Response) => {
     
     // Generate a JWT token for the user
     const role = user.isAdmin ? 'admin' : 'user';
-    const token = jwt.sign(
-      { 
-        id: user.id, 
-        email: user.email, 
-        role
-      }, 
-      process.env.JWT_SECRET || 'quotebid_secret',
-      { expiresIn: '7d' }
-    );
+    const { signUser } = await import('../lib/jwt');
+    const token = signUser({ 
+      id: user.id, 
+      email: user.email, 
+      role
+    });
+    
+    console.log('[COMPLETE] JWT generated, length:', token?.length);
+    console.log('[COMPLETE] User ID:', user.id, 'Email:', user.email);
     
     // No need to call req.login; JWT is returned for authentication
 

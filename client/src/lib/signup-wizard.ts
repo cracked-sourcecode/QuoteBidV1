@@ -44,10 +44,23 @@ export async function getUserSignupStage(email: string): Promise<SignupStageInfo
 export async function advanceSignupStage(email: string, action: SignupStage, data?: any): Promise<SignupStageInfo> {
   try {
     const encodedEmail = encodeURIComponent(email);
+    console.log('[advanceSignupStage] Calling with email:', email, 'action:', action);
+    
+    // Get the token to ensure we're authenticated
+    const token = localStorage.getItem('token');
+    console.log('[advanceSignupStage] Token exists:', !!token);
+    
     const response = await apiRequest('POST', `/api/signup-stage/${encodedEmail}/advance`, { action, ...data });
-    return await response.json();
+    const result = await response.json();
+    
+    console.log('[advanceSignupStage] Response:', result);
+    return result;
   } catch (error) {
     console.error('Error advancing signup stage:', error);
+    // If we get an auth error, try to return a more helpful response
+    if (error instanceof Error && error.message.includes('401')) {
+      console.error('Authentication error - token may be missing or invalid');
+    }
     return { stage: action }; // Return the same stage on error
   }
 }

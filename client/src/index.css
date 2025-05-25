@@ -334,7 +334,73 @@ body {
   border-radius: 6px;
 }
 
+/* Enhanced custom styles for react-phone-input-2 to match QuoteBid theme */
+.react-phone-input-2 {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  position: relative;
+  z-index: 1;
+  background: transparent !important;
+}
 
+.react-phone-input-2 .flag-dropdown {
+  height: 56px !important;
+  width: 2.8rem !important;
+  min-width: 2.8rem !important;
+  max-width: 2.8rem !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+  background: #f7f6fd !important;
+  border-radius: 0.75rem 0 0 0.75rem !important;
+  border: none !important;
+  position: relative;
+  z-index: 2;
+}
+
+.react-phone-input-2 .form-control {
+  width: 100% !important;
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  display: block !important;
+  background: #f7f6fd !important;
+  padding-left: 1rem !important; /* Only a little padding, since flag is outside now */
+  height: 56px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 1.08rem !important;
+  color: #2d3142 !important;
+  border-radius: 0 0.75rem 0.75rem 0 !important;
+  border: 1px solid #e5e7eb !important;
+  border-left: none !important;
+  box-shadow: none !important;
+}
+
+.react-phone-input-2 .selected-flag {
+  padding-left: 0.5rem !important;
+  height: 56px !important;
+  display: flex;
+  align-items: center;
+}
+
+.react-phone-input-2 .country-list {
+  border-radius: 0.75rem !important;
+  font-size: 1rem;
+  box-shadow: 0 4px 24px 0 rgba(80, 60, 180, 0.08);
+}
+
+.react-phone-input-2 input:focus, .react-phone-input-2 .form-control:focus {
+  border-color: #7B5FFF !important; /* accent color */
+  box-shadow: 0 0 0 2px #7B5FFF22;
+  outline: none !important;
+}
+
+.react-phone-input-2 .arrow {
+  border-top: 6px solid #7B5FFF !important; /* accent color */
+}
 
 @layer base {
   * {

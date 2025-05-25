@@ -81,16 +81,26 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
         });
       }
       const completeRes = await post(`/api/signup-stage/${encodeURIComponent(email)}/complete`, {});
-      if (completeRes.success) {
-        // Store JWT in localStorage
-        if (completeRes.token) {
-          localStorage.setItem('token', completeRes.token);
-        }
-        // Optionally, update user state in frontend here if needed
+      console.log('[ProfileStep] Complete response:', completeRes);
+      
+      if (completeRes.success && completeRes.token) {
+        // 1️⃣ Get the JWT and user data
+        const { token, user } = completeRes;
+        
+        // 2️⃣ Store JWT in localStorage
+        localStorage.setItem('token', token);
+        console.log('[ProfileStep] JWT stored, length:', token?.length);
+        
+        // 3️⃣ Clear signup data
         clearSignupData();
-        onComplete(completeRes.token);
+        
+        // 4️⃣ Small delay to ensure storage is complete
+        setTimeout(() => {
+          console.log('[ProfileStep] Calling onComplete with token');
+          onComplete(token);
+        }, 50);
       } else {
-        throw new Error('Failed to complete signup');
+        throw new Error('Failed to complete signup - no token received');
       }
     } catch (error: any) {
       toast({ title: 'Profile Update Error', description: error.message || 'There was an error updating your profile. Please try again.', variant: 'destructive' });

@@ -13,6 +13,7 @@ const SignupWizardContext = createContext<SignupWizardContextType | undefined>(u
 export function SignupWizardProvider({ children }: { children: ReactNode }) {
   const [currentStage, setCurrentStage] = useState<SignupStage>('payment');
   const STAGE_ORDER: SignupStage[] = ['payment', 'profile', 'ready'];
+  const VALID_STAGES = ['payment', 'profile', 'ready', 'legacy'];
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -34,8 +35,7 @@ export function SignupWizardProvider({ children }: { children: ReactNode }) {
       const stageInfo = await getUserSignupStage(storedEmail);
       console.log('[SignupWizardContext] Backend returned stage:', stageInfo.stage);
       // If the backend returns an invalid or missing stage, default to 'payment'
-      const validStages = ['payment', 'profile', 'ready'];
-      if (!stageInfo.stage || !validStages.includes(stageInfo.stage)) {
+      if (!stageInfo.stage || !VALID_STAGES.includes(stageInfo.stage)) {
         console.warn('[SignupWizardContext] Invalid or missing stage from backend, defaulting to payment');
         setCurrentStage('payment');
       } else {
@@ -48,6 +48,7 @@ export function SignupWizardProvider({ children }: { children: ReactNode }) {
           case 'payment': return 1;
           case 'profile': return 2;
           case 'ready': return 3;
+          case 'legacy': return 3;
           default: return 1;
         }
       };
@@ -65,13 +66,17 @@ export function SignupWizardProvider({ children }: { children: ReactNode }) {
   };
 
   const setStage = (stage: SignupStage) => {
-    if (!STAGE_ORDER.includes(stage)) {
+    if (!STAGE_ORDER.includes(stage) && stage !== 'legacy') {
       console.warn(`[SignupWizardContext] Invalid stage: ${stage}`);
       return;
     }
     setCurrentStage(prev => {
       const prevIndex = STAGE_ORDER.indexOf(prev);
       const newIndex = STAGE_ORDER.indexOf(stage);
+      // Allow 'legacy' stage to be set without validation
+      if (stage === 'legacy') {
+        return stage;
+      }
       if (newIndex < prevIndex) {
         console.warn(`[SignupWizardContext] Attempted to regress stage from ${prev} to ${stage}`);
         return prev;
@@ -85,6 +90,7 @@ export function SignupWizardProvider({ children }: { children: ReactNode }) {
         case 'payment': return 1;
         case 'profile': return 2;
         case 'ready': return 3;
+        case 'legacy': return 3;
         default: return 1;
       }
     };

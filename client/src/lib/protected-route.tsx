@@ -12,6 +12,7 @@ export function ProtectedRoute({
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
+    console.log('[ProtectedRoute] Auth is loading for path:', path);
     return (
       <Route path={path}>
         <div className="flex items-center justify-center min-h-screen">
@@ -22,13 +23,15 @@ export function ProtectedRoute({
   }
 
   if (!user) {
-    // Redirect to auth page with return path encoded for proper redirection after login
+    console.log('[ProtectedRoute] No user found, redirecting to login from:', path);
+    // Redirect to login page with return path encoded for proper redirection after login
     return (
       <Route path={path}>
-        <Redirect to={`/auth?returnPath=${encodeURIComponent(path)}`} />
+        <Redirect to={`/login?returnPath=${encodeURIComponent(path)}`} />
       </Route>
     );
   }
 
+  console.log('[ProtectedRoute] User authenticated, rendering component for:', path);
   return <Route path={path} component={Component} />;
 }
