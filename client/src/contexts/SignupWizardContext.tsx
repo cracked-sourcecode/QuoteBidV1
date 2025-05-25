@@ -12,6 +12,7 @@ const SignupWizardContext = createContext<SignupWizardContextType | undefined>(u
 
 export function SignupWizardProvider({ children }: { children: ReactNode }) {
   const [currentStage, setCurrentStage] = useState<SignupStage>('payment');
+  const STAGE_ORDER: SignupStage[] = ['payment', 'profile', 'ready'];
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -64,7 +65,19 @@ export function SignupWizardProvider({ children }: { children: ReactNode }) {
   };
 
   const setStage = (stage: SignupStage) => {
-    setCurrentStage(stage);
+    if (!STAGE_ORDER.includes(stage)) {
+      console.warn(`[SignupWizardContext] Invalid stage: ${stage}`);
+      return;
+    }
+    setCurrentStage(prev => {
+      const prevIndex = STAGE_ORDER.indexOf(prev);
+      const newIndex = STAGE_ORDER.indexOf(stage);
+      if (newIndex < prevIndex) {
+        console.warn(`[SignupWizardContext] Attempted to regress stage from ${prev} to ${stage}`);
+        return prev;
+      }
+      return stage;
+    });
     
     // Update highest step in localStorage
     const stageToStep = (stage: SignupStage) => {
