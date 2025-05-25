@@ -9,7 +9,6 @@ import { useSignupWizard } from '@/contexts/SignupWizardContext';
 import { post } from '@/lib/api';
 import { apiFetch } from '@/lib/apiFetch';
 import { INDUSTRY_OPTIONS } from "@/lib/constants";
-import { useSignupGuard } from '@/hooks/useSignupGuard';
 
 interface ProfileStepProps {
   onComplete: (jwt: string) => void;
@@ -24,7 +23,6 @@ const AvatarSVG = () => (
 );
 
 export function ProfileStep({ onComplete }: ProfileStepProps) {
-  useSignupGuard('profile');
   const { toast } = useToast();
   const { refreshStage } = useSignupWizard();
   const [isLoading, setIsLoading] = useState(false);
@@ -72,11 +70,6 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
         title,
         industry,
         bio,
-        linkedin,
-        website,
-        twitter,
-        instagram,
-        doFollow,
       });
       // Optionally upload avatar
       if (avatar) {
@@ -89,17 +82,11 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
       }
       const completeRes = await post(`/api/signup-stage/${encodeURIComponent(email)}/complete`, {});
       if (completeRes.success) {
-        const signupInfo = getSignupData();
-        if (signupInfo?.username && signupInfo?.password) {
-          try {
-            await post('/api/login', {
-              username: signupInfo.username,
-              password: signupInfo.password,
-            });
-          } catch (e) {
-            console.warn('Auto login failed:', e);
-          }
+        // Store JWT in localStorage
+        if (completeRes.token) {
+          localStorage.setItem('token', completeRes.token);
         }
+        // Optionally, update user state in frontend here if needed
         clearSignupData();
         onComplete(completeRes.token);
       } else {

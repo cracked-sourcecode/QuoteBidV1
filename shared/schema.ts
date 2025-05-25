@@ -180,9 +180,9 @@ export const insertUserSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true })
   .extend({
     username: z.string()
-      .min(4, "Username must be at least 4 characters")
+      .min(3, "Username must be at least 3 characters")
       .max(30, "Username must be at most 30 characters")
-      .regex(/^[a-z0-9]{4,30}$/, "Username must contain only lowercase letters and numbers")
+      .regex(/^[a-z0-9_-]{3,30}$/, "Username must contain only lowercase letters, numbers, underscores, and hyphens")
       .transform(val => val.toLowerCase()), // Ensure username is stored in lowercase
   });
 export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({ id: true, createdAt: true });

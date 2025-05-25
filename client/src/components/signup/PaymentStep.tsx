@@ -13,7 +13,6 @@ import { Loader2, CheckCircle, Lock } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { advanceSignupStage, getSignupEmail } from '@/lib/signup-wizard';
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
-import { useSignupGuard } from '@/hooks/useSignupGuard';
 import { apiRequest } from '@/lib/queryClient';
 import { useLocation } from 'wouter';
 
@@ -63,7 +62,6 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
       
       if (completeCurrentStage.stage === 'profile') {
         setStage('profile');
-        setLocation('/auth?tab=signup&step=3', { replace: true });
         toast({ title: 'Payment Information Saved', description: 'Your payment method is saved for registration.' });
         onComplete();
       } else {
@@ -161,7 +159,6 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
 }
 
 export function PaymentStep({ onComplete }: PaymentStepProps) {
-  useSignupGuard('payment');
   return (
     <Elements stripe={stripePromise}>
       <CheckoutForm onComplete={onComplete} />

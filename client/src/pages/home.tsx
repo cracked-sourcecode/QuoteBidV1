@@ -15,7 +15,7 @@ export default function Home() {
   // Function for handling signup
   const handleSignup = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    navigate("/auth?tab=register");
+    navigate("/register");
   };
 
   return (
@@ -473,7 +473,7 @@ export default function Home() {
                   </ul>
                   
                   <div className="space-y-6">
-                    <a href="/auth">
+                    <a href="/register">
                       <Button className="w-full py-7 text-base font-semibold bg-[#004684] hover:bg-[#003a70] transition-all" size="lg">
                         Get Full Marketplace Access
                       </Button>

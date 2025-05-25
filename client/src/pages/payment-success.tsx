@@ -30,10 +30,10 @@ export default function PaymentSuccess() {
           })
         });
         
-        // Automatically redirect to profile setup after a short delay
+        // Instead of redirecting to /profile-setup, go to the next wizard step
         setTimeout(() => {
-          navigate("/profile-setup");
-        }, 3000);
+          navigate("/signup-wizard");
+        }, 1000);
         
       } catch (error) {
         console.error("Failed to update user premium status", error);
@@ -80,7 +80,7 @@ export default function PaymentSuccess() {
           <div className="space-y-4">
             <Button
               className="w-full bg-qpurple hover:bg-qpurple-dark"
-              onClick={() => navigate("/profile-setup")}
+              onClick={() => navigate("/signup-wizard")}
             >
               Complete Your Profile
             </Button>

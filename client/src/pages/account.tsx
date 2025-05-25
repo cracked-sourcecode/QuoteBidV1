@@ -78,6 +78,7 @@ const profileFormSchema = z.object({
   website: z.string().url({ message: "Please enter a valid website URL" }).optional().or(z.literal("")),
   doFollowLink: z.string().optional().or(z.literal("")),
   avatar: z.string().optional(),
+  otherProfileUrl: z.string().url({ message: "Please enter a valid URL" }).optional().or(z.literal("")),
 });
 
 export default function AccountPage() {
@@ -160,6 +161,7 @@ export default function AccountPage() {
       twitter: user?.twitter || user?.facebook || "",
       website: user?.website || "",
       doFollowLink: user?.doFollowLink || "none",
+      otherProfileUrl: user?.otherProfileUrl || "",
     },
   });
 
@@ -178,6 +180,7 @@ export default function AccountPage() {
         twitter: user.twitter || user.facebook || "",
         website: user.website || "",
         doFollowLink: user.doFollowLink || "none",
+        otherProfileUrl: user.otherProfileUrl || "",
       });
       
       // Set avatar preview if user has an avatar
@@ -315,7 +318,7 @@ export default function AccountPage() {
       // For immediate visual feedback, update the avatar directly if it was changed
       if (avatarFile && updatedUser) {
         // Get the avatar URL from the response
-        const userData = typeof updatedUser === 'object' ? updatedUser : {};
+        const userData = typeof updatedUser === 'object' ? updatedUser as any : {};
         const avatarUrl = userData.avatar || null;
         
         if (avatarUrl) {
@@ -532,8 +535,8 @@ export default function AccountPage() {
                 </div>
               </>
               {isEditing && (
-                <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 flex items-center justify-center transition-all duration-200 group-hover:bg-opacity-30">
-                  <span className="text-white opacity-0 group-hover:opacity-100 text-sm font-medium">
+                <div className="absolute inset-0 rounded-full bg-black/0 flex items-center justify-center transition-all duration-200 group-hover:bg-black/30">
+                  <span className="text-white opacity-0 group-hover:opacity-100 text-sm font-medium transition-opacity duration-200">
                     Change Photo
                   </span>
                 </div>
@@ -687,7 +690,6 @@ export default function AccountPage() {
       {/* Main Content - Responsive margin to account for sidebar */}
       <div className={`lg:ml-72 transition-all duration-300 ease-in-out flex-1 p-8 ${sidebarOpen ? 'ml-72' : 'ml-0'} account-content-area`}>
         <div className="max-w-4xl mx-auto">
-          {console.log('Rendering page, isEditing=', isEditing)}
           <h1 className="text-2xl font-bold mb-6">Profile Dashboard</h1>
           
           {!user ? (

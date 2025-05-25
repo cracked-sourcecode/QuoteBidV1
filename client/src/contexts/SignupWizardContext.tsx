@@ -31,7 +31,15 @@ export function SignupWizardProvider({ children }: { children: ReactNode }) {
     
     try {
       const stageInfo = await getUserSignupStage(storedEmail);
-      setCurrentStage(stageInfo.stage);
+      console.log('[SignupWizardContext] Backend returned stage:', stageInfo.stage);
+      // If the backend returns an invalid or missing stage, default to 'payment'
+      const validStages = ['payment', 'profile', 'ready'];
+      if (!stageInfo.stage || !validStages.includes(stageInfo.stage)) {
+        console.warn('[SignupWizardContext] Invalid or missing stage from backend, defaulting to payment');
+        setCurrentStage('payment');
+      } else {
+        setCurrentStage(stageInfo.stage);
+      }
 
       // Update highest step in localStorage
       const stageToStep = (stage: SignupStage) => {
@@ -51,6 +59,7 @@ export function SignupWizardProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error fetching current signup stage:', error);
+      setCurrentStage('payment');
     }
   };
 
