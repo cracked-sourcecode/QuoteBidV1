@@ -142,3 +142,17 @@ export function getRedirectUrlForStage(stage: SignupStage): string {
       return '/payment';
   }
 }
+
+/**
+ * Determine the next application route based on a signup stage
+ */
+export function nextRouteForStage(stage: SignupStage): string {
+  switch (stage) {
+    case 'payment':
+      return '/profile-setup';
+    case 'profile':
+      return '/opportunities';
+    default:
+      return '/opportunities';
+  }
+}
