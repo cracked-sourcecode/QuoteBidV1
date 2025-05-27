@@ -2184,22 +2184,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No file uploaded' });
       }
       
-      // Generate the URL for the uploaded file
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const fileUrl = `${baseUrl}/uploads/avatars/${req.file.filename}`;
+      // Store only the relative path in the database
+      const relativePath = `/uploads/avatars/${req.file.filename}`;
       
-      console.log("Avatar uploaded to:", fileUrl);
+      console.log("Avatar uploaded to:", relativePath);
       
-      // Update user's avatar in the database
+      // Update user's avatar in the database with relative path
       const updatedUser = await getDb().update(users)
-        .set({ avatar: fileUrl })
+        .set({ avatar: relativePath })
         .where(eq(users.id, userId))
         .returning()
         .then(rows => rows[0]);
       
       res.status(200).json({ 
         message: 'Avatar uploaded successfully',
-        fileUrl: fileUrl, // Return as fileUrl to match what the client expects
+        fileUrl: relativePath, // Return the relative path
         user: updatedUser
       });
     } catch (error) {

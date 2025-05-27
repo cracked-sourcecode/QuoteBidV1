@@ -235,7 +235,7 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={pitch.user?.avatar ? `/uploads/avatars/${pitch.user.avatar}` : undefined} />
+                <AvatarImage src={pitch.user?.avatar || undefined} />
                 <AvatarFallback className="bg-purple-100 text-purple-700">
                   {userInitials}
                 </AvatarFallback>
@@ -461,7 +461,7 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={pitch.user?.avatar ? `/uploads/avatars/${pitch.user.avatar}` : undefined} />
+                            <AvatarImage src={pitch.user?.avatar || undefined} />
                             <AvatarFallback className="text-xs bg-purple-100 text-purple-700">
                               {pitch.user?.fullName?.[0] || pitch.user?.username?.[0] || 'U'}
                             </AvatarFallback>
