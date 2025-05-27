@@ -913,7 +913,7 @@ export class DatabaseStorage implements IStorage {
       // First check if the user already has a submitted pitch for the requested opportunity
       // If they do, we shouldn't show them any drafts for that opportunity
       if (opportunityId) {
-        const submittedPitch = await getDb
+        const submittedPitch = await getDb()
           .select()
           .from(pitches)
           .where(
@@ -959,7 +959,7 @@ export class DatabaseStorage implements IStorage {
 
   // Saved Opportunities
   async getSavedOpportunity(userId: number, opportunityId: number): Promise<SavedOpportunity | undefined> {
-    const [savedOpportunity] = await getDb
+    const [savedOpportunity] = await getDb()
       .select()
       .from(savedOpportunities)
       .where(
@@ -972,7 +972,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getSavedOpportunitiesByUserId(userId: number): Promise<SavedOpportunity[]> {
-    return await getDb
+    return await getDb()
       .select()
       .from(savedOpportunities)
       .where(eq(savedOpportunities.userId, userId))
@@ -980,7 +980,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSavedOpportunity(insertSavedOpportunity: InsertSavedOpportunity): Promise<SavedOpportunity> {
-    const [savedOpportunity] = await getDb
+    const [savedOpportunity] = await getDb()
       .insert(savedOpportunities)
       .values(insertSavedOpportunity)
       .returning();
@@ -995,7 +995,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Then delete it
-    await getDb
+    await getDb()
       .delete(savedOpportunities)
       .where(
         and(
@@ -1139,7 +1139,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updatePlacementStatus(id: number, status: string): Promise<Placement | undefined> {
-    const [updatedPlacement] = await getDb
+    const [updatedPlacement] = await getDb()
       .update(placements)
       .set({ status })
       .where(eq(placements.id, id))
@@ -1148,7 +1148,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updatePlacementArticle(id: number, data: { articleUrl?: string, articleFilePath?: string }): Promise<Placement | undefined> {
-    const [updatedPlacement] = await getDb
+    const [updatedPlacement] = await getDb()
       .update(placements)
       .set(data)
       .where(eq(placements.id, id))
@@ -1157,7 +1157,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updatePlacementNotification(id: number, notificationSent: boolean): Promise<Placement | undefined> {
-    const [updatedPlacement] = await getDb
+    const [updatedPlacement] = await getDb()
       .update(placements)
       .set({ notificationSent })
       .where(eq(placements.id, id))
@@ -1167,7 +1167,7 @@ export class DatabaseStorage implements IStorage {
 
   async updatePlacementPayment(id: number, invoiceId: string, paymentId: string): Promise<Placement | undefined> {
     const now = new Date();
-    const [updatedPlacement] = await getDb
+    const [updatedPlacement] = await getDb()
       .update(placements)
       .set({ 
         invoiceId,
@@ -1181,7 +1181,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updatePlacementPaymentIntent(id: number, paymentIntentId: string): Promise<Placement | undefined> {
-    const [updatedPlacement] = await getDb
+    const [updatedPlacement] = await getDb()
       .update(placements)
       .set({ paymentIntentId })
       .where(eq(placements.id, id))
@@ -1190,7 +1190,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updatePlacementError(id: number, errorMessage: string): Promise<Placement | undefined> {
-    const [updatedPlacement] = await getDb
+    const [updatedPlacement] = await getDb()
       .update(placements)
       .set({ 
         errorMessage,
@@ -1269,7 +1269,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createAnnotationComment(insertComment: InsertAnnotationComment): Promise<AnnotationComment> {
-    const [comment] = await getDb
+    const [comment] = await getDb()
       .insert(annotationComments)
       .values(insertComment)
       .returning();
@@ -1293,7 +1293,7 @@ export class DatabaseStorage implements IStorage {
       const messagesWithSenderInfo = await Promise.all(
         messages.map(async (message) => {
           // Get sender info
-          const [sender] = await getDb
+          const [sender] = await getDb()
             .select()
             .from(users)
             .where(eq(users.id, message.senderId));
@@ -1314,7 +1314,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getPitchMessage(id: number): Promise<PitchMessage | undefined> {
-    const [message] = await getDb
+    const [message] = await getDb()
       .select()
       .from(pitchMessages)
       .where(eq(pitchMessages.id, id));
@@ -1322,7 +1322,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createPitchMessage(message: InsertPitchMessage): Promise<PitchMessage> {
-    const [newMessage] = await getDb
+    const [newMessage] = await getDb()
       .insert(pitchMessages)
       .values(message)
       .returning();
@@ -1331,7 +1331,7 @@ export class DatabaseStorage implements IStorage {
   
   async markPitchMessagesAsRead(pitchId: number, userId: number): Promise<void> {
     // Mark messages as read that weren't sent by the current user
-    await getDb
+    await getDb()
       .update(pitchMessages)
       .set({ isRead: true })
       .where(
@@ -1352,7 +1352,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Count unread messages that weren't sent by this user
-    const [result] = await getDb
+    const [result] = await getDb()
       .select({ count: sql`count(*)` })
       .from(pitchMessages)
       .where(
