@@ -309,6 +309,9 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
                   {pitch.user?.fullName && pitch.user?.title && (
                     <span className="text-gray-600 italic">
                       —{pitch.user.fullName}, {pitch.user.title}
+                      {pitch.user.doFollowLink && pitch.user.doFollowLink !== 'None' && (
+                        <span> ({pitch.user.doFollowLink})</span>
+                      )}
                     </span>
                   )}
                 </p>
