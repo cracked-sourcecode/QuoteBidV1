@@ -303,33 +303,15 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
                 )}
               </div>
             ) : (
-              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                <p className="text-sm text-gray-700 line-clamp-3">
-                  {pitch.content || 'No content available'}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm text-gray-700">
+                  <span className="line-clamp-3">{pitch.content || 'No content available'}</span>
+                  {pitch.user?.fullName && pitch.user?.title && (
+                    <span className="text-gray-600 italic">
+                      —{pitch.user.fullName}, {pitch.user.title}
+                    </span>
+                  )}
                 </p>
-                {(pitch.user?.title || pitch.user?.doFollowLink) && (
-                  <div className="pt-2 border-t border-gray-200 space-y-1">
-                    {pitch.user?.title && (
-                      <p className="text-xs text-gray-600">
-                        <span className="font-medium">Title:</span> {pitch.user.title}
-                      </p>
-                    )}
-                    {pitch.user?.doFollowLink && (
-                      <p className="text-xs text-gray-600 truncate">
-                        <span className="font-medium">Do-Follow Link:</span>{' '}
-                        <a 
-                          href={pitch.user.doFollowLink} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {pitch.user.doFollowLink}
-                        </a>
-                      </p>
-                    )}
-                  </div>
-                )}
               </div>
             )}
           </div>
