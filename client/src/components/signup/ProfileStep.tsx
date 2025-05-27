@@ -35,7 +35,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
   const [website, setWebsite] = useState('');
   const [twitter, setTwitter] = useState('');
   const [instagram, setInstagram] = useState('');
-  const [doFollow, setDoFollow] = useState('None');
+  const [doFollow, setDoFollow] = useState('');
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const email = getSignupEmail();
@@ -58,8 +58,9 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
       toast({ title: 'Error', description: 'Email not found. Please restart the signup process.', variant: 'destructive' });
       return;
     }
-    if (!fullName.trim() || !location.trim() || !industry.trim() || !bio.trim()) {
-      toast({ title: 'Required Fields', description: 'Please fill out all required fields.', variant: 'destructive' });
+    if (!fullName.trim() || !location.trim() || !title.trim() || !industry.trim() || !bio.trim() || 
+        !linkedin.trim() || !website.trim() || !twitter.trim() || !instagram.trim() || !doFollow) {
+      toast({ title: 'Required Fields', description: 'Please fill out all fields to complete your profile.', variant: 'destructive' });
       return;
     }
     setIsLoading(true);
@@ -126,6 +127,13 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 sm:p-8">
+          {/* Required Fields Notice */}
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>All fields are required</strong> to ensure journalists have complete information about your expertise.
+            </p>
+          </div>
+
           {/* Avatar Upload Section */}
           <div className="mb-8 text-center">
             <div className="relative inline-block">
@@ -190,13 +198,14 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="title" className="text-sm font-medium text-gray-700 mb-1 block">
-                  Professional Title
+                  Professional Title *
                 </Label>
                 <Input 
                   id="title" 
                   type="text" 
                   value={title} 
                   onChange={e => setTitle(e.target.value)} 
+                  required
                   placeholder="CEO, Founder, Expert, etc."
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                 />
@@ -248,71 +257,77 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
 
             {/* Online Presence Section */}
             <div className="bg-gray-50 rounded-xl p-4 sm:p-6">
-              <h3 className="font-semibold text-lg mb-4">Online Presence</h3>
+              <h3 className="font-semibold text-lg mb-4">Online Presence *</h3>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="linkedin" className="text-sm font-medium text-gray-700 mb-1 block">
-                    LinkedIn
+                    LinkedIn *
                   </Label>
                   <Input 
                     id="linkedin" 
                     type="url" 
                     value={linkedin} 
                     onChange={e => setLinkedin(e.target.value)} 
+                    required
                     placeholder="https://linkedin.com/in/username"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                   />
                 </div>
                 <div>
                   <Label htmlFor="website" className="text-sm font-medium text-gray-700 mb-1 block">
-                    Website
+                    Website *
                   </Label>
                   <Input 
                     id="website" 
                     type="url" 
                     value={website} 
                     onChange={e => setWebsite(e.target.value)} 
+                    required
                     placeholder="https://yourwebsite.com"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                   />
                 </div>
                 <div>
                   <Label htmlFor="twitter" className="text-sm font-medium text-gray-700 mb-1 block">
-                    X / Twitter
+                    X / Twitter *
                   </Label>
                   <Input 
                     id="twitter" 
                     type="url" 
                     value={twitter} 
                     onChange={e => setTwitter(e.target.value)} 
+                    required
                     placeholder="https://x.com/username"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                   />
                 </div>
                 <div>
                   <Label htmlFor="instagram" className="text-sm font-medium text-gray-700 mb-1 block">
-                    Instagram
+                    Instagram *
                   </Label>
                   <Input 
                     id="instagram" 
                     type="url" 
                     value={instagram} 
                     onChange={e => setInstagram(e.target.value)} 
+                    required
                     placeholder="https://instagram.com/username"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                   />
                 </div>
                 <div>
                   <Label htmlFor="doFollow" className="text-sm font-medium text-gray-700 mb-1 block">
-                    Do-Follow Link (For article placements)
+                    Do-Follow Link (For article placements) *
                   </Label>
                   <div className="relative">
                     <select 
                       id="doFollow" 
                       value={doFollow} 
                       onChange={e => setDoFollow(e.target.value)} 
+                      required
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all appearance-none bg-white"
                     >
+                      <option value="">Select a do-follow link</option>
                       <option value="None">None</option>
                       <option value="LinkedIn">LinkedIn</option>
                       <option value="Website">Website</option>
