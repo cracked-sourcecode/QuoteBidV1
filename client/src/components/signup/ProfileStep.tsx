@@ -59,8 +59,8 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
       return;
     }
     if (!fullName.trim() || !location.trim() || !title.trim() || !industry.trim() || !bio.trim() || 
-        !linkedin.trim() || !website.trim() || !twitter.trim() || !instagram.trim() || !doFollow) {
-      toast({ title: 'Required Fields', description: 'Please fill out all fields to complete your profile.', variant: 'destructive' });
+        !linkedin.trim() || !website.trim() || !twitter.trim() || !instagram.trim() || !doFollow || !avatar) {
+      toast({ title: 'Required Fields', description: 'Please fill out all fields and upload a profile photo to complete your profile.', variant: 'destructive' });
       return;
     }
     setIsLoading(true);
@@ -130,12 +130,15 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
           {/* Required Fields Notice */}
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800">
-              <strong>All fields are required</strong> to ensure journalists have complete information about your expertise.
+              <strong>All fields and profile photo are required</strong> to ensure journalists have complete information about your expertise.
             </p>
           </div>
 
           {/* Avatar Upload Section */}
           <div className="mb-8 text-center">
+            <Label className="text-sm font-medium text-gray-700 mb-3 block">
+              Profile Photo *
+            </Label>
             <div className="relative inline-block">
               <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center mx-auto border-4 border-white shadow-lg">
                 {avatarPreview ? (
@@ -152,12 +155,18 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
                   accept="image/*"
                   onChange={handleAvatarChange}
                   className="hidden"
+                  required
                 />
               </label>
             </div>
             <p className="text-xs sm:text-sm text-gray-500 mt-3">
               Professional headshots get 7x more responses
             </p>
+            {!avatarPreview && (
+              <p className="text-xs text-red-600 mt-2">
+                Please upload a profile photo
+              </p>
+            )}
           </div>
 
           {/* Form Fields */}
