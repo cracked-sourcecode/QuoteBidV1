@@ -414,12 +414,12 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <Tabs value={selectedStatus} onValueChange={setSelectedStatus} className="w-full lg:w-auto">
           <TabsList className="grid grid-cols-3 lg:grid-cols-6 w-full lg:w-auto">
-            <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="pending">Pending</TabsTrigger>
             <TabsTrigger value="sent_to_reporter">Sent</TabsTrigger>
             <TabsTrigger value="interested">Interested</TabsTrigger>
             <TabsTrigger value="not_interested">Declined</TabsTrigger>
             <TabsTrigger value="successful">Successful</TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
           </TabsList>
         </Tabs>
 
