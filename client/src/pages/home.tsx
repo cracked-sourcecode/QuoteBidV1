@@ -1,21 +1,32 @@
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
 export default function Home() {
-  const [_, navigate] = useLocation();
   const { user } = useAuth();
+  
+  // Ensure opacity is reset when component mounts
+  useEffect(() => {
+    document.body.style.opacity = '1';
+    document.body.classList.remove('navigating');
+    return () => {
+      document.body.style.opacity = '1';
+    };
+  }, []);
   
   // Function for handling login
   const handleLogin = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    navigate("/auth?tab=login");
+    // Use window.location for a clean transition
+    window.location.href = '/login';
   };
   
   // Function for handling signup
   const handleSignup = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    navigate("/register");
+    // Use window.location for a clean transition
+    window.location.href = '/register';
   };
 
   return (
@@ -473,11 +484,13 @@ export default function Home() {
                   </ul>
                   
                   <div className="space-y-6">
-                    <a href="/register">
-                      <Button className="w-full py-7 text-base font-semibold bg-[#004684] hover:bg-[#003a70] transition-all" size="lg">
-                        Get Full Marketplace Access
-                      </Button>
-                    </a>
+                    <Button 
+                      className="w-full py-7 text-base font-semibold bg-[#004684] hover:bg-[#003a70] transition-all" 
+                      size="lg"
+                      onClick={handleSignup}
+                    >
+                      Get Full Marketplace Access
+                    </Button>
                     
                     <div className="text-center">
                       <p className="text-gray-500 text-sm">
