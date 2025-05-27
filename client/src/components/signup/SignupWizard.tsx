@@ -24,12 +24,12 @@ export function SignupWizard({ children }: SignupWizardProps) {
     : '';
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100">
       {/* Clean Wizard Header */}
-      <header className="w-full bg-white shadow-sm sticky top-0 z-30">
+      <header className="w-full bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-30 border-b border-gray-100">
         <div className="flex flex-col items-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4">
-          <h1 className="text-xl sm:text-2xl font-bold text-[#004684] mb-1">QuoteBid Signup</h1>
-          <p className="text-xs sm:text-sm text-gray-500 mb-4">{stepText}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#004684] mb-2">QuoteBid Signup</h1>
+          <p className="text-sm sm:text-base text-gray-600 mb-4">{stepText}</p>
           {/* Interactive Progress Bar */}
           <div className="w-full max-w-md flex justify-center items-center">
             <SignupProgress />
@@ -37,25 +37,25 @@ export function SignupWizard({ children }: SignupWizardProps) {
         </div>
       </header>
       {/* Main content */}
-      <main className="flex-1 py-6 sm:py-8 lg:py-12">
+      <main className="flex-1 py-4 sm:py-6 lg:py-8">
         <div className="w-full">
           {/* Content only, no lower header */}
           {children}
         </div>
       </main>
       {/* Footer - Hidden on mobile for payment step */}
-      <footer className="hidden lg:block bg-white py-6 shadow-inner">
+      <footer className="hidden lg:block bg-white/80 backdrop-blur-sm py-6 shadow-inner border-t border-gray-100">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center text-sm text-gray-500">
+          <div className="flex flex-col items-center text-sm text-gray-600">
             <div className="mb-2">
-              Need help? <a href="mailto:support@quotebid.com" className="text-blue-600 hover:underline">Contact support</a>
+              Need help? <a href="mailto:support@quotebid.com" className="text-blue-600 hover:underline font-medium">Contact support</a>
             </div>
-            <div>
+            <div className="text-gray-500">
               &copy; {new Date().getFullYear()} QuoteBid. All rights reserved.
             </div>
-            <div className="mt-2 flex gap-4">
-              <a href="/terms" className="hover:text-gray-700">Terms of Service</a>
-              <a href="/privacy" className="hover:text-gray-700">Privacy Policy</a>
+            <div className="mt-2 flex gap-6">
+              <a href="/terms" className="hover:text-gray-700 transition-colors">Terms of Service</a>
+              <a href="/privacy" className="hover:text-gray-700 transition-colors">Privacy Policy</a>
             </div>
           </div>
         </div>
