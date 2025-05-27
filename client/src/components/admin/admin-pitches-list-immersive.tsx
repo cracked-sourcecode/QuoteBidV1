@@ -111,7 +111,20 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
         throw new Error(`Error fetching pitches: ${res.status}`);
       }
       
-      return await res.json();
+      const data = await res.json();
+      
+      // Debug: Log the first pitch to see what data we're getting
+      if (data.length > 0) {
+        console.log('Sample pitch data:', {
+          id: data[0].id,
+          userId: data[0].userId,
+          user: data[0].user,
+          opportunity: data[0].opportunity,
+          publication: data[0].publication
+        });
+      }
+      
+      return data;
     },
     staleTime: 30000,
     refetchInterval: 60000
@@ -222,7 +235,7 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={pitch.user?.avatar} />
+                <AvatarImage src={pitch.user?.avatar ? `/uploads/avatars/${pitch.user.avatar}` : undefined} />
                 <AvatarFallback className="bg-purple-100 text-purple-700">
                   {userInitials}
                 </AvatarFallback>
@@ -448,8 +461,8 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={pitch.user?.avatar} />
-                            <AvatarFallback className="text-xs">
+                            <AvatarImage src={pitch.user?.avatar ? `/uploads/avatars/${pitch.user.avatar}` : undefined} />
+                            <AvatarFallback className="text-xs bg-purple-100 text-purple-700">
                               {pitch.user?.fullName?.[0] || pitch.user?.username?.[0] || 'U'}
                             </AvatarFallback>
                           </Avatar>
