@@ -171,13 +171,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAdminAuth() {
-  return {
-    isAdmin: false,
-    adminUser: null,
-    login: async () => {},
-    logout: async () => {},
-    register: async () => {},
-    loading: false,
-    error: null,
-  };
+  const context = useContext(AdminAuthContext);
+  if (!context) {
+    throw new Error("useAdminAuth must be used within AdminAuthProvider");
+  }
+  return context;
 }
