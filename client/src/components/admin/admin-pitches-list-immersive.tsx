@@ -188,6 +188,12 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
       icon: Check,
       description: 'Published/aired'
     },
+    draft: {
+      label: 'Draft',
+      color: 'bg-gray-50 text-gray-700 border-gray-200',
+      icon: FileText,
+      description: 'Draft pitch'
+    }
   };
 
   // Enhanced Status Badge
@@ -200,9 +206,9 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
     const Icon = config.icon;
     
     return (
-      <Badge variant="outline" className={`${config.color} flex items-center gap-1.5 px-2.5 py-1`}>
-        <Icon className="h-3 w-3" />
-        <span className="whitespace-nowrap">{config.label}</span>
+      <Badge variant="outline" className={`${config.color} inline-flex items-center gap-1.5 px-3 py-1.5 min-w-fit`}>
+        <Icon className="h-3 w-3 flex-shrink-0" />
+        <span className="whitespace-nowrap text-xs font-medium">{config.label}</span>
       </Badge>
     );
   };
