@@ -743,7 +743,7 @@ export class DatabaseStorage implements IStorage {
             // Get user data
             let user;
             if (userId) {
-              [user] = await getDb
+              [user] = await getDb()
                 .select()
                 .from(users)
                 .where(eq(users.id, userId));
@@ -754,7 +754,7 @@ export class DatabaseStorage implements IStorage {
               console.log(`Warning: No user found for pitch ${pitch.id} with userId ${userId}, using default user`);
               
               // Get opportunity data
-              const [opportunity] = await getDb
+              const [opportunity] = await getDb()
                 .select()
                 .from(opportunities)
                 .where(eq(opportunities.id, pitch.opportunityId));
@@ -767,7 +767,7 @@ export class DatabaseStorage implements IStorage {
               // Get publication data (optional)
               let publication: Publication | undefined;
               if (opportunity.publicationId) {
-                [publication] = await getDb
+                [publication] = await getDb()
                   .select()
                   .from(publications)
                   .where(eq(publications.id, opportunity.publicationId));
@@ -784,7 +784,7 @@ export class DatabaseStorage implements IStorage {
             }
             
             // Get opportunity data
-            const [opportunity] = await getDb
+            const [opportunity] = await getDb()
               .select()
               .from(opportunities)
               .where(eq(opportunities.id, pitch.opportunityId));
@@ -797,7 +797,7 @@ export class DatabaseStorage implements IStorage {
             // Get publication data (optional)
             let publication: Publication | undefined;
             if (opportunity.publicationId) {
-              [publication] = await getDb
+              [publication] = await getDb()
                 .select()
                 .from(publications)
                 .where(eq(publications.id, opportunity.publicationId));
