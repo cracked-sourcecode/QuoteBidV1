@@ -122,6 +122,26 @@ function debounce(fn: (...args: any[]) => void, delay: number) {
 export default function RegisterPage() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  
+  // Check if user is already in signup wizard and redirect them back
+  useEffect(() => {
+    // Initial check
+    if (localStorage.getItem('in_signup_wizard') === 'true') {
+      // User is trying to go back to register from the wizard, redirect them
+      navigate('/signup-wizard');
+      return;
+    }
+    
+    // Set up an interval to continuously check
+    const interval = setInterval(() => {
+      if (localStorage.getItem('in_signup_wizard') === 'true') {
+        navigate('/signup-wizard');
+      }
+    }, 100);
+    
+    return () => clearInterval(interval);
+  }, [navigate]);
+  
   const [form, setForm] = useState({
     fullName: '',
     username: '',
@@ -144,6 +164,7 @@ export default function RegisterPage() {
   const [phoneUnique, setPhoneUnique] = useState(true);
   const [phoneChecking, setPhoneChecking] = useState(false);
   const [phoneValid, setPhoneValid] = useState(true);
+  const [passwordsMatch, setPasswordsMatch] = useState(true);
 
   // Email validation regex
   const emailRegex = /^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$/;
@@ -317,6 +338,13 @@ export default function RegisterPage() {
       setForm(f => ({ ...f, [name]: formatted }));
     } else {
       setForm(f => ({ ...f, [name]: value }));
+      
+      // Check password matching when either password field changes
+      if (name === 'password') {
+        setPasswordsMatch(value === form.confirmPassword || form.confirmPassword === '');
+      } else if (name === 'confirmPassword') {
+        setPasswordsMatch(value === form.password || value === '');
+      }
     }
   };
 
@@ -506,6 +534,7 @@ export default function RegisterPage() {
     !!form.phone && phoneUnique && !phoneChecking && phoneValid &&
     !!form.industry &&
     !!form.password && form.password.length >= 8 &&
+    !!form.confirmPassword && passwordsMatch &&
     form.agreeTerms;
 
   return (
@@ -598,8 +627,10 @@ export default function RegisterPage() {
                   className="rounded-xl border border-gray-200 px-5 py-3.5 lg:py-4 w-full text-base lg:text-lg transition-all hover:border-gray-300 focus:border-[#7B5FFF] focus:ring-2 focus:ring-[#7B5FFF]/20"
                   style={{background: '#f7f6fd'}}
                 />
-                {usernameChecking && <div className="text-xs text-gray-400 mt-1">Checking username...</div>}
-                {!usernameChecking && !usernameUnique && <div className="text-xs text-red-500 mt-1">Username is already taken.</div>}
+                <div className="h-4 mt-1">
+                  {usernameChecking && <div className="text-xs text-gray-400">Checking username...</div>}
+                  {!usernameChecking && !usernameUnique && <div className="text-xs text-red-500">Username is already taken.</div>}
+                </div>
               </Field>
               <Field error={errors.email} className="col-span-1">
                 <input
@@ -611,9 +642,11 @@ export default function RegisterPage() {
                   className="rounded-xl border border-gray-200 px-5 py-3.5 lg:py-4 w-full text-base lg:text-lg transition-all hover:border-gray-300 focus:border-[#7B5FFF] focus:ring-2 focus:ring-[#7B5FFF]/20"
                   style={{background: '#f7f6fd'}}
                 />
-                {emailChecking && <div className="text-xs text-gray-400 mt-1">Checking email...</div>}
-                {!emailChecking && !emailValid && <div className="text-xs text-red-500 mt-1">Please enter a valid email address.</div>}
-                {!emailChecking && emailValid && !emailUnique && <div className="text-xs text-red-500 mt-1">Email is already in use.</div>}
+                <div className="h-4 mt-1">
+                  {emailChecking && <div className="text-xs text-gray-400">Checking email...</div>}
+                  {!emailChecking && !emailValid && <div className="text-xs text-red-500">Please enter a valid email address.</div>}
+                  {!emailChecking && emailValid && !emailUnique && <div className="text-xs text-red-500">Email is already in use.</div>}
+                </div>
               </Field>
               <Field error={errors.companyName} className="col-span-1">
                 <input 
@@ -630,7 +663,7 @@ export default function RegisterPage() {
                   <select
                     value={countryCode}
                     onChange={(e) => setCountryCode(e.target.value)}
-                    className="rounded-xl border border-gray-200 px-3 py-3.5 lg:py-4 w-32 lg:w-36 text-base lg:text-lg transition-all hover:border-gray-300 focus:border-[#7B5FFF] focus:ring-2 focus:ring-[#7B5FFF]/20"
+                    className="rounded-xl border border-gray-200 px-2 py-3.5 lg:py-4 w-20 lg:w-24 text-base lg:text-lg transition-all hover:border-gray-300 focus:border-[#7B5FFF] focus:ring-2 focus:ring-[#7B5FFF]/20"
                     style={{ background: '#f7f6fd' }}
                   >
                     {COUNTRY_CODES.map(({ code, country, flag }) => (
@@ -650,9 +683,11 @@ export default function RegisterPage() {
                     required
                   />
                 </div>
-                {phoneChecking && <div className="text-xs text-gray-400 mt-1">Checking phone number...</div>}
-                {!phoneChecking && !phoneValid && <div className="text-xs text-red-500 mt-1">Please enter a valid phone number.</div>}
-                {!phoneChecking && phoneValid && !phoneUnique && <div className="text-xs text-red-500 mt-1">Phone number is already in use.</div>}
+                <div className="h-4 mt-1">
+                  {phoneChecking && <div className="text-xs text-gray-400">Checking phone number...</div>}
+                  {!phoneChecking && !phoneValid && <div className="text-xs text-red-500">Please enter a valid phone number.</div>}
+                  {!phoneChecking && phoneValid && !phoneUnique && <div className="text-xs text-red-500">Phone number is already in use.</div>}
+                </div>
               </Field>
               <Field error={errors.industry} className="col-span-1 sm:col-span-2">
                 <div className="relative">
@@ -683,6 +718,9 @@ export default function RegisterPage() {
                   className="rounded-xl border border-gray-200 px-5 py-3.5 lg:py-4 w-full text-base lg:text-lg transition-all hover:border-gray-300 focus:border-[#7B5FFF] focus:ring-2 focus:ring-[#7B5FFF]/20" 
                   style={{background: '#f7f6fd'}} 
                 />
+                <div className="h-4 mt-1">
+                  {form.password && form.password.length < 8 && <div className="text-xs text-red-500">Password must be at least 8 characters.</div>}
+                </div>
               </Field>
               <Field error={errors.confirmPassword} className="col-span-1">
                 <input 
@@ -694,6 +732,9 @@ export default function RegisterPage() {
                   className="rounded-xl border border-gray-200 px-5 py-3.5 lg:py-4 w-full text-base lg:text-lg transition-all hover:border-gray-300 focus:border-[#7B5FFF] focus:ring-2 focus:ring-[#7B5FFF]/20" 
                   style={{background: '#f7f6fd'}} 
                 />
+                <div className="h-4 mt-1">
+                  {form.confirmPassword && !passwordsMatch && <div className="text-xs text-red-500">Passwords do not match.</div>}
+                </div>
               </Field>
             </div>
             

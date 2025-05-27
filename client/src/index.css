@@ -76,6 +76,22 @@
   animation: scale-subtle 3s infinite;
 }
 
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-2px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(2px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
 :root {
   --background: 0 0% 100%;
   --foreground: 20 14.3% 4.1%;
@@ -257,9 +273,14 @@
 /* Global styles */
 html {
   scroll-behavior: smooth;
+  background-color: #004684; /* Match the primary blue color */
 }
+
 body {
   font-family: 'Inter', sans-serif;
+  transition: background-color 0.2s ease-in-out;
+  background-color: #004684; /* Match the primary blue color */
+  min-height: 100vh;
 }
 
 /* Notification dot */
@@ -409,4 +430,22 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Ensure smooth page transitions */
+#root {
+  min-height: 100vh;
+  background-color: white;
+  position: relative;
+  z-index: 1;
+}
+
+/* Loading state for navigation */
+body.navigating {
+  background-color: #004684 !important;
+}
+
+body.navigating #root {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
 }

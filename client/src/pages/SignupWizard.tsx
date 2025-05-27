@@ -46,6 +46,59 @@ function SignupWizardContent() {
     }
   }, [currentStep]);
 
+  // Prevent navigation back to /register once in the wizard
+  useEffect(() => {
+    // Set a flag that we're in the wizard
+    localStorage.setItem('in_signup_wizard', 'true');
+    
+    // Continuously push states to prevent back navigation
+    const interval = setInterval(() => {
+      if (window.location.pathname.includes('signup-wizard')) {
+        window.history.pushState(null, '', window.location.href);
+      }
+    }, 100);
+    
+    // Cleanup function to remove the flag when component unmounts
+    return () => {
+      clearInterval(interval);
+      // Only remove if we're actually leaving the wizard (not just re-rendering)
+      if (!window.location.pathname.includes('signup-wizard')) {
+        localStorage.removeItem('in_signup_wizard');
+      }
+    };
+  }, []);
+
+  // Warn users if they try to leave the signup wizard
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Only warn if we're not on the ready stage (completed)
+      if (currentStage !== 'ready') {
+        e.preventDefault();
+        e.returnValue = 'Are you sure you want to leave? Your signup progress will be lost.';
+        return e.returnValue;
+      }
+    };
+
+    // Prevent keyboard shortcuts for back navigation
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent Alt+Left Arrow, Backspace (when not in input), etc.
+      if ((e.altKey && e.key === 'ArrowLeft') || 
+          (e.key === 'Backspace' && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement))) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('keydown', handleKeyDown, true);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [currentStage]);
+
   // Handle browser back button and prevent back navigation
   useEffect(() => {
     // When rendering on the standalone /register page we don't need to enforce
@@ -54,8 +107,21 @@ function SignupWizardContent() {
     if (window.location.pathname.startsWith('/register')) {
       return;
     }
+    
     const handlePopState = (event: PopStateEvent) => {
       event.preventDefault();
+      event.stopPropagation();
+      
+      // Always push forward state to prevent any backward navigation
+      window.history.pushState(null, '', window.location.href);
+      
+      // If trying to go back to /register, prevent it
+      if (window.location.pathname === '/register' && localStorage.getItem('in_signup_wizard') === 'true') {
+        // Force forward to the signup wizard
+        window.history.pushState(null, '', '/signup-wizard');
+        return;
+      }
+      
       const highestStep = Number(localStorage.getItem('signup_highest_step') || '1');
       const url = new URL(window.location.href);
       const stepParam = url.searchParams.get('step');
@@ -78,8 +144,25 @@ function SignupWizardContent() {
       }
     };
 
+    // Override the browser's back functionality
+    const preventBackNavigation = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+
+    // Push multiple states to make it harder to go back
+    preventBackNavigation();
+    preventBackNavigation();
+    preventBackNavigation();
+
     // Add event listener for popstate (back button)
     window.addEventListener('popstate', handlePopState);
+    
+    // Also intercept hashchange events
+    const handleHashChange = (event: HashChangeEvent) => {
+      event.preventDefault();
+      window.history.pushState(null, '', window.location.href);
+    };
+    window.addEventListener('hashchange', handleHashChange);
 
     // Initial check and setup
     const highestStep = Number(localStorage.getItem('signup_highest_step') || '1');
@@ -112,6 +195,7 @@ function SignupWizardContent() {
     // Cleanup
     return () => {
       window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handleHashChange);
     };
   }, [currentStage, setStage, currentStep]);
 
@@ -164,10 +248,11 @@ function SignupWizardContent() {
     // Set stage to ready
     setStage('ready');
     
-    // Clear signup data
+    // Clear signup data and flags
     localStorage.removeItem('signup_email');
     localStorage.removeItem('signup_highest_step');
     localStorage.removeItem('signup_data');
+    localStorage.removeItem('in_signup_wizard');
     
     // Invalidate user query to force refetch with new token
     queryClient.invalidateQueries({ queryKey: ['/api/user'] });
