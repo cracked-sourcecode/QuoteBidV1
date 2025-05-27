@@ -299,15 +299,25 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
                   <source src={pitch.audioUrl} type="audio/mpeg" />
                 </audio>
                 {pitch.transcript && (
-                  <p className="text-sm text-gray-700 line-clamp-2">{pitch.transcript}</p>
+                  <p className="text-sm text-gray-700 line-clamp-2">
+                    {pitch.transcript.length > 150 
+                      ? pitch.transcript.substring(0, 150) + '...' 
+                      : pitch.transcript}
+                  </p>
                 )}
               </div>
             ) : (
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-sm text-gray-700">
-                  <span className="line-clamp-3">{pitch.content || 'No content available'}</span>
+                  <span className="line-clamp-3">
+                    {pitch.content 
+                      ? pitch.content.length > 200 
+                        ? pitch.content.substring(0, 200) + '...' 
+                        : pitch.content
+                      : 'No content available'}
+                  </span>
                   {pitch.user?.fullName && pitch.user?.title && (
-                    <span className="text-gray-600 italic">
+                    <span className="text-gray-600 italic block mt-2">
                       —{pitch.user.fullName}, {pitch.user.title}
                       {pitch.user.doFollowLink && pitch.user.doFollowLink !== 'None' && (
                         <span> ({pitch.user.doFollowLink})</span>
