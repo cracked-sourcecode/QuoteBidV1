@@ -57,6 +57,8 @@ interface Pitch {
     linkedinUrl?: string;
     websiteUrl?: string;
     phoneNumber?: string;
+    title?: string;
+    doFollowLink?: string;
   };
   opportunity?: {
     id: number;
@@ -198,9 +200,9 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
     const Icon = config.icon;
     
     return (
-      <Badge variant="outline" className={`${config.color} flex items-center gap-1`}>
+      <Badge variant="outline" className={`${config.color} flex items-center gap-1.5 px-2.5 py-1`}>
         <Icon className="h-3 w-3" />
-        {config.label}
+        <span className="whitespace-nowrap">{config.label}</span>
       </Badge>
     );
   };
@@ -295,9 +297,34 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
                 )}
               </div>
             ) : (
-              <p className="text-sm text-gray-700 line-clamp-3 bg-gray-50 rounded-lg p-3">
-                {pitch.content || 'No content available'}
-              </p>
+              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                <p className="text-sm text-gray-700 line-clamp-3">
+                  {pitch.content || 'No content available'}
+                </p>
+                {(pitch.user?.title || pitch.user?.doFollowLink) && (
+                  <div className="pt-2 border-t border-gray-200 space-y-1">
+                    {pitch.user?.title && (
+                      <p className="text-xs text-gray-600">
+                        <span className="font-medium">Title:</span> {pitch.user.title}
+                      </p>
+                    )}
+                    {pitch.user?.doFollowLink && (
+                      <p className="text-xs text-gray-600 truncate">
+                        <span className="font-medium">Do-Follow Link:</span>{' '}
+                        <a 
+                          href={pitch.user.doFollowLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {pitch.user.doFollowLink}
+                        </a>
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
