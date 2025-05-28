@@ -206,8 +206,8 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
     const Icon = config.icon;
     
     return (
-      <Badge variant="outline" className={`${config.color} inline-flex items-center gap-1.5 px-3 py-1.5 min-w-fit`}>
-        <Icon className="h-3 w-3 flex-shrink-0" />
+      <Badge variant="outline" className={`${config.color} inline-flex items-center gap-1 px-2 py-1 min-w-fit`}>
+        <Icon className="h-2.5 w-2.5 flex-shrink-0" />
         <span className="whitespace-nowrap text-xs font-medium">{config.label}</span>
       </Badge>
     );
@@ -338,7 +338,7 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
             {pitch.bidAmount && (
               <div className="flex items-center gap-1">
                 <DollarSign className="h-3 w-3" />
-                <span>${pitch.bidAmount}</span>
+                <span>{pitch.bidAmount}</span>
               </div>
             )}
           </div>

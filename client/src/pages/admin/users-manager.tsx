@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -32,7 +32,11 @@ import {
   CreditCard,
   FileText,
   Clock,
-  CheckCircle
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  AlertCircle
 } from "lucide-react";
 import { 
   Table, 
@@ -44,6 +48,15 @@ import {
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const USERS_PER_PAGE = 25;
 
 export default function UsersManager() {
   const { toast } = useToast();
@@ -54,10 +67,14 @@ export default function UsersManager() {
   const [isAgreementModalOpen, setIsAgreementModalOpen] = useState(false);
   const [isAccountInfoModalOpen, setIsAccountInfoModalOpen] = useState(false);
   const [isResetPasswordLoading, setIsResetPasswordLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [agreementFilter, setAgreementFilter] = useState<string>("all");
   
-  // Fetch all users
-  const { data: users = [], isLoading: loadingUsers } = useQuery<any[]>({
+  // Fetch all users with refetch interval for billing status sync
+  const { data: users = [], isLoading: loadingUsers, refetch: refetchUsers } = useQuery<any[]>({
     queryKey: ['/api/admin/users'],
+    refetchInterval: 30000, // Refetch every 30 seconds for billing status updates
   });
   
   // Update user admin status
@@ -98,38 +115,107 @@ export default function UsersManager() {
       .substring(0, 2);
   };
   
-  // Filter users based on search query
+  // Get billing status with proper sync
+  const getBillingStatus = (user: any) => {
+    // Check multiple fields for billing status
+    const isPremium = user.premiumStatus === 'premium' || 
+                     user.premiumStatus === 'active' ||
+                     user.subscription_status === 'active' ||
+                     user.isPaid === true;
+    
+    return isPremium;
+  };
+  
+  // Filter users based on search query and filters
   const filteredUsers = users ? users.filter((user: any) => {
-    // Debug log for juanchica user
-    if (user.username === 'juanchica') {
-      console.log('Found juanchica user:', user);
-      console.log('Premium status:', user.premiumStatus);
-    }
+    // Search filter
+    const matchesSearch = !searchQuery || 
+      (user.fullName && user.fullName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (user.username && user.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (user.email && user.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (user.industry && user.industry.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    if (!searchQuery) return true;
+    // Status filter
+    const matchesStatus = statusFilter === "all" || 
+      (statusFilter === "active" && getBillingStatus(user)) ||
+      (statusFilter === "past_due" && !getBillingStatus(user));
     
-    const query = searchQuery.toLowerCase();
-    return (
-      (user.fullName && user.fullName.toLowerCase().includes(query)) ||
-      (user.username && user.username.toLowerCase().includes(query)) ||
-      (user.email && user.email.toLowerCase().includes(query)) ||
-      (user.industry && user.industry.toLowerCase().includes(query))
-    );
+    // Agreement filter
+    const hasAgreement = user.agreementSigned || (user.agreementPdfUrl && user.agreementSignedAt);
+    const matchesAgreement = agreementFilter === "all" ||
+      (agreementFilter === "signed" && hasAgreement) ||
+      (agreementFilter === "pending" && !hasAgreement);
+    
+    return matchesSearch && matchesStatus && matchesAgreement;
   }) : [];
+  
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
+  const startIndex = (currentPage - 1) * USERS_PER_PAGE;
+  const endIndex = startIndex + USERS_PER_PAGE;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+  
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, agreementFilter]);
   
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Manage Users</h2>
         
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search users..."
-            className="pl-9 w-60"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetchUsers()}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Refresh
+        </Button>
+      </div>
+      
+      {/* Enhanced Search and Filter Bar */}
+      <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, username, email, or industry..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="past_due">Past Due</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={agreementFilter} onValueChange={setAgreementFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by agreement" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Agreements</SelectItem>
+              <SelectItem value="signed">Signed</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {/* Results summary */}
+        <div className="mt-3 text-sm text-muted-foreground">
+          Showing {paginatedUsers.length} of {filteredUsers.length} users
+          {searchQuery && ` matching "${searchQuery}"`}
         </div>
       </div>
       
@@ -137,88 +223,166 @@ export default function UsersManager() {
         <div className="flex justify-center py-8">
           <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
         </div>
-      ) : filteredUsers.length > 0 ? (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Agreement</TableHead>
-                  <TableHead className="text-right">Account Info</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((user: any) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center space-x-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback>{getInitials(user.fullName || user.username)}</AvatarFallback>
-                        </Avatar>
-                        <div className="truncate max-w-[120px]">
-                          <div className="font-medium">{user.fullName || user.username}</div>
-                          <div className="text-xs text-muted-foreground truncate">{user.email}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {['premium', 'active'].includes(user.premiumStatus?.toLowerCase()) ? (
-                        <Badge className="bg-green-500 hover:bg-green-600">ACTIVE</Badge>
-                      ) : (
-                        <Badge className="bg-red-500 hover:bg-red-600">PAST DUE</Badge>
-                      )}
-                    </TableCell>
-
-                    <TableCell>
-                      {(user.agreementSigned || (user.agreementPdfUrl && user.agreementSignedAt)) ? (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700 hover:border-green-300"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setIsAgreementModalOpen(true);
-                          }}
-                        >
-                          <span className="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                            </svg>
-                            View
-                          </span>
-                        </Button>
-                      ) : (
-                        <Badge variant="outline" className="text-yellow-600 bg-yellow-50 border-yellow-200">
-                          Pending
-                        </Badge>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setIsAccountInfoModalOpen(true);
-                        }}
-                      >
-                        <span className="flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          View Info
-                        </span>
-                      </Button>
-                    </TableCell>
+      ) : paginatedUsers.length > 0 ? (
+        <>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Username</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Agreement</TableHead>
+                    <TableHead className="text-right">Account Info</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                </TableHeader>
+                <TableBody>
+                  {paginatedUsers.map((user: any) => {
+                    const isPremium = getBillingStatus(user);
+                    
+                    return (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center space-x-2">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={user.avatar || undefined} alt={user.fullName || user.username} />
+                              <AvatarFallback>{getInitials(user.fullName || user.username)}</AvatarFallback>
+                            </Avatar>
+                            <div className="truncate max-w-[180px]">
+                              <div className="font-medium">{user.fullName || user.username}</div>
+                              <div className="text-xs text-muted-foreground truncate">{user.email}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-mono">{user.username}</span>
+                            {user.isAdmin && (
+                              <Badge variant="outline" className="text-xs">Admin</Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {isPremium ? (
+                              <Badge className="bg-green-500 hover:bg-green-600">ACTIVE</Badge>
+                            ) : (
+                              <Badge className="bg-red-500 hover:bg-red-600">PAST DUE</Badge>
+                            )}
+                            {!isPremium && (
+                              <AlertCircle className="h-4 w-4 text-red-500" />
+                            )}
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
+                          {(user.agreementSigned || (user.agreementPdfUrl && user.agreementSignedAt)) ? (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700 hover:border-green-300"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setIsAgreementModalOpen(true);
+                              }}
+                            >
+                              <span className="flex items-center">
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                View
+                              </span>
+                            </Button>
+                          ) : (
+                            <Badge variant="outline" className="text-yellow-600 bg-yellow-50 border-yellow-200">
+                              Pending
+                            </Badge>
+                          )}
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setIsAccountInfoModalOpen(true);
+                            }}
+                          >
+                            <span className="flex items-center">
+                              <UserIcon className="h-4 w-4 mr-1" />
+                              View Info
+                            </span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                
+                {/* Page numbers */}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        className="w-8 h-8 p-0"
+                        onClick={() => setCurrentPage(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -227,12 +391,16 @@ export default function UsersManager() {
             <p className="text-muted-foreground mb-4">
               {searchQuery ? "No users match your search criteria." : "There are no users registered yet."}
             </p>
-            {searchQuery && (
+            {(searchQuery || statusFilter !== "all" || agreementFilter !== "all") && (
               <Button 
                 variant="outline" 
-                onClick={() => setSearchQuery("")}
+                onClick={() => {
+                  setSearchQuery("");
+                  setStatusFilter("all");
+                  setAgreementFilter("all");
+                }}
               >
-                Clear Search
+                Clear Filters
               </Button>
             )}
           </CardContent>
@@ -309,12 +477,12 @@ export default function UsersManager() {
                     <CreditCard className="h-4 w-4 mr-1" /> Subscription
                   </h4>
                   <div className="flex items-center space-x-2 mb-1">
-                    {['premium', 'active'].includes(selectedUser.premiumStatus?.toLowerCase()) ? (
+                    {getBillingStatus(selectedUser) ? (
                       <Badge className="bg-green-500 hover:bg-green-600">PREMIUM</Badge>
                     ) : (
                       <Badge variant="outline">FREE</Badge>
                     )}
-                    {['premium', 'active'].includes(selectedUser.premiumStatus?.toLowerCase()) && (
+                    {getBillingStatus(selectedUser) && (
                       <span className="text-sm text-muted-foreground">
                         {selectedUser.premiumExpiry ? 
                           `Renews on ${new Date(selectedUser.premiumExpiry).toLocaleDateString()}` : 
@@ -323,7 +491,7 @@ export default function UsersManager() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {['premium', 'active'].includes(selectedUser.premiumStatus?.toLowerCase()) ? 'Premium subscription is active' : 'No active subscription'}
+                    {getBillingStatus(selectedUser) ? 'Premium subscription is active' : 'No active subscription'}
                   </p>
                 </div>
               </div>
@@ -681,7 +849,7 @@ export default function UsersManager() {
                     <div>
                       <div className="text-sm font-medium">Subscription Status</div>
                       <div className="flex items-center mt-1">
-                        {['premium', 'active'].includes(selectedUser.premiumStatus?.toLowerCase()) ? (
+                        {getBillingStatus(selectedUser) ? (
                           <Badge className="bg-green-500 hover:bg-green-600">ACTIVE</Badge>
                         ) : (
                           <Badge className="bg-red-500 hover:bg-red-600">PAST DUE</Badge>
@@ -694,14 +862,14 @@ export default function UsersManager() {
                       <div className="text-sm text-gray-600">Media Platform Access ($99.99/month)</div>
                     </div>
                     
-                    {['premium', 'active'].includes(selectedUser.premiumStatus?.toLowerCase()) && selectedUser.premiumExpiry && (
+                    {getBillingStatus(selectedUser) && selectedUser.premiumExpiry && (
                       <div>
                         <div className="text-sm font-medium">Next Billing Date</div>
                         <div className="text-sm text-gray-600">{new Date(selectedUser.premiumExpiry).toLocaleDateString()}</div>
                       </div>
                     )}
                     
-                    {!['premium', 'active'].includes(selectedUser.premiumStatus?.toLowerCase()) && (
+                    {!getBillingStatus(selectedUser) && (
                       <div>
                         <div className="text-sm font-medium">Payment Required</div>
                         <div className="text-sm text-red-600 font-medium">Subscription payment needed to restore access</div>
