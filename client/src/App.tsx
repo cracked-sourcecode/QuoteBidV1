@@ -88,7 +88,7 @@ function LogoutHandler() {
 function AdminLogoutHandler() {
   const [_, navigate] = useLocation();
   useEffect(() => {
-    navigate('/admin-login');
+    navigate('/admin/login-test');
   }, []);
   return <div className="flex justify-center items-center h-screen bg-gray-100">
     <div className="bg-white p-8 rounded-lg shadow-lg">

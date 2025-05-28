@@ -1675,7 +1675,6 @@ export default function PitchDetailsModalRedesigned({ isOpen, onClose, pitchId }
                 </div>
               )}
             </div>
-          </div>
         ) : (
           <div className="flex items-center justify-center h-full bg-gray-50">
             <div className="text-center">

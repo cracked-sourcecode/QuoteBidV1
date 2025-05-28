@@ -35,7 +35,7 @@ export default function AdminLoginTest() {
           title: 'Success',
           description: 'Logged in successfully!',
         });
-        setLocation('/admin/dashboard');
+        setLocation('/admin');
       } else {
         const errorData = await response.json();
         setError(errorData.message || 'Login failed');

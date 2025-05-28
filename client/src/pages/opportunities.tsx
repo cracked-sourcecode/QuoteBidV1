@@ -19,6 +19,7 @@ import { sampleOpportunities } from '@/lib/fixtures/opportunities';
 import { Opportunity } from '@shared/types/opportunity';
 import { useAuth } from '@/hooks/use-auth';
 import { apiRequest } from '@/lib/queryClient';
+import { INDUSTRY_OPTIONS } from '@/lib/constants';
 
 export default function OpportunitiesPage() {
   const [, setLocation] = useLocation();
@@ -28,6 +29,7 @@ export default function OpportunitiesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('open');
+  const [industryFilter, setIndustryFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('posted');
   const [showResubscribeModal, setShowResubscribeModal] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>('');
@@ -75,8 +77,9 @@ export default function OpportunitiesPage() {
             postedAt: opp.createdAt || new Date().toISOString(),
             createdAt: opp.createdAt || new Date().toISOString(),
             updatedAt: opp.updatedAt || new Date().toISOString(),
-            publicationId: opp.publicationId || pub.id || 0
-          } as Opportunity;
+            publicationId: opp.publicationId || pub.id || 0,
+            industry: opp.industry || ''
+          } as Opportunity & { industry?: string };
         });
         
         console.log('Formatted opportunities:', formattedOpportunities);
@@ -149,6 +152,14 @@ export default function OpportunitiesPage() {
       filtered = filtered.filter(opp => opp.status === statusFilter);
     }
     
+    // Apply industry filter
+    if (industryFilter !== 'all') {
+      filtered = filtered.filter(opp => {
+        const oppWithIndustry = opp as Opportunity & { industry?: string };
+        return oppWithIndustry.industry === industryFilter;
+      });
+    }
+    
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
@@ -167,7 +178,7 @@ export default function OpportunitiesPage() {
     });
     
     setFilteredOpportunities(filtered);
-  }, [opportunities, searchQuery, tierFilter, statusFilter, sortBy]);
+  }, [opportunities, searchQuery, tierFilter, statusFilter, industryFilter, sortBy]);
   
   // Handle opportunity click
   const handleOpportunityClick = (opportunityId: number) => {
@@ -255,18 +266,20 @@ export default function OpportunitiesPage() {
             </Select>
             
             <Select
-              value={sortBy}
-              onValueChange={setSortBy}
+              value={industryFilter}
+              onValueChange={setIndustryFilter}
             >
               <SelectTrigger className="w-full sm:w-[170px]">
-                <SelectValue placeholder="Deadline (Soonest)" />
+                <SelectValue placeholder="All Industries" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value="deadline">Deadline (Soonest)</SelectItem>
-                  <SelectItem value="posted">Recently Posted</SelectItem>
-                  <SelectItem value="price-low">Price (Low to High)</SelectItem>
-                  <SelectItem value="price-high">Price (High to Low)</SelectItem>
+                  <SelectItem value="all">All Industries</SelectItem>
+                  {INDUSTRY_OPTIONS.map((industry) => (
+                    <SelectItem key={industry.value} value={industry.value}>
+                      {industry.label}
+                    </SelectItem>
+                  ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
@@ -274,7 +287,7 @@ export default function OpportunitiesPage() {
         </div>
         
         {/* Active filters */}
-        {(tierFilter !== 'all' || statusFilter !== 'all' || searchQuery) && (
+        {(tierFilter !== 'all' || statusFilter !== 'all' || industryFilter !== 'all' || searchQuery) && (
           <div className="flex flex-wrap items-center gap-2 mt-3">
             <div className="flex items-center">
               <Filter className="h-4 w-4 text-gray-500 mr-1" />
@@ -295,6 +308,13 @@ export default function OpportunitiesPage() {
               </Button>
             )}
             
+            {industryFilter !== 'all' && (
+              <Button variant="outline" size="sm" className="h-6 text-xs rounded-full px-2 py-0" onClick={() => setIndustryFilter('all')}>
+                Industry: {industryFilter}
+                <span className="ml-1">×</span>
+              </Button>
+            )}
+            
             {searchQuery && (
               <Button variant="outline" size="sm" className="h-6 text-xs rounded-full px-2 py-0" onClick={() => setSearchQuery('')}>
                 Search: "{searchQuery}"
@@ -309,6 +329,7 @@ export default function OpportunitiesPage() {
               onClick={() => {
                 setTierFilter('all');
                 setStatusFilter('open');
+                setIndustryFilter('all');
                 setSearchQuery('');
               }}
             >
@@ -366,6 +387,7 @@ export default function OpportunitiesPage() {
             <Button onClick={() => {
               setTierFilter('all');
               setStatusFilter('open');
+              setIndustryFilter('all');
               setSearchQuery('');
             }}>
               Clear Filters
