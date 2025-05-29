@@ -2184,22 +2184,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No file uploaded' });
       }
       
-      // Generate the URL for the uploaded file
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const fileUrl = `${baseUrl}/uploads/avatars/${req.file.filename}`;
+      // Store only the relative path in the database
+      const relativePath = `/uploads/avatars/${req.file.filename}`;
       
-      console.log("Avatar uploaded to:", fileUrl);
+      console.log("Avatar uploaded to:", relativePath);
       
-      // Update user's avatar in the database
+      // Update user's avatar in the database with relative path
       const updatedUser = await getDb().update(users)
-        .set({ avatar: fileUrl })
+        .set({ avatar: relativePath })
         .where(eq(users.id, userId))
         .returning()
         .then(rows => rows[0]);
       
       res.status(200).json({ 
         message: 'Avatar uploaded successfully',
-        fileUrl: fileUrl, // Return as fileUrl to match what the client expects
+        fileUrl: relativePath, // Return the relative path
         user: updatedUser
       });
     } catch (error) {
@@ -2786,6 +2785,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const pitchesWithRelations = await storage.getAllPitchesWithRelations();
         
         console.log(`Retrieved ${pitchesWithRelations.length} pitches with complete relations`);
+        
+        // Debug: Log the first pitch to see if relations are included
+        if (pitchesWithRelations.length > 0) {
+          console.log("First pitch with relations:", {
+            id: pitchesWithRelations[0].id,
+            userId: pitchesWithRelations[0].userId,
+            hasUser: !!pitchesWithRelations[0].user,
+            userName: pitchesWithRelations[0].user?.fullName || pitchesWithRelations[0].user?.username,
+            hasOpportunity: !!pitchesWithRelations[0].opportunity,
+            opportunityTitle: pitchesWithRelations[0].opportunity?.title
+          });
+          
+          // Log the actual user object to see what's being returned
+          console.log("First pitch user object:", pitchesWithRelations[0].user);
+          console.log("First pitch opportunity object:", pitchesWithRelations[0].opportunity);
+        }
         
         // Get raw pitch data to compare against relations data
         const rawPitches = await storage.getAllPitches();
@@ -5152,6 +5167,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Return user without password
     const { password, ...userWithoutPassword } = req.user as any;
     res.json(userWithoutPassword);
+  });
+  
+  // Debug endpoint to check pitch data integrity
+  app.get("/api/admin/debug/pitch-users", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      // Get all pitches
+      const allPitches = await storage.getAllPitches();
+      
+      // Get all users
+      const allUsers = await storage.getAllUsers();
+      
+      // Create a map of user IDs for quick lookup
+      const userMap = new Map(allUsers.map(u => [u.id, u]));
+      
+      // Check each pitch
+      const pitchUserAnalysis = allPitches.map(pitch => {
+        const userId = pitch.userId || (pitch as any).user_id;
+        const userExists = userMap.has(userId);
+        const user = userMap.get(userId);
+        
+        return {
+          pitchId: pitch.id,
+          userId: userId,
+          userExists: userExists,
+          userName: user?.fullName || user?.username || 'N/A',
+          userEmail: user?.email || 'N/A',
+          opportunityId: pitch.opportunityId
+        };
+      });
+      
+      // Find pitches with missing users
+      const pitchesWithMissingUsers = pitchUserAnalysis.filter(p => !p.userExists);
+      
+      res.json({
+        totalPitches: allPitches.length,
+        totalUsers: allUsers.length,
+        pitchesWithMissingUsers: pitchesWithMissingUsers.length,
+        missingUserDetails: pitchesWithMissingUsers,
+        samplePitchAnalysis: pitchUserAnalysis.slice(0, 5) // Show first 5 for debugging
+      });
+    } catch (error) {
+      console.error("Error in debug endpoint:", error);
+      res.status(500).json({ message: "Error analyzing pitch users", error: error.message });
+    }
   });
   
   return httpServer;

@@ -34,15 +34,16 @@ function SignupWizardContent() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [redirecting, setRedirecting] = React.useState(false);
 
-  // Map stage to step number
+  // Map stage to step number (ready is not a step, just a completion state)
   const stageOrder: SignupStage[] = ['payment', 'profile', 'ready'];
-  const currentStep = stageOrder.indexOf(currentStage) + 1;
+  const currentStep = currentStage === 'ready' ? 2 : stageOrder.indexOf(currentStage) + 1;
 
-  // Update highest step reached in localStorage
+  // Update highest step reached in localStorage (max 2)
   useEffect(() => {
     const prev = Number(localStorage.getItem('signup_highest_step') || '1');
-    if (currentStep > prev) {
-      localStorage.setItem('signup_highest_step', String(currentStep));
+    const stepToStore = Math.min(currentStep, 2); // Never store step > 2
+    if (stepToStore > prev) {
+      localStorage.setItem('signup_highest_step', String(stepToStore));
     }
   }, [currentStep]);
 
@@ -186,9 +187,16 @@ function SignupWizardContent() {
       setStage(stageOrder[highestStep - 1]);
     }
 
-    // If on wrong step, redirect
+    // If on wrong step, redirect (but never allow step 3)
     if (stepParam && Number(stepParam) !== currentStep) {
-      url.searchParams.set('step', String(currentStep));
+      const correctedStep = Math.min(currentStep, 2); // Never allow step > 2
+      url.searchParams.set('step', String(correctedStep));
+      window.history.replaceState(null, '', url.toString());
+    }
+    
+    // If somehow we have step=3 in the URL, fix it immediately
+    if (stepParam === '3') {
+      url.searchParams.set('step', '2');
       window.history.replaceState(null, '', url.toString());
     }
 
@@ -229,7 +237,7 @@ function SignupWizardContent() {
       storeSignupEmail(inputEmail);
       storeSignupData({ email: inputEmail, password, username: username.toLowerCase(), name: fullName, companyName, phone, industry });
       setSavedEmail(inputEmail);
-      localStorage.setItem('signup_highest_step', '2');
+      localStorage.setItem('signup_highest_step', '1'); // Starting at step 1 (payment)
       setStage('payment');
     } catch (err: any) {
       toast({ title: 'Signup Error', description: err.message, variant: 'destructive' });

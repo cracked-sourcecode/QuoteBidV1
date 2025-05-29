@@ -8,8 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from 'wouter';
 
 export default function AdminLoginTest() {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -35,7 +35,7 @@ export default function AdminLoginTest() {
           title: 'Success',
           description: 'Logged in successfully!',
         });
-        setLocation('/admin/dashboard');
+        setLocation('/admin');
       } else {
         const errorData = await response.json();
         setError(errorData.message || 'Login failed');
@@ -75,7 +75,7 @@ export default function AdminLoginTest() {
               <Label htmlFor="username">Username</Label>
               <Input
                 id="username"
-                placeholder="admin"
+                placeholder="Enter username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -86,7 +86,7 @@ export default function AdminLoginTest() {
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -103,26 +103,6 @@ export default function AdminLoginTest() {
               {isLoading ? 'Logging in...' : 'Log In'}
             </Button>
           </form>
-          
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Admin Tools
-              </span>
-            </div>
-          </div>
-          
-          <div className="flex flex-col space-y-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setLocation('/admin/create-admin')}
-            >
-              Create Default Admin
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>
