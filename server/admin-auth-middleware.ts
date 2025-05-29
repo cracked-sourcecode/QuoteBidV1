@@ -21,16 +21,26 @@ async function comparePasswords(supplied: string, stored: string) {
     const hashedBuf = Buffer.from(hashed, "hex");
     const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
     
+    // Check if buffers are the same length first
+    if (hashedBuf.length !== suppliedBuf.length) {
+      console.log("Password buffers have different lengths");
+      return false;
+    }
+    
+    // Use timingSafeEqual for the comparison
+    const isMatch = timingSafeEqual(hashedBuf, suppliedBuf);
+    
     // Only log on debug flag or dev environment
     if (process.env.DEBUG_AUTH === 'true' || process.env.NODE_ENV === 'development') {
       console.log("Password comparison:", { 
         hashedLength: hashed.length, 
         saltLength: salt.length,
-        bufferMatch: hashedBuf.length === suppliedBuf.length
+        bufferMatch: hashedBuf.length === suppliedBuf.length,
+        isMatch: isMatch
       });
     }
     
-    return timingSafeEqual(hashedBuf, suppliedBuf);
+    return isMatch;
   } catch (error) {
     console.error("Password comparison error:", error);
     return false;
@@ -67,6 +77,15 @@ export function setupAdminAuth(app: Express) {
       // Check password
       try {
         const passwordMatches = await comparePasswords(password, adminUser.password);
+        
+        // Add detailed logging
+        if (process.env.DEBUG_AUTH === 'true' || process.env.NODE_ENV === 'development') {
+          console.log("Password check result:", {
+            passwordMatches,
+            passwordMatchesType: typeof passwordMatches,
+            passwordMatchesTruthy: !!passwordMatches
+          });
+        }
         
         if (!passwordMatches) {
           return res.status(401).json({ message: "Invalid admin credentials" });
