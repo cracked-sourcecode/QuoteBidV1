@@ -823,14 +823,14 @@ export default function OpportunitiesManager() {
           <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
         </div>
       ) : filteredOpportunities?.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredOpportunities.map((opportunity: any) => (
-            <Card key={opportunity.id} className="overflow-hidden">
-              <CardHeader className="relative pb-2">
+            <Card key={opportunity.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200 border-0 shadow-md">
+              <CardHeader className="relative pb-4 bg-gradient-to-r from-gray-50 to-white">
                 <div className="absolute top-3 right-3 z-10">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/80">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -864,67 +864,95 @@ export default function OpportunitiesManager() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                <div className="flex items-center">
-                  {opportunity.publication.logo ? (
-                    <img 
-                      src={opportunity.publication.logo} 
-                      alt={opportunity.publication.name}
-                      className="w-8 h-8 mr-2 rounded"
-                    />
-                  ) : (
-                    <Newspaper className="w-8 h-8 mr-2 text-gray-400" />
-                  )}
-                  <div>
-                    <CardTitle className="text-lg">{opportunity.title}</CardTitle>
-                    <CardDescription>{opportunity.publication.name}</CardDescription>
+                
+                {/* Publication Logo and Name - Compact Header */}
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="flex-shrink-0">
+                    {opportunity.publication.logo ? (
+                      <img 
+                        src={opportunity.publication.logo} 
+                        alt={opportunity.publication.name}
+                        className="w-6 h-6 rounded object-contain bg-white border border-gray-100"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <Newspaper className={`w-6 h-6 text-gray-400 ${opportunity.publication.logo ? 'hidden' : ''}`} />
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-600 truncate">
+                      {opportunity.publication.name}
+                    </p>
+                  </div>
+                  <Badge className={
+                    opportunity.status === 'open' 
+                      ? 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200' 
+                      : 'bg-red-100 text-red-800 hover:bg-red-200 border-red-200'
+                  } variant="outline">
+                    {opportunity.status.toUpperCase()}
+                  </Badge>
                 </div>
-                <Badge className={
-                  opportunity.status === 'open' 
-                    ? 'bg-green-500 hover:bg-green-600 mt-2' 
-                    : 'bg-red-500 hover:bg-red-600 mt-2'
-                }>
-                  {opportunity.status.toUpperCase()}
-                </Badge>
+                
+                {/* Opportunity Title */}
+                <CardTitle className="text-lg leading-tight text-gray-900 pr-8">
+                  {opportunity.title}
+                </CardTitle>
               </CardHeader>
-              <CardContent className="pb-3">
-                <div className="text-sm mb-4 line-clamp-3">
+              
+              <CardContent className="pt-4 pb-4">
+                {/* Description */}
+                <p className="text-sm text-gray-600 mb-4 line-clamp-3 leading-relaxed">
                   {opportunity.description}
-                </div>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {opportunity.tags?.map((tag: string) => (
-                    <Badge key={tag} variant="outline" className="flex items-center gap-1">
-                      <Tag className="h-3 w-3" />
+                </p>
+                
+                {/* Industry Tags */}
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {opportunity.tags?.slice(0, 3).map((tag: string) => (
+                    <Badge 
+                      key={tag} 
+                      variant="secondary" 
+                      className="text-xs px-2 py-1 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                    >
                       {tag}
                     </Badge>
                   ))}
+                  {opportunity.tags?.length > 3 && (
+                    <Badge variant="outline" className="text-xs px-2 py-1 text-gray-500">
+                      +{opportunity.tags.length - 3} more
+                    </Badge>
+                  )}
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center text-muted-foreground">
-                    <DollarSign className="h-4 w-4 mr-1" />
-                    Min Bid: ${opportunity.minimumBid}
+                
+                {/* Key Details Grid */}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="flex items-center text-gray-600">
+                    <DollarSign className="h-4 w-4 mr-1.5 text-green-600" />
+                    <span className="font-medium">${opportunity.minimumBid}</span>
                   </div>
-                  <div className="flex items-center text-muted-foreground">
-                    <Calendar className="h-4 w-4 mr-1" />
-                    {new Date(opportunity.deadline).toLocaleDateString()}
+                  <div className="flex items-center text-gray-600">
+                    <Calendar className="h-4 w-4 mr-1.5 text-blue-600" />
+                    <span>{new Date(opportunity.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-sm mt-2">
-                  {opportunity.tier && (
-                    <Badge variant="outline" className="justify-center">{opportunity.tier}</Badge>
-                  )}
-                  {opportunity.industry && (
-                    <Badge variant="secondary" className="justify-center">{opportunity.industry}</Badge>
-                  )}
-                  {opportunity.mediaType && (
-                    <Badge variant="outline" className="justify-center bg-primary/10">{opportunity.mediaType}</Badge>
-                  )}
+                
+                {/* Secondary Info */}
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex items-center space-x-2 text-xs text-gray-500">
+                    {opportunity.tier && (
+                      <span className="px-2 py-1 bg-gray-100 rounded-full">{opportunity.tier}</span>
+                    )}
+                    {opportunity.mediaType && (
+                      <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-full">{opportunity.mediaType}</span>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {opportunity.pitchCount || 0} pitches
+                  </div>
                 </div>
               </CardContent>
-              <CardFooter className="pt-0 flex justify-between text-sm text-muted-foreground">
-                <span>Pitches: {opportunity.pitchCount || 0}</span>
-                <span>ID: {opportunity.id}</span>
-              </CardFooter>
             </Card>
           ))}
         </div>
