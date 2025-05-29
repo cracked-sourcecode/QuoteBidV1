@@ -1,62 +1,36 @@
 import { useState } from 'react';
-import { apiFetch } from '@/lib/apiFetch';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from 'wouter';
+import { useAdminAuth } from '@/hooks/use-admin-auth';
 
-export default function AdminLoginTest() {
+export default function AdminLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { adminLoginMutation } = useAdminAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
     
     try {
-      const response = await apiFetch('/api/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-        credentials: 'include'
-      });
+      await adminLoginMutation.mutateAsync({ username, password });
       
-      if (response.ok) {
-        toast({
-          title: 'Success',
-          description: 'Logged in successfully!',
-        });
+      // After successful login, redirect to admin dashboard
+      // Use setTimeout to ensure the auth state is updated
+      setTimeout(() => {
         setLocation('/admin');
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Login failed');
-        
-        toast({
-          title: 'Login Failed',
-          description: errorData.message || 'Invalid credentials',
-          variant: 'destructive',
-        });
-      }
+      }, 100);
+      
     } catch (error) {
       console.error('Login error:', error);
-      setError('An unexpected error occurred');
-      
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
+      setError(error instanceof Error ? error.message : 'Login failed');
     }
   };
 
@@ -99,8 +73,12 @@ export default function AdminLoginTest() {
               </div>
             )}
             
-            <Button className="w-full" type="submit" disabled={isLoading}>
-              {isLoading ? 'Logging in...' : 'Log In'}
+            <Button 
+              className="w-full" 
+              type="submit" 
+              disabled={adminLoginMutation.isPending}
+            >
+              {adminLoginMutation.isPending ? 'Logging in...' : 'Log In'}
             </Button>
           </form>
         </CardContent>
