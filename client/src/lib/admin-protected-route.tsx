@@ -24,7 +24,7 @@ export function AdminProtectedRoute({
   if (!adminUser) {
     return (
       <Route path={path}>
-        <Redirect to="/admin/login-test" />
+        <Redirect to="/admin/login" />
       </Route>
     );
   }

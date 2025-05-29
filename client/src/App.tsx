@@ -39,7 +39,6 @@ import AdminAnalytics from "@/pages/admin/analytics";
 import PublicationsManager from "@/pages/admin/publications-manager";
 import LoginPage from "@/pages/login-page";
 import TermsOfService from "@/pages/TermsOfService";
-import AdminLoginTest from "@/pages/admin/login-test";
 import AdminLogin from "@/pages/admin/login";
 import CreateAdmin from "@/pages/admin/create-admin";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -88,7 +87,7 @@ function LogoutHandler() {
 function AdminLogoutHandler() {
   const [_, navigate] = useLocation();
   useEffect(() => {
-    navigate('/admin/login-test');
+    navigate('/admin/login');
   }, []);
   return <div className="flex justify-center items-center h-screen bg-gray-100">
     <div className="bg-white p-8 rounded-lg shadow-lg">
@@ -130,8 +129,7 @@ function Router() {
         </Route>
         <Route path="/logout" component={LogoutHandler} />
         <Route path="/admin-logout" component={AdminLogoutHandler} />
-        <Route path="/admin-login" component={AdminLogin} />
-        <Route path="/admin/login-test" component={AdminLoginTest} />
+        <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin/create-admin" component={CreateAdmin} />
         <Route path="/signup-wizard" component={SignupWizard} />
         <Route path="/terms" component={TermsOfService} />
