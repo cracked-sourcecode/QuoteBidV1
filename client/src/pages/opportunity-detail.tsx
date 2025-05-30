@@ -145,7 +145,16 @@ export default function OpportunityDetail() {
                   <img
                     src={selectedOpportunity.outletLogo}
                     alt={`${selectedOpportunity.outlet} logo`}
-                    className="h-12 w-auto object-contain"
+                    className="h-12 w-12 object-contain rounded bg-white border border-gray-100"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      // Show fallback initials
+                      const fallback = document.createElement('div');
+                      fallback.className = 'h-12 w-12 bg-gray-100 rounded flex items-center justify-center border border-gray-200';
+                      fallback.innerHTML = `<span class="text-gray-600 font-bold text-lg">${selectedOpportunity.outlet.charAt(0).toUpperCase()}</span>`;
+                      target.parentNode?.appendChild(fallback);
+                    }}
                   />
                 </div>
               )}

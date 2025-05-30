@@ -5,14 +5,11 @@ import { apiFetch } from '@/lib/apiFetch';
 import { Publication, InsertPublication, Opportunity } from '@shared/schema';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { format } from 'date-fns';
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -27,7 +24,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -36,15 +32,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { 
-  Loader2, Plus, Pencil, Trash, ExternalLink, Calendar, 
-  DollarSign, Users, MessageSquare, ChevronRight, CircleCheck 
+  Loader2, Plus, Pencil, Trash, Calendar, DollarSign, 
+  TrendingUp, BarChart3, Database, Target, Zap, Activity
 } from 'lucide-react';
+
 const publicationFormSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters."
@@ -59,20 +55,136 @@ const publicationFormSchema = z.object({
 
 type PublicationFormValues = z.infer<typeof publicationFormSchema>;
 
+interface PublicationAnalytics {
+  id: number;
+  name: string;
+  logo: string;
+  category?: string;
+  totalOpportunities: number;
+  totalPitches: number;
+  acceptedPitches: number;
+  averageBidAmount: number;
+  highestBid: number;
+  lowestBid: number;
+  totalYield: number;
+  acceptanceRate: number;
+  pitchesPerOpportunity: number;
+  lastActivity: string;
+  tierDistribution: Record<string, number>;
+  bidTrends: {
+    month: string;
+    avgBid: number;
+    totalBids: number;
+  }[];
+}
+
+// Publication Row Component
+const PublicationRow: React.FC<{
+  publication: Publication;
+  onViewAnalytics: (pub: Publication) => void;
+  onEdit: (pub: Publication) => void;
+  onDelete: (pub: Publication) => void;
+}> = ({ publication, onViewAnalytics, onEdit, onDelete }) => {
+  return (
+    <Card className="hover:shadow-md transition-all duration-200">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4 flex-1">
+            {/* Logo */}
+            <div className="flex-shrink-0">
+              <img 
+                src={publication.logo} 
+                alt={publication.name} 
+                className="w-12 h-12 rounded object-contain bg-white border"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://placehold.co/48x48?text=Logo';
+                }}
+              />
+            </div>
+            
+            {/* Publication Info */}
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-semibold text-gray-900 truncate">
+                {publication.name}
+              </h3>
+              <div className="flex items-center space-x-4 mt-1">
+                <span className="text-sm text-gray-600">
+                  {publication.category || 'General Media'}
+                </span>
+                {publication.website && (
+                  <a 
+                    href={publication.website} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                  >
+                    <span className="truncate max-w-[200px]">{publication.website}</span>
+                  </a>
+                )}
+              </div>
+              {publication.description && (
+                <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                  {publication.description}
+                </p>
+              )}
+            </div>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                console.log('Analytics button clicked for:', publication.name);
+                onViewAnalytics(publication);
+              }}
+              className="flex items-center"
+            >
+              <BarChart3 className="h-4 w-4 mr-1" />
+              Analytics
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(publication)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onDelete(publication)}
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 export default function PublicationsManager() {
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
   const [currentPublication, setCurrentPublication] = useState<Publication | null>(null);
-  const [selectedOpportunities, setSelectedOpportunities] = useState<Opportunity[]>([]);
-  const [selectedPitches, setSelectedPitches] = useState<any[]>([]);
+  const [selectedAnalytics, setSelectedAnalytics] = useState<PublicationAnalytics | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [publicationOpportunities, setPublicationOpportunities] = useState<Record<number, Opportunity[]>>({});
+
+  // Debug modal state changes
+  useEffect(() => {
+    console.log('Modal state changed to:', isAnalyticsModalOpen);
+    if (isAnalyticsModalOpen && currentPublication) {
+      console.log('Modal is open for publication:', currentPublication.name);
+    }
+  }, [isAnalyticsModalOpen, currentPublication]);
 
   // Query to fetch all publications
   const { data: publications, isLoading, isError } = useQuery({
@@ -86,36 +198,84 @@ export default function PublicationsManager() {
     },
   });
   
-  // Query to fetch opportunities
-  const { data: opportunities, isLoading: isLoadingOpportunities } = useQuery({
-    queryKey: ['/api/admin/opportunities'],
+  // Query to fetch opportunities with pitches for analytics
+  const { data: opportunitiesWithPitches, isLoading: isLoadingAnalytics } = useQuery({
+    queryKey: ['/api/admin/opportunities-with-pitches'],
     queryFn: async () => {
-      const response = await apiFetch('/api/admin/opportunities');
+      const response = await apiFetch('/api/admin/opportunities-with-pitches');
       if (!response.ok) {
-        throw new Error('Failed to fetch opportunities');
+        throw new Error('Failed to fetch analytics data');
       }
-      return response.json() as Promise<Opportunity[]>;
+      return response.json();
     },
   });
 
-  // Organize opportunities by publication
-  useEffect(() => {
-    if (opportunities && opportunities.length > 0) {
-      const oppsByPublication: Record<number, Opportunity[]> = {};
-      
-      opportunities.forEach(opportunity => {
-        if (opportunity.publicationId) {
-          if (!oppsByPublication[opportunity.publicationId]) {
-            oppsByPublication[opportunity.publicationId] = [];
-          }
-          oppsByPublication[opportunity.publicationId].push(opportunity);
-        }
+  // Process analytics data for each publication
+  const processPublicationAnalytics = (publicationId: number): PublicationAnalytics | null => {
+    if (!opportunitiesWithPitches || !publications) return null;
+
+    const publication = publications.find(p => p.id === publicationId);
+    if (!publication) return null;
+
+    const publicationOpportunities = opportunitiesWithPitches.filter(
+      (opp: any) => opp.publicationId === publicationId
+    );
+
+    const allPitches = publicationOpportunities.flatMap((opp: any) => opp.pitches || []);
+    const acceptedPitches = allPitches.filter((pitch: any) => pitch.status === 'successful' || pitch.status === 'accepted');
+    
+    const bidAmounts = allPitches.map((pitch: any) => pitch.bidAmount || 0).filter((bid: number) => bid > 0);
+    const totalYield = acceptedPitches.reduce((sum: number, pitch: any) => sum + (pitch.bidAmount || 0), 0);
+
+    // Tier distribution
+    const tierDistribution: Record<string, number> = {};
+    publicationOpportunities.forEach((opp: any) => {
+      const tier = opp.tier || 'Unspecified';
+      tierDistribution[tier] = (tierDistribution[tier] || 0) + 1;
+    });
+
+    // Simple bid trends (group by month)
+    const bidTrends: { month: string; avgBid: number; totalBids: number }[] = [];
+    const monthlyData: Record<string, number[]> = {};
+    
+    allPitches.forEach((pitch: any) => {
+      if (pitch.createdAt && pitch.bidAmount > 0) {
+        const month = format(new Date(pitch.createdAt), 'MMM yyyy');
+        if (!monthlyData[month]) monthlyData[month] = [];
+        monthlyData[month].push(pitch.bidAmount);
+      }
+    });
+
+    Object.entries(monthlyData).forEach(([month, bids]) => {
+      bidTrends.push({
+        month,
+        avgBid: bids.reduce((sum: number, bid: number) => sum + bid, 0) / bids.length,
+        totalBids: bids.length
       });
-      
-      setPublicationOpportunities(oppsByPublication);
-    }
-  }, [opportunities]);
-  
+    });
+
+    return {
+      id: publication.id,
+      name: publication.name,
+      logo: publication.logo,
+      category: publication.category || undefined,
+      totalOpportunities: publicationOpportunities.length,
+      totalPitches: allPitches.length,
+      acceptedPitches: acceptedPitches.length,
+      averageBidAmount: bidAmounts.length > 0 ? bidAmounts.reduce((sum: number, bid: number) => sum + bid, 0) / bidAmounts.length : 0,
+      highestBid: Math.max(...bidAmounts, 0),
+      lowestBid: bidAmounts.length > 0 ? Math.min(...bidAmounts) : 0,
+      totalYield,
+      acceptanceRate: allPitches.length > 0 ? (acceptedPitches.length / allPitches.length) * 100 : 0,
+      pitchesPerOpportunity: publicationOpportunities.length > 0 ? allPitches.length / publicationOpportunities.length : 0,
+      lastActivity: publicationOpportunities.length > 0 ? 
+        format(new Date(Math.max(...publicationOpportunities.map((opp: any) => new Date(opp.createdAt || 0).getTime()))), 'MMM d, yyyy') : 
+        'No activity',
+      tierDistribution,
+      bidTrends: bidTrends.slice(-6) // Last 6 months
+    };
+  };
+
   // Create publication form
   const createForm = useForm<PublicationFormValues>({
     resolver: zodResolver(publicationFormSchema),
@@ -145,11 +305,67 @@ export default function PublicationsManager() {
     const files = e.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      setLogoFile(file);
       
-      // Generate preview URL
-      const previewUrl = URL.createObjectURL(file);
-      setLogoPreview(previewUrl);
+      // Check file type - only PNG allowed
+      if (!file.type.startsWith('image/png')) {
+        toast({
+          title: "Invalid file type",
+          description: "Only PNG format is allowed for publication logos",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Check file size - max 2MB
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Logo must be less than 2MB in size",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Check image dimensions
+      const img = new Image();
+      img.onload = () => {
+        if (img.width > 512 || img.height > 512) {
+          toast({
+            title: "Image too large",
+            description: "Logo dimensions must not exceed 512x512 pixels",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // If all checks pass, set the file and preview
+        setLogoFile(file);
+        const previewUrl = URL.createObjectURL(file);
+        setLogoPreview(previewUrl);
+        
+        // Update form values for both create and edit forms
+        if (isCreateDialogOpen) {
+          createForm.setValue('logo', previewUrl);
+        }
+        if (isEditDialogOpen) {
+          editForm.setValue('logo', previewUrl);
+        }
+        
+        toast({
+          title: "Logo ready",
+          description: "PNG logo is ready to be uploaded.",
+        });
+      };
+      
+      img.onerror = () => {
+        toast({
+          title: "Invalid image",
+          description: "Could not process the uploaded PNG image",
+          variant: "destructive"
+        });
+      };
+      
+      img.src = URL.createObjectURL(file);
     }
   };
 
@@ -199,6 +415,7 @@ export default function PublicationsManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/publications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/opportunities-with-pitches'] });
       setIsCreateDialogOpen(false);
       createForm.reset();
       setLogoFile(null);
@@ -237,6 +454,7 @@ export default function PublicationsManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/publications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/opportunities-with-pitches'] });
       setIsEditDialogOpen(false);
       editForm.reset();
       setLogoFile(null);
@@ -264,7 +482,6 @@ export default function PublicationsManager() {
       });
       
       if (!response.ok) {
-        // Handle 409 error specifically
         if (response.status === 409) {
           const data = await response.json();
           throw new Error(`${data.message} (${data.count} opportunities use this publication)`);
@@ -276,6 +493,7 @@ export default function PublicationsManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/publications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/opportunities-with-pitches'] });
       setIsConfirmDeleteOpen(false);
       setCurrentPublication(null);
       toast({
@@ -296,7 +514,6 @@ export default function PublicationsManager() {
   // Handle creating a new publication
   const onCreateSubmit = async (values: PublicationFormValues) => {
     try {
-      // Logo is required, so enforce the file upload requirement
       if (!logoFile && !logoPreview) {
         toast({
           title: "Logo required",
@@ -308,7 +525,6 @@ export default function PublicationsManager() {
       
       let logoUrl = values.logo;
       
-      // If a file was selected, upload it first
       if (logoFile) {
         logoUrl = await uploadLogo(logoFile);
       }
@@ -327,21 +543,14 @@ export default function PublicationsManager() {
     if (!currentPublication) return;
     
     try {
-      // Logo is required, so enforce the file upload requirement
-      if (!logoFile && !logoPreview) {
-        toast({
-          title: "Logo required",
-          description: "Please upload a logo image for the publication.",
-          variant: "destructive",
-        });
-        return;
-      }
+      let logoUrl = currentPublication.logo; // Default to existing logo
       
-      let logoUrl = values.logo;
-      
-      // If a file was selected, upload it first
+      // If user uploaded a new logo file, upload it
       if (logoFile) {
         logoUrl = await uploadLogo(logoFile);
+      } else if (values.logo && values.logo !== currentPublication.logo) {
+        // If logo value changed but no file uploaded (shouldn't happen, but just in case)
+        logoUrl = values.logo;
       }
       
       await updateMutation.mutateAsync({
@@ -366,7 +575,9 @@ export default function PublicationsManager() {
       description: publication.description || '',
       category: publication.category || '',
     });
+    // Set the logo preview to show current logo and clear any pending file
     setLogoPreview(publication.logo);
+    setLogoFile(null);
     setIsEditDialogOpen(true);
   };
 
@@ -382,38 +593,29 @@ export default function PublicationsManager() {
       deleteMutation.mutate(currentPublication.id);
     }
   };
-  
-  // Query to fetch pitches for a publication
-  const { data: allPitches, isLoading: isLoadingPitches } = useQuery({
-    queryKey: ['/api/admin/pitches'],
-    queryFn: async () => {
-      const response = await apiFetch('/api/admin/pitches');
-      if (!response.ok) {
-        throw new Error('Failed to fetch pitches');
-      }
-      return response.json();
-    },
-  });
-  
-  // Open publication details modal
-  const openPublicationDetailsDialog = async (publication: Publication) => {
-    setCurrentPublication(publication);
+
+  // Open analytics modal
+  const openAnalyticsModal = (publication: Publication) => {
+    console.log('Opening analytics modal for:', publication.name);
+    console.log('Current modal state before:', isAnalyticsModalOpen);
     
-    // Get opportunities for this publication
-    const pubOpportunities = publicationOpportunities[publication.id] || [];
-    setSelectedOpportunities(pubOpportunities);
+    const analytics = processPublicationAnalytics(publication.id);
+    console.log('Analytics data:', analytics);
     
-    // Get all pitches for these opportunities
-    const opportunityIds = pubOpportunities.map(opp => opp.id);
-    const relatedPitches = allPitches ? allPitches.filter(
-      (pitch: any) => opportunityIds.includes(pitch.opportunityId)
-    ) : [];
-    setSelectedPitches(relatedPitches);
+    setSelectedAnalytics(analytics); // Set even if null
+    setCurrentPublication(publication); // Always set current publication
+    setIsAnalyticsModalOpen(true); // Always open the modal
     
-    setIsDetailsModalOpen(true);
+    console.log('Modal state set to true');
+    console.log('Current publication set to:', publication.name);
+    
+    // Force a small delay to ensure state is updated
+    setTimeout(() => {
+      console.log('After timeout - modal should be open:', isAnalyticsModalOpen);
+    }, 100);
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingAnalytics) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -430,12 +632,15 @@ export default function PublicationsManager() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-6xl">
+    <div className="container mx-auto py-8 px-4 max-w-7xl">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Publications Manager</h1>
-          <p className="text-gray-500 mt-1">
-            Manage media outlets available for opportunities
+          <h1 className="text-3xl font-bold flex items-center">
+            <Database className="h-8 w-8 mr-3 text-blue-600" />
+            Publications Manager
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Manage media outlets and track historical performance data
           </p>
         </div>
         <Button onClick={() => {
@@ -448,89 +653,157 @@ export default function PublicationsManager() {
         </Button>
       </div>
 
-      {/* Publications Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {publications && publications.map((publication) => (
-          <Card key={publication.id} className="overflow-hidden hover:shadow-md transition-shadow duration-300">
-            <div className="bg-gray-100 h-40 flex justify-center items-center p-4">
-              <img 
-                src={publication.logo} 
-                alt={publication.name} 
-                className="max-h-full max-w-full object-contain" 
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://placehold.co/200x200?text=No+Image';
-                }}
-              />
+      {/* Publications organized by tiers */}
+      {publications && publications.length > 0 ? (
+        <div className="space-y-8">
+          {/* Tier 1 Publications */}
+          <div>
+            <div className="flex items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Tier 1 Publications</h2>
+              <Badge variant="secondary" className="ml-3 bg-green-100 text-green-800">
+                Premium Outlets
+              </Badge>
             </div>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-center">
-                {publication.name}
-              </CardTitle>
-              {publication.category && (
-                <CardDescription className="text-sm">
-                  Category: {publication.category}
-                </CardDescription>
+            <div className="grid gap-4">
+              {publications
+                .filter((pub) => {
+                  const analytics = processPublicationAnalytics(pub.id);
+                  return analytics && analytics.tierDistribution && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 1'));
+                })
+                .concat(publications.filter((pub) => {
+                  const analytics = processPublicationAnalytics(pub.id);
+                  return !analytics && pub.name.toLowerCase().includes('forbes') || 
+                         pub.name.toLowerCase().includes('wall street') ||
+                         pub.name.toLowerCase().includes('bloomberg') ||
+                         pub.name.toLowerCase().includes('reuters');
+                }))
+                .map((publication) => (
+                  <PublicationRow key={publication.id} publication={publication} onViewAnalytics={openAnalyticsModal} onEdit={openEditDialog} onDelete={openDeleteDialog} />
+                ))
+              }
+              {publications.filter((pub) => {
+                const analytics = processPublicationAnalytics(pub.id);
+                return analytics && analytics.tierDistribution && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 1'));
+              }).length === 0 && publications.filter((pub) => {
+                const analytics = processPublicationAnalytics(pub.id);
+                return !analytics && (pub.name.toLowerCase().includes('forbes') || 
+                       pub.name.toLowerCase().includes('wall street') ||
+                       pub.name.toLowerCase().includes('bloomberg') ||
+                       pub.name.toLowerCase().includes('reuters'));
+              }).length === 0 && (
+                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed">
+                  <p className="text-sm">No Tier 1 publications yet</p>
+                </div>
               )}
-            </CardHeader>
-            {publication.description && (
-              <CardContent className="pt-0">
-                <p className="text-sm line-clamp-3">{publication.description}</p>
-              </CardContent>
-            )}
-            {/* Publication History Button */}
-            {publicationOpportunities[publication.id] && (
-              <div className="border-t pt-3 pb-3 px-4 text-center">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full"
-                  onClick={() => openPublicationDetailsDialog(publication)}
-                >
-                  <Users className="h-4 w-4 mr-2" /> 
-                  View Performance Analytics
-                  {publicationOpportunities[publication.id]?.length > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {publicationOpportunities[publication.id].length}
-                    </Badge>
-                  )}
-                </Button>
-              </div>
-            )}
-            
-            <CardFooter className="flex justify-between border-t p-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => openEditDialog(publication)}
-              >
-                <Pencil className="h-4 w-4 mr-1" /> Edit
-              </Button>
-              <Button 
-                variant="destructive" 
-                size="sm"
-                onClick={() => openDeleteDialog(publication)}
-              >
-                <Trash className="h-4 w-4 mr-1" /> Delete
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-
-        {publications && publications.length === 0 && (
-          <div className="col-span-full flex justify-center items-center h-64 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-            <div className="text-center">
-              <p className="text-gray-500 mb-2">No publications found</p>
-              <Button onClick={() => setIsCreateDialogOpen(true)} variant="outline">
-                <Plus className="mr-2 h-4 w-4" /> Add Your First Publication
-              </Button>
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Tier 2 Publications */}
+          <div>
+            <div className="flex items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Tier 2 Publications</h2>
+              <Badge variant="secondary" className="ml-3 bg-blue-100 text-blue-800">
+                Regional & Industry
+              </Badge>
+            </div>
+            <div className="grid gap-4">
+              {publications
+                .filter((pub) => {
+                  const analytics = processPublicationAnalytics(pub.id);
+                  return analytics && analytics.tierDistribution && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 2'));
+                })
+                .concat(publications.filter((pub) => {
+                  const analytics = processPublicationAnalytics(pub.id);
+                  const isTier1 = !analytics && (pub.name.toLowerCase().includes('forbes') || 
+                                 pub.name.toLowerCase().includes('wall street') ||
+                                 pub.name.toLowerCase().includes('bloomberg') ||
+                                 pub.name.toLowerCase().includes('reuters'));
+                  return !analytics && !isTier1 && (pub.category === 'Technology' || pub.category === 'Finance');
+                }))
+                .map((publication) => (
+                  <PublicationRow key={publication.id} publication={publication} onViewAnalytics={openAnalyticsModal} onEdit={openEditDialog} onDelete={openDeleteDialog} />
+                ))
+              }
+              {publications.filter((pub) => {
+                const analytics = processPublicationAnalytics(pub.id);
+                return analytics && analytics.tierDistribution && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 2'));
+              }).length === 0 && publications.filter((pub) => {
+                const analytics = processPublicationAnalytics(pub.id);
+                const isTier1 = !analytics && (pub.name.toLowerCase().includes('forbes') || 
+                               pub.name.toLowerCase().includes('wall street') ||
+                               pub.name.toLowerCase().includes('bloomberg') ||
+                               pub.name.toLowerCase().includes('reuters'));
+                return !analytics && !isTier1 && (pub.category === 'Technology' || pub.category === 'Finance');
+              }).length === 0 && (
+                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed">
+                  <p className="text-sm">No Tier 2 publications yet</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Tier 3 Publications */}
+          <div>
+            <div className="flex items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Tier 3 Publications</h2>
+              <Badge variant="secondary" className="ml-3 bg-purple-100 text-purple-800">
+                Niche & Emerging
+              </Badge>
+            </div>
+            <div className="grid gap-4">
+              {publications
+                .filter((pub) => {
+                  const analytics = processPublicationAnalytics(pub.id);
+                  const hasT1 = analytics && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 1'));
+                  const hasT2 = analytics && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 2'));
+                  const isTier1Manual = pub.name.toLowerCase().includes('forbes') || 
+                                       pub.name.toLowerCase().includes('wall street') ||
+                                       pub.name.toLowerCase().includes('bloomberg') ||
+                                       pub.name.toLowerCase().includes('reuters');
+                  const isTier2Manual = !isTier1Manual && (pub.category === 'Technology' || pub.category === 'Finance');
+                  
+                  return (analytics && analytics.tierDistribution && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 3'))) ||
+                         (!analytics && !isTier1Manual && !isTier2Manual) ||
+                         (analytics && !hasT1 && !hasT2);
+                })
+                .map((publication) => (
+                  <PublicationRow key={publication.id} publication={publication} onViewAnalytics={openAnalyticsModal} onEdit={openEditDialog} onDelete={openDeleteDialog} />
+                ))
+              }
+              {publications.filter((pub) => {
+                const analytics = processPublicationAnalytics(pub.id);
+                const hasT1 = analytics && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 1'));
+                const hasT2 = analytics && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 2'));
+                const isTier1Manual = pub.name.toLowerCase().includes('forbes') || 
+                                     pub.name.toLowerCase().includes('wall street') ||
+                                     pub.name.toLowerCase().includes('bloomberg') ||
+                                     pub.name.toLowerCase().includes('reuters');
+                const isTier2Manual = !isTier1Manual && (pub.category === 'Technology' || pub.category === 'Finance');
+                
+                return (analytics && analytics.tierDistribution && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 3'))) ||
+                       (!analytics && !isTier1Manual && !isTier2Manual) ||
+                       (analytics && !hasT1 && !hasT2);
+              }).length === 0 && (
+                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed">
+                  <p className="text-sm">No Tier 3 publications yet</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-16 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+          <Database className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+          <p className="text-gray-500 mb-2">No publications found</p>
+          <Button onClick={() => setIsCreateDialogOpen(true)} variant="outline">
+            <Plus className="mr-2 h-4 w-4" /> Add Your First Publication
+          </Button>
+        </div>
+      )}
 
       {/* Create Publication Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Publication</DialogTitle>
             <DialogDescription>
@@ -540,129 +813,149 @@ export default function PublicationsManager() {
 
           <Form {...createForm}>
             <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-6">
-              <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                  <TabsTrigger value="logo">Logo</TabsTrigger>
-                </TabsList>
+              <div className="space-y-4">
+                <FormField
+                  control={createForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name*</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Forbes, TechCrunch" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                <TabsContent value="basic" className="space-y-4 pt-4">
-                  <FormField
-                    control={createForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Name*</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Forbes, TechCrunch" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={createForm.control}
-                    name="website"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Website</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={createForm.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Category</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Technology, Finance" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={createForm.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Brief description of the publication" 
-                            className="resize-none" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </TabsContent>
+                <FormField
+                  control={createForm.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                <TabsContent value="logo" className="space-y-4 pt-4">
-                  <div className="space-y-4">
-                    <div className="flex flex-col items-center justify-center">
-                      {logoPreview ? (
-                        <div className="relative mb-4">
-                          <img 
-                            src={logoPreview} 
-                            alt="Logo preview" 
-                            className="h-40 w-auto object-contain border rounded"
-                          />
-                          <Button 
-                            variant="destructive" 
-                            size="sm" 
-                            className="absolute top-0 right-0 rounded-full w-6 h-6 p-0"
-                            type="button"
-                            onClick={() => {
-                              setLogoPreview(null);
-                              setLogoFile(null);
-                              createForm.setValue('logo', '');
-                            }}
-                          >
-                            ×
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="mb-4 border rounded p-8 bg-gray-50 flex flex-col items-center justify-center w-full h-40">
-                          <p className="text-gray-500 text-sm mb-2">Upload a logo (200x200px recommended)</p>
+                <FormField
+                  control={createForm.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Technology, Finance" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={createForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Brief description of the publication" 
+                          className="resize-none" 
+                          rows={3}
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Logo Section */}
+                <div className="space-y-4 border-t pt-4">
+                  <div>
+                    <FormLabel className="text-base font-medium">Publication Logo</FormLabel>
+                    <p className="text-sm text-gray-600 mt-1">
+                      <strong>Requirements:</strong> PNG format only, maximum 512x512px, under 2MB file size
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-col items-center space-y-4">
+                    {/* Logo Preview/Upload Area */}
+                    {logoPreview ? (
+                      <div className="relative">
+                        <img 
+                          src={logoPreview} 
+                          alt="Logo preview" 
+                          className="h-32 w-32 object-contain border rounded bg-white p-2"
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-2 w-full"
+                          type="button"
+                          onClick={() => {
+                            setLogoPreview(null);
+                            setLogoFile(null);
+                            createForm.setValue('logo', '');
+                          }}
+                        >
+                          Remove Logo
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 w-full text-center">
+                        <div className="space-y-2">
+                          <div className="text-gray-500">Upload a publication logo</div>
                           <Button 
                             type="button" 
                             variant="outline" 
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={() => {
+                              // Reset the file input to ensure clean selection
+                              if (fileInputRef.current) {
+                                fileInputRef.current.value = '';
+                              }
+                              fileInputRef.current?.click();
+                            }}
                           >
                             Select File
                           </Button>
                         </div>
-                      )}
-                      
-                      <Input 
-                        ref={fileInputRef}
-                        type="file" 
-                        accept="image/*"
-                        className="hidden" 
-                        onChange={handleFileChange}
-                      />
-                      <input type="hidden" {...createForm.register('logo')} />
-                    </div>
+                      </div>
+                    )}
+                    
+                    <Input 
+                      ref={fileInputRef}
+                      type="file" 
+                      accept="image/png"
+                      className="hidden" 
+                      onChange={handleFileChange}
+                    />
+                    <input type="hidden" {...createForm.register('logo')} />
+                    
+                    {isUploading && (
+                      <div className="text-sm text-blue-600 flex items-center">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Uploading logo...
+                      </div>
+                    )}
                   </div>
-                </TabsContent>
-              </Tabs>
+                </div>
+              </div>
               
               <DialogFooter>
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => setIsCreateDialogOpen(false)}
+                  onClick={() => {
+                    setIsCreateDialogOpen(false);
+                    setLogoFile(null);
+                    setLogoPreview(null);
+                  }}
                 >
                   Cancel
                 </Button>
@@ -683,145 +976,161 @@ export default function PublicationsManager() {
 
       {/* Edit Publication Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Publication</DialogTitle>
             <DialogDescription>
-              Update the publication details.
+              Update the publication details and logo.
             </DialogDescription>
           </DialogHeader>
 
           <Form {...editForm}>
             <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-6">
-              <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                  <TabsTrigger value="logo">Logo</TabsTrigger>
-                </TabsList>
+              <div className="space-y-4">
+                <FormField
+                  control={editForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name*</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Forbes, TechCrunch" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                <TabsContent value="basic" className="space-y-4 pt-4">
-                  <FormField
-                    control={editForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Name*</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Forbes, TechCrunch" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={editForm.control}
-                    name="website"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Website</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={editForm.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Category</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Technology, Finance" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={editForm.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Brief description of the publication" 
-                            className="resize-none" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </TabsContent>
+                <FormField
+                  control={editForm.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                <TabsContent value="logo" className="space-y-4 pt-4">
-                  <div className="space-y-4">
-                    <div className="flex flex-col items-center justify-center">
-                      {logoPreview ? (
-                        <div className="relative mb-4">
-                          <img 
-                            src={logoPreview} 
-                            alt="Logo preview" 
-                            className="h-40 w-auto object-contain border rounded"
-                          />
-                          <Button 
-                            variant="destructive" 
-                            size="sm" 
-                            className="absolute top-0 right-0 rounded-full w-6 h-6 p-0"
-                            type="button"
-                            onClick={() => {
-                              if (currentPublication) {
-                                setLogoPreview(currentPublication.logo);
-                                setLogoFile(null);
-                                editForm.setValue('logo', currentPublication.logo);
-                              } else {
-                                setLogoPreview(null);
-                                setLogoFile(null);
-                                editForm.setValue('logo', '');
-                              }
-                            }}
-                          >
-                            ×
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="mb-4 border rounded p-8 bg-gray-50 flex flex-col items-center justify-center w-full h-40">
-                          <p className="text-gray-500 text-sm mb-2">Upload a logo (200x200px recommended)</p>
+                <FormField
+                  control={editForm.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Technology, Finance" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Brief description of the publication" 
+                          className="resize-none" 
+                          rows={3}
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Logo Section */}
+                <div className="space-y-4 border-t pt-4">
+                  <div>
+                    <FormLabel className="text-base font-medium">Publication Logo</FormLabel>
+                    <p className="text-sm text-gray-600 mt-1">
+                      <strong>Requirements:</strong> PNG format only, maximum 512x512px, under 2MB file size
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-col items-center space-y-4">
+                    {/* Current Logo Display */}
+                    {logoPreview ? (
+                      <div className="relative">
+                        <img 
+                          src={logoPreview} 
+                          alt="Current logo" 
+                          className="h-32 w-32 object-contain border rounded bg-white p-2"
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-2 w-full"
+                          type="button"
+                          onClick={() => {
+                            // Reset the file input to ensure clean selection
+                            if (fileInputRef.current) {
+                              fileInputRef.current.value = '';
+                            }
+                            fileInputRef.current?.click();
+                          }}
+                        >
+                          Change Logo
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 w-full text-center">
+                        <div className="space-y-2">
+                          <div className="text-gray-500">No logo uploaded</div>
                           <Button 
                             type="button" 
                             variant="outline" 
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={() => {
+                              // Reset the file input to ensure clean selection
+                              if (fileInputRef.current) {
+                                fileInputRef.current.value = '';
+                              }
+                              fileInputRef.current?.click();
+                            }}
                           >
-                            Select File
+                            Upload Logo
                           </Button>
                         </div>
-                      )}
-                      
-                      <Input 
-                        ref={fileInputRef}
-                        type="file" 
-                        accept="image/*"
-                        className="hidden" 
-                        onChange={handleFileChange}
-                      />
-                      <input type="hidden" {...editForm.register('logo')} />
-                    </div>
+                      </div>
+                    )}
+                    
+                    <Input 
+                      ref={fileInputRef}
+                      type="file" 
+                      accept="image/png"
+                      className="hidden" 
+                      onChange={handleFileChange}
+                    />
+                    <input type="hidden" {...editForm.register('logo')} />
+                    
+                    {isUploading && (
+                      <div className="text-sm text-blue-600 flex items-center">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Uploading logo...
+                      </div>
+                    )}
                   </div>
-                </TabsContent>
-              </Tabs>
+                </div>
+              </div>
               
               <DialogFooter>
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => setIsEditDialogOpen(false)}
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    setLogoFile(null);
+                    setLogoPreview(null);
+                  }}
                 >
                   Cancel
                 </Button>
@@ -871,397 +1180,68 @@ export default function PublicationsManager() {
         </DialogContent>
       </Dialog>
       
-      {/* Publication Details Modal */}
-      <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen} modal={true}>
-        <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden p-0 mt-28 relative z-40 fixed">
-          <div className="sticky top-0 z-10 bg-white p-6 border-b">
-            <DialogHeader>
-              <div className="flex items-center">
-                {currentPublication?.logo && (
-                  <img 
-                    src={currentPublication.logo} 
-                    alt={currentPublication.name} 
-                    className="w-16 h-16 rounded object-contain mr-4" 
-                  />
-                )}
-                <div>
-                  <DialogTitle className="text-2xl">
-                    {currentPublication?.name} Performance Analytics
-                  </DialogTitle>
-                  <DialogDescription className="text-sm mt-1">
-                    Comprehensive analysis of historical opportunities, pitches, and yield data
-                  </DialogDescription>
-                </div>
-              </div>
-            </DialogHeader>
-          </div>
-          
-          <div className="overflow-y-auto max-h-[calc(90vh-10rem)] p-6">
-            {/* Analytics Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-md">Total Opportunities</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{selectedOpportunities.length}</div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {selectedOpportunities.length > 0 
-                      ? `Latest on ${format(new Date(selectedOpportunities[0].createdAt || new Date()), 'MMM d, yyyy')}` 
-                      : 'No opportunities'}
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-md">Total Pitches</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{selectedPitches.length}</div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {selectedPitches.length > 0
-                      ? `${selectedPitches.filter((p: any) => p.status === 'accepted').length} accepted`
-                      : 'No pitches'}
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-md">Avg. Bid Amount</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">
-                    {selectedPitches.length > 0
-                      ? `$${(selectedPitches.reduce((sum: number, p: any) => sum + (p.bidAmount || 0), 0) / selectedPitches.length).toFixed(2)}`
-                      : '$0.00'}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Based on {selectedPitches.length} pitches
-                  </p>
-                </CardContent>
-              </Card>
+      {/* Publication Analytics Modal */}
+      {isAnalyticsModalOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+          style={{ zIndex: 10000 }}
+          onClick={() => setIsAnalyticsModalOpen(false)}
+        >
+          <div 
+            className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">
+                {currentPublication?.name} Analytics
+              </h2>
+              <button 
+                onClick={() => setIsAnalyticsModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+              >
+                ×
+              </button>
             </div>
             
-            {/* Tabs for detailed data */}
-            <Tabs defaultValue="opportunities" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
-                <TabsTrigger value="pitches">Pitches & Bids</TabsTrigger>
-                <TabsTrigger value="trends">Performance Trends</TabsTrigger>
-              </TabsList>
-              
-              {/* Opportunities Tab */}
-              <TabsContent value="opportunities" className="space-y-4 pt-4">
-                <div className="bg-muted/40 p-4 rounded-lg">
-                  <h3 className="font-medium text-lg mb-2">All Opportunities</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Complete history of all opportunities published with this outlet
-                  </p>
-                  
-                  {selectedOpportunities.length > 0 ? (
-                    <div className="space-y-4">
-                      {selectedOpportunities.map((opportunity) => (
-                        <Card key={opportunity.id}>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-md">{opportunity.title}</CardTitle>
-                            <CardDescription className="text-xs">
-                              Created on {format(new Date(opportunity.createdAt || new Date()), 'PPP')}
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent className="py-2">
-                            <div className="flex flex-wrap gap-3 mb-2">
-                              <Badge variant="outline" className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" /> 
-                                {opportunity.deadline ? format(new Date(opportunity.deadline), 'PPP') : 'No deadline'}
-                              </Badge>
-                              <Badge variant="outline" className="flex items-center gap-1">
-                                <DollarSign className="h-3 w-3" /> 
-                                {opportunity.minimumBid ? `Min bid: $${opportunity.minimumBid.toFixed(2)}` : 'No min bid'}
-                              </Badge>
-                              {opportunity.tier && (
-                                <Badge>{opportunity.tier}</Badge>
-                              )}
-                              <Badge variant="secondary" className="flex items-center gap-1">
-                                <MessageSquare className="h-3 w-3" />
-                                {selectedPitches.filter((p: any) => p.opportunityId === opportunity.id).length} pitches
-                              </Badge>
-                            </div>
-                            {opportunity.description && (
-                              <p className="text-sm mt-2">{opportunity.description}</p>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">No opportunities found for this publication</p>
-                    </div>
-                  )}
+            {selectedAnalytics ? (
+              <div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-blue-50 p-4 rounded-lg text-center">
+                    <div className="text-2xl font-bold text-blue-900">{selectedAnalytics.totalOpportunities}</div>
+                    <div className="text-sm text-blue-700">Opportunities</div>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg text-center">
+                    <div className="text-2xl font-bold text-green-900">{selectedAnalytics.totalPitches}</div>
+                    <div className="text-sm text-green-700">Pitches</div>
+                  </div>
+                  <div className="bg-purple-50 p-4 rounded-lg text-center">
+                    <div className="text-2xl font-bold text-purple-900">${selectedAnalytics.averageBidAmount.toFixed(0)}</div>
+                    <div className="text-sm text-purple-700">Avg Bid</div>
+                  </div>
+                  <div className="bg-orange-50 p-4 rounded-lg text-center">
+                    <div className="text-2xl font-bold text-orange-900">${selectedAnalytics.totalYield.toFixed(0)}</div>
+                    <div className="text-sm text-orange-700">Revenue</div>
+                  </div>
                 </div>
-              </TabsContent>
-              
-              {/* Pitches Tab */}
-              <TabsContent value="pitches" className="space-y-4 pt-4">
-                <div className="bg-muted/40 p-4 rounded-lg">
-                  <h3 className="font-medium text-lg mb-2">All Pitches & Bids</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Comprehensive pitching history and bidding patterns
-                  </p>
-                  
-                  {selectedPitches.length > 0 ? (
-                    <div className="space-y-4">
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-md">Bid Distribution</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="flex items-center space-x-2">
-                            <div className="flex-1 bg-slate-100 h-4 rounded-full overflow-hidden">
-                              <div 
-                                className="bg-primary h-full rounded-full" 
-                                style={{ width: `${Math.min(100, selectedPitches.filter((p: any) => p.status === 'accepted').length / selectedPitches.length * 100)}%` }}
-                              ></div>
-                            </div>
-                            <div className="text-sm font-medium">
-                              {selectedPitches.filter((p: any) => p.status === 'accepted').length} / {selectedPitches.length}
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                            <div className="text-center p-3 bg-slate-50 rounded">
-                              <div className="text-sm font-medium">Highest Bid</div>
-                              <div className="text-lg font-bold mt-1">
-                                ${Math.max(...selectedPitches.map((p: any) => p.bidAmount || 0), 0).toFixed(2)}
-                              </div>
-                            </div>
-                            <div className="text-center p-3 bg-slate-50 rounded">
-                              <div className="text-sm font-medium">Lowest Bid</div>
-                              <div className="text-lg font-bold mt-1">
-                                ${Math.min(...selectedPitches.filter((p: any) => p.bidAmount > 0).map((p: any) => p.bidAmount || 0), 9999).toFixed(2)}
-                              </div>
-                            </div>
-                            <div className="text-center p-3 bg-slate-50 rounded">
-                              <div className="text-sm font-medium">Average</div>
-                              <div className="text-lg font-bold mt-1">
-                                ${(selectedPitches.reduce((sum: number, p: any) => sum + (p.bidAmount || 0), 0) / selectedPitches.length).toFixed(2)}
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <div className="space-y-4 mt-6">
-                        <h4 className="font-medium">Pitch History</h4>
-                        <div className="max-h-[400px] overflow-y-auto space-y-3">
-                          {selectedPitches.map((pitch: any) => {
-                            const opportunity = selectedOpportunities.find(o => o.id === pitch.opportunityId);
-                            return (
-                              <Card key={pitch.id} className={`border-l-4 ${pitch.status === 'accepted' ? 'border-l-green-500' : pitch.status === 'pending' ? 'border-l-yellow-500' : 'border-l-slate-300'}`}>
-                                <CardHeader className="py-3">
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <CardTitle className="text-sm font-medium">
-                                        {opportunity?.title || `Opportunity #${pitch.opportunityId}`}
-                                      </CardTitle>
-                                      <CardDescription className="text-xs">
-                                        Pitched on {format(new Date(pitch.createdAt || new Date()), 'PPP')}
-                                      </CardDescription>
-                                    </div>
-                                    <Badge className={`${pitch.status === 'accepted' ? 'bg-green-100 text-green-800' : pitch.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-slate-100 text-slate-800'}`}>
-                                      {pitch.status === 'accepted' ? 'Accepted' : pitch.status === 'pending' ? 'Pending' : 'Rejected'}
-                                    </Badge>
-                                  </div>
-                                </CardHeader>
-                                <CardContent className="py-0">
-                                  <div className="flex justify-between items-center text-sm mb-2">
-                                    <div className="font-medium flex items-center">
-                                      <DollarSign className="h-4 w-4 mr-1" /> 
-                                      Bid Amount: <span className="font-bold ml-1">${pitch.bidAmount?.toFixed(2) || '0.00'}</span>
-                                    </div>
-                                    <div className="text-muted-foreground text-xs">
-                                      {pitch.paymentIntentId && 'Payment processed'}
-                                    </div>
-                                  </div>
-                                  {pitch.content && (
-                                    <div className="mt-2 text-sm">
-                                      <Collapsible>
-                                        <CollapsibleTrigger className="flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors">
-                                          <ChevronRight className="h-3 w-3 mr-1" />
-                                          View pitch content
-                                        </CollapsibleTrigger>
-                                        <CollapsibleContent>
-                                          <div className="mt-2 p-3 bg-slate-50 rounded text-xs">
-                                            {pitch.content}
-                                          </div>
-                                        </CollapsibleContent>
-                                      </Collapsible>
-                                    </div>
-                                  )}
-                                </CardContent>
-                              </Card>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">No pitches found for this publication's opportunities</p>
-                    </div>
-                  )}
+                
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-bold mb-2">Performance Summary</h3>
+                  <p>Acceptance Rate: {selectedAnalytics.acceptanceRate.toFixed(1)}%</p>
+                  <p>Pitches per Opportunity: {selectedAnalytics.pitchesPerOpportunity.toFixed(1)}</p>
+                  <p>Last Activity: {selectedAnalytics.lastActivity}</p>
                 </div>
-              </TabsContent>
-              
-              {/* Trends Tab */}
-              <TabsContent value="trends" className="space-y-4 pt-4">
-                <div className="bg-muted/40 p-4 rounded-lg">
-                  <h3 className="font-medium text-lg mb-2">Performance Analysis</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Long-term trends and financial yield analysis
-                  </p>
-                  
-                  {selectedOpportunities.length > 0 ? (
-                    <div className="space-y-6">
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-md">Opportunity Performance</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div className="bg-slate-50 p-3 rounded">
-                                <div className="text-sm text-muted-foreground">Total Yield</div>
-                                <div className="text-xl font-bold mt-1">
-                                  ${selectedPitches.filter((p: any) => p.status === 'accepted')
-                                    .reduce((sum: number, p: any) => sum + (p.bidAmount || 0), 0).toFixed(2)}
-                                </div>
-                              </div>
-                              <div className="bg-slate-50 p-3 rounded">
-                                <div className="text-sm text-muted-foreground">Acceptance Rate</div>
-                                <div className="text-xl font-bold mt-1">
-                                  {selectedPitches.length > 0 
-                                    ? `${Math.round(selectedPitches.filter((p: any) => p.status === 'accepted').length / selectedPitches.length * 100)}%`
-                                    : '0%'}
-                                </div>
-                              </div>
-                              <div className="bg-slate-50 p-3 rounded">
-                                <div className="text-sm text-muted-foreground">Avg. Pitches / Opportunity</div>
-                                <div className="text-xl font-bold mt-1">
-                                  {selectedOpportunities.length > 0
-                                    ? (selectedPitches.length / selectedOpportunities.length).toFixed(1)
-                                    : '0'}
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="bg-white p-4 rounded-lg border mt-4">
-                              <h4 className="text-sm font-medium mb-3">Opportunity Tier Distribution</h4>
-                              <div className="space-y-3">
-                                {Array.from(new Set(selectedOpportunities.map(o => o.tier || 'Unspecified'))).map((tier) => {
-                                  const count = selectedOpportunities.filter(o => (o.tier || 'Unspecified') === tier).length;
-                                  const percentage = Math.round(count / selectedOpportunities.length * 100);
-                                  return (
-                                    <div key={tier} className="space-y-1">
-                                      <div className="flex justify-between text-sm">
-                                        <span>{tier}</span>
-                                        <span>{count} ({percentage}%)</span>
-                                      </div>
-                                      <div className="w-full bg-slate-100 rounded-full h-2">
-                                        <div 
-                                          className="bg-primary h-2 rounded-full" 
-                                          style={{ width: `${percentage}%` }}
-                                        ></div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-md">Bidding Patterns</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-4">
-                            <div className="bg-white p-4 rounded-lg border">
-                              <h4 className="text-sm font-medium mb-3">Bid Amount Distribution</h4>
-                              <div className="h-40 w-full bg-slate-50 rounded flex items-end justify-between px-4 py-2">
-                                {/* Simple visualization of bid amounts */}
-                                {Array.from({ length: 8 }, (_, i) => {
-                                  const minBid = Math.min(...selectedPitches.filter((p: any) => p.bidAmount > 0).map((p: any) => p.bidAmount || 0), 0);
-                                  const maxBid = Math.max(...selectedPitches.map((p: any) => p.bidAmount || 0), 1);
-                                  const range = maxBid - minBid;
-                                  const segment = range / 8;
-                                  const lowerBound = minBid + segment * i;
-                                  const upperBound = minBid + segment * (i + 1);
-                                  const count = selectedPitches.filter((p: any) => 
-                                    (p.bidAmount || 0) >= lowerBound && (p.bidAmount || 0) < upperBound
-                                  ).length;
-                                  const height = Math.max(10, Math.min(100, count / selectedPitches.length * 100));
-                                  
-                                  return (
-                                    <div key={i} className="flex flex-col items-center">
-                                      <div 
-                                        className="w-6 bg-primary rounded-t" 
-                                        style={{ height: `${height}%` }}
-                                      ></div>
-                                      <div className="text-xs mt-1">${lowerBound.toFixed(0)}</div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                            
-                            <div className="bg-white p-4 rounded-lg border mt-4">
-                              <h4 className="text-sm font-medium mb-3">Yield Optimization Recommendations</h4>
-                              <ul className="space-y-2 text-sm">
-                                <li className="flex items-start">
-                                  <CircleCheck className="h-4 w-4 mr-2 text-green-500 mt-0.5" />
-                                  <span>
-                                    {selectedOpportunities.length > 0 && selectedPitches.length > 0
-                                      ? `Based on ${selectedPitches.length} total pitches, optimal starting bid should be $${((selectedPitches.reduce((sum: number, p: any) => sum + (p.bidAmount || 0), 0) / selectedPitches.length) * 0.75).toFixed(2)}.`
-                                      : 'Insufficient data for bid optimization recommendations.'}
-                                  </span>
-                                </li>
-                                <li className="flex items-start">
-                                  <CircleCheck className="h-4 w-4 mr-2 text-green-500 mt-0.5" />
-                                  <span>
-                                    {selectedOpportunities.length > 0
-                                      ? `${selectedOpportunities.filter(o => o.tier).length} out of ${selectedOpportunities.length} opportunities have tier classifications. ${selectedOpportunities.filter(o => o.tier).length < selectedOpportunities.length ? 'Consider adding tiers to all opportunities.' : 'Good tier coverage.'}`
-                                      : 'No opportunities available for tier analysis.'}
-                                  </span>
-                                </li>
-                                <li className="flex items-start">
-                                  <CircleCheck className="h-4 w-4 mr-2 text-green-500 mt-0.5" />
-                                  <span>
-                                    {selectedPitches.filter((p: any) => p.status === 'accepted').length > 0
-                                      ? `Average accepted bid is $${(selectedPitches.filter((p: any) => p.status === 'accepted').reduce((sum: number, p: any) => sum + (p.bidAmount || 0), 0) / selectedPitches.filter((p: any) => p.status === 'accepted').length).toFixed(2)}.`
-                                      : 'No accepted pitches yet for this publication.'}
-                                  </span>
-                                </li>
-                              </ul>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">No data available for trend analysis</p>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-xl font-semibold mb-2">No Analytics Data Available</div>
+                <p className="text-gray-600">
+                  This publication doesn't have any historical opportunities or pitches yet.
+                </p>
+              </div>
+            )}
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }

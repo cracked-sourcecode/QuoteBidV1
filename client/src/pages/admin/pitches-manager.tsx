@@ -521,42 +521,45 @@ const PitchesManager = () => {
               {pitchesByStatus[status.value]?.map((pitch: any) => (
                 <Card 
                   key={pitch.id} 
-                  className="p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                  className="p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col h-[160px]"
                   onClick={() => handleViewPitch(pitch)}
                   onContextMenu={(e) => handleCardContext(e, pitch.id)}
                 >
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium line-clamp-2">
+                  {/* Content Area - grows to fill available space */}
+                  <div className="flex-1 flex flex-col space-y-2">
+                    <div className="text-sm font-medium line-clamp-2 leading-tight">
                       {pitch.opportunity?.title || `Story #${pitch.opportunityId}`}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 font-medium">
                       {getUserNameById(pitch.userId)}
                     </div>
                     <div className="flex items-center justify-between">
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs px-2 py-0.5">
                         {pitch.audioUrl ? 'Audio' : 'Text'}
                       </Badge>
                       <div className="text-xs text-gray-400">
                         {formatDate(pitch.createdAt)}
                       </div>
                     </div>
-                    <div className="pt-2 border-t mt-2">
-                      <Select 
-                        defaultValue={pitch.status}
-                        onValueChange={(value) => movePitchToStatus(pitch.id, value)}
-                      >
-                        <SelectTrigger className="h-7 text-xs w-full">
-                          <SelectValue placeholder="Move to..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PITCH_STATUSES.map((s) => (
-                            <SelectItem key={s.value} value={s.value} disabled={s.value === pitch.status}>
-                              Move to: {s.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  </div>
+                  
+                  {/* Action Area - fixed at bottom */}
+                  <div className="pt-3 border-t border-gray-200 mt-auto">
+                    <Select 
+                      defaultValue={pitch.status}
+                      onValueChange={(value) => movePitchToStatus(pitch.id, value)}
+                    >
+                      <SelectTrigger className="h-8 text-xs w-full">
+                        <SelectValue placeholder="Move to..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PITCH_STATUSES.map((s) => (
+                          <SelectItem key={s.value} value={s.value} disabled={s.value === pitch.status}>
+                            Move to: {s.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </Card>
               ))}

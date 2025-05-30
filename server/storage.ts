@@ -11,6 +11,7 @@ import {
   annotationComments, type AnnotationComment, type InsertAnnotationComment,
   pitchMessages, type PitchMessage, type InsertPitchMessage,
   type OpportunityWithPublication,
+  type OpportunityWithPublicationAndPitches,
   type PlacementWithRelations,
   type PitchWithRelations
 } from "@shared/schema";
@@ -47,6 +48,7 @@ export interface IStorage {
   getOpportunityWithPublication(id: number): Promise<OpportunityWithPublication | undefined>;
   getOpportunities(): Promise<Opportunity[]>;
   getOpportunitiesWithPublications(): Promise<OpportunityWithPublication[]>;
+  getOpportunitiesWithPitches(): Promise<OpportunityWithPublicationAndPitches[]>;
   createOpportunity(opportunity: InsertOpportunity): Promise<Opportunity>;
   updateOpportunityStatus(id: number, status: string): Promise<Opportunity | undefined>;
   searchOpportunities(query: string): Promise<OpportunityWithPublication[]>;
@@ -343,6 +345,68 @@ export class DatabaseStorage implements IStorage {
     });
 
     return sortedOpportunities;
+  }
+
+  async getOpportunitiesWithPitches(): Promise<OpportunityWithPublicationAndPitches[]> {
+    // Get all opportunities with publications first
+    const opportunitiesWithPublications = await this.getOpportunitiesWithPublications();
+    
+    // Add pitch data to each opportunity
+    const opportunitiesWithPitches = await Promise.all(
+      opportunitiesWithPublications.map(async (opportunity) => {
+        // Get all pitches for this opportunity with user data
+        const opportunityPitches = await getDb()
+          .select({
+            id: pitches.id,
+            userId: pitches.userId,
+            opportunityId: pitches.opportunityId,
+            content: pitches.content,
+            audioUrl: pitches.audioUrl,
+            transcript: pitches.transcript,
+            status: pitches.status,
+            bidAmount: pitches.bidAmount,
+            createdAt: pitches.createdAt,
+            paymentIntentId: pitches.paymentIntentId,
+            // User data
+            userName: users.fullName,
+            userUsername: users.username,
+            userAvatar: users.avatar,
+            userTitle: users.title,
+            userCompany: users.company_name
+          })
+          .from(pitches)
+          .leftJoin(users, eq(pitches.userId, users.id))
+          .where(eq(pitches.opportunityId, opportunity.id))
+          .orderBy(desc(pitches.createdAt));
+
+        // Calculate pitch count
+        const pitchCount = opportunityPitches.length;
+        
+        // Get highest bid amount  
+        const highestBid = opportunityPitches.length > 0 
+          ? Math.max(...opportunityPitches.map(p => p.bidAmount || 0))
+          : 0;
+
+        return {
+          ...opportunity,
+          pitches: opportunityPitches.map(pitch => ({
+            ...pitch,
+            user: {
+              id: pitch.userId,
+              fullName: pitch.userName || pitch.userUsername || 'Unknown User',
+              username: pitch.userUsername || 'unknown',
+              avatar: pitch.userAvatar,
+              title: pitch.userTitle,
+              company_name: pitch.userCompany
+            }
+          })),
+          pitchCount,
+          highestBid
+        };
+      })
+    );
+
+    return opportunitiesWithPitches;
   }
 
   async createOpportunity(insertOpportunity: InsertOpportunity): Promise<Opportunity> {

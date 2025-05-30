@@ -5213,5 +5213,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Admin API to get all opportunities with publications
+  app.get("/api/admin/opportunities", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const opportunities = await storage.getOpportunitiesWithPublications();
+      res.json(opportunities);
+    } catch (error) {
+      console.error('Error fetching admin opportunities:', error);
+      res.status(500).json({ message: 'Failed to fetch opportunities', error: error });
+    }
+  });
+
+  // Admin API to get all opportunities with publications and pitches
+  app.get("/api/admin/opportunities-with-pitches", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const opportunities = await storage.getOpportunitiesWithPitches();
+      res.json(opportunities);
+    } catch (error) {
+      console.error('Error fetching admin opportunities with pitches:', error);
+      res.status(500).json({ message: 'Failed to fetch opportunities with pitches', error: error });
+    }
+  });
+  
+  // TEMPORARY: Create admin user for testing (remove in production)
+  app.post("/api/admin/create-test-admin", async (req: Request, res: Response) => {
+    try {
+      // Import necessary modules
+      const { scrypt, randomBytes } = await import("crypto");
+      const { promisify } = await import("util");
+      const scryptAsync = promisify(scrypt);
+      
+      async function hashPassword(password: string) {
+        const salt = randomBytes(16).toString("hex");
+        const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+        return `${buf.toString("hex")}.${salt}`;
+      }
+      
+      const adminData = {
+        username: "admin",
+        password: await hashPassword("admin123"),
+        email: "admin@rubicon.com",
+        fullName: "Admin User",
+        role: "admin"
+      };
+      
+      // Delete any existing admin user with the same username
+      const { adminUsers } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+      await getDb().delete(adminUsers).where(eq(adminUsers.username, "admin"));
+      
+      // Create the admin user
+      const newAdmin = await storage.createAdminUser(adminData);
+      
+      const { password, ...adminWithoutPassword } = newAdmin;
+      
+      res.json({
+        success: true,
+        message: "Test admin created successfully",
+        admin: adminWithoutPassword,
+        credentials: {
+          username: "admin",
+          password: "admin123"
+        }
+      });
+    } catch (error) {
+      console.error("Error creating test admin:", error);
+      res.status(500).json({ message: "Failed to create test admin", error: error.message });
+    }
+  });
+  
   return httpServer;
 }

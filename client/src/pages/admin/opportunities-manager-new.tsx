@@ -65,7 +65,8 @@ import {
   X,
   User,
   MessageSquare,
-  Eye
+  Eye,
+  MoreVertical
 } from "lucide-react";
 import { INDUSTRY_OPTIONS, MEDIA_TYPES, OPPORTUNITY_TIERS, REQUEST_TYPES } from "@/lib/constants";
 import { useLocation } from 'wouter';
@@ -131,16 +132,36 @@ export default function OpportunitiesManager() {
   });
   
   const { data: opportunities, isLoading: loadingOpportunities, error: opportunitiesError } = useQuery({
-    queryKey: ["/api/admin/opportunities"],
+    queryKey: ["/api/admin/opportunities-with-pitches"],
     queryFn: async () => {
-      console.log("Fetching opportunities...");
-      const res = await apiRequest("GET", "/api/admin/opportunities");
+      console.log("Fetching opportunities with pitches...");
+      const res = await apiRequest("GET", "/api/admin/opportunities-with-pitches");
       if (!res.ok) {
         console.error("Failed to fetch opportunities:", res.status, res.statusText);
         throw new Error(`Failed to fetch opportunities: ${res.status}`);
       }
       const data = await res.json();
       console.log("Opportunities data received:", data);
+      return data;
+    },
+    retry: (failureCount, error) => {
+      console.log("Query failed, attempt:", failureCount, "Error:", error);
+      return failureCount < 2; // Try up to 2 times
+    },
+    retryDelay: 1000,
+  });
+
+  // Fallback query for basic opportunities without pitch data
+  const { data: fallbackOpportunities, isLoading: loadingFallback } = useQuery({
+    queryKey: ["/api/admin/opportunities"],
+    queryFn: async () => {
+      console.log("Fetching fallback opportunities...");
+      const res = await apiRequest("GET", "/api/admin/opportunities");
+      if (!res.ok) {
+        throw new Error(`Failed to fetch fallback opportunities: ${res.status}`);
+      }
+      const data = await res.json();
+      console.log("Fallback opportunities data received:", data);
       // Transform to match expected structure with empty pitch data
       return data.map((opp: any) => ({
         ...opp,
@@ -149,16 +170,12 @@ export default function OpportunitiesManager() {
         highestBid: 0
       }));
     },
-    retry: (failureCount, error) => {
-      console.log("Query failed, attempt:", failureCount, "Error:", error);
-      return failureCount < 2; // Try up to 2 times
-    },
-    retryDelay: 1000,
+    enabled: !!opportunitiesError, // Only run if main query failed
   });
   
-  // Remove the fallback query since we're using the working endpoint
-  const finalOpportunities = opportunities;
-  const finalLoading = loadingOpportunities;
+  // Use fallback data if main query failed
+  const finalOpportunities = opportunities || fallbackOpportunities;
+  const finalLoading = loadingOpportunities || (opportunitiesError && loadingFallback);
   
   const createOpportunityMutation = useMutation({
     mutationFn: async (data: OpportunityFormValues) => {
@@ -205,6 +222,7 @@ export default function OpportunitiesManager() {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ["/api/admin/opportunities-with-pitches"]});
       queryClient.invalidateQueries({queryKey: ["/api/admin/opportunities"]});
       queryClient.invalidateQueries({queryKey: ["/api/admin/publications"]});
       setIsCreateDialogOpen(false);
@@ -233,6 +251,7 @@ export default function OpportunitiesManager() {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ["/api/admin/opportunities-with-pitches"]});
       queryClient.invalidateQueries({queryKey: ["/api/admin/opportunities"]});
       toast({
         title: "Status updated",
@@ -440,38 +459,67 @@ export default function OpportunitiesManager() {
                                   <Input
                                     id="logo-upload"
                                     type="file"
-                                    accept="image/*"
+                                    accept="image/png"
                                     className="h-9"
                                     onChange={async (e) => {
                                       if (e.target.files && e.target.files[0]) {
                                         const file = e.target.files[0];
                                         
-                                        // Check file size
-                                        if (file.size > 5 * 1024 * 1024) {
+                                        // Check file type - only PNG allowed
+                                        if (!file.type.startsWith('image/png')) {
                                           toast({
-                                            title: "File too large",
-                                            description: "Image must be less than 5MB",
+                                            title: "Invalid file type",
+                                            description: "Only PNG format is allowed for publication logos",
                                             variant: "destructive"
                                           });
                                           return;
                                         }
                                         
-                                        // Preview the image locally
-                                        const reader = new FileReader();
-                                        reader.onload = (event) => {
-                                          if (event.target?.result) {
-                                            // Create preview
-                                            field.onChange(event.target.result.toString());
-                                          }
-                                        };
-                                        reader.readAsDataURL(file);
+                                        // Check file size - max 2MB
+                                        if (file.size > 2 * 1024 * 1024) {
+                                          toast({
+                                            title: "File too large",
+                                            description: "Logo must be less than 2MB in size",
+                                            variant: "destructive"
+                                          });
+                                          return;
+                                        }
                                         
-                                        // Keep the base64 data directly - we'll use this when creating the publication
-                                        // This simplifies the process and avoids a separate upload endpoint
-                                        toast({
-                                          title: "Logo ready",
-                                          description: "Image is ready to be used as publication logo.",
-                                        });
+                                        // Check image dimensions
+                                        const img = new Image();
+                                        img.onload = () => {
+                                          if (img.width > 512 || img.height > 512) {
+                                            toast({
+                                              title: "Image too large",
+                                              description: "Logo dimensions must not exceed 512x512 pixels",
+                                              variant: "destructive"
+                                            });
+                                            return;
+                                          }
+                                          
+                                          // If all checks pass, process the image
+                                          const reader = new FileReader();
+                                          reader.onload = (event) => {
+                                            if (event.target?.result) {
+                                              field.onChange(event.target.result.toString());
+                                              toast({
+                                                title: "Logo ready",
+                                                description: "PNG logo is ready to be used for the publication.",
+                                              });
+                                            }
+                                          };
+                                          reader.readAsDataURL(file);
+                                        };
+                                        
+                                        img.onerror = () => {
+                                          toast({
+                                            title: "Invalid image",
+                                            description: "Could not process the uploaded image",
+                                            variant: "destructive"
+                                          });
+                                        };
+                                        
+                                        img.src = URL.createObjectURL(file);
                                       }
                                     }}
                                   />
@@ -483,7 +531,7 @@ export default function OpportunitiesManager() {
                                   <img 
                                     src={field.value} 
                                     alt="Publication logo preview" 
-                                    className="w-16 h-16 object-contain border rounded" 
+                                    className="w-16 h-16 object-contain border rounded bg-white" 
                                     onError={(e) => {
                                       (e.target as HTMLImageElement).src = 'https://placehold.co/200x200?text=Logo';
                                     }}
@@ -502,7 +550,7 @@ export default function OpportunitiesManager() {
                               )}
                             </div>
                             <FormDescription>
-                              Recommended size: 200x200px. PNG or JPG format.
+                              <strong>Requirements:</strong> PNG format only, maximum 512x512px, under 2MB file size. Recommended: Square logos work best for consistent display.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -862,6 +910,7 @@ export default function OpportunitiesManager() {
               </p>
               <Button 
                 onClick={() => {
+                  queryClient.invalidateQueries({queryKey: ["/api/admin/opportunities-with-pitches"]});
                   queryClient.invalidateQueries({queryKey: ["/api/admin/opportunities"]});
                 }}
                 variant="outline"
@@ -872,39 +921,50 @@ export default function OpportunitiesManager() {
           </CardContent>
         </Card>
       ) : filteredOpportunities?.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredOpportunities.map((opportunity: any) => (
-            <Card key={opportunity.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200 border-0 shadow-md">
-              <CardHeader className="relative pb-4 bg-gradient-to-r from-gray-50 to-white">
-                <div className="absolute top-3 right-3 z-10">
+            <Card key={opportunity.id} className="bg-white border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-lg flex flex-col h-full">
+              <CardHeader className="pb-3 flex-shrink-0">
+                {/* Header with proper spacing to prevent overlap */}
+                <div className="flex items-start justify-between mb-4">
+                  {/* Status Badge - positioned to avoid overlap */}
+                  <Badge className={
+                    opportunity.status === 'open' 
+                      ? 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200' 
+                      : 'bg-red-100 text-red-800 hover:bg-red-200 border-red-200'
+                  } variant="outline">
+                    {opportunity.status.toUpperCase()}
+                  </Badge>
+                  
+                  {/* Three dots menu with proper spacing */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/80">
-                        <MoreHorizontal className="h-4 w-4" />
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
+                        <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setShowDetails(opportunity.id);
-                        }}
+                    <DropdownMenuContent align="end" className="w-[200px]">
+                      <DropdownMenuItem
+                        onClick={() => setShowDetails(opportunity.id)}
+                        className="cursor-pointer"
                       >
-                        <Edit className="mr-2 h-4 w-4" />
+                        <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setShowPitches(opportunity.id)}
+                        className="cursor-pointer"
+                      >
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        View Pitches ({opportunity.pitchCount || 0})
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          updateStatusMutation.mutate({ 
-                            id: opportunity.id, 
-                            status: opportunity.status === 'open' ? 'closed' : 'open'
-                          });
-                        }}
-                        className={opportunity.status === 'open' ? 'text-red-500' : 'text-green-500'}
+                      <DropdownMenuItem
+                        onClick={() => updateStatusMutation.mutate({
+                          id: opportunity.id,
+                          status: opportunity.status === 'open' ? 'closed' : 'open'
+                        })}
+                        className="cursor-pointer"
                       >
                         {opportunity.status === 'open' ? (
                           <>
@@ -922,8 +982,8 @@ export default function OpportunitiesManager() {
                   </DropdownMenu>
                 </div>
                 
-                {/* Publication Logo and Name - Compact Header */}
-                <div className="flex items-center space-x-3 mb-3">
+                {/* Publication Logo and Name */}
+                <div className="flex items-center space-x-3 mb-4">
                   <div className="flex-shrink-0">
                     {opportunity.publication.logo ? (
                       <img 
@@ -944,24 +1004,17 @@ export default function OpportunitiesManager() {
                       {opportunity.publication.name}
                     </p>
                   </div>
-                  <Badge className={
-                    opportunity.status === 'open' 
-                      ? 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200' 
-                      : 'bg-red-100 text-red-800 hover:bg-red-200 border-red-200'
-                  } variant="outline">
-                    {opportunity.status.toUpperCase()}
-                  </Badge>
                 </div>
                 
                 {/* Opportunity Title */}
-                <CardTitle className="text-lg leading-tight text-gray-900 pr-8">
+                <CardTitle className="text-lg leading-tight text-gray-900 mb-4">
                   {opportunity.title}
                 </CardTitle>
               </CardHeader>
               
-              <CardContent className="pt-4 pb-4">
+              <CardContent className="flex-1 flex flex-col pb-4">
                 {/* Description */}
-                <p className="text-sm text-gray-600 mb-4 line-clamp-3 leading-relaxed">
+                <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed mb-4">
                   {opportunity.description}
                 </p>
                 
@@ -996,8 +1049,8 @@ export default function OpportunitiesManager() {
                 </div>
                 
                 {/* Pitch Summary */}
-                <div className="bg-gray-50 rounded-md p-3 mb-4">
-                  <div className="flex items-center justify-between">
+                <div className="bg-gray-50 rounded-md p-3 mb-6">
+                  <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center text-gray-700">
                       <MessageSquare className="h-4 w-4 mr-2" />
                       <span className="text-sm font-medium">
@@ -1012,44 +1065,49 @@ export default function OpportunitiesManager() {
                   </div>
                 </div>
                 
-                {/* Action Buttons */}
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setShowPitches(opportunity.id);
-                    }}
-                    className="flex-1"
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View Pitches ({opportunity.pitchCount || 0})
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setShowDetails(opportunity.id);
-                    }}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </div>
+                {/* Spacer to push buttons to bottom */}
+                <div className="flex-1"></div>
                 
-                {/* Secondary Info */}
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-                  <div className="flex items-center space-x-2 text-xs text-gray-500">
-                    {opportunity.tier && (
-                      <span className="px-2 py-1 bg-gray-100 rounded-full">{opportunity.tier}</span>
-                    )}
-                    {opportunity.mediaType && (
-                      <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-full">{opportunity.mediaType}</span>
-                    )}
+                {/* Action Buttons - Always at bottom */}
+                <div className="space-y-3 mt-auto">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowPitches(opportunity.id);
+                      }}
+                      className="flex-1"
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View Pitches ({opportunity.pitchCount || 0})
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowDetails(opportunity.id);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <div className="text-xs text-gray-400">
-                    ID: {opportunity.id}
+                  
+                  {/* Secondary Info */}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div className="flex items-center space-x-2 text-xs text-gray-500">
+                      {opportunity.tier && (
+                        <span className="px-2 py-1 bg-gray-100 rounded-full">{opportunity.tier}</span>
+                      )}
+                      {opportunity.mediaType && (
+                        <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-full">{opportunity.mediaType}</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      ID: {opportunity.id}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -1078,117 +1136,229 @@ export default function OpportunitiesManager() {
       {/* Pitches Modal */}
       {showPitches && (
         <Dialog open={!!showPitches} onOpenChange={() => setShowPitches(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center">
-                <MessageSquare className="h-5 w-5 mr-2" />
+          <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
+            <DialogHeader className="pb-4 border-b">
+              <DialogTitle className="flex items-center text-xl">
+                <MessageSquare className="h-6 w-6 mr-3 text-blue-600" />
                 Pitches for: {finalOpportunities?.find((o: any) => o.id === showPitches)?.title}
               </DialogTitle>
-              <DialogDescription>
-                View all pitches submitted for this opportunity
+              <DialogDescription className="text-base">
+                {(() => {
+                  const opportunity = finalOpportunities?.find((o: any) => o.id === showPitches);
+                  const pitchCount = opportunity?.pitches?.length || 0;
+                  const highestBid = opportunity?.highestBid || 0;
+                  
+                  return (
+                    <div className="flex items-center gap-6 mt-2">
+                      <span className="flex items-center">
+                        <span className="font-semibold text-gray-700">{pitchCount}</span>
+                        <span className="ml-1 text-gray-600">
+                          {pitchCount === 1 ? 'pitch submitted' : 'pitches submitted'}
+                        </span>
+                      </span>
+                      {highestBid > 0 && (
+                        <span className="flex items-center">
+                          <span className="text-green-600 font-semibold">Highest bid: ${highestBid}</span>
+                        </span>
+                      )}
+                      <span className="text-blue-600">
+                        {opportunity?.publication?.name}
+                      </span>
+                    </div>
+                  );
+                })()}
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4">
-              {finalOpportunities?.find((o: any) => o.id === showPitches)?.pitches?.length > 0 ? (
-                <div className="space-y-4">
-                  {finalOpportunities.find((o: any) => o.id === showPitches).pitches.map((pitch: any) => (
-                    <Card 
-                      key={pitch.id} 
-                      className="hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => {
-                        // Navigate to pitches page with this pitch highlighted
-                        setLocation(`/admin/pitches?highlight=${pitch.id}`);
-                      }}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start space-x-3 flex-1 min-w-0">
-                            <div className="flex-shrink-0">
-                              {pitch.user?.avatar ? (
-                                <img 
-                                  src={pitch.user.avatar} 
-                                  alt={pitch.user.fullName}
-                                  className="w-10 h-10 rounded-full object-cover"
-                                />
-                              ) : (
-                                <User className="w-10 h-10 text-gray-400 bg-gray-100 rounded-full p-2" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="text-sm font-semibold text-gray-900">
-                                  {pitch.user?.fullName || 'Unknown User'}
-                                </h4>
-                                <div className="flex items-center space-x-2">
-                                  {pitch.bidAmount && (
-                                    <span className="text-sm font-bold text-green-600">
-                                      ${pitch.bidAmount}
-                                    </span>
+            <div className="flex-1 overflow-y-auto py-4">
+              {(() => {
+                const opportunity = finalOpportunities?.find((o: any) => o.id === showPitches);
+                const pitches = opportunity?.pitches || [];
+                
+                if (pitches.length > 0) {
+                  return (
+                    <div className="space-y-4">
+                      {pitches
+                        .sort((a: any, b: any) => {
+                          // Sort by status priority (successful > sent > pending) then by bid amount (highest first)
+                          const statusPriority = { 'successful': 3, 'sent': 2, 'pending': 1 };
+                          const aStatus = statusPriority[a.status as keyof typeof statusPriority] || 0;
+                          const bStatus = statusPriority[b.status as keyof typeof statusPriority] || 0;
+                          
+                          if (aStatus !== bStatus) return bStatus - aStatus;
+                          
+                          const aBid = a.bidAmount || 0;
+                          const bBid = b.bidAmount || 0;
+                          return bBid - aBid;
+                        })
+                        .map((pitch: any, index: number) => (
+                        <Card 
+                          key={pitch.id} 
+                          className={`hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 ${
+                            pitch.status === 'successful' ? 'border-l-green-500 bg-green-50/30' :
+                            pitch.status === 'sent' ? 'border-l-blue-500 bg-blue-50/30' :
+                            pitch.status === 'pending' ? 'border-l-yellow-500 bg-yellow-50/30' :
+                            'border-l-gray-400 bg-gray-50/30'
+                          }`}
+                          onClick={() => {
+                            setLocation(`/admin/pitches?highlight=${pitch.id}`);
+                          }}
+                        >
+                          <CardContent className="p-5">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-start space-x-4 flex-1 min-w-0">
+                                <div className="flex-shrink-0">
+                                  {pitch.user?.avatar ? (
+                                    <img 
+                                      src={pitch.user.avatar} 
+                                      alt={pitch.user.fullName}
+                                      className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
+                                    />
+                                  ) : (
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center border-2 border-white shadow-md">
+                                      <User className="w-6 h-6 text-gray-500" />
+                                    </div>
                                   )}
-                                  <Badge 
-                                    variant="outline" 
-                                    className={`text-xs ${
-                                      pitch.status === 'pending' ? 'border-yellow-300 text-yellow-700 bg-yellow-50' :
-                                      pitch.status === 'sent' ? 'border-blue-300 text-blue-700 bg-blue-50' :
-                                      pitch.status === 'successful' ? 'border-green-300 text-green-700 bg-green-50' :
-                                      'border-gray-300 text-gray-700 bg-gray-50'
-                                    }`}
-                                  >
-                                    {pitch.status}
-                                  </Badge>
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div>
+                                      <h4 className="text-lg font-semibold text-gray-900 leading-tight">
+                                        {pitch.user?.fullName || 'Unknown User'}
+                                      </h4>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <p className="text-sm text-gray-600">
+                                          {pitch.user?.title || 'Expert'}
+                                          {pitch.user?.company_name && ` • ${pitch.user.company_name}`}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-3 flex-shrink-0">
+                                      {pitch.bidAmount && (
+                                        <div className="text-right">
+                                          <p className="text-xs text-gray-500 uppercase tracking-wide">Bid Amount</p>
+                                          <span className="text-lg font-bold text-green-600">
+                                            ${pitch.bidAmount}
+                                          </span>
+                                        </div>
+                                      )}
+                                      <Badge 
+                                        className={`px-3 py-1 text-sm font-medium ${
+                                          pitch.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
+                                          pitch.status === 'sent' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                                          pitch.status === 'successful' ? 'bg-green-100 text-green-800 border-green-300' :
+                                          'bg-gray-100 text-gray-800 border-gray-300'
+                                        }`}
+                                        variant="outline"
+                                      >
+                                        {pitch.status === 'successful' ? '✓ Successful' : 
+                                         pitch.status === 'sent' ? '→ Sent' :
+                                         pitch.status === 'pending' ? '⏳ Pending' :
+                                         pitch.status}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                  
+                                  {pitch.content && (
+                                    <div className="bg-white rounded-lg p-4 border border-gray-200 mb-3">
+                                      <p className="text-sm text-gray-700 line-clamp-4 leading-relaxed">
+                                        {pitch.content}
+                                      </p>
+                                    </div>
+                                  )}
+                                  
+                                  <div className="flex items-center justify-between text-xs text-gray-500">
+                                    <div className="flex items-center gap-4">
+                                      {pitch.createdAt && (
+                                        <span className="flex items-center">
+                                          <Calendar className="w-3 h-3 mr-1" />
+                                          Submitted {new Date(pitch.createdAt).toLocaleDateString('en-US', { 
+                                            month: 'short', 
+                                            day: 'numeric',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                          })}
+                                        </span>
+                                      )}
+                                      <span className="text-gray-400">ID: {pitch.id}</span>
+                                    </div>
+                                    
+                                    <div className="flex items-center text-blue-600 hover:text-blue-800 transition-colors">
+                                      <span className="text-xs font-medium">View Details</span>
+                                      <Eye className="w-3 h-3 ml-1" />
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                              
-                              <p className="text-xs text-gray-600 mb-2">
-                                {pitch.user?.title || 'Expert'}
-                                {pitch.user?.company_name && ` at ${pitch.user.company_name}`}
-                              </p>
-                              
-                              {pitch.content && (
-                                <p className="text-sm text-gray-700 line-clamp-3">
-                                  {pitch.content}
-                                </p>
-                              )}
-                              
-                              {pitch.createdAt && (
-                                <p className="text-xs text-gray-500 mt-2">
-                                  Submitted: {new Date(pitch.createdAt).toLocaleString()}
-                                </p>
-                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                      
+                      <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-shrink-0">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <MessageSquare className="w-4 h-4 text-blue-600" />
                             </div>
                           </div>
+                          <div>
+                            <h4 className="text-sm font-semibold text-blue-900 mb-1">
+                              💡 Managing Pitches
+                            </h4>
+                            <p className="text-sm text-blue-800 leading-relaxed">
+                              Click on any pitch card to view full details, update status, or manage the pitch in the dedicated pitches manager. 
+                              Successful pitches will automatically create billing entries for payment processing.
+                            </p>
+                          </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  
-                  <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      💡 Click on any pitch to view full details in the pitches management page
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Pitches Yet</h3>
-                  <p className="text-gray-600">
-                    No pitches have been submitted for this opportunity yet.
-                  </p>
-                </div>
-              )}
+                      </div>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="text-center py-16">
+                      <div className="max-w-md mx-auto">
+                        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <MessageSquare className="h-10 w-10 text-gray-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-gray-900 mb-3">No Pitches Yet</h3>
+                        <p className="text-gray-600 leading-relaxed mb-6">
+                          No pitches have been submitted for this opportunity yet. Once experts start bidding, 
+                          their pitches will appear here for you to review and manage.
+                        </p>
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                          <p className="text-sm text-yellow-800">
+                            <strong>Tip:</strong> You can promote this opportunity to attract more expert submissions, 
+                            or adjust the minimum bid if needed.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+              })()}
             </div>
             
-            <DialogFooter>
-              <Button onClick={() => setShowPitches(null)}>Close</Button>
+            <DialogFooter className="pt-4 border-t bg-gray-50/50">
+              <Button 
+                onClick={() => setShowPitches(null)}
+                variant="outline"
+                className="mr-3"
+              >
+                Close
+              </Button>
               <Button 
                 onClick={() => {
                   setLocation(`/admin/pitches?opportunity=${showPitches}`);
                 }}
-                variant="outline"
+                className="bg-blue-600 hover:bg-blue-700"
               >
-                View in Pitches Manager
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Open in Pitches Manager
               </Button>
             </DialogFooter>
           </DialogContent>

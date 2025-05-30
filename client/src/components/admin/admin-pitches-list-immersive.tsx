@@ -234,154 +234,159 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
       : pitch.user?.username?.[0]?.toUpperCase() || 'U';
 
     return (
-      <Card className="hover:shadow-lg transition-shadow duration-200 cursor-pointer" 
+      <Card className="hover:shadow-lg transition-shadow duration-200 cursor-pointer h-[450px] flex flex-col" 
             onClick={() => {
               setSelectedPitchId(pitch.id);
               setIsPitchDetailsModalOpen(true);
             }}>
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
+        {/* Header - Fixed Height */}
+        <CardHeader className="pb-3 flex-shrink-0 h-[80px]">
+          <div className="flex items-start justify-between h-full">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <Avatar className="h-10 w-10 flex-shrink-0">
                 <AvatarImage src={pitch.user?.avatar || undefined} />
                 <AvatarFallback className="bg-purple-100 text-purple-700">
                   {userInitials}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h3 className="font-semibold text-gray-900">
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-gray-900 leading-tight text-sm truncate">
                   {pitch.user?.fullName || pitch.user?.username || `User #${pitch.userId}`}
                 </h3>
-                <p className="text-sm text-gray-500">{pitch.user?.email}</p>
+                <p className="text-xs text-gray-500 truncate">{pitch.user?.email}</p>
               </div>
             </div>
             <StatusBadge status={pitch.status} />
           </div>
         </CardHeader>
         
-        <CardContent className="space-y-4">
-          {/* Opportunity Info */}
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Target className="h-4 w-4 text-gray-600" />
-              <span className="text-sm font-medium text-gray-700">Pitching for:</span>
-            </div>
-            <h4 className="font-semibold text-gray-900">
-              {pitch.opportunity?.title || `Opportunity #${pitch.opportunityId}`}
-            </h4>
-            {pitch.publication && (
-              <div className="flex items-center gap-2 mt-2">
-                <Building2 className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">{pitch.publication.name}</span>
+        {/* Content - Flexible Height */}
+        <CardContent className="flex-1 flex flex-col min-h-0 p-4 pt-0">
+          <div className="flex-1 flex flex-col space-y-3 min-h-0">
+            {/* Opportunity Info - Fixed Height */}
+            <div className="bg-gray-50 rounded-lg p-3 flex-shrink-0">
+              <div className="flex items-center gap-2 mb-1">
+                <Target className="h-4 w-4 text-gray-600 flex-shrink-0" />
+                <span className="text-sm font-medium text-gray-700">Pitching for:</span>
               </div>
-            )}
-          </div>
-
-          {/* Pitch Content Preview */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              {pitch.audioUrl ? (
-                <>
-                  <Mic className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-600">Audio Pitch</span>
-                </>
-              ) : (
-                <>
-                  <FileText className="h-4 w-4 text-gray-600" />
-                  <span className="text-sm font-medium text-gray-600">Written Pitch</span>
-                </>
+              <h4 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2">
+                {pitch.opportunity?.title || `Opportunity #${pitch.opportunityId}`}
+              </h4>
+              {pitch.publication && (
+                <div className="flex items-center gap-2 mt-2">
+                  <Building2 className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                  <span className="text-sm text-gray-600 truncate">{pitch.publication.name}</span>
+                </div>
               )}
             </div>
-            
-            {pitch.audioUrl ? (
-              <div className="bg-blue-50 rounded-lg p-3">
-                <audio controls className="w-full mb-2" onClick={(e) => e.stopPropagation()}>
-                  <source src={pitch.audioUrl} type="audio/mpeg" />
-                </audio>
-                {pitch.transcript && (
-                  <p className="text-sm text-gray-700 line-clamp-2">
-                    {pitch.transcript.length > 150 
-                      ? pitch.transcript.substring(0, 150) + '...' 
-                      : pitch.transcript}
-                  </p>
+
+            {/* Pitch Content - Flexible Height with Overflow Control */}
+            <div className="flex-1 min-h-0 flex flex-col space-y-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {pitch.audioUrl ? (
+                  <>
+                    <Mic className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-600">Audio Pitch</span>
+                  </>
+                ) : (
+                  <>
+                    <FileText className="h-4 w-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-600">Written Pitch</span>
+                  </>
                 )}
               </div>
-            ) : (
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm text-gray-700">
-                  <span className="line-clamp-3">
-                    {pitch.content 
-                      ? pitch.content.length > 200 
-                        ? pitch.content.substring(0, 200) + '...' 
-                        : pitch.content
-                      : 'No content available'}
-                  </span>
-                  {pitch.user?.fullName && pitch.user?.title && (
-                    <span className="text-gray-600 italic block mt-2">
-                      —{pitch.user.fullName}, {pitch.user.title}
-                      {pitch.user.doFollowLink && pitch.user.doFollowLink !== 'None' && (
-                        <span> ({pitch.user.doFollowLink})</span>
+              
+              <div className="flex-1 min-h-0">
+                {pitch.audioUrl ? (
+                  <div className="bg-blue-50 rounded-lg p-3">
+                    <audio controls className="w-full mb-2" onClick={(e) => e.stopPropagation()}>
+                      <source src={pitch.audioUrl} type="audio/mpeg" />
+                    </audio>
+                    {pitch.transcript && (
+                      <p className="text-sm text-gray-700 line-clamp-3 overflow-hidden">
+                        {pitch.transcript.length > 120 
+                          ? pitch.transcript.substring(0, 120) + '...' 
+                          : pitch.transcript}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 rounded-lg p-3 h-full flex flex-col">
+                    <div className="flex-1 min-h-0">
+                      <p className="text-sm text-gray-700 line-clamp-4 overflow-hidden">
+                        {pitch.content 
+                          ? pitch.content.length > 150 
+                            ? pitch.content.substring(0, 150) + '...' 
+                            : pitch.content
+                          : 'No content available'}
+                      </p>
+                      {pitch.user?.fullName && pitch.user?.title && (
+                        <p className="text-gray-600 italic text-xs mt-2 truncate">
+                          —{pitch.user.fullName}, {pitch.user.title}
+                        </p>
                       )}
-                    </span>
-                  )}
-                </p>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-
-          {/* Metadata */}
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              <span>{dateInfo.relative}</span>
             </div>
-            {pitch.bidAmount && (
+
+            {/* Metadata - Fixed Height */}
+            <div className="flex items-center justify-between text-sm text-gray-500 flex-shrink-0 pt-2">
               <div className="flex items-center gap-1">
-                <DollarSign className="h-3 w-3" />
-                <span>{pitch.bidAmount}</span>
+                <Calendar className="h-3 w-3" />
+                <span className="text-xs">{dateInfo.relative}</span>
               </div>
-            )}
+              {pitch.bidAmount && (
+                <div className="flex items-center gap-1">
+                  <DollarSign className="h-3 w-3" />
+                  <span className="text-xs font-medium">${pitch.bidAmount}</span>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="flex-1"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedPitchId(pitch.id);
-                setIsPitchDetailsModalOpen(true);
-              }}
-            >
-              <Eye className="h-4 w-4 mr-1" />
-              View Details
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline">
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Update Status</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {Object.entries(statusConfig).map(([key, config]) => {
-                  const Icon = config.icon;
-                  return (
-                    <DropdownMenuItem 
-                      key={key}
-                      onClick={() => updatePitchStatus(pitch.id, key)}
-                      disabled={pitch.status === key}
-                    >
-                      <Icon className="mr-2 h-4 w-4" />
-                      {config.label}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {/* Action Area - Fixed at Bottom */}
+          <div className="pt-3 border-t border-gray-200 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="flex-1 h-9"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedPitchId(pitch.id);
+                  setIsPitchDetailsModalOpen(true);
+                }}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                View Details
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline" className="h-9 w-9 p-0">
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Update Status</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {Object.entries(statusConfig).map(([key, config]) => {
+                    const Icon = config.icon;
+                    return (
+                      <DropdownMenuItem 
+                        key={key}
+                        onClick={() => updatePitchStatus(pitch.id, key)}
+                        disabled={pitch.status === key}
+                      >
+                        <Icon className="mr-2 h-4 w-4" />
+                        {config.label}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </CardContent>
       </Card>

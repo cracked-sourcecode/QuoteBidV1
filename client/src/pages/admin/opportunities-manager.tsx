@@ -395,64 +395,86 @@ export default function OpportunitiesManager() {
                                   <Input
                                     id="logo-upload"
                                     type="file"
-                                    accept="image/*"
+                                    accept="image/png"
                                     className="h-9"
                                     onChange={async (e) => {
                                       if (e.target.files && e.target.files[0]) {
                                         const file = e.target.files[0];
                                         
-                                        // Check file size
-                                        if (file.size > 5 * 1024 * 1024) {
+                                        // Check file type - only PNG allowed
+                                        if (!file.type.startsWith('image/png')) {
                                           toast({
-                                            title: "File too large",
-                                            description: "Image must be less than 5MB",
+                                            title: "Invalid file type",
+                                            description: "Only PNG format is allowed for publication logos",
                                             variant: "destructive"
                                           });
                                           return;
                                         }
                                         
-                                        // Preview the image locally
-                                        const reader = new FileReader();
-                                        reader.onload = (event) => {
-                                          if (event.target?.result) {
-                                            // Create preview
-                                            field.onChange(event.target.result.toString());
-                                          }
-                                        };
-                                        reader.readAsDataURL(file);
-                                        
-                                        // Upload the file
-                                        const formData = new FormData();
-                                        formData.append('logo', file);
-                                        
-                                        try {
-                                          const res = await apiFetch('/api/upload/publication-logo', {
-                                            method: 'POST',
-                                            credentials: 'include',
-                                            body: formData
-                                          });
-                                          
-                                          if (!res.ok) {
-                                            const errorData = await res.json();
-                                            throw new Error(errorData.message || 'Upload failed');
-                                          }
-                                          
-                                          const data = await res.json();
-                                          // Update the field with the actual URL after upload
-                                          field.onChange(data.fileUrl);
-                                          
+                                        // Check file size - max 2MB
+                                        if (file.size > 2 * 1024 * 1024) {
                                           toast({
-                                            title: "Logo uploaded",
-                                            description: "Logo has been uploaded successfully.",
-                                          });
-                                        } catch (error) {
-                                          console.error('Upload error:', error);
-                                          toast({
-                                            title: "Upload failed",
-                                            description: error instanceof Error ? error.message : "Failed to upload image",
+                                            title: "File too large",
+                                            description: "Logo must be less than 2MB in size",
                                             variant: "destructive"
                                           });
+                                          return;
                                         }
+                                        
+                                        // Check image dimensions
+                                        const img = new Image();
+                                        img.onload = async () => {
+                                          if (img.width > 512 || img.height > 512) {
+                                            toast({
+                                              title: "Image too large",
+                                              description: "Logo dimensions must not exceed 512x512 pixels",
+                                              variant: "destructive"
+                                            });
+                                            return;
+                                          }
+                                          
+                                          // If all checks pass, upload the image
+                                          const formData = new FormData();
+                                          formData.append('logo', file);
+                                          
+                                          try {
+                                            const res = await apiFetch('/api/upload/publication-logo', {
+                                              method: 'POST',
+                                              credentials: 'include',
+                                              body: formData
+                                            });
+                                            
+                                            if (!res.ok) {
+                                              const errorData = await res.json();
+                                              throw new Error(errorData.message || 'Upload failed');
+                                            }
+                                            
+                                            const data = await res.json();
+                                            field.onChange(data.fileUrl);
+                                            
+                                            toast({
+                                              title: "Logo uploaded",
+                                              description: "PNG logo has been uploaded successfully.",
+                                            });
+                                          } catch (error) {
+                                            console.error('Upload error:', error);
+                                            toast({
+                                              title: "Upload failed",
+                                              description: error instanceof Error ? error.message : "Failed to upload PNG logo",
+                                              variant: "destructive"
+                                            });
+                                          }
+                                        };
+                                        
+                                        img.onerror = () => {
+                                          toast({
+                                            title: "Invalid image",
+                                            description: "Could not process the uploaded PNG image",
+                                            variant: "destructive"
+                                          });
+                                        };
+                                        
+                                        img.src = URL.createObjectURL(file);
                                       }
                                     }}
                                   />
@@ -483,7 +505,7 @@ export default function OpportunitiesManager() {
                               )}
                             </div>
                             <FormDescription>
-                              Recommended size: 200x200px. PNG or JPG format.
+                              <strong>Requirements:</strong> PNG format only, maximum 512x512px, under 2MB file size. Recommended: Square logos work best for consistent display.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>

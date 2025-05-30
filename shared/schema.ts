@@ -370,6 +370,32 @@ export type OpportunityWithPublication = Opportunity & {
   savedCount: number;
 };
 
+// Extend opportunity type with publication and pitch data
+export type OpportunityWithPublicationAndPitches = OpportunityWithPublication & {
+  pitches: Array<{
+    id: number;
+    userId: number;
+    opportunityId: number;
+    content: string | null;
+    audioUrl: string | null;
+    transcript: string | null;
+    status: string;
+    bidAmount: number | null;
+    createdAt: Date | null;
+    paymentIntentId: string | null;
+    user: {
+      id: number;
+      fullName: string;
+      username: string;
+      avatar?: string | null;
+      title?: string | null;
+      company_name?: string | null;
+    };
+  }>;
+  pitchCount: number;
+  highestBid: number;
+};
+
 // Extend pitch type with related data
 export type PitchWithRelations = Pitch & {
   opportunity: Opportunity;

@@ -77,7 +77,28 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     >
       {/* Outlet header */}
       <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-        <h3 className="text-lg font-bold text-gray-800">{outlet}</h3>
+        <div className="flex items-center space-x-3">
+          {/* Publication Logo */}
+          {outletLogo ? (
+            <img 
+              src={outletLogo} 
+              alt={`${outlet} logo`}
+              className="w-8 h-8 object-contain rounded bg-white border border-gray-100"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          <div className={`w-8 h-8 bg-gray-100 rounded flex items-center justify-center ${outletLogo ? 'hidden' : ''}`}>
+            <span className="text-gray-400 text-xs font-bold">
+              {outlet.charAt(0).toUpperCase()}
+            </span>
+          </div>
+          
+          <h3 className="text-lg font-bold text-gray-800">{outlet}</h3>
+        </div>
         
         {/* Tier badge on right */}
         <Badge 
