@@ -63,8 +63,12 @@ import {
   Tag,
   Trash2,
   X,
+  User,
+  MessageSquare,
+  Eye
 } from "lucide-react";
 import { INDUSTRY_OPTIONS, MEDIA_TYPES, OPPORTUNITY_TIERS, REQUEST_TYPES } from "@/lib/constants";
+import { useLocation } from 'wouter';
 
 const opportunitySchema = z.object({
   publicationId: z.coerce.number(),
@@ -92,8 +96,10 @@ export default function OpportunitiesManager() {
   const [filter, setFilter] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [showDetails, setShowDetails] = useState<number | null>(null);
+  const [showPitches, setShowPitches] = useState<number | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCreatingPublication, setIsCreatingPublication] = useState(false);
+  const [location, setLocation] = useLocation();
   
   const form = useForm<OpportunityFormValues>({
     resolver: zodResolver(opportunitySchema),
@@ -124,13 +130,35 @@ export default function OpportunitiesManager() {
     },
   });
   
-  const { data: opportunities, isLoading: loadingOpportunities } = useQuery({
+  const { data: opportunities, isLoading: loadingOpportunities, error: opportunitiesError } = useQuery({
     queryKey: ["/api/admin/opportunities"],
     queryFn: async () => {
+      console.log("Fetching opportunities...");
       const res = await apiRequest("GET", "/api/admin/opportunities");
-      return res.json();
+      if (!res.ok) {
+        console.error("Failed to fetch opportunities:", res.status, res.statusText);
+        throw new Error(`Failed to fetch opportunities: ${res.status}`);
+      }
+      const data = await res.json();
+      console.log("Opportunities data received:", data);
+      // Transform to match expected structure with empty pitch data
+      return data.map((opp: any) => ({
+        ...opp,
+        pitches: [],
+        pitchCount: 0,
+        highestBid: 0
+      }));
     },
+    retry: (failureCount, error) => {
+      console.log("Query failed, attempt:", failureCount, "Error:", error);
+      return failureCount < 2; // Try up to 2 times
+    },
+    retryDelay: 1000,
   });
+  
+  // Remove the fallback query since we're using the working endpoint
+  const finalOpportunities = opportunities;
+  const finalLoading = loadingOpportunities;
   
   const createOpportunityMutation = useMutation({
     mutationFn: async (data: OpportunityFormValues) => {
@@ -178,6 +206,7 @@ export default function OpportunitiesManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: ["/api/admin/opportunities"]});
+      queryClient.invalidateQueries({queryKey: ["/api/admin/publications"]});
       setIsCreateDialogOpen(false);
       form.reset();
       toast({
@@ -219,8 +248,8 @@ export default function OpportunitiesManager() {
     },
   });
   
-  const filteredOpportunities = opportunities
-    ? opportunities.filter((opp: any) => {
+  const filteredOpportunities = finalOpportunities
+    ? finalOpportunities.filter((opp: any) => {
         // Filter by search term
         const matchesSearch =
           filter === "" ||
@@ -818,10 +847,30 @@ export default function OpportunitiesManager() {
         </TabsList>
       </Tabs>
       
-      {loadingOpportunities ? (
+      {finalLoading ? (
         <div className="flex justify-center py-8">
           <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
         </div>
+      ) : opportunitiesError ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <div className="text-red-500 mb-4">
+              <X className="h-12 w-12 mx-auto mb-2" />
+              <p className="text-xl font-semibold mb-2">Failed to load opportunities</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                {opportunitiesError.message || "An error occurred while fetching opportunities"}
+              </p>
+              <Button 
+                onClick={() => {
+                  queryClient.invalidateQueries({queryKey: ["/api/admin/opportunities"]});
+                }}
+                variant="outline"
+              >
+                Try Again
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       ) : filteredOpportunities?.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredOpportunities.map((opportunity: any) => (
@@ -837,16 +886,24 @@ export default function OpportunitiesManager() {
                     <DropdownMenuContent>
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setShowDetails(opportunity.id)}>
+                      <DropdownMenuItem 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowDetails(opportunity.id);
+                        }}
+                      >
                         <Edit className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
-                        onClick={() => updateStatusMutation.mutate({ 
-                          id: opportunity.id, 
-                          status: opportunity.status === 'open' ? 'closed' : 'open'
-                        })}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          updateStatusMutation.mutate({ 
+                            id: opportunity.id, 
+                            status: opportunity.status === 'open' ? 'closed' : 'open'
+                          });
+                        }}
                         className={opportunity.status === 'open' ? 'text-red-500' : 'text-green-500'}
                       >
                         {opportunity.status === 'open' ? (
@@ -927,7 +984,7 @@ export default function OpportunitiesManager() {
                 </div>
                 
                 {/* Key Details Grid */}
-                <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="grid grid-cols-2 gap-3 text-sm mb-4">
                   <div className="flex items-center text-gray-600">
                     <DollarSign className="h-4 w-4 mr-1.5 text-green-600" />
                     <span className="font-medium">${opportunity.minimumBid}</span>
@@ -936,6 +993,49 @@ export default function OpportunitiesManager() {
                     <Calendar className="h-4 w-4 mr-1.5 text-blue-600" />
                     <span>{new Date(opportunity.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                   </div>
+                </div>
+                
+                {/* Pitch Summary */}
+                <div className="bg-gray-50 rounded-md p-3 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center text-gray-700">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      <span className="text-sm font-medium">
+                        {opportunity.pitchCount || 0} Pitches
+                      </span>
+                    </div>
+                    {opportunity.highestBid > 0 && (
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                        High: ${opportunity.highestBid}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowPitches(opportunity.id);
+                    }}
+                    className="flex-1"
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    View Pitches ({opportunity.pitchCount || 0})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowDetails(opportunity.id);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
                 </div>
                 
                 {/* Secondary Info */}
@@ -949,7 +1049,7 @@ export default function OpportunitiesManager() {
                     )}
                   </div>
                   <div className="text-xs text-gray-400">
-                    {opportunity.pitchCount || 0} pitches
+                    ID: {opportunity.id}
                   </div>
                 </div>
               </CardContent>
@@ -975,6 +1075,126 @@ export default function OpportunitiesManager() {
         </Card>
       )}
       
+      {/* Pitches Modal */}
+      {showPitches && (
+        <Dialog open={!!showPitches} onOpenChange={() => setShowPitches(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center">
+                <MessageSquare className="h-5 w-5 mr-2" />
+                Pitches for: {finalOpportunities?.find((o: any) => o.id === showPitches)?.title}
+              </DialogTitle>
+              <DialogDescription>
+                View all pitches submitted for this opportunity
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {finalOpportunities?.find((o: any) => o.id === showPitches)?.pitches?.length > 0 ? (
+                <div className="space-y-4">
+                  {finalOpportunities.find((o: any) => o.id === showPitches).pitches.map((pitch: any) => (
+                    <Card 
+                      key={pitch.id} 
+                      className="hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => {
+                        // Navigate to pitches page with this pitch highlighted
+                        setLocation(`/admin/pitches?highlight=${pitch.id}`);
+                      }}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-3 flex-1 min-w-0">
+                            <div className="flex-shrink-0">
+                              {pitch.user?.avatar ? (
+                                <img 
+                                  src={pitch.user.avatar} 
+                                  alt={pitch.user.fullName}
+                                  className="w-10 h-10 rounded-full object-cover"
+                                />
+                              ) : (
+                                <User className="w-10 h-10 text-gray-400 bg-gray-100 rounded-full p-2" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-sm font-semibold text-gray-900">
+                                  {pitch.user?.fullName || 'Unknown User'}
+                                </h4>
+                                <div className="flex items-center space-x-2">
+                                  {pitch.bidAmount && (
+                                    <span className="text-sm font-bold text-green-600">
+                                      ${pitch.bidAmount}
+                                    </span>
+                                  )}
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs ${
+                                      pitch.status === 'pending' ? 'border-yellow-300 text-yellow-700 bg-yellow-50' :
+                                      pitch.status === 'sent' ? 'border-blue-300 text-blue-700 bg-blue-50' :
+                                      pitch.status === 'successful' ? 'border-green-300 text-green-700 bg-green-50' :
+                                      'border-gray-300 text-gray-700 bg-gray-50'
+                                    }`}
+                                  >
+                                    {pitch.status}
+                                  </Badge>
+                                </div>
+                              </div>
+                              
+                              <p className="text-xs text-gray-600 mb-2">
+                                {pitch.user?.title || 'Expert'}
+                                {pitch.user?.company_name && ` at ${pitch.user.company_name}`}
+                              </p>
+                              
+                              {pitch.content && (
+                                <p className="text-sm text-gray-700 line-clamp-3">
+                                  {pitch.content}
+                                </p>
+                              )}
+                              
+                              {pitch.createdAt && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                  Submitted: {new Date(pitch.createdAt).toLocaleString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  
+                  <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      💡 Click on any pitch to view full details in the pitches management page
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Pitches Yet</h3>
+                  <p className="text-gray-600">
+                    No pitches have been submitted for this opportunity yet.
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter>
+              <Button onClick={() => setShowPitches(null)}>Close</Button>
+              <Button 
+                onClick={() => {
+                  setLocation(`/admin/pitches?opportunity=${showPitches}`);
+                }}
+                variant="outline"
+              >
+                View in Pitches Manager
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
       {/* Opportunity details modal */}
       {showDetails && (
         <Dialog open={!!showDetails} onOpenChange={() => setShowDetails(null)}>
@@ -984,28 +1204,28 @@ export default function OpportunitiesManager() {
             </DialogHeader>
             
             <div className="space-y-4">
-              {opportunities?.find((o: any) => o.id === showDetails) && (
+              {finalOpportunities?.find((o: any) => o.id === showDetails) && (
                 <div className="space-y-4">
                   <div>
                     <h3 className="font-semibold">Publication</h3>
-                    <p>{opportunities.find((o: any) => o.id === showDetails).publication.name}</p>
+                    <p>{finalOpportunities.find((o: any) => o.id === showDetails).publication.name}</p>
                   </div>
                   <div>
                     <h3 className="font-semibold">Title</h3>
-                    <p>{opportunities.find((o: any) => o.id === showDetails).title}</p>
+                    <p>{finalOpportunities.find((o: any) => o.id === showDetails).title}</p>
                   </div>
                   <div>
                     <h3 className="font-semibold">Request Type</h3>
-                    <p>{opportunities.find((o: any) => o.id === showDetails).requestType}</p>
+                    <p>{finalOpportunities.find((o: any) => o.id === showDetails).requestType}</p>
                   </div>
                   <div>
                     <h3 className="font-semibold">Description</h3>
-                    <p>{opportunities.find((o: any) => o.id === showDetails).description}</p>
+                    <p>{finalOpportunities.find((o: any) => o.id === showDetails).description}</p>
                   </div>
                   <div>
                     <h3 className="font-semibold">Industry Tags</h3>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {opportunities.find((o: any) => o.id === showDetails).tags?.map((tag: string) => (
+                      {finalOpportunities.find((o: any) => o.id === showDetails).tags?.map((tag: string) => (
                         <Badge key={tag} variant="secondary">
                           {tag}
                         </Badge>
@@ -1015,35 +1235,35 @@ export default function OpportunitiesManager() {
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <h3 className="font-semibold">Opportunity Tier</h3>
-                      <p>{opportunities.find((o: any) => o.id === showDetails).tier || "Not specified"}</p>
+                      <p>{finalOpportunities.find((o: any) => o.id === showDetails).tier || "Not specified"}</p>
                     </div>
                     <div>
                       <h3 className="font-semibold">Primary Industry</h3>
-                      <p>{opportunities.find((o: any) => o.id === showDetails).industry || "Not specified"}</p>
+                      <p>{finalOpportunities.find((o: any) => o.id === showDetails).industry || "Not specified"}</p>
                     </div>
                     <div>
                       <h3 className="font-semibold">Media Type</h3>
-                      <p>{opportunities.find((o: any) => o.id === showDetails).mediaType || "Not specified"}</p>
+                      <p>{finalOpportunities.find((o: any) => o.id === showDetails).mediaType || "Not specified"}</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <h3 className="font-semibold">Minimum Bid</h3>
-                      <p>${opportunities.find((o: any) => o.id === showDetails).minimumBid}</p>
+                      <p>${finalOpportunities.find((o: any) => o.id === showDetails).minimumBid}</p>
                     </div>
                     <div>
                       <h3 className="font-semibold">Deadline</h3>
-                      <p>{new Date(opportunities.find((o: any) => o.id === showDetails).deadline).toLocaleDateString()}</p>
+                      <p>{new Date(finalOpportunities.find((o: any) => o.id === showDetails).deadline).toLocaleDateString()}</p>
                     </div>
                   </div>
                   <div>
                     <h3 className="font-semibold">Status</h3>
                     <Badge className={
-                      opportunities.find((o: any) => o.id === showDetails).status === 'open'
+                      finalOpportunities.find((o: any) => o.id === showDetails).status === 'open'
                         ? 'bg-green-500 hover:bg-green-600 mt-1'
                         : 'bg-red-500 hover:bg-red-600 mt-1'
                     }>
-                      {opportunities.find((o: any) => o.id === showDetails).status.toUpperCase()}
+                      {finalOpportunities.find((o: any) => o.id === showDetails).status.toUpperCase()}
                     </Badge>
                   </div>
                 </div>
@@ -1053,9 +1273,9 @@ export default function OpportunitiesManager() {
             <DialogFooter>
               <Button onClick={() => setShowDetails(null)}>Close</Button>
               <Button 
-                variant={opportunities?.find((o: any) => o.id === showDetails)?.status === 'open' ? 'destructive' : 'outline'}
+                variant={finalOpportunities?.find((o: any) => o.id === showDetails)?.status === 'open' ? 'destructive' : 'outline'}
                 onClick={() => {
-                  const opportunity = opportunities?.find((o: any) => o.id === showDetails);
+                  const opportunity = finalOpportunities?.find((o: any) => o.id === showDetails);
                   if (opportunity) {
                     updateStatusMutation.mutate({
                       id: opportunity.id,
@@ -1065,7 +1285,7 @@ export default function OpportunitiesManager() {
                   }
                 }}
               >
-                {opportunities?.find((o: any) => o.id === showDetails)?.status === 'open' 
+                {finalOpportunities?.find((o: any) => o.id === showDetails)?.status === 'open' 
                   ? 'Close Opportunity' 
                   : 'Reopen Opportunity'}
               </Button>
