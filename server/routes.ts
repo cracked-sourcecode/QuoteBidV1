@@ -35,7 +35,252 @@ import signupStateRouter from './routes/signupState';
 import signupRouter from './routes/signup';
 import { hashPassword } from './utils/passwordUtils';
 import jwt from 'jsonwebtoken';
+import OpenAI from 'openai';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+import { htmlToText } from 'html-to-text';
 // Sample pitches import removed
+
+// Initialize OpenAI client for article info extraction
+function getOpenAIClient() {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY environment variable is not set');
+  }
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
+
+/**
+ * getArticleTitle
+ * ----------------
+ * Attempts to extract the human‑visible headline for any article URL.
+ * 1. Fast heuristics on <h1>/<h2>/<meta og:title>/<title>.
+ * 2. If heuristics fail, fall back to OpenAI with a focused extraction prompt.
+ *
+ * @param url full article URL
+ * @returns headline text or 'TITLE_NOT_FOUND'
+ */
+async function getArticleTitle(url: string): Promise<string> {
+  try {
+    console.log(`🔍 Extracting title from URL: ${url}`);
+    
+    const { data: html } = await axios.get(url, { 
+      timeout: 15000, 
+      headers: { 
+        'User-Agent': 'QuoteBidBot/1.0 (+https://quotebid.ai)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+      }
+    });
+
+    const $ = cheerio.load(html);
+    console.log(`📄 HTML loaded, length: ${html.length} characters`);
+
+    // ---- step 1: structural heuristics ---- 
+    // Try more specific selectors first for article titles
+    const trySelectors = [
+      // Yahoo Finance specific selectors
+      '.caas-title-wrapper h1',
+      '.caas-title h1', 
+      '[data-module="ArticleHeader"] h1',
+      // Generic article selectors
+      'article h1',
+      'article header h1',
+      'main h1',
+      '#content h1',
+      '.content h1',
+      // Fallback selectors
+      'h1:first-of-type',
+      'h1'
+    ];
+
+    let bestTitle = '';
+    let bestScore = 0;
+
+    for (const sel of trySelectors) {
+      const elements = $(sel);
+      console.log(`🔍 Selector "${sel}" found ${elements.length} elements`);
+      
+      elements.each((i, element) => {
+        const text = $(element).text().trim();
+        console.log(`   └─ Element ${i}: "${text}"`);
+        
+        if (text.length > 10) {
+          // Score the title based on various criteria
+          let score = 0;
+          
+          // Length score (prefer reasonable length titles)
+          if (text.length >= 20 && text.length <= 150) score += 3;
+          if (text.length >= 10 && text.length <= 200) score += 1;
+          
+          // Avoid publication names
+          const lowerText = text.toLowerCase();
+          if (lowerText.includes('yahoo finance') || 
+              lowerText.includes('yahoo') ||
+              lowerText.includes('finance') ||
+              lowerText.includes('forbes') ||
+              lowerText.includes('cnn') ||
+              lowerText.includes('bloomberg') ||
+              lowerText === 'finance') {
+            score -= 5;
+            console.log(`   └─ ❌ Penalized for publication name: "${text}"`);
+          }
+          
+          // Prefer titles that look like article headlines
+          if (text.includes(':') || text.includes('–') || text.includes('-')) score += 1;
+          if (/\d/.test(text)) score += 1; // Contains numbers
+          if (text.split(' ').length >= 4) score += 2; // Has multiple words
+          
+          console.log(`   └─ Score: ${score} for "${text}"`);
+          
+          if (score > bestScore) {
+            bestScore = score;
+            bestTitle = text;
+            console.log(`   └─ ✅ New best title: "${bestTitle}" (score: ${bestScore})`);
+          }
+        }
+      });
+    }
+
+    if (bestTitle && bestScore > 0) {
+      console.log(`🎯 Selected title from HTML selectors: "${bestTitle}"`);
+      return bestTitle;
+    }
+
+    // Try meta tags
+    console.log(`🏷️ Trying meta tags...`);
+    const metaTitle = $('meta[property="og:title"]').attr('content')?.trim();
+    const twitterTitle = $('meta[name="twitter:title"]').attr('content')?.trim();
+    
+    console.log(`   og:title: "${metaTitle}"`);
+    console.log(`   twitter:title: "${twitterTitle}"`);
+    
+    if (metaTitle && metaTitle.length > 10 && !metaTitle.toLowerCase().includes('yahoo finance')) {
+      console.log(`🎯 Using og:title: "${metaTitle}"`);
+      return metaTitle;
+    }
+    
+    if (twitterTitle && twitterTitle.length > 10 && !twitterTitle.toLowerCase().includes('yahoo finance')) {
+      console.log(`🎯 Using twitter:title: "${twitterTitle}"`);
+      return twitterTitle;
+    }
+
+    // Try extracting from URL slug as fallback
+    console.log(`🔗 Trying URL slug extraction...`);
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      
+      // For Yahoo Finance URLs like /news/5-stocks-invest-capitalize-elon-170225312.html
+      const match = pathname.match(/\/news\/([^\/]+)\.html/);
+      if (match) {
+        const slug = match[1];
+        // Remove trailing numbers (like timestamp)
+        const cleanSlug = slug.replace(/-\d+$/, '');
+        // Convert to title case
+        const titleFromSlug = cleanSlug
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+        
+        console.log(`🔗 Extracted from URL slug: "${titleFromSlug}"`);
+        
+        if (titleFromSlug.length > 10) {
+          console.log(`🎯 Using URL slug title: "${titleFromSlug}"`);
+          return titleFromSlug;
+        }
+      }
+    } catch (urlError) {
+      console.log(`❌ URL parsing failed: ${urlError}`);
+    }
+
+    // Clean page title as last resort
+    console.log(`📄 Trying cleaned page title...`);
+    const pageTitle = $('title').text().trim();
+    console.log(`   Raw page title: "${pageTitle}"`);
+    
+    if (pageTitle) {
+      // More aggressive cleaning
+      let cleanedTitle = pageTitle
+        .replace(/\s*[-|–—]\s*(Yahoo Finance|Yahoo|Finance|Forbes|CNN|Bloomberg|TechCrunch|Business Insider).*$/i, '')
+        .replace(/\s*\|\s*(Yahoo Finance|Yahoo|Finance|Forbes|CNN|Bloomberg|TechCrunch|Business Insider).*$/i, '')
+        .replace(/\s*\|\s*Yahoo.*$/i, '')
+        .replace(/\s*-\s*Yahoo.*$/i, '')
+        .trim();
+      
+      console.log(`   Cleaned page title: "${cleanedTitle}"`);
+      
+      if (cleanedTitle && cleanedTitle.length > 5 && !cleanedTitle.toLowerCase().includes('yahoo finance')) {
+        console.log(`🎯 Using cleaned page title: "${cleanedTitle}"`);
+        return cleanedTitle;
+      }
+    }
+
+    // ---- step 2: OpenAI fallback ----
+    console.log('🤖 No good title found with selectors, trying OpenAI fallback...');
+    
+    const cleanedText = htmlToText(html, {
+      wordwrap: false,
+      selectors: [
+        { selector: 'head', format: 'skip' },
+        { selector: 'script', format: 'skip' },
+        { selector: 'style', format: 'skip' },
+        { selector: 'nav', format: 'skip' },
+        { selector: 'footer', format: 'skip' },
+      ],
+    }).slice(0, 3000); // Focus on top of article
+
+    const openai = getOpenAIClient();
+
+    const prompt = `Extract the main article headline from this Yahoo Finance article.
+
+URL: ${url}
+
+The article title should NOT be "Yahoo Finance" - that's just the publication name.
+Look for the actual story headline that describes what the article is about.
+
+Here's the article content:
+${cleanedText.substring(0, 2000)}
+
+Return ONLY the main article headline, nothing else. If you can't find it, return "TITLE_NOT_FOUND".
+
+Article headline:`;
+
+    try {
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4',
+        temperature: 0.1,
+        max_tokens: 100,
+        messages: [
+          { role: 'system', content: 'You extract article headlines with precision. Never return publication names like "Yahoo Finance".' },
+          { role: 'user', content: prompt },
+        ],
+      });
+
+      const aiTitle = completion.choices[0]?.message?.content?.trim();
+      const finalTitle = aiTitle ? aiTitle.replace(/^"|"$/g, '') : 'TITLE_NOT_FOUND';
+      
+      console.log(`🤖 OpenAI extracted title: "${finalTitle}"`);
+      
+      if (finalTitle && finalTitle !== 'TITLE_NOT_FOUND' && !finalTitle.toLowerCase().includes('yahoo finance')) {
+        return finalTitle;
+      }
+    } catch (aiError) {
+      console.error('🤖 OpenAI error:', aiError);
+    }
+
+    console.log('❌ All extraction methods failed');
+    return 'TITLE_NOT_FOUND';
+  } catch (error) {
+    console.error('💥 Error extracting article title:', error);
+    return 'TITLE_NOT_FOUND';
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // --- PUBLIC REGISTRATION ENDPOINT (must be before any middleware) ---
@@ -273,6 +518,159 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Upload signed agreement
   app.post('/api/upload-agreement', pdfUpload.single('pdf'), handleSignupAgreementUpload);
+  
+  // AI-powered article information extraction endpoint
+  app.post("/api/ai/extract-article-info", jwtAuth, async (req: Request, res: Response) => {
+    try {
+      // Check authentication manually since we're having middleware issues
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const { url } = req.body;
+
+      if (!url) {
+        return res.status(400).json({ error: 'URL is required' });
+      }
+
+      console.log('AI extraction request for URL:', url);
+
+      // Use the much better getArticleTitle function
+      const title = await getArticleTitle(url);
+      
+      if (title === 'TITLE_NOT_FOUND') {
+        return res.status(400).json({ error: 'Could not extract title from the webpage' });
+      }
+
+      console.log('Successfully extracted title:', title);
+
+      // Extract publication name from URL domain
+      let publicationName = '';
+      try {
+        const urlObj = new URL(url);
+        const hostname = urlObj.hostname.toLowerCase();
+        
+        // Common publication mappings
+        const publicationMap: { [key: string]: string } = {
+          'techcrunch.com': 'TechCrunch',
+          'www.techcrunch.com': 'TechCrunch',
+          'forbes.com': 'Forbes',
+          'www.forbes.com': 'Forbes',
+          'cnn.com': 'CNN',
+          'www.cnn.com': 'CNN',
+          'bbc.com': 'BBC',
+          'www.bbc.com': 'BBC',
+          'reuters.com': 'Reuters',
+          'www.reuters.com': 'Reuters',
+          'bloomberg.com': 'Bloomberg',
+          'www.bloomberg.com': 'Bloomberg',
+          'wsj.com': 'Wall Street Journal',
+          'www.wsj.com': 'Wall Street Journal',
+          'nytimes.com': 'New York Times',
+          'www.nytimes.com': 'New York Times',
+          'businessinsider.com': 'Business Insider',
+          'www.businessinsider.com': 'Business Insider',
+          'marketwatch.com': 'MarketWatch',
+          'www.marketwatch.com': 'MarketWatch',
+          'cnbc.com': 'CNBC',
+          'www.cnbc.com': 'CNBC',
+          'yahoo.com': 'Yahoo',
+          'finance.yahoo.com': 'Yahoo Finance',
+          'news.yahoo.com': 'Yahoo News'
+        };
+        
+        if (publicationMap[hostname]) {
+          publicationName = publicationMap[hostname];
+        } else {
+          // Generic extraction for unknown domains
+          const domain = hostname.replace(/^www\./, '');
+          const parts = domain.split('.');
+          if (parts.length >= 2) {
+            const mainDomain = parts[parts.length - 2];
+            publicationName = mainDomain.charAt(0).toUpperCase() + mainDomain.slice(1);
+          }
+        }
+      } catch (urlError) {
+        console.error('Error extracting publication from URL:', urlError);
+        publicationName = 'Unknown Publication';
+      }
+
+      // Return the extracted data
+      res.json({
+        title: title,
+        publication: publicationName,
+        date: null // We're not extracting dates as requested
+      });
+
+    } catch (error) {
+      console.error('AI extraction error:', error);
+      res.status(500).json({ error: 'Failed to extract article information: ' + (error instanceof Error ? error.message : String(error)) });
+    }
+  });
+
+  // Helper function to extract publication name from URL
+  function extractPublicationFromURL(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname.toLowerCase();
+      
+      // Define common publication domains
+      const publicationMap: { [key: string]: string } = {
+        'finance.yahoo.com': 'Yahoo Finance',
+        'www.yahoo.com': 'Yahoo',
+        'yahoo.com': 'Yahoo',
+        'cnn.com': 'CNN',
+        'www.cnn.com': 'CNN',
+        'bbc.com': 'BBC',
+        'www.bbc.com': 'BBC',
+        'reuters.com': 'Reuters',
+        'www.reuters.com': 'Reuters',
+        'bloomberg.com': 'Bloomberg',
+        'www.bloomberg.com': 'Bloomberg',
+        'wsj.com': 'Wall Street Journal',
+        'www.wsj.com': 'Wall Street Journal',
+        'nytimes.com': 'New York Times',
+        'www.nytimes.com': 'New York Times',
+        'forbes.com': 'Forbes',
+        'www.forbes.com': 'Forbes',
+        'techcrunch.com': 'TechCrunch',
+        'www.techcrunch.com': 'TechCrunch',
+        'businessinsider.com': 'Business Insider',
+        'www.businessinsider.com': 'Business Insider',
+        'marketwatch.com': 'MarketWatch',
+        'www.marketwatch.com': 'MarketWatch',
+        'cnbc.com': 'CNBC',
+        'www.cnbc.com': 'CNBC'
+      };
+      
+      if (publicationMap[hostname]) {
+        return publicationMap[hostname];
+      }
+      
+      // Generic extraction for unknown domains
+      let domain = hostname.replace(/^www\./, '');
+      
+      // Handle subdomains like finance.yahoo.com
+      const parts = domain.split('.');
+      if (parts.length > 2 && parts[0] !== 'www') {
+        // For subdomains like finance.yahoo.com
+        const subdomain = parts[0];
+        const mainDomain = parts.slice(1).join('.');
+        
+        if (mainDomain === 'yahoo.com') {
+          return `Yahoo ${subdomain.charAt(0).toUpperCase() + subdomain.slice(1)}`;
+        }
+      }
+      
+      // Extract main domain name and capitalize
+      const mainDomain = parts[parts.length - 2];
+      return mainDomain.charAt(0).toUpperCase() + mainDomain.slice(1);
+      
+    } catch (error) {
+      console.error('Error extracting publication from URL:', error);
+      return 'Publication';
+    }
+  }
   
   // Allow JWT-based auth for API requests
   app.use(jwtAuth);

@@ -12,10 +12,11 @@ import { apiFetch } from '@/lib/apiFetch';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
 import { format } from 'date-fns';
 import { Link } from 'wouter';
-import { Loader2, CreditCard, CheckCircle, CalendarIcon, ExternalLink, Newspaper, AlertCircle, Upload, Trash2 } from 'lucide-react';
+import { Loader2, CreditCard, CheckCircle, CalendarIcon, ExternalLink, Newspaper, AlertCircle, Upload, Trash2, Brain } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Logo } from '@/components/common/Logo';
 
 // UI Components
 import { 
@@ -99,6 +100,11 @@ export default function AccountPage() {
   // Media coverage modal state
   const [addMediaModalOpen, setAddMediaModalOpen] = useState(false);
   const [mediaDate, setMediaDate] = useState<Date | undefined>(new Date());
+  const [fetchingTitle, setFetchingTitle] = useState(false);
+  const urlFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Edit mode state for media items
+  const [editingMediaItem, setEditingMediaItem] = useState<any | null>(null);
   
   // Custom past media coverage items (separate from pitches/placements)
   const [customMediaItems, setCustomMediaItems] = useState<any[]>([]);
@@ -117,14 +123,11 @@ export default function AccountPage() {
     }
   }, [user?.id]);
   
-  // Media coverage form schema
+  // Media coverage form schema - publication is optional, no date required
   const mediaCoverageSchema = z.object({
     title: z.string().min(2, { message: "Title is required" }),
-    publication: z.string().min(2, { message: "Publication name is required" }),
+    publication: z.string().optional().or(z.literal("")),
     url: z.string().url({ message: "Please enter a valid URL" }),
-    date: z.date({
-      required_error: "Publication date is required",
-    }),
   });
 
   // Define subscription type
@@ -358,26 +361,289 @@ export default function AccountPage() {
       title: "",
       publication: "",
       url: "",
-      date: new Date(),
     },
   });
   
-  // Add media coverage handler
-  const handleAddMedia = (data: z.infer<typeof mediaCoverageSchema>) => {
+  // Function to intelligently fetch page title and publication using OpenAI
+  const fetchPageTitle = async (url: string) => {
+    try {
+      setFetchingTitle(true);
+      
+      // Basic URL validation
+      const urlPattern = /^https?:\/\/.+/;
+      if (!urlPattern.test(url)) {
+        return null;
+      }
+
+      let title = null;
+      let articleDate = null;
+      let publication = null;
+
+      // Use OpenAI to intelligently extract information - let backend handle HTML fetching
+      try {
+        const response = await apiFetch('/api/ai/extract-article-info', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: url
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          title = data.title;
+          articleDate = data.date;
+          publication = data.publication;
+          
+          console.log('AI extracted data:', data); // Debug log
+          
+          // Auto-fill the publication field if we got one
+          if (data.publication) {
+            mediaForm.setValue('publication', data.publication);
+          }
+          
+          // No longer auto-filling date since it's not in the form
+        } else {
+          console.error('AI extraction API error:', response.status, response.statusText);
+          // Fallback to URL-based title extraction
+          try {
+            const urlObj = new URL(url);
+            const pathname = urlObj.pathname;
+            const pathParts = pathname.split('/').filter(part => part.length > 0);
+            if (pathParts.length > 0) {
+              const lastPart = pathParts[pathParts.length - 1];
+              title = lastPart
+                .replace(/[-_]/g, ' ')
+                .replace(/\.(html|htm|php|aspx|jsp)$/i, '')
+                .replace(/\s+[\|\-\u2013\u2014]\s+.+$/, '') // Remove site suffixes
+                .replace(/\s+/g, ' ') // Clean whitespace
+                .replace(/\d{6,}/g, '') // Remove long number sequences
+                .trim();
+                
+              if (title && typeof title === 'string' && title.length > 150) {
+                title = title.substring(0, 150) + '...';
+              }
+            }
+          } catch (error) {
+            console.log('URL parsing fallback failed');
+          }
+        }
+      } catch (error) {
+        console.log('OpenAI extraction failed, using URL fallback');
+        // Fallback to URL-based title extraction
+        try {
+          const urlObj = new URL(url);
+          const pathname = urlObj.pathname;
+          const pathParts = pathname.split('/').filter(part => part.length > 0);
+          if (pathParts.length > 0) {
+            const lastPart = pathParts[pathParts.length - 1];
+            title = lastPart
+              .replace(/[-_]/g, ' ')
+              .replace(/\.(html|htm|php|aspx|jsp)$/i, '')
+              .replace(/\s+[\|\-\u2013\u2014]\s+.+$/, '')
+              .replace(/\s+/g, ' ')
+              .replace(/\d{6,}/g, '')
+              .trim();
+              
+            if (title && typeof title === 'string' && title.length > 150) {
+              title = title.substring(0, 150) + '...';
+            }
+          }
+        } catch (error) {
+          console.log('URL parsing fallback failed');
+        }
+      }
+      
+      return { title: title || null, date: articleDate, publication: publication };
+    } catch (error) {
+      console.error('Error fetching page title:', error);
+      return null;
+    } finally {
+      setFetchingTitle(false);
+    }
+  };
+
+  // Debounced URL change handler with improved logic
+  const handleUrlChange = async (url: string, onChange: (value: string) => void) => {
+    onChange(url);
+    
+    // Clear any existing timeout
+    if (urlFetchTimeoutRef.current) {
+      clearTimeout(urlFetchTimeoutRef.current);
+    }
+    
+    // Only fetch title if it's a valid URL, title field is empty, and we're not editing an existing item
+    const currentTitle = mediaForm.getValues('title');
+    if (url && !currentTitle && url.startsWith('http') && !editingMediaItem) {
+      // Add a debounce delay to avoid making requests on every keystroke
+      urlFetchTimeoutRef.current = setTimeout(async () => {
+        // Check if URL is still the same (user hasn't changed it)
+        const currentUrl = mediaForm.getValues('url');
+        if (currentUrl === url) {
+          const result = await fetchPageTitle(url);
+          if (result && result.title) {
+            mediaForm.setValue('title', result.title);
+            
+            // Show success message with what was extracted
+            const extractedItems = [];
+            if (result.title) extractedItems.push(`title: "${result.title.length > 50 ? result.title.substring(0, 50) + '...' : result.title}"`);
+            if (result.publication) extractedItems.push(`publication: "${result.publication}"`);
+            
+            toast({
+              title: "Article info auto-filled! ✨",
+              description: `Successfully detected: ${extractedItems.join(', ')}`,
+            });
+          } else {
+            toast({
+              title: "Couldn't auto-detect article info",
+              description: "Please enter the article details manually",
+              variant: "default",
+            });
+          }
+        }
+      }, 1500); // Wait 1.5 seconds after user stops typing
+    }
+  };
+
+
+  // Add media coverage handler - improved with better error handling
+  const handleAddMedia = async (data: z.infer<typeof mediaCoverageSchema>) => {
+    try {
+      console.log('handleAddMedia called with data:', data);
+      
+      if (!user?.id) {
+        toast({
+          title: "Error",
+          description: "User not found. Please try logging in again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Validate the data
+      if (!data.title || !data.url) {
+        toast({
+          title: "Missing Information",
+          description: "Please fill in all required fields.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (editingMediaItem) {
+        // Edit existing item
+        console.log('Editing existing media item:', editingMediaItem.id);
+        
+        setCustomMediaItems(prev => {
+          const updatedItems = prev.map(item => 
+            item.id === editingMediaItem.id 
+              ? { ...item, ...data, date: new Date().toISOString(), updatedAt: new Date().toISOString() }
+              : item
+          );
+          
+          // Save to localStorage
+          try {
+            localStorage.setItem(
+              `user_${user.id}_media_items`, 
+              JSON.stringify(updatedItems)
+            );
+            console.log('Updated item saved to localStorage successfully');
+          } catch (error) {
+            console.error('Failed to save updated media items to localStorage', error);
+            toast({
+              title: "Warning",
+              description: "Failed to save changes locally. The item was updated but may not persist.",
+              variant: "default",
+            });
+          }
+          
+          return updatedItems;
+        });
+        
+        toast({
+          title: "Media Updated Successfully! ✏️",
+          description: "Your media coverage has been updated",
+        });
+        
+      } else {
+        // Create a new media item with generated ID
+        const newItem = {
+          id: Date.now().toString(),
+          ...data,
+          // Store the date as a string to avoid serialization issues with localStorage
+          date: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+        };
+        
+        console.log('Creating new media item:', newItem);
+        
+        // Add to local state and update localStorage
+        setCustomMediaItems(prev => {
+          const updatedItems = [newItem, ...prev];
+          
+          // Save to localStorage
+          try {
+            localStorage.setItem(
+              `user_${user.id}_media_items`, 
+              JSON.stringify(updatedItems)
+            );
+            console.log('Saved to localStorage successfully');
+          } catch (error) {
+            console.error('Failed to save media items to localStorage', error);
+            toast({
+              title: "Warning",
+              description: "Failed to save locally. The item was added but may not persist.",
+              variant: "default",
+            });
+          }
+          
+          return updatedItems;
+        });
+        
+        toast({
+          title: "Media Added Successfully! 🎉",
+          description: "Your media coverage has been added to your profile",
+        });
+      }
+      
+      // Close modal and reset form
+      setAddMediaModalOpen(false);
+      setEditingMediaItem(null);
+      mediaForm.reset({
+        title: "",
+        publication: "",
+        url: "",
+      });
+      
+    } catch (error) {
+      console.error('Error in handleAddMedia:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save media coverage. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Function to open modal in edit mode
+  const handleEditMediaItem = (item: any) => {
+    setEditingMediaItem(item);
+    mediaForm.reset({
+      title: item.title,
+      publication: item.publication || "",
+      url: item.url,
+    });
+    setAddMediaModalOpen(true);
+  };
+  
+  // Function to delete a media item
+  const handleDeleteMediaItem = (itemId: string) => {
     if (!user?.id) return;
     
-    // Create a new media item with generated ID
-    const newItem = {
-      id: Date.now().toString(),
-      ...data,
-      // Store the date as a string to avoid serialization issues with localStorage
-      date: data.date.toISOString(),
-      createdAt: new Date().toISOString(),
-    };
-    
-    // Add to local state and update localStorage
     setCustomMediaItems(prev => {
-      const updatedItems = [newItem, ...prev];
+      const updatedItems = prev.filter(item => item.id !== itemId);
       
       // Save to localStorage
       try {
@@ -392,16 +658,9 @@ export default function AccountPage() {
       return updatedItems;
     });
     
-    // Could also save to backend if needed
-    // apiRequest('POST', `/api/users/${user.id}/custom-media`, newItem);
-    
-    // Close modal and reset form
-    setAddMediaModalOpen(false);
-    mediaForm.reset();
-    
     toast({
-      title: "Media Added",
-      description: "Your media coverage has been added to your profile",
+      title: "Media Deleted",
+      description: "The media coverage has been removed from your profile",
     });
   };
   
@@ -602,7 +861,7 @@ export default function AccountPage() {
               </a>
               
               <a 
-                href="/pitches" 
+                href="/my-pitches" 
                 className="flex items-center py-2 px-3 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50"
               >
                 <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1216,7 +1475,10 @@ export default function AccountPage() {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => setAddMediaModalOpen(true)}
+                    onClick={() => {
+                      setEditingMediaItem(null);
+                      setAddMediaModalOpen(true);
+                    }}
                     className="flex items-center gap-1"
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1232,24 +1494,46 @@ export default function AccountPage() {
                       {/* Custom added media items */}
                       {customMediaItems.map((item) => (
                         <div key={item.id} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
-                          <div className="flex justify-between">
-                            <h3 className="font-medium text-gray-900">{item.title}</h3>
-                            <span className="text-xs bg-gray-100 text-gray-700 rounded-full px-2 py-0.5 flex items-center">
-                              <Newspaper className="h-3 w-3 mr-1" />
-                              Added by you
-                            </span>
-                          </div>
-                          <div className="flex items-center mt-1 text-sm text-gray-500">
-                            <span className="font-medium text-gray-600 mr-1">{item.publication}</span>
-                            <span>• {formatDate(typeof item.date === 'string' ? item.date : item.date?.toISOString())}</span>
-                          </div>
-                          <div className="mt-2">
-                            {item.url && (
-                              <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm font-medium flex items-center">
-                                View article
-                                <ExternalLink className="h-3 w-3 ml-1" />
-                              </a>
-                            )}
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h3 className="font-medium text-gray-900">{item.title}</h3>
+                              <div className="flex items-center mt-1 text-sm text-gray-500">
+                                {item.publication && <span className="font-medium text-gray-600 mr-1">{item.publication}</span>}
+                                <span>• {formatDate(typeof item.date === 'string' ? item.date : item.date?.toISOString())}</span>
+                              </div>
+                              <div className="mt-2">
+                                {item.url && (
+                                  <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm font-medium flex items-center">
+                                    View article
+                                    <ExternalLink className="h-3 w-3 ml-1" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 ml-4">
+                              <span className="text-xs bg-gray-100 text-gray-700 rounded-full px-2 py-0.5 flex items-center">
+                                <Newspaper className="h-3 w-3 mr-1" />
+                                Added by you
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditMediaItem(item)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1 h-auto"
+                              >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteMediaItem(item.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-auto"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -1277,7 +1561,10 @@ export default function AccountPage() {
                     <div className="text-center py-8 px-4">
                       <p className="text-gray-500 mb-4">You don't have any media coverage yet. You can add your past coverage or get quoted through opportunities.</p>
                       <div className="flex flex-wrap justify-center gap-3">
-                        <Button variant="outline" size="sm" onClick={() => setAddMediaModalOpen(true)}>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setEditingMediaItem(null);
+                          setAddMediaModalOpen(true);
+                        }}>
                           Add Past Coverage
                         </Button>
                         <Button variant="outline" size="sm" asChild>
@@ -1481,13 +1768,45 @@ export default function AccountPage() {
       <Dialog open={addMediaModalOpen} onOpenChange={setAddMediaModalOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Add Media Coverage</DialogTitle>
+            <DialogTitle>{editingMediaItem ? 'Edit Media Coverage' : 'Add Media Coverage'}</DialogTitle>
             <DialogDescription>
-              Add details about media coverage you've received to showcase on your profile.
+              {editingMediaItem 
+                ? 'Update the details about this media coverage item.'
+                : 'Add details about media coverage you\'ve received to showcase on your profile.'
+              }
             </DialogDescription>
           </DialogHeader>
           <Form {...mediaForm}>
             <form onSubmit={mediaForm.handleSubmit(handleAddMedia)} className="space-y-4">
+              <FormField
+                control={mediaForm.control}
+                name="url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Article URL *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="https://example.com/article" 
+                        {...field}
+                        onChange={(e) => handleUrlChange(e.target.value, field.onChange)}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {fetchingTitle ? (
+                        <span className="text-blue-600 flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Fetching article info...
+                        </span>
+                      ) : editingMediaItem ? (
+                        "Enter the URL of the article or media coverage."
+                      ) : (
+                        "Paste the article URL first - we'll automatically detect the title and date for you!"
+                      )}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={mediaForm.control}
                 name="title"
@@ -1495,7 +1814,17 @@ export default function AccountPage() {
                   <FormItem>
                     <FormLabel>Article/Coverage Title</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter the title of the article or coverage" {...field} />
+                      <div className="relative">
+                        <Input 
+                          placeholder="Title will be auto-filled from URL above" 
+                          {...field} 
+                        />
+                        {fetchingTitle && (
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                          </div>
+                        )}
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1506,71 +1835,39 @@ export default function AccountPage() {
                 name="publication"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Publication</FormLabel>
+                    <FormLabel>Publication Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter the name of the publication" {...field} />
+                      <Input placeholder="e.g. TechCrunch, Forbes, etc." {...field} />
                     </FormControl>
+                    <FormDescription>
+                      Name of the publication or website that published the article
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
-                control={mediaForm.control}
-                name="url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>URL Link</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://example.com/article" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={mediaForm.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Publication Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={"w-full pl-3 text-left font-normal"}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              
+              {/* Powered by QuoteBid AI Section */}
+              <div className="pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-center gap-2 text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
+                  <Brain className="h-3 w-3 text-blue-600" />
+                  <span>Powered by</span>
+                  <div className="flex items-center">
+                    <Logo height={16} className="mr-1" />
+                    <span className="text-blue-600 font-medium">AI</span>
+                  </div>
+                </div>
+              </div>
+              
               <DialogFooter className="pt-4">
-                <Button type="button" variant="outline" onClick={() => setAddMediaModalOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => {
+                  setAddMediaModalOpen(false);
+                  setEditingMediaItem(null);
+                }}>
                   Cancel
                 </Button>
                 <Button type="submit">
-                  Add Media
+                  {editingMediaItem ? 'Update Media' : 'Add Media'}
                 </Button>
               </DialogFooter>
             </form>
