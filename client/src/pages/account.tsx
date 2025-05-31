@@ -1498,8 +1498,7 @@ export default function AccountPage() {
                             <div className="flex-1">
                               <h3 className="font-medium text-gray-900">{item.title}</h3>
                               <div className="flex items-center mt-1 text-sm text-gray-500">
-                                {item.publication && <span className="font-medium text-gray-600 mr-1">{item.publication}</span>}
-                                <span>• {formatDate(typeof item.date === 'string' ? item.date : item.date?.toISOString())}</span>
+                                {item.publication && <span className="font-medium text-gray-600">{item.publication}</span>}
                               </div>
                               <div className="mt-2">
                                 {item.url && (
@@ -1543,8 +1542,7 @@ export default function AccountPage() {
                         <div key={placement.id} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
                           <h3 className="font-medium text-gray-900">{placement.articleTitle || 'Untitled Article'}</h3>
                           <div className="flex items-center mt-1 text-sm text-gray-500">
-                            <span className="font-medium text-gray-600 mr-1">{placement.publication?.name || 'Publication'}</span>
-                            <span>• {formatDate(placement.publicationDate || placement.createdAt)}</span>
+                            <span className="font-medium text-gray-600">{placement.publication?.name || 'Publication'}</span>
                           </div>
                           <div className="mt-2">
                             {placement.articleUrl && (
@@ -1850,9 +1848,11 @@ export default function AccountPage() {
               {/* Powered by QuoteBid AI Section */}
               <div className="pt-4 border-t border-gray-100">
                 <div className="flex items-center justify-center gap-2 text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
-                  <Brain className="h-3 w-3 text-blue-600" />
                   <span>Powered By:</span>
-                  <Logo height={16} />
+                  <div className="flex items-center">
+                    <span className="text-blue-600 font-bold text-sm">QuoteBid</span>
+                    <span className="text-purple-600 font-bold text-sm ml-1">AI</span>
+                  </div>
                 </div>
               </div>
               
