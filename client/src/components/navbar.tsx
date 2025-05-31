@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, AuthContext } from "@/hooks/use-auth";
 import { useNotifications } from "@/hooks/use-notifications";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -10,11 +10,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useContext } from "react";
 
 export default function Navbar() {
   const [location] = useLocation();
-  const { user, logoutMutation } = useAuth();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, createSampleNotifications } = useNotifications();
+  const authContext = useContext(AuthContext);
+  const { notifications, unreadCount, markAsRead, clearAllNotifications } = useNotifications();
+  
+  if (!authContext) {
+    throw new Error("Navbar must be used within an AuthProvider");
+  }
+  
+  const { user, logoutMutation } = authContext;
   
   // Check if user is admin - this is just a UI check, the real permission check happens on the server
   const isAdmin = user?.isAdmin === true;
@@ -183,20 +190,20 @@ export default function Navbar() {
                     })
                   )}
                 </div>
-                <div className="p-2 border-t border-gray-100 flex space-x-2">
-                  <button 
-                    className="flex-1 text-center py-2 px-4 text-xs font-medium text-blue-600 hover:bg-gray-50 rounded-md"
-                    onClick={() => markAllAsRead()}
-                  >
-                    Mark all as read
-                  </button>
-                  <button 
-                    className="flex-1 text-center py-2 px-4 text-xs font-medium text-gray-600 hover:bg-gray-50 rounded-md border border-gray-200"
-                    onClick={() => createSampleNotifications()}
-                  >
-                    Create test notifications
-                  </button>
-                </div>
+                {/* Clear notifications button - only show if there are notifications */}
+                {notifications.length > 0 && (
+                  <div className="px-4 py-3 border-t border-gray-100">
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        clearAllNotifications();
+                      }}
+                      className="w-full text-center py-2 px-4 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md border border-red-200 hover:border-red-300 transition-colors"
+                    >
+                      Clear All Notifications
+                    </button>
+                  </div>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
             
@@ -237,7 +244,6 @@ export default function Navbar() {
                       </Link>
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/logout" className="cursor-pointer w-full text-red-600">
                       Sign out

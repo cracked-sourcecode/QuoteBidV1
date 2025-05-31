@@ -100,6 +100,30 @@ export function useNotifications() {
     },
   });
 
+  // Clear all notifications
+  const clearAllNotificationsMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest('DELETE', '/api/notifications/clear-all');
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'All notifications cleared successfully',
+      });
+      // Update cache to empty array
+      queryClient.setQueryData<Notification[]>(['/api/notifications'], []);
+      queryClient.setQueryData(['/api/notifications/unread-count'], { count: 0 });
+    },
+    onError: (error) => {
+      console.error('Error clearing notifications:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to clear notifications',
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     notifications: notifications || [],
     unreadCount: unreadCountData?.count || 0,
@@ -108,8 +132,10 @@ export function useNotifications() {
     markAsRead: (id: number) => markAsReadMutation.mutate(id),
     markAllAsRead: () => markAllAsReadMutation.mutate(),
     createSampleNotifications: () => createSamplesMutation.mutate(),
+    clearAllNotifications: () => clearAllNotificationsMutation.mutate(),
     isMarkingAsRead: markAsReadMutation.isPending,
     isMarkingAllAsRead: markAllAsReadMutation.isPending,
     isCreatingSamples: createSamplesMutation.isPending,
+    isClearingAll: clearAllNotificationsMutation.isPending,
   };
 }

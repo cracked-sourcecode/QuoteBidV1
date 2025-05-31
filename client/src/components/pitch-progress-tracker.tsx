@@ -1,7 +1,6 @@
 import React from "react";
 import { format } from 'date-fns';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { FileText, Send, Star, Trophy, AlertTriangle } from "lucide-react";
+import { Check, Clock, Send, Eye, Award, AlertCircle } from "lucide-react";
 import clsx from "clsx";
 
 // Import the canonical PitchStatus type
@@ -33,17 +32,17 @@ const stageDisplayText: Record<Stage, string> = {
   submitted: 'Submitted',
   sent_to_reporter: 'Sent',
   reporter_interested: 'Interested',
-  reporter_not_interested: 'Declined',
-  successful_coverage: 'Success',
+  reporter_not_interested: 'Not Selected',
+  successful_coverage: 'Published',
 };
 
 // Define icons for each stage
-const icons: Record<Stage, JSX.Element> = {
-  submitted: <FileText className="h-4 w-4" />,
-  sent_to_reporter: <Send className="h-4 w-4" />,
-  reporter_interested: <Star className="h-4 w-4" />,
-  reporter_not_interested: <AlertTriangle className="h-4 w-4" />,
-  successful_coverage: <Trophy className="h-4 w-4" />,
+const icons: Record<Stage, any> = {
+  submitted: Clock,
+  sent_to_reporter: Send,
+  reporter_interested: Eye,
+  reporter_not_interested: AlertCircle,
+  successful_coverage: Award,
 };
 
 // Define the pitch data interface
@@ -52,7 +51,7 @@ interface PitchData {
 }
 
 interface PitchProgressTrackerProps {
-  currentStage: PitchStatus; // Accept existing PitchStatus for backward compatibility
+  currentStage: PitchStatus;
   stageTimestamps?: Partial<Record<PitchStatus, Date>>;
   needsFollowUp?: boolean;
   pitch: PitchData;
@@ -67,111 +66,101 @@ export default function PitchProgressTracker({
   // Convert to canonical stage
   const currentStage = mapStatusToStage(rawStage);
   const declined = currentStage === 'reporter_not_interested';
+  const successful = currentStage === 'successful_coverage';
   
   // Define the stages in order for the stepper
-  // For declined pitches: submitted, sent, declined
-  // For successful pitches: submitted, sent, interested, successful
-  const stages: Stage[] = 
-    declined 
-      ? ['submitted', 'sent_to_reporter', 'reporter_not_interested'] 
-      : currentStage === 'successful_coverage'
-        ? ['submitted', 'sent_to_reporter', 'reporter_interested', 'successful_coverage']
-        : ['submitted', 'sent_to_reporter', currentStage];
+  const stages: Stage[] = declined 
+    ? ['submitted', 'sent_to_reporter', 'reporter_not_interested'] 
+    : ['submitted', 'sent_to_reporter', 'successful_coverage'];
 
   // Get current stage index
   const currentStageIndex = stages.findIndex(stage => stage === currentStage);
-
-  // Determine display stages
-  const displayStages = stages;
-
-  // Calculate progress percentage for the progress bar
-  // For successful pitches: submitted (25%) -> sent (50%) -> interested (75%) -> successful (100%)
-  // For declined pitches: submitted (33%) -> sent (66%) -> declined (100%)
-  const progressPercentage = Math.min(
-    100,
-    currentStageIndex >= 0 ? ((currentStageIndex / (stages.length - 1)) * 100) : 0
-  );
-
-  // Accessibility text
-  const a11yText = `Pitch progress: ${currentStageIndex + 1} of ${stages.length} steps completed${declined ? ', declined' : ''}`;
+  const activeStageIndex = Math.max(0, currentStageIndex);
 
   return (
-    <div 
-      className="flex flex-col w-full px-6 py-6 bg-gray-50 rounded-xl shadow-sm border border-gray-100"
-      aria-label={a11yText}
-      role="navigation"
-    >
-      {/* Progress bar with stages */}
-      <div className="relative flex items-center justify-between w-full pt-6">
-        {/* Background line - now thicker and rounder */}
-        <div className="absolute top-1/2 left-0 w-full h-4 -translate-y-1/2 bg-gray-200 rounded-full">
-          {/* Gradient progress bar with animated width - red for denied pitches */}
-          <div
-            className={`h-4 rounded-full transition-all duration-700 gloss shadow-inner ${
-              declined 
-                ? 'bg-gradient-to-r from-red-400 via-red-500 to-red-600' 
-                : 'bg-gradient-to-r from-brand-500 via-brand-700 to-brand-900'
-            }`}
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
+    <div className="w-full py-6">
+      <div className="flex items-center justify-between relative">
+        {/* Background line */}
+        <div className="absolute top-6 left-8 right-8 h-0.5 bg-gray-200"></div>
         
-        {/* Stage circles */}
-        {displayStages.map((stage, idx) => {
-          const filled = idx < currentStageIndex;
-          const current = idx === currentStageIndex;
-          const isDeclinedFinal = stage === 'reporter_not_interested';
-          const isSuccessFinal = stage === 'successful_coverage' && !declined;
-          const isInterested = stage === 'reporter_interested' && currentStage === 'reporter_interested';
-          
-          // Circle styling based on state
-          const circleCls = clsx(
-            'relative z-10 flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300',
-            filled && 'bg-gradient-to-br from-brand-500 to-brand-900 text-white shadow-lg',
-            current && !isDeclinedFinal && !isSuccessFinal && !isInterested && 'bg-white ring-3 ring-brand-700 text-brand-700',
-            !filled && !current && !isDeclinedFinal && !isSuccessFinal && !isInterested && 'bg-white border-2 border-gray-300 text-gray-400',
-            isDeclinedFinal && declined && 'bg-gradient-to-br from-red-500 to-red-700 text-white shadow-lg',
-            isSuccessFinal && currentStage === 'successful_coverage' && 'bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg',
-            isInterested && 'bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg'
-          );
-          
-          // Label styling based on state
-          const labelCls = clsx(
-            "mt-3 text-xs text-center font-medium max-w-[80px]",
-            filled ? 'text-brand-700' :
-            current ? 'text-brand-900 font-bold' :
-            isInterested ? 'text-amber-600 font-bold' :
-            isDeclinedFinal && declined ? 'text-red-600 font-bold' :
-            isSuccessFinal ? 'text-emerald-600 font-bold' :
-            'text-gray-500'
-          );
+        {/* Progress line */}
+        <div 
+          className={`absolute top-6 left-8 h-0.5 transition-all duration-500 ${
+            declined ? 'bg-red-500' : 
+            successful ? 'bg-green-500' : 
+            'bg-blue-500'
+          }`}
+          style={{ 
+            width: activeStageIndex === 0 ? '0%' : 
+                   activeStageIndex === 1 ? 'calc(50% - 32px)' : 
+                   'calc(100% - 64px)' 
+          }}
+        ></div>
 
+        {/* Steps */}
+        {stages.map((stage, index) => {
+          const isCompleted = index < activeStageIndex;
+          const isCurrent = index === activeStageIndex;
+          const Icon = icons[stage];
+          
           return (
-            <div className="flex flex-col items-center" key={stage + '-' + idx}>
-              <div 
-                className={circleCls}
-                aria-current={current ? "step" : undefined}
-              >
-                {/* Icon */}
-                {icons[stage]}
-                
-                {/* Screen reader text */}
-                <span className="sr-only">{stageDisplayText[stage]}</span>
+            <div key={stage} className="flex flex-col items-center relative z-10">
+              {/* Step circle */}
+              <div className={`
+                w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300
+                ${declined ? (
+                  isCompleted ? 'bg-red-500 border-red-500' : 
+                  isCurrent ? 'bg-red-50 border-red-500' : 
+                  'bg-white border-gray-300'
+                ) : successful ? (
+                  isCompleted ? 'bg-green-500 border-green-500' : 
+                  isCurrent ? 'bg-green-50 border-green-500' : 
+                  'bg-white border-gray-300'
+                ) : (
+                  isCompleted ? 'bg-blue-500 border-blue-500' : 
+                  isCurrent ? 'bg-blue-50 border-blue-500' : 
+                  'bg-white border-gray-300'
+                )}
+              `}>
+                {isCompleted ? (
+                  <Check className="h-5 w-5 text-white" />
+                ) : (
+                  <Icon className={`h-5 w-5 ${
+                    declined ? (
+                      isCurrent ? 'text-red-500' : 'text-gray-400'
+                    ) : successful ? (
+                      isCurrent ? 'text-green-500' : 'text-gray-400'
+                    ) : (
+                      isCurrent ? 'text-blue-500' : 'text-gray-400'
+                    )
+                  }`} />
+                )}
               </div>
               
-              {/* Label */}
-              <span className={labelCls}>
+              {/* Step label */}
+              <span className={`
+                mt-3 text-sm font-medium text-center
+                ${declined ? (
+                  isCompleted ? 'text-red-600' : 
+                  isCurrent ? 'text-red-600' : 
+                  'text-gray-500'
+                ) : successful ? (
+                  isCompleted ? 'text-green-600' : 
+                  isCurrent ? 'text-green-600' : 
+                  'text-gray-500'
+                ) : (
+                  isCompleted ? 'text-blue-600' : 
+                  isCurrent ? 'text-blue-600' : 
+                  'text-gray-500'
+                )}
+              `}>
                 {stageDisplayText[stage]}
-                {stage === 'reporter_not_interested' && '⚠'} 
-                {stage === 'successful_coverage' && !declined && '🏆'}
-                {stage === 'reporter_interested' && '🔔'}
               </span>
               
-              {/* Follow-up badge for interested stage */}
-              {needsFollowUp && stage === 'reporter_interested' && currentStage === 'reporter_interested' && (
-                <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-red-100 text-red-800 text-[10px] rounded-full font-bold shadow-sm border border-red-200 animate-pulse-subtle">
-                  <span className="h-1.5 w-1.5 bg-red-500 rounded-full"></span>
-                  Follow-Up
+              {/* Follow-up indicator */}
+              {needsFollowUp && stage === 'reporter_interested' && isCurrent && (
+                <span className="mt-1 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
+                  Action needed
                 </span>
               )}
             </div>

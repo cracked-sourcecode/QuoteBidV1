@@ -404,24 +404,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Create sample notifications for testing
+  // Create sample notifications for testing - DISABLED for real testing
   app.post("/api/notifications/create-samples", async (req: Request, res: Response) => {
+    return res.status(404).json({ 
+      message: 'Sample notification creation is disabled. Real notifications are now generated automatically based on platform events.' 
+    });
+  });
+  
+  // Clear all notifications for a user (for demo/testing purposes)
+  app.delete("/api/notifications/clear-all", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!req.isAuthenticated?.()) {
         return res.status(401).json({ message: 'Not authenticated' });
       }
-      
-      const userId = req.user.id;
-      const result = await createSampleNotifications(userId);
-      
-      if (result) {
-        return res.json({ success: true, message: 'Sample notifications created successfully' });
-      } else {
-        return res.status(500).json({ message: 'Failed to create sample notifications' });
+
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
       }
+
+      // Delete all notifications for this user
+      await getDb().delete(notifications)
+        .where(eq(notifications.userId, userId));
+
+      console.log(`Cleared all notifications for user ${userId}`);
+      return res.json({ success: true, message: 'All notifications cleared successfully' });
     } catch (error) {
-      console.error('Error creating sample notifications:', error);
-      return res.status(500).json({ message: 'Failed to create sample notifications' });
+      console.error('Error clearing notifications:', error);
+      return res.status(500).json({ message: 'Failed to clear notifications' });
     }
   });
   
@@ -1668,6 +1678,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: existingPitch.id,
           ...updatedData
         });
+        
+        // Create notification for pitch update/resubmission
+        try {
+          const opportunity = await storage.getOpportunity(opportunityId);
+          const opportunityTitle = opportunity?.title || 'Unknown Opportunity';
+          
+          await notificationService.createNotification({
+            userId: userId,
+            type: 'pitch_status',
+            title: '📝 Pitch Updated Successfully!',
+            message: `Your pitch for "${opportunityTitle}" has been updated and is being reviewed.`,
+            linkUrl: '/my-pitches',
+            relatedId: existingPitch.id,
+            relatedType: 'pitch',
+            icon: 'check-circle',
+            iconColor: 'green',
+          });
+          
+          console.log(`Created notification for user ${userId} after pitch ${existingPitch.id} update`);
+        } catch (notificationError) {
+          console.error('Error creating pitch update notification:', notificationError);
+          // Don't fail the request if notification creation fails
+        }
+        
         return res.status(200).json(updatedPitch);
       }
       
@@ -1689,6 +1723,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newPitch = await storage.createPitch(pitchData);
       
       console.log("Successfully created pitch with ID:", newPitch.id);
+      
+      // Create notification for successful pitch submission
+      try {
+        const opportunity = await storage.getOpportunity(opportunityId);
+        const opportunityTitle = opportunity?.title || 'Unknown Opportunity';
+        
+        await notificationService.createNotification({
+          userId: userId,
+          type: 'pitch_status',
+          title: '📝 Pitch Submitted Successfully!',
+          message: `Your pitch for "${opportunityTitle}" has been submitted and is being reviewed.`,
+          linkUrl: '/my-pitches',
+          relatedId: newPitch.id,
+          relatedType: 'pitch',
+          icon: 'check-circle',
+          iconColor: 'green',
+        });
+        
+        console.log(`Created notification for user ${userId} after pitch ${newPitch.id} submission`);
+      } catch (notificationError) {
+        console.error('Error creating pitch submission notification:', notificationError);
+        // Don't fail the request if notification creation fails
+      }
       
       // If no payment intent ID was provided and bid amount exists, create one now
       if (!paymentIntentId && bidAmount) {
@@ -2360,11 +2417,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
                 
                 // Return the pitch with its relations
-                return {
+                const enrichedPitch = {
                   ...pitch,
-                  opportunity: opportunity || undefined,
-                  publication: publication || undefined
+                  opportunity: opportunity ? {
+                    ...opportunity,
+                    publication: publication || undefined
+                  } : undefined,
                 };
+                
+                // Debug logging for first pitch
+                if (pitch.id === pitchesWithRelations[0].id) {
+                  console.log(`[DEBUG] First pitch structure:`, {
+                    pitchId: pitch.id,
+                    hasOpportunity: !!opportunity,
+                    opportunityTitle: opportunity?.title,
+                    hasPublication: !!publication,
+                    publicationName: publication?.name,
+                    finalStructure: {
+                      hasOpportunity: !!enrichedPitch.opportunity,
+                      hasPublication: !!enrichedPitch.opportunity?.publication,
+                      publicationName: enrichedPitch.opportunity?.publication?.name
+                    }
+                  });
+                }
+                
+                return enrichedPitch;
               } catch (error) {
                 console.error(`Error getting relations for pitch ${pitch.id}:`, error);
                 return pitch; // Return the pitch without relations
@@ -2697,6 +2774,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
               title: newOpportunity.title,
               description: newOpportunity.description
             });
+            
+            // Create in-app notifications for each matching user
+            const notificationPromises = matchingUsers.map(async (user: User) => {
+              try {
+                await notificationService.createNotification({
+                  userId: user.id,
+                  type: 'opportunity',
+                  title: '🚀 New Opportunity Available!',
+                  message: `A new ${opportunityData.industry} opportunity "${newOpportunity.title}" has been posted that matches your profile.`,
+                  linkUrl: `/opportunities/${newOpportunity.id}`,
+                  relatedId: newOpportunity.id,
+                  relatedType: 'opportunity',
+                  icon: 'tag',
+                  iconColor: 'blue',
+                });
+                console.log(`Created opportunity notification for user ${user.id} (${user.fullName || user.username})`);
+              } catch (error) {
+                console.error(`Failed to create notification for user ${user.id}:`, error);
+              }
+            });
+            
+            await Promise.all(notificationPromises);
+            console.log(`Created ${matchingUsers.length} opportunity notifications for new opportunity: ${newOpportunity.title}`);
           }
         } catch (emailError) {
           console.error("Failed to send email notifications:", emailError);
@@ -3026,6 +3126,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedPitch = await storage.updatePitchStatus(id, status);
       if (!updatedPitch) {
         return res.status(404).json({ message: "Pitch not found" });
+      }
+      
+      // Create notification for pitch status update
+      try {
+        const pitch = await storage.getPitch(id);
+        if (pitch) {
+          const opportunity = await storage.getOpportunity(pitch.opportunityId);
+          const opportunityTitle = opportunity?.title || 'Unknown Opportunity';
+          
+          let notificationTitle = '';
+          let notificationMessage = '';
+          let iconType = 'info';
+          let iconColor = 'blue';
+          
+          if (status === 'successful' || status === 'Successful Coverage') {
+            notificationTitle = '🎉 Pitch Accepted!';
+            notificationMessage = `Congratulations! Your pitch for "${opportunityTitle}" has been accepted for publication.`;
+            iconType = 'check-circle';
+            iconColor = 'green';
+          } else if (status === 'rejected' || status === 'declined') {
+            notificationTitle = '❌ Pitch Not Selected';
+            notificationMessage = `Your pitch for "${opportunityTitle}" was not selected this time. Keep trying!`;
+            iconType = 'x-circle';
+            iconColor = 'red';
+          } else if (status === 'under_review' || status === 'reviewing') {
+            notificationTitle = '👀 Pitch Under Review';
+            notificationMessage = `Your pitch for "${opportunityTitle}" is currently being reviewed.`;
+            iconType = 'info';
+            iconColor = 'blue';
+          } else {
+            notificationTitle = '📄 Pitch Status Updated';
+            notificationMessage = `Your pitch for "${opportunityTitle}" status has been updated to: ${status}`;
+            iconType = 'info';
+            iconColor = 'blue';
+          }
+          
+          await notificationService.createNotification({
+            userId: pitch.userId,
+            type: 'pitch_status',
+            title: notificationTitle,
+            message: notificationMessage,
+            linkUrl: '/my-pitches',
+            relatedId: pitch.id,
+            relatedType: 'pitch',
+            icon: iconType,
+            iconColor: iconColor,
+          });
+          
+          console.log(`Created notification for user ${pitch.userId} after pitch ${id} status changed to ${status}`);
+        }
+      } catch (notificationError) {
+        console.error('Error creating pitch status notification:', notificationError);
+        // Don't fail the request if notification creation fails
       }
       
       // If the pitch is marked as successful, create a placement
@@ -4587,6 +4740,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Log the successful capture for verification
         console.log(`Successfully captured payment intent ${paymentIntentId} for placement ${placementId}`);
+        
+        // Create notification for successful payment
+        try {
+          const placement = await storage.getPlacementWithRelations(placementId);
+          if (placement && placement.user) {
+            const opportunityTitle = placement.opportunity?.title || 'Unknown Opportunity';
+            
+            await notificationService.createNotification({
+              userId: placement.user.id,
+              type: 'payment',
+              title: '💳 Payment Processed Successfully!',
+              message: `Your payment of $${amount} for "${opportunityTitle}" has been processed successfully.`,
+              linkUrl: '/account',
+              relatedId: placementId,
+              relatedType: 'placement',
+              icon: 'credit-card',
+              iconColor: 'green',
+            });
+            
+            console.log(`Created payment success notification for user ${placement.user.id} for placement ${placementId}`);
+          }
+        } catch (notificationError) {
+          console.error('Error creating payment success notification:', notificationError);
+          // Don't fail the request if notification creation fails
+        }
         
         // Send success response
         return res.json({
