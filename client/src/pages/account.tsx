@@ -1851,11 +1851,8 @@ export default function AccountPage() {
               <div className="pt-4 border-t border-gray-100">
                 <div className="flex items-center justify-center gap-2 text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
                   <Brain className="h-3 w-3 text-blue-600" />
-                  <span>Powered by</span>
-                  <div className="flex items-center">
-                    <Logo height={16} className="mr-1" />
-                    <span className="text-blue-600 font-medium">AI</span>
-                  </div>
+                  <span>Powered By:</span>
+                  <Logo height={16} />
                 </div>
               </div>
               
