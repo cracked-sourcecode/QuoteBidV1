@@ -1574,30 +1574,6 @@ export default function AccountPage() {
                 </div>
               </div>
               
-              {/* Recent Quotes */}
-              <div className="mb-8">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700 mb-4">RECENT QUOTES</h2>
-                <div className="rounded-lg border border-gray-200 p-4">
-                  <div className="text-center py-6">
-                    <p className="text-gray-500 mb-4">No recent quotes yet. Your contributions to articles will appear here.</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Headshots/Media Photos */}
-              <div className="mb-8">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">MEDIA PHOTOS</h2>
-                  <Button variant="ghost" size="sm">
-                    + Add Photo
-                  </Button>
-                </div>
-                <div className="rounded-lg border border-gray-200 p-4">
-                  <div className="text-center py-6">
-                    <p className="text-gray-500 mb-4">You haven't added any professional photos yet. Add headshots for journalists to use.</p>
-                  </div>
-                </div>
-              </div>
               
               {/* Support Section */}
               <div className="mb-8 rounded-lg border border-gray-200 p-6 bg-gray-50">
