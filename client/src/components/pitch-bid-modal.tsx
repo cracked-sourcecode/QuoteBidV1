@@ -26,6 +26,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
+import { useSubscription } from "@/hooks/use-subscription";
+import { useLocation } from "wouter";
+import { CreditCard } from "lucide-react";
+import PaywallModal from "@/components/paywall-modal";
 
 interface PitchBidModalProps {
   isOpen: boolean;
@@ -39,9 +43,11 @@ export default function PitchBidModal({
   opportunity
 }: PitchBidModalProps) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { toast } = useToast();
-  const { user, isProfileComplete } = useAuth();
   const [activeTab, setActiveTab] = useState("text");
+  const [, setLocation] = useLocation();
+  const { canPitch, hasActiveSubscription, subscriptionStatus, isLoading: subscriptionLoading } = useSubscription();
   
   // Bidding state
   const [bidAmount, setBidAmount] = useState<number>(opportunity.minimumBid || 100);
@@ -193,7 +199,7 @@ export default function PitchBidModal({
   }, [opportunity]);
   
   // Fetch bids for this opportunity
-  const { data: bids, isLoading: isBidsLoading } = useQuery({
+  const { data: bids, isLoading: isBidsLoading } = useQuery<Bid[]>({
     queryKey: [`/api/opportunities/${opportunity.id}/bids`],
   });
   
@@ -325,9 +331,17 @@ export default function PitchBidModal({
     }).format(amount);
   };
   
+  // Add paywall modal state
+  const [showPaywallModal, setShowPaywallModal] = useState(false);
+
   // Submit both pitch and bid
   const submitPitchAndBid = useMutation({
     mutationFn: async () => {
+      // Check subscription before allowing submission - show paywall modal if needed
+      if (!canPitch) {
+        throw new Error("SUBSCRIPTION_REQUIRED");
+      }
+
       // Check if we have the necessary information
       if (bidAmount < currentHighestBid) {
         throw new Error("Bid amount must be higher than the current highest bid");
@@ -438,6 +452,12 @@ export default function PitchBidModal({
       onClose();
     },
     onError: (error: any) => {
+      if (error.message === "SUBSCRIPTION_REQUIRED") {
+        // Show paywall modal instead of toast
+        setShowPaywallModal(true);
+        return;
+      }
+      
       if (error.message.includes("Bid amount must be higher")) {
         const match = error.message.match(/minimumBid: (\d+)/);
         if (match && match[1]) {
@@ -458,337 +478,348 @@ export default function PitchBidModal({
       }
     }
   });
-  
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto pb-12 md:pb-6">
-        <DialogHeader>
-          <DialogTitle>Submit Your Pitch & Bid</DialogTitle>
-          <DialogDescription>
-            Pitch your expertise and place a bid for {opportunity.publication.name}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="mb-4">
-          <div className="flex items-center mb-2">
-            <img 
-              src={opportunity.publication.logo} 
-              alt={opportunity.publication.name} 
-              className="h-8 mr-3" 
-            />
-            <h4 className="font-medium text-gray-900">{opportunity.title}</h4>
+    <>
+      {/* Paywall Modal */}
+      <PaywallModal
+        isOpen={showPaywallModal}
+        onClose={() => setShowPaywallModal(false)}
+        title="Subscription Required"
+        description="You need an active subscription to submit pitches for opportunities."
+      />
+
+      {/* Main Pitch Modal */}
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto pb-12 md:pb-6">
+          <DialogHeader>
+            <DialogTitle>Submit Your Pitch & Bid</DialogTitle>
+            <DialogDescription>
+              Pitch your expertise and place a bid for {opportunity.publication.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mb-4">
+            <div className="flex items-center mb-2">
+              <img 
+                src={opportunity.publication.logo} 
+                alt={opportunity.publication.name} 
+                className="h-8 mr-3" 
+              />
+              <h4 className="font-medium text-gray-900">{opportunity.title}</h4>
+            </div>
+            
+            {/* Profile completion warning - only show if profile is not complete */}
+            {user && !user.profileCompleted && (
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4 text-sm">
+                <div className="flex items-start">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2 text-blue-600 mt-0.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <div>
+                    <p className="font-medium text-blue-800">Your profile is incomplete</p>
+                    <p className="text-blue-700 mt-1">
+                      Complete your profile to increase your chances of being selected by publications.
+                    </p>
+                    <Button variant="outline" size="sm" className="mt-2" asChild>
+                      <Link href="/profile-setup">Complete Profile</Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Bid Urgency Alert with view count */}
+            <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4 text-sm">
+              <p className="text-amber-800 font-medium">
+                <span className="inline-flex items-center">
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="h-4 w-4 mr-1 text-amber-800" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth="2" 
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" 
+                    />
+                  </svg>
+                  {expertViewCount} experts viewed this pitch—{bidCount} already bidding.
+                </span>
+              </p>
+            </div>
+            
+            {/* Opportunity Description */}
+            <div className="mb-4">
+              <h5 className="text-sm font-medium text-gray-700 mb-1">Description:</h5>
+              <p className="text-gray-700 text-sm italic">
+                "{opportunity.description}"
+              </p>
+            </div>
+            
+            <div className="flex justify-between mb-4">
+              <div className="text-sm">
+                <p className="text-gray-600">
+                  Current Bid: <span className="font-medium">{formatCurrency(currentHighestBid)}</span>
+                </p>
+                <p className="text-gray-500 text-xs mt-1">
+                  {recentBidActivity}
+                </p>
+              </div>
+              <div className="text-sm text-right">
+                <p className="text-gray-600">
+                  Closes in: <span className="font-medium">{timeRemaining}</span>
+                </p>
+                {bids && Array.isArray(bids) && bids.length > 0 && (
+                  <div className="flex items-center justify-end mt-1">
+                    {/* Avatars representing bidders */}
+                    <div className="flex -space-x-2 mr-2">
+                      {[...Array(Math.min(3, bids.length))].map((_, i) => (
+                        <Avatar key={i} className="border-2 border-white w-6 h-6">
+                          <AvatarFallback className="text-[10px]">U{i+1}</AvatarFallback>
+                        </Avatar>
+                      ))}
+                    </div>
+                    {bids.length > 3 && (
+                      <span className="text-xs text-gray-500">+{bids.length - 3} others</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Bidding Section */}
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Your Bid Amount</label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-gray-500 sm:text-sm">$</span>
+                </div>
+                <Input
+                  type="number"
+                  min={currentHighestBid}
+                  className="focus:ring-qpurple focus:border-qpurple block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md py-2"
+                  placeholder="0"
+                  value={bidAmount}
+                  onChange={(e) => setBidAmount(parseInt(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+            
+            {/* Pitch Section */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-gray-700">Your Pitch</label>
+                <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setActiveTab(activeTab === "text" ? "voice" : "text")}>
+                  Switch to {activeTab === "text" ? "Voice" : "Text"} Pitch
+                </Button>
+              </div>
+              
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="text">Text Pitch</TabsTrigger>
+                  <TabsTrigger value="voice">Voice Pitch</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="text" className="mt-0">
+                  <div>
+                    {lastSavedAt && (
+                      <div className="text-xs text-gray-500 mb-1 text-right">
+                        {autoSaving ? "Saving..." : `Last saved at ${lastSavedAt.toLocaleTimeString()}`}
+                      </div>
+                    )}
+                    <Textarea
+                      placeholder="Describe why you're the right expert for this opportunity..."
+                      rows={5}
+                      className="shadow-sm focus:ring-qpurple focus:border-qpurple block w-full sm:text-sm border-gray-300 rounded-md resize-none"
+                      value={pitchContent}
+                      onChange={handlePitchContentChange}
+                      onBlur={saveDraft}
+                    />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="voice" className="mt-0">
+                  <div className="mb-4 text-center">
+                    <div className="w-20 h-20 mx-auto bg-qpurple bg-opacity-10 rounded-full flex items-center justify-center mb-3">
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-8 w-8 text-qpurple" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth="2" 
+                          d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" 
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-sm text-gray-600 mb-2">
+                      {isRecording ? 
+                        <span className="text-red-500 font-medium">Recording: {formatTime(recordingTime)}</span> :
+                        <span>Recording Time: <span className="font-medium">{formatTime(recordingTime)}</span></span>
+                      }
+                    </div>
+                    <div className="flex justify-center space-x-3">
+                      {isRecording ? (
+                        <Button 
+                          onClick={stopRecording}
+                          className="px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700"
+                        >
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            className="h-5 w-5" 
+                            fill="none" 
+                            viewBox="0 0 24 24" 
+                            stroke="currentColor"
+                          >
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth="2" 
+                              d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                            />
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth="2" 
+                              d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" 
+                            />
+                          </svg>
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={startRecording}
+                          disabled={!!audioURL || isProcessing}
+                          className="px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-qpurple hover:bg-qpurple-dark"
+                        >
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            className="h-5 w-5" 
+                            fill="none" 
+                            viewBox="0 0 24 24" 
+                            stroke="currentColor"
+                          >
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth="2" 
+                              d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" 
+                            />
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth="2" 
+                              d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                            />
+                          </svg>
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {audioURL && (
+                      <div className="mt-3">
+                        <audio controls src={audioURL} className="w-full"></audio>
+                      </div>
+                    )}
+                    
+                    {isProcessing && (
+                      <div className="mt-3 text-sm text-gray-600">
+                        Processing your recording...
+                      </div>
+                    )}
+                    
+                    {transcript && (
+                      <div className="mt-4 text-left">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Transcript (editable)</label>
+                        <Textarea
+                          rows={4}
+                          className="shadow-sm focus:ring-qpurple focus:border-qpurple block w-full sm:text-sm border-gray-300 rounded-md resize-none"
+                          value={transcript}
+                          onChange={(e) => setTranscript(e.target.value)}
+                          onBlur={saveDraft}
+                          disabled={isProcessing || processRecording.isPending}
+                        />
+                        {lastSavedAt && (
+                          <div className="text-xs text-gray-500 mt-1 text-right">
+                            {autoSaving ? "Saving..." : `Last saved at ${lastSavedAt.toLocaleTimeString()}`}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
           </div>
           
-          {/* Profile completion warning - only show if profile is not complete */}
-          {user && !user.profileCompleted && !isProfileComplete() && (
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4 text-sm">
-              <div className="flex items-start">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2 text-blue-600 mt-0.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <div>
-                  <p className="font-medium text-blue-800">Your profile is incomplete</p>
-                  <p className="text-blue-700 mt-1">
-                    Complete your profile to increase your chances of being selected by publications.
-                  </p>
-                  <Button variant="outline" size="sm" className="mt-2" asChild>
-                    <Link href="/profile-setup">Complete Profile</Link>
-                  </Button>
-                </div>
+          {/* Bid History (if applicable) */}
+          {!isBidsLoading && bids && Array.isArray(bids) && bids.length > 0 && (
+            <div className="bg-gray-50 p-3 rounded-md mb-4">
+              <h5 className="text-sm font-medium text-gray-700 mb-2">Recent Bid Activity</h5>
+              <div className="space-y-2">
+                {bids.slice(0, 5).map((bid: Bid, index: number) => (
+                  <div key={bid.id} className="flex justify-between text-sm">
+                    <span className="text-gray-600">Anonymous</span>
+                    <span className="font-medium">{formatCurrency(bid.amount)}</span>
+                  </div>
+                ))}
+                {opportunity.minimumBid !== null && opportunity.minimumBid > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Starting bid</span>
+                    <span className="font-medium">{formatCurrency(opportunity.minimumBid)}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
-          
-          {/* Bid Urgency Alert with view count */}
-          <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4 text-sm">
-            <p className="text-amber-800 font-medium">
-              <span className="inline-flex items-center">
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  className="h-4 w-4 mr-1 text-amber-800" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth="2" 
-                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" 
-                  />
-                </svg>
-                {expertViewCount} experts viewed this pitch—{bidCount} already bidding.
-              </span>
-            </p>
-          </div>
-          
-          {/* Opportunity Description */}
-          <div className="mb-4">
-            <h5 className="text-sm font-medium text-gray-700 mb-1">Description:</h5>
-            <p className="text-gray-700 text-sm italic">
-              "{opportunity.description}"
-            </p>
-          </div>
-          
-          <div className="flex justify-between mb-4">
-            <div className="text-sm">
-              <p className="text-gray-600">
-                Current Bid: <span className="font-medium">{formatCurrency(currentHighestBid)}</span>
-              </p>
-              <p className="text-gray-500 text-xs mt-1">
-                {recentBidActivity}
-              </p>
-            </div>
-            <div className="text-sm text-right">
-              <p className="text-gray-600">
-                Closes in: <span className="font-medium">{timeRemaining}</span>
-              </p>
-              {bids && Array.isArray(bids) && bids.length > 0 && (
-                <div className="flex items-center justify-end mt-1">
-                  {/* Avatars representing bidders */}
-                  <div className="flex -space-x-2 mr-2">
-                    {[...Array(Math.min(3, bids.length))].map((_, i) => (
-                      <Avatar key={i} className="border-2 border-white w-6 h-6">
-                        <AvatarFallback className="text-[10px]">U{i+1}</AvatarFallback>
-                      </Avatar>
-                    ))}
-                  </div>
-                  {bids.length > 3 && (
-                    <span className="text-xs text-gray-500">+{bids.length - 3} others</span>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Bidding Section */}
-          <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Your Bid Amount</label>
-            <div className="mt-1 relative rounded-md shadow-sm">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-gray-500 sm:text-sm">$</span>
-              </div>
-              <Input
-                type="number"
-                min={currentHighestBid}
-                className="focus:ring-qpurple focus:border-qpurple block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md py-2"
-                placeholder="0"
-                value={bidAmount}
-                onChange={(e) => setBidAmount(parseInt(e.target.value) || 0)}
-              />
-            </div>
-          </div>
-          
-          {/* Pitch Section */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm font-medium text-gray-700">Your Pitch</label>
-              <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setActiveTab(activeTab === "text" ? "voice" : "text")}>
-                Switch to {activeTab === "text" ? "Voice" : "Text"} Pitch
+
+          <DialogFooter className="sm:justify-between">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={onClose} className="mt-2 sm:mt-0">
+                Cancel
+              </Button>
+              <Button 
+                variant="secondary" 
+                onClick={saveDraft}
+                disabled={autoSaving || (!pitchContent.trim() && !transcript)}
+                className="mt-2 sm:mt-0"
+              >
+                {autoSaving ? "Saving..." : "Save Draft"}
               </Button>
             </div>
-            
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="text">Text Pitch</TabsTrigger>
-                <TabsTrigger value="voice">Voice Pitch</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="text" className="mt-0">
-                <div>
-                  {lastSavedAt && (
-                    <div className="text-xs text-gray-500 mb-1 text-right">
-                      {autoSaving ? "Saving..." : `Last saved at ${lastSavedAt.toLocaleTimeString()}`}
-                    </div>
-                  )}
-                  <Textarea
-                    placeholder="Describe why you're the right expert for this opportunity..."
-                    rows={5}
-                    className="shadow-sm focus:ring-qpurple focus:border-qpurple block w-full sm:text-sm border-gray-300 rounded-md resize-none"
-                    value={pitchContent}
-                    onChange={handlePitchContentChange}
-                    onBlur={saveDraft}
-                  />
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="voice" className="mt-0">
-                <div className="mb-4 text-center">
-                  <div className="w-20 h-20 mx-auto bg-qpurple bg-opacity-10 rounded-full flex items-center justify-center mb-3">
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      className="h-8 w-8 text-qpurple" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor"
-                    >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth="2" 
-                        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" 
-                      />
-                    </svg>
-                  </div>
-                  <div className="text-sm text-gray-600 mb-2">
-                    {isRecording ? 
-                      <span className="text-red-500 font-medium">Recording: {formatTime(recordingTime)}</span> :
-                      <span>Recording Time: <span className="font-medium">{formatTime(recordingTime)}</span></span>
-                    }
-                  </div>
-                  <div className="flex justify-center space-x-3">
-                    {isRecording ? (
-                      <Button 
-                        onClick={stopRecording}
-                        className="px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700"
-                      >
-                        <svg 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          className="h-5 w-5" 
-                          fill="none" 
-                          viewBox="0 0 24 24" 
-                          stroke="currentColor"
-                        >
-                          <path 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                            strokeWidth="2" 
-                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-                          />
-                          <path 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                            strokeWidth="2" 
-                            d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" 
-                          />
-                        </svg>
-                      </Button>
-                    ) : (
-                      <Button 
-                        onClick={startRecording}
-                        disabled={!!audioURL || isProcessing}
-                        className="px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-qpurple hover:bg-qpurple-dark"
-                      >
-                        <svg 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          className="h-5 w-5" 
-                          fill="none" 
-                          viewBox="0 0 24 24" 
-                          stroke="currentColor"
-                        >
-                          <path 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                            strokeWidth="2" 
-                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" 
-                          />
-                          <path 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                            strokeWidth="2" 
-                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-                          />
-                        </svg>
-                      </Button>
-                    )}
-                  </div>
-                  
-                  {audioURL && (
-                    <div className="mt-3">
-                      <audio controls src={audioURL} className="w-full"></audio>
-                    </div>
-                  )}
-                  
-                  {isProcessing && (
-                    <div className="mt-3 text-sm text-gray-600">
-                      Processing your recording...
-                    </div>
-                  )}
-                  
-                  {transcript && (
-                    <div className="mt-4 text-left">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Transcript (editable)</label>
-                      <Textarea
-                        rows={4}
-                        className="shadow-sm focus:ring-qpurple focus:border-qpurple block w-full sm:text-sm border-gray-300 rounded-md resize-none"
-                        value={transcript}
-                        onChange={(e) => setTranscript(e.target.value)}
-                        onBlur={saveDraft}
-                        disabled={isProcessing || processRecording.isPending}
-                      />
-                      {lastSavedAt && (
-                        <div className="text-xs text-gray-500 mt-1 text-right">
-                          {autoSaving ? "Saving..." : `Last saved at ${lastSavedAt.toLocaleTimeString()}`}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </div>
-        
-        {/* Bid History (if applicable) */}
-        {!isBidsLoading && bids && Array.isArray(bids) && bids.length > 0 && (
-          <div className="bg-gray-50 p-3 rounded-md mb-4">
-            <h5 className="text-sm font-medium text-gray-700 mb-2">Recent Bid Activity</h5>
-            <div className="space-y-2">
-              {bids.slice(0, 5).map((bid: Bid, index: number) => (
-                <div key={bid.id} className="flex justify-between text-sm">
-                  <span className="text-gray-600">Anonymous</span>
-                  <span className="font-medium">{formatCurrency(bid.amount)}</span>
-                </div>
-              ))}
-              {opportunity.minimumBid !== null && opportunity.minimumBid > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Starting bid</span>
-                  <span className="font-medium">{formatCurrency(opportunity.minimumBid)}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        <DialogFooter className="sm:justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={onClose} className="mt-2 sm:mt-0">
-              Cancel
-            </Button>
             <Button 
-              variant="secondary" 
-              onClick={saveDraft}
-              disabled={autoSaving || (!pitchContent.trim() && !transcript)}
-              className="mt-2 sm:mt-0"
+              onClick={() => submitPitchAndBid.mutate()}
+              disabled={
+                bidAmount < currentHighestBid || 
+                submitPitchAndBid.isPending || 
+                (activeTab === "text" && !pitchContent.trim()) ||
+                (activeTab === "voice" && (!audioURL || !transcript || isProcessing || processRecording.isPending))
+              }
+              className="bg-qpurple hover:bg-qpurple/90"
             >
-              {autoSaving ? "Saving..." : "Save Draft"}
+              {submitPitchAndBid.isPending ? "Submitting..." : "Submit Pitch & Bid"}
             </Button>
-          </div>
-          <Button 
-            onClick={() => submitPitchAndBid.mutate()}
-            disabled={
-              bidAmount < currentHighestBid || 
-              submitPitchAndBid.isPending || 
-              (activeTab === "text" && !pitchContent.trim()) ||
-              (activeTab === "voice" && (!audioURL || !transcript || isProcessing || processRecording.isPending))
-            }
-            className="bg-qpurple hover:bg-qpurple/90"
-          >
-            {submitPitchAndBid.isPending ? "Submitting..." : "Submit Pitch & Bid"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

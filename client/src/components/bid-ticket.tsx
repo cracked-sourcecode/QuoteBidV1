@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import ConfirmBidDialog from '@/components/confirm-bid-dialog';
 import { apiRequest } from '@/lib/queryClient';
 import { Link } from 'wouter';
+import { useSubscription } from "@/hooks/use-subscription";
+import { CreditCard } from "lucide-react";
 
 interface BidTicketProps {
   bidInfo: BidInfo;
@@ -32,6 +34,7 @@ export default function BidTicket({
   opportunityId
 }: BidTicketProps) {
   const { toast } = useToast();
+  const { canPitch } = useSubscription();
   
   // Current bid amount, initialize with the minimum bid
   const [bidAmount, setBidAmount] = useState<number>(bidInfo.minBid);
@@ -161,7 +164,7 @@ export default function BidTicket({
         const pitchesRes = await apiRequest('GET', `/api/users/${userId}/pitches`);
         if (pitchesRes.ok) {
           const pitches = await pitchesRes.json();
-          const draftPitch = pitches.find(p => p.status === 'draft' && p.opportunityId === opportunityId);
+          const draftPitch = pitches.find((p: any) => p.status === 'draft' && p.opportunityId === opportunityId);
           
           if (draftPitch) {
             console.log('Found draft in pitches list:', draftPitch);
@@ -196,18 +199,6 @@ export default function BidTicket({
   
   // Function to start a new pitch (creates a draft)
   const handleStartPitch = async () => {
-    // Check if user has already submitted a pitch for this opportunity
-    if (hasSubmittedPitch) {
-      console.log('User has already submitted a pitch, redirecting to My Pitches');
-      // Show toast notification explaining why they can't start a new pitch
-      toast({
-        title: "Pitch Already Submitted",
-        description: "You've already submitted a pitch for this opportunity. You can view or edit it from My Pitches.",
-        variant: "default"
-      });
-      return;
-    }
-    
     setIsCreatingDraft(true);
     try {
       // First check if there's already a draft for this opportunity
@@ -279,7 +270,7 @@ export default function BidTicket({
         throw new Error('Failed to create draft');
       }
     } catch (error) {
-      console.error('Error creating draft:', error);
+      console.error('Error creating pitch:', error);
       toast({
         title: "Error",
         description: "Failed to start pitch. Please try again.",

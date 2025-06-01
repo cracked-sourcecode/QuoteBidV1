@@ -669,17 +669,17 @@ export default function AccountPage() {
   const cancelSubscriptionMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error("User not found");
-      if (!subscription?.subscriptionId) throw new Error("No active subscription found");
-      
-      return await apiRequest('POST', `/api/users/${user.id}/subscription/cancel`, null);
+      const response = await apiRequest('POST', `/api/users/${user.id}/subscription/cancel`);
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/user/${user?.id}/subscription`] });
-      setCancelModalOpen(false);
       toast({
         title: "Subscription Cancelled",
-        description: "Your subscription has been cancelled and will end at the end of the billing period",
+        description: "Your subscription has been cancelled and will remain active until the end of your billing period.",
       });
+      setCancelModalOpen(false);
+      setSubscriptionModalOpen(false);
     },
     onError: (error: Error) => {
       toast({
@@ -688,9 +688,6 @@ export default function AccountPage() {
         variant: "destructive",
       });
     },
-    onSettled: () => {
-      setCancellingSubscription(false);
-    }
   });
 
   const handleCancelSubscription = () => {
@@ -1668,7 +1665,7 @@ export default function AccountPage() {
             )}
           </div>
           <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2">
-            {subscription?.status === 'active' && (
+            {subscription && subscription.status === 'active' && (
               <Button 
                 variant="outline" 
                 onClick={() => {

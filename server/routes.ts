@@ -1050,6 +1050,237 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Reactivate subscription
+  app.post("/api/users/:userId/subscription/reactivate", jwtAuth, async (req: Request, res: Response) => {
+    console.log("🔄 REACTIVATION ENDPOINT HIT");
+    console.log("📝 Request params:", req.params);
+    console.log("👤 User from JWT:", req.user ? { id: req.user.id, email: req.user.email } : 'NO USER');
+    
+    try {
+      if (!req.user || !req.user.id) {
+        console.log("❌ Authentication failed - no user");
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = parseInt(req.params.userId);
+      console.log("🔢 Parsed userId:", userId, "JWT user ID:", req.user.id);
+      
+      if (isNaN(userId) || userId !== req.user.id) {
+        console.log("❌ Unauthorized - user ID mismatch");
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      
+      console.log("🔍 Fetching user from database...");
+      const user = await storage.getUser(userId);
+      if (!user) {
+        console.log("❌ User not found in database");
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      console.log("👤 User found:", {
+        id: user.id,
+        email: user.email,
+        stripeCustomerId: user.stripeCustomerId,
+        stripeSubscriptionId: user.stripeSubscriptionId,
+        premiumStatus: user.premiumStatus
+      });
+
+      // If user has existing subscription, try to reactivate it
+      if (user.stripeSubscriptionId) {
+        console.log("🔄 User has existing subscription, checking with Stripe...");
+        try {
+          console.log("📞 Calling Stripe to retrieve subscription:", user.stripeSubscriptionId);
+          const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+          console.log("📋 Stripe subscription status:", {
+            id: subscription.id,
+            status: subscription.status,
+            cancel_at_period_end: subscription.cancel_at_period_end,
+            current_period_end: subscription.current_period_end
+          });
+          
+          // If subscription is cancelled but not yet ended, reactivate it
+          if (subscription.cancel_at_period_end && subscription.status === 'active') {
+            console.log("✅ Subscription can be reactivated - removing cancel_at_period_end");
+            const reactivatedSubscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+              cancel_at_period_end: false
+            });
+            console.log("🎉 Subscription reactivated successfully");
+            
+            // Update user status
+            await getDb().update(users)
+              .set({ 
+                premiumStatus: 'active'
+              })
+              .where(eq(users.id, userId));
+            console.log("💾 Database updated with active status");
+            
+            return res.json({
+              success: true,
+              message: "Subscription reactivated successfully",
+              subscription: {
+                id: reactivatedSubscription.id,
+                status: reactivatedSubscription.status,
+                current_period_end: new Date((reactivatedSubscription as any).current_period_end * 1000)
+              }
+            });
+          } else {
+            console.log("ℹ️ Subscription cannot be simply reactivated:", {
+              status: subscription.status,
+              cancel_at_period_end: subscription.cancel_at_period_end
+            });
+          }
+        } catch (stripeError: any) {
+          console.log("❌ Stripe error retrieving subscription:", stripeError.message);
+          console.log("🔄 Will try to create new subscription instead");
+        }
+      } else {
+        console.log("ℹ️ User has no existing subscription ID");
+      }
+
+      // If user has a Stripe customer but no active subscription, create a new one
+      if (user.stripeCustomerId) {
+        console.log("💳 User has Stripe customer ID, creating new subscription...");
+        try {
+          console.log("📞 Retrieving Stripe customer:", user.stripeCustomerId);
+          // Get the customer's default payment method
+          const customer = await stripe.customers.retrieve(user.stripeCustomerId, {
+            expand: ['invoice_settings.default_payment_method']
+          });
+          console.log("👤 Customer retrieved:", {
+            id: customer.id,
+            email: (customer as any).email,
+            hasDefaultPaymentMethod: !!(customer as any).invoice_settings?.default_payment_method
+          });
+          
+          let paymentMethod = (customer as any).invoice_settings?.default_payment_method;
+          
+          // If no default payment method, check for any payment methods attached to customer
+          if (!paymentMethod) {
+            console.log("🔍 No default payment method, searching for any attached payment methods...");
+            const paymentMethods = await stripe.paymentMethods.list({
+              customer: user.stripeCustomerId,
+              type: 'card',
+            });
+            
+            console.log(`💳 Found ${paymentMethods.data.length} payment methods for customer`);
+            
+            if (paymentMethods.data.length > 0) {
+              paymentMethod = paymentMethods.data[0];
+              console.log("✅ Using first available payment method:", paymentMethod.id);
+              
+              // Optionally set it as the default for future use
+              try {
+                await stripe.customers.update(user.stripeCustomerId, {
+                  invoice_settings: {
+                    default_payment_method: paymentMethod.id
+                  }
+                });
+                console.log("📌 Set payment method as default for future use");
+              } catch (defaultError: any) {
+                console.log("⚠️ Could not set as default, but will proceed:", defaultError.message);
+              }
+            }
+          } else {
+            console.log("✅ Using default payment method:", paymentMethod.id);
+          }
+          
+          if (!paymentMethod) {
+            console.log("❌ No payment method found on customer");
+            return res.status(400).json({ 
+              error: 'No payment method on file. Please update your payment information.' 
+            });
+          }
+
+          console.log("💳 Payment method found:", paymentMethod.id);
+
+          // Get the price ID (same as in other subscription endpoints)
+          let priceId = process.env.STRIPE_PRICE_ID;
+          console.log("💰 Price ID from env:", priceId);
+          
+          if (!priceId) {
+            console.log("🔍 No price ID in env, searching for product prices...");
+            const prices = await stripe.prices.list({
+              product: 'prod_SGqepEtdqqQYcW',
+              active: true,
+              limit: 1,
+            });
+            
+            if (prices.data.length === 0) {
+              console.log("❌ No active prices found for product");
+              throw new Error('No active prices found for product');
+            }
+            
+            priceId = prices.data[0].id;
+            console.log("💰 Found price ID:", priceId);
+          }
+
+          console.log("🆕 Creating new subscription with:", {
+            customer: user.stripeCustomerId,
+            priceId: priceId,
+            paymentMethodId: paymentMethod.id
+          });
+
+          // Create new subscription with existing payment method
+          const newSubscription = await stripe.subscriptions.create({
+            customer: user.stripeCustomerId,
+            items: [{ price: priceId }],
+            default_payment_method: paymentMethod.id
+          });
+
+          console.log("🎉 New subscription created:", {
+            id: newSubscription.id,
+            status: newSubscription.status,
+            current_period_end: (newSubscription as any).current_period_end
+          });
+
+          // Update user record
+          await getDb().update(users)
+            .set({
+              stripeSubscriptionId: newSubscription.id,
+              premiumStatus: 'active',
+              premiumExpiry: new Date((newSubscription as any).current_period_end * 1000)
+            })
+            .where(eq(users.id, userId));
+
+          console.log("💾 Database updated with new subscription");
+
+          return res.json({
+            success: true,
+            message: "New subscription created successfully",
+            subscription: {
+              id: newSubscription.id,
+              status: newSubscription.status,
+              current_period_end: new Date((newSubscription as any).current_period_end * 1000)
+            }
+          });
+
+        } catch (error: any) {
+          console.error("❌ Error creating new subscription:", error);
+          console.error("📋 Error details:", {
+            message: error.message,
+            type: error.type,
+            code: error.code
+          });
+          return res.status(400).json({ 
+            error: 'Failed to reactivate subscription. Please try using a new payment method.',
+            details: error.message
+          });
+        }
+      }
+
+      // If no Stripe customer exists, they need to go through the full signup flow
+      console.log("❌ No Stripe customer ID found");
+      return res.status(400).json({ 
+        error: 'No payment information on file. Please set up a new payment method.' 
+      });
+
+    } catch (error: any) {
+      console.error("💥 CRITICAL ERROR in reactivation endpoint:", error);
+      console.error("📋 Error stack:", error.stack);
+      res.status(500).json({ error: "Error reactivating subscription: " + error.message });
+    }
+  });
+
   // Legacy cancel subscription endpoint (keep for backwards compatibility)
   app.post("/api/user/:userId/cancel-subscription", async (req: Request, res: Response) => {
     try {
@@ -5896,6 +6127,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating test admin:", error);
       res.status(500).json({ message: "Failed to create test admin", error: error.message });
+    }
+  });
+  
+  // Get customer payment methods
+  app.get("/api/users/:userId/payment-methods", jwtAuth, async (req: Request, res: Response) => {
+    console.log("💳 PAYMENT METHODS ENDPOINT HIT");
+    console.log("📝 Request params:", req.params);
+    console.log("👤 User from JWT:", req.user ? { id: req.user.id, email: req.user.email } : 'NO USER');
+    
+    try {
+      if (!req.user || !req.user.id) {
+        console.log("❌ Authentication failed - no user");
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = parseInt(req.params.userId);
+      console.log("🔢 Parsed userId:", userId, "JWT user ID:", req.user.id);
+      
+      if (isNaN(userId) || userId !== req.user.id) {
+        console.log("❌ Unauthorized access attempt");
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+
+      // Get user from database
+      const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      
+      if (user.length === 0) {
+        console.log("❌ User not found in database");
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const userData = user[0];
+      console.log("👤 User found:", {
+        id: userData.id,
+        email: userData.email,
+        stripeCustomerId: userData.stripeCustomerId
+      });
+
+      if (!userData.stripeCustomerId) {
+        console.log("❌ No Stripe customer ID found");
+        return res.json({
+          hasPaymentMethods: false,
+          paymentMethods: [],
+          defaultPaymentMethod: null
+        });
+      }
+
+      try {
+        console.log("📞 Retrieving Stripe customer:", userData.stripeCustomerId);
+        
+        // Get customer with payment methods
+        const customer = await stripe.customers.retrieve(userData.stripeCustomerId, {
+          expand: ['invoice_settings.default_payment_method']
+        });
+        
+        console.log("👤 Customer retrieved:", {
+          id: customer.id,
+          email: (customer as any).email,
+          hasDefaultPaymentMethod: !!(customer as any).invoice_settings?.default_payment_method
+        });
+
+        // Get all payment methods for the customer
+        const paymentMethods = await stripe.paymentMethods.list({
+          customer: userData.stripeCustomerId,
+          type: 'card',
+        });
+
+        console.log("💳 Found payment methods:", paymentMethods.data.length);
+
+        const formattedPaymentMethods = paymentMethods.data.map(pm => ({
+          id: pm.id,
+          brand: pm.card?.brand || 'unknown',
+          last4: pm.card?.last4 || '0000',
+          exp_month: pm.card?.exp_month || 0,
+          exp_year: pm.card?.exp_year || 0
+        }));
+
+        // Find the default payment method
+        const defaultPaymentMethod = (customer as any).invoice_settings?.default_payment_method;
+        let formattedDefaultPaymentMethod = null;
+
+        if (defaultPaymentMethod) {
+          const defaultPm = paymentMethods.data.find(pm => pm.id === defaultPaymentMethod.id);
+          if (defaultPm) {
+            formattedDefaultPaymentMethod = {
+              id: defaultPm.id,
+              brand: defaultPm.card?.brand || 'unknown',
+              last4: defaultPm.card?.last4 || '0000',
+              exp_month: defaultPm.card?.exp_month || 0,
+              exp_year: defaultPm.card?.exp_year || 0
+            };
+          }
+        }
+
+        // If no default but we have payment methods, use the first one
+        if (!formattedDefaultPaymentMethod && formattedPaymentMethods.length > 0) {
+          formattedDefaultPaymentMethod = formattedPaymentMethods[0];
+        }
+
+        const result = {
+          hasPaymentMethods: formattedPaymentMethods.length > 0,
+          paymentMethods: formattedPaymentMethods,
+          defaultPaymentMethod: formattedDefaultPaymentMethod
+        };
+
+        console.log("✅ Payment methods result:", result);
+        return res.json(result);
+
+      } catch (stripeError: any) {
+        console.error("❌ Stripe error:", stripeError.message);
+        return res.json({
+          hasPaymentMethods: false,
+          paymentMethods: [],
+          defaultPaymentMethod: null
+        });
+      }
+
+    } catch (error: any) {
+      console.error("❌ Payment methods endpoint error:", error);
+      return res.status(500).json({ 
+        error: "Internal server error",
+        message: error.message 
+      });
     }
   });
   
