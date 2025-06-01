@@ -84,19 +84,12 @@ export function CancelRetentionModal({
       case 'features':
         return [
           {
-            id: 'premium_boost',
-            title: 'Premium Boost Package',
-            description: 'Get priority placement and 3 guaranteed opportunities this month',
-            icon: <Star className="h-5 w-5 text-yellow-600" />,
-            action: 'Activate Boost',
-            highlight: true
-          },
-          {
             id: 'profile_review',
             title: 'Free Profile Optimization',
             description: 'Our experts will optimize your profile to increase match rates',
             icon: <CheckCircle className="h-5 w-5 text-green-600" />,
-            action: 'Book Review'
+            action: 'Book Review',
+            highlight: true
           },
           {
             id: 'call',
