@@ -55,105 +55,24 @@ export function CancelRetentionModal({
   ];
 
   const getRetentionOffers = (reason: CancelReason): RetentionOffer[] => {
-    switch (reason) {
-      case 'cost':
-        return [
-          {
-            id: 'discount50',
-            title: '50% Off Next 3 Months',
-            description: 'Continue your journey with half-price access to all premium features',
-            icon: <DollarSign className="h-5 w-5 text-green-600" />,
-            action: 'Apply Discount',
-            highlight: true
-          },
-          {
-            id: 'pause',
-            title: 'Pause Subscription',
-            description: 'Take a break for up to 3 months without losing your progress',
-            icon: <Calendar className="h-5 w-5 text-blue-600" />,
-            action: 'Pause Account'
-          },
-          {
-            id: 'call',
-            title: 'Speak with Our Team',
-            description: 'Let us discuss custom pricing options that work for your budget',
-            icon: <Phone className="h-5 w-5 text-purple-600" />,
-            action: 'Schedule Call'
-          }
-        ];
-      case 'features':
-        return [
-          {
-            id: 'profile_review',
-            title: 'Free Profile Optimization',
-            description: 'Our experts will optimize your profile to increase match rates',
-            icon: <CheckCircle className="h-5 w-5 text-green-600" />,
-            action: 'Book Review',
-            highlight: true
-          },
-          {
-            id: 'call',
-            title: 'Strategy Session',
-            description: 'Free 30-minute session to improve your success rate',
-            icon: <Phone className="h-5 w-5 text-purple-600" />,
-            action: 'Schedule Call'
-          }
-        ];
-      case 'complexity':
-        return [
-          {
-            id: 'onboarding',
-            title: 'Personal Onboarding',
-            description: 'Free 1-on-1 setup session to simplify everything for you',
-            icon: <Phone className="h-5 w-5 text-blue-600" />,
-            action: 'Book Session',
-            highlight: true
-          },
-          {
-            id: 'auto_mode',
-            title: 'Auto-Pilot Mode',
-            description: 'We\'ll handle applications for you based on your preferences',
-            icon: <CheckCircle className="h-5 w-5 text-green-600" />,
-            action: 'Enable Auto-Pilot'
-          }
-        ];
-      case 'pause':
-        return [
-          {
-            id: 'pause_3month',
-            title: '3-Month Pause',
-            description: 'Take a break and return anytime with all your data intact',
-            icon: <Calendar className="h-5 w-5 text-blue-600" />,
-            action: 'Pause Account',
-            highlight: true
-          },
-          {
-            id: 'reduced_plan',
-            title: 'Minimal Plan ($29/month)',
-            description: 'Keep access with limited features at a lower cost',
-            icon: <DollarSign className="h-5 w-5 text-green-600" />,
-            action: 'Switch Plan'
-          }
-        ];
-      default:
-        return [
-          {
-            id: 'call',
-            title: 'Speak with Our Team',
-            description: 'Let us understand your needs and find a solution',
-            icon: <Phone className="h-5 w-5 text-purple-600" />,
-            action: 'Schedule Call',
-            highlight: true
-          },
-          {
-            id: 'pause',
-            title: 'Pause Subscription',
-            description: 'Take a break without losing your account',
-            icon: <Calendar className="h-5 w-5 text-blue-600" />,
-            action: 'Pause Account'
-          }
-        ];
-    }
+    // Always show the same two offers regardless of cancellation reason
+    return [
+      {
+        id: 'profile_review',
+        title: 'Free Profile Optimization',
+        description: 'Our experts will optimize your profile to increase match rates',
+        icon: <CheckCircle className="h-5 w-5 text-green-600" />,
+        action: 'Book Review',
+        highlight: true
+      },
+      {
+        id: 'call',
+        title: 'Support Call',
+        description: 'Free 30-minute session with our team to address your concerns',
+        icon: <Phone className="h-5 w-5 text-purple-600" />,
+        action: 'Schedule Call'
+      }
+    ];
   };
 
   const resetModal = () => {
@@ -179,8 +98,8 @@ export function CancelRetentionModal({
     console.log('Offer action clicked:', offerId);
     // Here you would normally implement the actual offer logic
     // For now, we'll just show a success message and close
-    if (offerId === 'call') {
-      window.open('https://calendly.com/rubicon-pr-group/wholesale-pr-portal-demo', '_blank');
+    if (offerId === 'call' || offerId === 'onboarding' || offerId === 'profile_review') {
+      window.open('https://calendly.com/rubicon-pr-group/quotebid', '_blank');
     }
     handleClose();
   };
