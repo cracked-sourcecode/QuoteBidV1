@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { ArrowLeft, Search, Trophy, TrendingUp, Calendar, Star, Award, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,8 @@ const DEMO_OPPORTUNITY = {
 };
 
 export default function AuctionStyleOpportunities() {
+  const [, setLocation] = useLocation();
+  
   // Use state for opportunity data
   const [opportunity, setOpportunity] = useState({
     ...mockOpportunity,
@@ -172,8 +174,8 @@ export default function AuctionStyleOpportunities() {
   );
 
   const handleBidClick = (opportunityId: number) => {
-    // Navigate to opportunity detail page or open bid modal
-    console.log('Bidding on opportunity:', opportunityId);
+    // Navigate to opportunity detail page
+    setLocation(`/opportunities/${opportunityId}`);
   };
 
   return (
