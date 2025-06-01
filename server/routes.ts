@@ -1919,13 +1919,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No file uploaded' });
       }
       
-      // Import sharp for image processing
-      const sharp = require('sharp');
+      console.log('Processing publication logo upload:', req.file.filename);
+      
+      // Import sharp dynamically for ES module compatibility
+      const { default: sharp } = await import('sharp');
       
       // Get original file path
       const originalPath = req.file.path;
       const filename = req.file.filename;
       const outputPath = path.join(process.cwd(), 'uploads', 'publications', `resized-${filename}`);
+      
+      console.log('Resizing image from:', originalPath, 'to:', outputPath);
       
       // Resize the image to 200x200 while maintaining aspect ratio
       await sharp(originalPath)
@@ -1935,7 +1939,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fit: 'contain',
           background: { r: 255, g: 255, b: 255, alpha: 1 } // White background
         })
+        .png() // Convert to PNG format
         .toFile(outputPath);
+      
+      console.log('Image resized successfully');
       
       // Remove the original file after resizing
       fs.unlinkSync(originalPath);
@@ -1947,7 +1954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const baseUrl = `${req.protocol}://${req.get('host')}`;
       const fileUrl = `${baseUrl}/uploads/publications/${req.file.filename}`;
       
-      console.log('Publication logo resized and saved successfully:', fileUrl);
+      console.log('Publication logo uploaded and resized successfully:', fileUrl);
       
       res.status(200).json({ 
         message: 'File uploaded and resized successfully',
@@ -1955,7 +1962,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Failed to process publication logo:', error);
-      res.status(500).json({ message: 'Failed to upload and resize file' });
+      res.status(500).json({ message: 'Failed to upload and resize file', error: error.message });
     }
   });
   

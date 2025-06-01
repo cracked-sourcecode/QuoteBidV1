@@ -45,7 +45,9 @@ const publicationFormSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters."
   }),
-  logo: z.string(),
+  logo: z.string().min(1, {
+    message: "Logo is required."
+  }),
   website: z.string().url({
     message: "Website must be a valid URL."
   }).optional().or(z.literal('')),
@@ -306,6 +308,8 @@ export default function PublicationsManager() {
     if (files && files.length > 0) {
       const file = files[0];
       
+      console.log('File selected:', file.name, file.type, file.size);
+      
       // Check file type - only PNG allowed
       if (!file.type.startsWith('image/png')) {
         toast({
@@ -313,6 +317,10 @@ export default function PublicationsManager() {
           description: "Only PNG format is allowed for publication logos",
           variant: "destructive"
         });
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
         return;
       }
       
@@ -323,6 +331,10 @@ export default function PublicationsManager() {
           description: "Logo must be less than 2MB in size",
           variant: "destructive"
         });
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
         return;
       }
       
@@ -335,6 +347,10 @@ export default function PublicationsManager() {
             description: "Logo dimensions must not exceed 512x512 pixels",
             variant: "destructive"
           });
+          // Reset file input
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
           return;
         }
         
@@ -344,13 +360,15 @@ export default function PublicationsManager() {
         setLogoPreview(previewUrl);
         
         // Update form values for both create and edit forms
+        // Use a placeholder value for validation, actual URL will be set after upload
         if (isCreateDialogOpen) {
-          createForm.setValue('logo', previewUrl);
+          createForm.setValue('logo', 'pending-upload', { shouldValidate: true });
         }
         if (isEditDialogOpen) {
-          editForm.setValue('logo', previewUrl);
+          editForm.setValue('logo', 'pending-upload', { shouldValidate: true });
         }
         
+        console.log('Logo file ready for upload:', file.name);
         toast({
           title: "Logo ready",
           description: "PNG logo is ready to be uploaded.",
@@ -363,6 +381,10 @@ export default function PublicationsManager() {
           description: "Could not process the uploaded PNG image",
           variant: "destructive"
         });
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       };
       
       img.src = URL.createObjectURL(file);
@@ -372,26 +394,45 @@ export default function PublicationsManager() {
   // Upload logo file and get URL
   const uploadLogo = async (file: File): Promise<string> => {
     setIsUploading(true);
+    console.log('Starting logo upload for file:', file.name);
+    
     try {
       const formData = new FormData();
       formData.append('logo', file);
       
+      console.log('Sending upload request...');
       const response = await apiFetch('/api/upload/publication-logo', {
         method: 'POST',
         body: formData,
       });
       
+      console.log('Upload response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to upload logo');
+        const errorText = await response.text();
+        console.error('Upload failed with response:', errorText);
+        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
+      console.log('Upload successful, received data:', data);
+      
+      if (!data.fileUrl) {
+        throw new Error('No file URL returned from server');
+      }
+      
       return data.fileUrl;
     } catch (error) {
       console.error('Error uploading logo:', error);
+      toast({
+        title: 'Upload failed',
+        description: error instanceof Error ? error.message : 'Failed to upload logo. Please try again.',
+        variant: 'destructive',
+      });
       throw error;
     } finally {
       setIsUploading(false);
+      console.log('Upload process completed');
     }
   };
 
@@ -513,6 +554,10 @@ export default function PublicationsManager() {
 
   // Handle creating a new publication
   const onCreateSubmit = async (values: PublicationFormValues) => {
+    console.log('Create form submitted with values:', values);
+    console.log('Logo file:', logoFile);
+    console.log('Logo preview:', logoPreview);
+    
     try {
       if (!logoFile && !logoPreview) {
         toast({
@@ -523,18 +568,41 @@ export default function PublicationsManager() {
         return;
       }
       
-      let logoUrl = values.logo;
+      let logoUrl = '';
       
       if (logoFile) {
+        console.log('Uploading new logo file...');
         logoUrl = await uploadLogo(logoFile);
+        console.log('Logo uploaded successfully:', logoUrl);
+      } else if (logoPreview && !logoPreview.startsWith('blob:')) {
+        logoUrl = logoPreview;
+      } else {
+        toast({
+          title: "Logo upload required",
+          description: "Please wait for the logo to be uploaded before saving.",
+          variant: "destructive",
+        });
+        return;
       }
       
-      await createMutation.mutateAsync({
-        ...values,
+      const createData = {
+        name: values.name,
+        website: values.website || '',
+        category: values.category || '',
+        description: values.description || '',
         logo: logoUrl,
-      });
+      };
+      
+      console.log('Creating publication with data:', createData);
+      
+      await createMutation.mutateAsync(createData);
     } catch (error) {
       console.error('Error creating publication:', error);
+      toast({
+        title: 'Creation failed',
+        description: error instanceof Error ? error.message : 'Failed to create publication. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -542,43 +610,82 @@ export default function PublicationsManager() {
   const onEditSubmit = async (values: PublicationFormValues) => {
     if (!currentPublication) return;
     
+    console.log('Edit form submitted with values:', values);
+    console.log('Logo file:', logoFile);
+    console.log('Logo preview:', logoPreview);
+    
     try {
       let logoUrl = currentPublication.logo; // Default to existing logo
       
-      // If user uploaded a new logo file, upload it
+      // If user uploaded a new logo file, upload it first
       if (logoFile) {
+        console.log('Uploading new logo file...');
         logoUrl = await uploadLogo(logoFile);
-      } else if (values.logo && values.logo !== currentPublication.logo) {
-        // If logo value changed but no file uploaded (shouldn't happen, but just in case)
+        console.log('New logo uploaded successfully:', logoUrl);
+      } else if (values.logo && values.logo !== currentPublication.logo && !values.logo.startsWith('blob:')) {
+        // If logo value changed but no file uploaded and it's not a blob URL
         logoUrl = values.logo;
       }
       
+      const updateData = {
+        name: values.name,
+        website: values.website || '',
+        category: values.category || '',
+        description: values.description || '',
+        logo: logoUrl,
+      };
+      
+      console.log('Updating publication with data:', updateData);
+      
       await updateMutation.mutateAsync({
         id: currentPublication.id,
-        data: {
-          ...values,
-          logo: logoUrl,
-        },
+        data: updateData,
       });
     } catch (error) {
       console.error('Error updating publication:', error);
+      toast({
+        title: 'Update failed',
+        description: error instanceof Error ? error.message : 'Failed to update publication. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
   // Open edit dialog and populate form
   const openEditDialog = (publication: Publication) => {
+    console.log('Opening edit dialog for publication:', publication);
+    
     setCurrentPublication(publication);
-    editForm.reset({
+    
+    const formData = {
       name: publication.name,
       logo: publication.logo,
       website: publication.website || '',
       description: publication.description || '',
       category: publication.category || '',
-    });
+    };
+    
+    console.log('Setting form data:', formData);
+    
+    editForm.reset(formData);
+    
     // Set the logo preview to show current logo and clear any pending file
     setLogoPreview(publication.logo);
     setLogoFile(null);
+    
+    console.log('Form state after reset:', {
+      values: editForm.getValues(),
+      isValid: editForm.formState.isValid,
+      errors: editForm.formState.errors
+    });
+    
     setIsEditDialogOpen(true);
+    
+    // Force form validation after modal opens
+    setTimeout(() => {
+      editForm.trigger();
+      console.log('Form validation triggered. Valid:', editForm.formState.isValid);
+    }, 100);
   };
 
   // Open delete confirmation dialog
@@ -1127,6 +1234,7 @@ export default function PublicationsManager() {
                   type="button" 
                   variant="outline" 
                   onClick={() => {
+                    console.log('Cancel button clicked');
                     setIsEditDialogOpen(false);
                     setLogoFile(null);
                     setLogoPreview(null);
@@ -1137,6 +1245,13 @@ export default function PublicationsManager() {
                 <Button 
                   type="submit" 
                   disabled={updateMutation.isPending || isUploading}
+                  onClick={() => {
+                    console.log('Update button clicked');
+                    console.log('Form is valid:', editForm.formState.isValid);
+                    console.log('Form errors:', editForm.formState.errors);
+                    console.log('Update mutation pending:', updateMutation.isPending);
+                    console.log('Is uploading:', isUploading);
+                  }}
                 >
                   {(updateMutation.isPending || isUploading) && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
