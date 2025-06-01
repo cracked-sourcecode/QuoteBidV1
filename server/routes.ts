@@ -1010,6 +1010,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Cancel subscription
+  app.post("/api/users/:userId/subscription/cancel", jwtAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId) || userId !== req.user.id) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user || !user.stripeSubscriptionId) {
+        return res.status(404).json({ error: 'No active subscription found' });
+      }
+      
+      // Cancel the subscription at period end (allows user to still use the service until the end of the billing period)
+      const subscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        cancel_at_period_end: true
+      });
+      
+      // Update user status
+      await getDb().update(users)
+        .set({ 
+          premiumStatus: 'cancelling'
+        })
+        .where(eq(users.id, userId));
+      
+      res.json({ 
+        success: true, 
+        message: "Subscription will be canceled at the end of the billing period",
+        status: 'cancelling',
+        expiresAt: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000) : null
+      });
+    } catch (error: any) {
+      console.error("Error cancelling subscription:", error);
+      res.status(500).json({ error: "Error cancelling subscription: " + error.message });
+    }
+  });
+  
+  // Legacy cancel subscription endpoint (keep for backwards compatibility)
   app.post("/api/user/:userId/cancel-subscription", async (req: Request, res: Response) => {
     try {
       if (!req.isAuthenticated()) {

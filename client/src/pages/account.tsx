@@ -12,7 +12,7 @@ import { apiFetch } from '@/lib/apiFetch';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
 import { format } from 'date-fns';
 import { Link } from 'wouter';
-import { Loader2, CreditCard, CheckCircle, CalendarIcon, ExternalLink, Newspaper, AlertCircle, Upload, Trash2, Brain } from 'lucide-react';
+import { Loader2, CreditCard, CheckCircle, CalendarIcon, ExternalLink, Newspaper, Upload, Trash2, Brain } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -64,6 +64,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { CancelRetentionModal } from '@/components/CancelRetentionModal';
 
 
 // Form validation schema
@@ -692,6 +693,11 @@ export default function AccountPage() {
     }
   });
 
+  const handleCancelSubscription = () => {
+    setCancellingSubscription(true);
+    cancelSubscriptionMutation.mutate();
+  };
+
   if (!user) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -710,11 +716,6 @@ export default function AccountPage() {
     }
     
     profileUpdateMutation.mutate(formData);
-  };
-
-  const handleCancelSubscription = () => {
-    setCancellingSubscription(true);
-    cancelSubscriptionMutation.mutate();
   };
 
   return (
@@ -1685,58 +1686,13 @@ export default function AccountPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Cancel Subscription Confirmation Modal */}
-      <Dialog open={cancelModalOpen} onOpenChange={setCancelModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Cancel Your Subscription?</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to cancel your QuoteBid subscription?
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <h4 className="font-medium text-gray-900">What happens when you cancel:</h4>
-              <ul className="space-y-2">
-                <li className="flex items-start">
-                  <AlertCircle className="h-5 w-5 text-amber-500 mr-2 shrink-0 mt-0.5" />
-                  <span>You'll continue to have access until the end of your current billing period.</span>
-                </li>
-                <li className="flex items-start">
-                  <AlertCircle className="h-5 w-5 text-amber-500 mr-2 shrink-0 mt-0.5" />
-                  <span>You will lose access to premium opportunities after your subscription ends.</span>
-                </li>
-                <li className="flex items-start">
-                  <AlertCircle className="h-5 w-5 text-amber-500 mr-2 shrink-0 mt-0.5" />
-                  <span>You can resubscribe at any time.</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setCancelModalOpen(false)}
-            >
-              Keep Subscription
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleCancelSubscription}
-              disabled={cancellingSubscription}
-            >
-              {cancellingSubscription ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Cancelling...
-                </>
-              ) : (
-                'Confirm Cancellation'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Cancel Subscription Retention Modal */}
+      <CancelRetentionModal
+        open={cancelModalOpen}
+        onOpenChange={setCancelModalOpen}
+        onConfirmCancel={handleCancelSubscription}
+        isLoading={cancellingSubscription}
+      />
 
       {/* Add Media Coverage Modal */}
       <Dialog open={addMediaModalOpen} onOpenChange={setAddMediaModalOpen}>
