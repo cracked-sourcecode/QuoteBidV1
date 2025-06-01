@@ -956,9 +956,9 @@ export default function OpportunitiesManager() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredOpportunities.map((opportunity: any) => (
             <Card key={opportunity.id} className="bg-white border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-lg flex flex-col h-full">
-              <CardHeader className="pb-3 flex-shrink-0">
+              <CardHeader className="pb-3 pt-4 flex-shrink-0">
                 {/* Header with proper spacing to prevent overlap */}
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between mb-3">
                   {/* Status Badge - positioned to avoid overlap */}
                   <Badge className={
                     opportunity.status === 'open' 
@@ -1015,7 +1015,7 @@ export default function OpportunitiesManager() {
                 </div>
                 
                 {/* Publication Logo and Name */}
-                <div className="flex items-center space-x-3 mb-4">
+                <div className="flex items-center space-x-3 mb-3">
                   <div className="flex-shrink-0">
                     {opportunity.publication.logo ? (
                       <img 
@@ -1039,7 +1039,7 @@ export default function OpportunitiesManager() {
                 </div>
                 
                 {/* Opportunity Title */}
-                <CardTitle className="text-lg leading-tight text-gray-900 mb-4">
+                <CardTitle className="text-lg leading-tight text-gray-900 mb-2">
                   {opportunity.title}
                 </CardTitle>
               </CardHeader>
@@ -1053,18 +1053,17 @@ export default function OpportunitiesManager() {
                 {/* Industry Tags */}
                 <div className="flex flex-wrap gap-1.5 mb-4">
                   {opportunity.tags?.slice(0, 3).map((tag: string) => (
-                    <Badge 
+                    <div 
                       key={tag} 
-                      variant="secondary" 
-                      className="text-xs px-2 py-1 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                      className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full shadow-sm border border-gray-200 hover:bg-gray-150 transition-colors"
                     >
                       {tag}
-                    </Badge>
+                    </div>
                   ))}
                   {opportunity.tags?.length > 3 && (
-                    <Badge variant="outline" className="text-xs px-2 py-1 text-gray-500">
+                    <div className="text-xs px-3 py-1.5 bg-gray-50 text-gray-500 rounded-full shadow-sm border border-gray-200">
                       +{opportunity.tags.length - 3} more
-                    </Badge>
+                    </div>
                   )}
                 </div>
                 

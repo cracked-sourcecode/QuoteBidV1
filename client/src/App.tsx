@@ -7,7 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
-import AuctionStyleOpportunities from "@/pages/auction-opportunities";
+import OpportunitiesPage from "@/pages/opportunities";
 import OpportunityDetail from "@/pages/opportunity-detail";
 import MyPitches from "@/pages/my-pitches";
 import PitchHistory from "@/pages/pitch-history";
@@ -152,7 +152,7 @@ function Router() {
         <ProtectedRoute path="/opportunities" component={() => (
           <>
             <Navbar />
-            <AuctionStyleOpportunities />
+            <OpportunitiesPage />
           </>
         )} />
         
