@@ -652,9 +652,9 @@ export class DatabaseStorage implements IStorage {
       // Filter out undefined/null values and fields that shouldn't be updated
       const validUpdateFields: Partial<Pitch> = {};
       
-      // Only include valid fields that are defined and not null
-      if (updateData.content !== undefined && updateData.content !== null) {
-        validUpdateFields.content = updateData.content;
+      // Only include valid fields that are defined, not null, and not empty strings
+      if (updateData.content !== undefined && updateData.content !== null && updateData.content.trim() !== '') {
+        validUpdateFields.content = updateData.content.trim();
       }
       if (updateData.status !== undefined && updateData.status !== null) {
         validUpdateFields.status = updateData.status;
@@ -671,25 +671,30 @@ export class DatabaseStorage implements IStorage {
       if (updateData.isDraft !== undefined && updateData.isDraft !== null) {
         validUpdateFields.isDraft = updateData.isDraft;
       }
+      if (updateData.pitchType !== undefined && updateData.pitchType !== null) {
+        validUpdateFields.pitchType = updateData.pitchType;
+      }
       
-      // Check if we have any valid fields to update
+      // Always set updatedAt when updating
+      validUpdateFields.updatedAt = new Date();
+      
       if (Object.keys(validUpdateFields).length === 0) {
-        console.warn(`No valid fields to update for pitch ${id}. Received data:`, updateData);
-        // Return the existing pitch without updating
-        return await this.getPitch(id);
+        console.log(`No valid fields to update for pitch ${id}. Received data:`, updateData);
+        return undefined;
       }
       
       console.log(`Updating pitch ${id} with fields:`, Object.keys(validUpdateFields));
       
-      const [updated] = await getDb()
+      const [updatedPitch] = await getDb()
         .update(pitches)
         .set(validUpdateFields)
         .where(eq(pitches.id, id))
         .returning();
-      return updated;
+      
+      return updatedPitch;
     } catch (error) {
-      console.error('Error updating pitch:', error);
-      return undefined;
+      console.error("Error updating pitch:", error);
+      throw error;
     }
   }
 

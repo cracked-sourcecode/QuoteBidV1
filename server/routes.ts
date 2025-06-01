@@ -4867,19 +4867,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate that we have content
-      if (!req.body.content || req.body.content.trim() === '') {
+      if (!req.body.content || typeof req.body.content !== 'string' || req.body.content.trim() === '') {
         return res.status(400).json({ message: "Pitch content cannot be empty" });
       }
       
       console.log(`Updating pitch ${id} content for user ${req.user.id}. Current status: ${pitch.status}`);
+      console.log(`Content length: ${req.body.content.trim().length}`);
       
       // Only update the content field
-      const updatedPitch = await storage.updatePitch(id, { content: req.body.content.trim() });
+      const updatedPitch = await storage.updatePitch({
+        id: id,
+        content: req.body.content.trim()
+      });
       
       if (!updatedPitch) {
-        return res.status(500).json({ message: "Failed to update pitch" });
+        return res.status(500).json({ message: "Failed to update pitch - no valid fields to update" });
       }
       
+      console.log(`Successfully updated pitch ${id}`);
       res.json(updatedPitch);
     } catch (error: any) {
       console.error("Error updating pitch:", error);
