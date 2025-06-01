@@ -2,14 +2,21 @@ import React, { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { queryClient } from "@/lib/queryClient";
+import { AuthContext } from "@/hooks/use-auth";
+import { useContext } from "react";
 
 export default function LoginPage() {
   const [, navigate] = useLocation();
   const [form, setForm] = useState({ username: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const authContext = useContext(AuthContext);
+  if (!authContext) {
+    throw new Error("LoginPage must be used within AuthProvider");
+  }
+  
+  const { loginMutation } = authContext;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -24,68 +31,20 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
     
     try {
-      // Clear any existing tokens before attempting login
-      localStorage.removeItem('token');
-      
-      // Clear the user query cache to ensure fresh authentication check
-      queryClient.removeQueries({ queryKey: ["/api/user"] });
-      
-      // First, logout any existing session
-      try {
-        await fetch("/api/logout", {
-          method: "POST",
-          credentials: 'include',
-        });
-      } catch (logoutError) {
-        // Ignore logout errors, just continue with login
-        console.log('Logout before login failed, continuing...');
-      }
-      
-      // Now attempt login
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-        credentials: 'include', // Important for cookies
-      });
-      
-      const data = await res.json();
-      
-      if (res.ok && data.success) {
-        // Store the token if provided
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-        }
-        
-        // Set the user data in the query cache immediately
-        if (data.user) {
-          queryClient.setQueryData(["/api/user"], data.user);
-        }
-        
-        // Force invalidate and refetch user data to ensure authentication is properly set
-        await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-        
-        // Wait a brief moment for the query to update
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Navigate to opportunities page
-        navigate("/opportunities");
-      } else {
-        // Show specific error message for invalid credentials
-        if (res.status === 401 || data.message?.toLowerCase().includes('invalid') || data.message?.toLowerCase().includes('password')) {
-          setError("Wrong username or password. Please try again.");
-        } else {
-          setError(data.message || "Login failed. Please try again.");
-        }
-      }
+      // Use the proper login mutation from auth context
+      await loginMutation.mutateAsync(form);
+      // Navigation is handled by the loginMutation onSuccess callback
+      navigate("/opportunities");
     } catch (err: any) {
       console.error('Login error:', err);
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+      // Show specific error message for invalid credentials
+      if (err.message?.toLowerCase().includes('invalid') || err.message?.toLowerCase().includes('password')) {
+        setError("Wrong username or password. Please try again.");
+      } else {
+        setError(err.message || "Login failed. Please try again.");
+      }
     }
   };
 
@@ -111,7 +70,7 @@ export default function LoginPage() {
               className="rounded-xl border border-gray-300 px-4 py-3 w-full focus:ring-2 focus:ring-blue-600 lowercase"
               value={form.username}
               onChange={handleChange}
-              disabled={loading}
+              disabled={loginMutation.isPending}
               autoComplete="username"
               autoCapitalize="none"
               autoCorrect="off"
@@ -132,7 +91,7 @@ export default function LoginPage() {
                   className="rounded-xl border border-gray-300 px-4 py-3 w-full focus:ring-2 focus:ring-blue-600 pr-10"
                   value={form.password}
                   onChange={handleChange}
-                  disabled={loading}
+                  disabled={loginMutation.isPending}
                   autoComplete="current-password"
                 />
                 <button
@@ -152,10 +111,10 @@ export default function LoginPage() {
             </div>
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loginMutation.isPending}
               className="w-full py-3 text-base font-medium rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 hover:opacity-90"
             >
-              {loading ? "Logging in…" : "Log In"}
+              {loginMutation.isPending ? "Logging in…" : "Log In"}
             </Button>
           </form>
           <p className="text-center text-sm mt-6 text-gray-500">
