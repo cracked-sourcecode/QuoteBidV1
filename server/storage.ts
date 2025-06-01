@@ -648,9 +648,42 @@ export class DatabaseStorage implements IStorage {
   async updatePitch(data: Partial<Pitch> & { id: number }): Promise<Pitch | undefined> {
     try {
       const { id, ...updateData } = data;
+      
+      // Filter out undefined/null values and fields that shouldn't be updated
+      const validUpdateFields: Partial<Pitch> = {};
+      
+      // Only include valid fields that are defined and not null
+      if (updateData.content !== undefined && updateData.content !== null) {
+        validUpdateFields.content = updateData.content;
+      }
+      if (updateData.status !== undefined && updateData.status !== null) {
+        validUpdateFields.status = updateData.status;
+      }
+      if (updateData.audioUrl !== undefined && updateData.audioUrl !== null) {
+        validUpdateFields.audioUrl = updateData.audioUrl;
+      }
+      if (updateData.transcript !== undefined && updateData.transcript !== null) {
+        validUpdateFields.transcript = updateData.transcript;
+      }
+      if (updateData.bidAmount !== undefined && updateData.bidAmount !== null) {
+        validUpdateFields.bidAmount = updateData.bidAmount;
+      }
+      if (updateData.isDraft !== undefined && updateData.isDraft !== null) {
+        validUpdateFields.isDraft = updateData.isDraft;
+      }
+      
+      // Check if we have any valid fields to update
+      if (Object.keys(validUpdateFields).length === 0) {
+        console.warn(`No valid fields to update for pitch ${id}. Received data:`, updateData);
+        // Return the existing pitch without updating
+        return await this.getPitch(id);
+      }
+      
+      console.log(`Updating pitch ${id} with fields:`, Object.keys(validUpdateFields));
+      
       const [updated] = await getDb()
         .update(pitches)
-        .set(updateData)
+        .set(validUpdateFields)
         .where(eq(pitches.id, id))
         .returning();
       return updated;

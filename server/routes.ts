@@ -4859,10 +4859,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized: You can only update your own pitches" });
       }
       
-      // Only allow updates for pitches with 'pending' status
-      if (pitch.status !== 'pending') {
+      // Allow updates for both 'pending' and 'draft' status pitches
+      if (pitch.status !== 'pending' && pitch.status !== 'draft') {
         return res.status(400).json({ 
-          message: "Cannot edit pitch: Only pitches with 'pending' status can be edited" 
+          message: "Cannot edit pitch: Only pitches with 'pending' or 'draft' status can be edited" 
         });
       }
       
@@ -4871,8 +4871,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Pitch content cannot be empty" });
       }
       
+      console.log(`Updating pitch ${id} content for user ${req.user.id}. Current status: ${pitch.status}`);
+      
       // Only update the content field
-      const updatedPitch = await storage.updatePitch(id, { content: req.body.content });
+      const updatedPitch = await storage.updatePitch(id, { content: req.body.content.trim() });
+      
+      if (!updatedPitch) {
+        return res.status(500).json({ message: "Failed to update pitch" });
+      }
+      
       res.json(updatedPitch);
     } catch (error: any) {
       console.error("Error updating pitch:", error);

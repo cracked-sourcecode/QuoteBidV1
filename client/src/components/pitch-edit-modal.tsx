@@ -33,11 +33,24 @@ export default function PitchEditModal({ isOpen, onClose, pitch }: PitchEditModa
 
   const updateMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("PATCH", `/api/pitches/${pitch.id}`, { content });
+      // Validate content before sending
+      const trimmedContent = content.trim();
+      if (!trimmedContent) {
+        throw new Error("Pitch content cannot be empty");
+      }
+      
+      console.log(`Updating pitch ${pitch.id} with content length: ${trimmedContent.length}`);
+      
+      const res = await apiRequest("PATCH", `/api/pitches/${pitch.id}`, { content: trimmedContent });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${res.status}: ${res.statusText}`);
+      }
       return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/users/${pitch.userId}/pitches`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/users/${pitch.userId}/drafts`] });
       toast({
         title: "Pitch updated",
         description: "Your pitch has been updated successfully.",
@@ -45,6 +58,7 @@ export default function PitchEditModal({ isOpen, onClose, pitch }: PitchEditModa
       onClose();
     },
     onError: (error: Error) => {
+      console.error("Error updating pitch:", error);
       toast({
         title: "Failed to update pitch",
         description: error.message,
@@ -55,23 +69,29 @@ export default function PitchEditModal({ isOpen, onClose, pitch }: PitchEditModa
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      // For pending or draft pitches, we just update the content
-      // For draft pitches, we update to 'pending' status if needed
-      // For pending pitches, we keep the pending status
-      // This allows users to resubmit as many times as needed while still in pending status
-      let endpoint = `/api/pitches/${pitch.id}`;
-      let data = { content };
-      
-      // If it's a draft, we need to use the draft update endpoint to maintain proper state
-      if (pitch.status === 'draft') {
-        endpoint = `/api/pitches/${pitch.id}/draft`;
+      // Validate content before sending
+      const trimmedContent = content.trim();
+      if (!trimmedContent) {
+        throw new Error("Pitch content cannot be empty");
       }
       
+      // Always use the standard pitch update endpoint
+      // Both draft and pending pitches can be updated using the same endpoint
+      const endpoint = `/api/pitches/${pitch.id}`;
+      const data = { content: trimmedContent };
+      
+      console.log(`Updating pitch ${pitch.id} with content length: ${trimmedContent.length}`);
+      
       const res = await apiRequest("PATCH", endpoint, data);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${res.status}: ${res.statusText}`);
+      }
       return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/users/${pitch.userId}/pitches`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/users/${pitch.userId}/drafts`] });
       toast({
         title: "Pitch updated",
         description: "Your pitch has been updated successfully.",
@@ -79,6 +99,7 @@ export default function PitchEditModal({ isOpen, onClose, pitch }: PitchEditModa
       onClose();
     },
     onError: (error: Error) => {
+      console.error("Error updating pitch:", error);
       toast({
         title: "Failed to update pitch",
         description: error.message,
