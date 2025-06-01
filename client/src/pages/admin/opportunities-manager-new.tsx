@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -70,6 +70,7 @@ import {
 } from "lucide-react";
 import { INDUSTRY_OPTIONS, MEDIA_TYPES, OPPORTUNITY_TIERS, REQUEST_TYPES } from "@/lib/constants";
 import { useLocation } from 'wouter';
+import { Publication } from '@shared/schema';
 
 const opportunitySchema = z.object({
   publicationId: z.coerce.number(),
@@ -123,7 +124,7 @@ export default function OpportunitiesManager() {
     },
   });
   
-  const { data: publications, isLoading: loadingPublications } = useQuery({
+  const { data: publications, isLoading: loadingPublications } = useQuery<Publication[]>({
     queryKey: ["/api/admin/publications"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/admin/publications");
@@ -366,6 +367,8 @@ export default function OpportunitiesManager() {
                               setIsCreatingPublication(true);
                               form.setValue("newPublication", true);
                               field.onChange(0); // Clear the publication ID
+                              // Clear tier when creating new publication
+                              form.setValue("tier", "");
                             } else {
                               setIsCreatingPublication(false);
                               form.setValue("newPublication", false);
@@ -399,7 +402,7 @@ export default function OpportunitiesManager() {
                             </SelectItem>
                             {publications?.map((pub: any) => (
                               <SelectItem key={pub.id} value={pub.id.toString()}>
-                                {pub.name}
+                                <span>{pub.name}</span>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -441,6 +444,37 @@ export default function OpportunitiesManager() {
                             </FormControl>
                             <FormDescription>
                               Enter the main website for the publication
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="tier"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Publication Tier *</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select tier" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {OPPORTUNITY_TIERS.map((tier) => (
+                                  <SelectItem key={tier.value} value={tier.value}>
+                                    {tier.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Select the appropriate tier for this publication
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -617,7 +651,7 @@ export default function OpportunitiesManager() {
                           <FormLabel>Publication Tier *</FormLabel>
                           <Select
                             onValueChange={field.onChange}
-                            defaultValue={field.value}
+                            value={field.value}
                           >
                             <FormControl>
                               <SelectTrigger>
@@ -633,9 +667,7 @@ export default function OpportunitiesManager() {
                             </SelectContent>
                           </Select>
                           <FormDescription>
-                            Tier 1: Major national publications<br />
-                            Tier 2: Regional or industry-specific<br />
-                            Tier 3: Smaller outlets with targeted audience
+                            Select the appropriate tier for this publication
                           </FormDescription>
                           <FormMessage />
                         </FormItem>

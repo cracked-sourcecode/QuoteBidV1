@@ -32,6 +32,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -72,7 +79,6 @@ interface PublicationAnalytics {
   acceptanceRate: number;
   pitchesPerOpportunity: number;
   lastActivity: string;
-  tierDistribution: Record<string, number>;
   bidTrends: {
     month: string;
     avgBid: number;
@@ -229,13 +235,6 @@ export default function PublicationsManager() {
     const bidAmounts = allPitches.map((pitch: any) => pitch.bidAmount || 0).filter((bid: number) => bid > 0);
     const totalYield = acceptedPitches.reduce((sum: number, pitch: any) => sum + (pitch.bidAmount || 0), 0);
 
-    // Tier distribution
-    const tierDistribution: Record<string, number> = {};
-    publicationOpportunities.forEach((opp: any) => {
-      const tier = opp.tier || 'Unspecified';
-      tierDistribution[tier] = (tierDistribution[tier] || 0) + 1;
-    });
-
     // Simple bid trends (group by month)
     const bidTrends: { month: string; avgBid: number; totalBids: number }[] = [];
     const monthlyData: Record<string, number[]> = {};
@@ -273,7 +272,6 @@ export default function PublicationsManager() {
       lastActivity: publicationOpportunities.length > 0 ? 
         format(new Date(Math.max(...publicationOpportunities.map((opp: any) => new Date(opp.createdAt || 0).getTime()))), 'MMM d, yyyy') : 
         'No activity',
-      tierDistribution,
       bidTrends: bidTrends.slice(-6) // Last 6 months
     };
   };
@@ -760,143 +758,18 @@ export default function PublicationsManager() {
         </Button>
       </div>
 
-      {/* Publications organized by tiers */}
+      {/* Publications Grid */}
       {publications && publications.length > 0 ? (
-        <div className="space-y-8">
-          {/* Tier 1 Publications */}
-          <div>
-            <div className="flex items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Tier 1 Publications</h2>
-              <Badge variant="secondary" className="ml-3 bg-green-100 text-green-800">
-                Premium Outlets
-              </Badge>
-            </div>
-            <div className="grid gap-4">
-              {publications
-                .filter((pub) => {
-                  const analytics = processPublicationAnalytics(pub.id);
-                  return analytics && analytics.tierDistribution && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 1'));
-                })
-                .concat(publications.filter((pub) => {
-                  const analytics = processPublicationAnalytics(pub.id);
-                  return !analytics && pub.name.toLowerCase().includes('forbes') || 
-                         pub.name.toLowerCase().includes('wall street') ||
-                         pub.name.toLowerCase().includes('bloomberg') ||
-                         pub.name.toLowerCase().includes('reuters');
-                }))
-                .map((publication) => (
-                  <PublicationRow key={publication.id} publication={publication} onViewAnalytics={openAnalyticsModal} onEdit={openEditDialog} onDelete={openDeleteDialog} />
-                ))
-              }
-              {publications.filter((pub) => {
-                const analytics = processPublicationAnalytics(pub.id);
-                return analytics && analytics.tierDistribution && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 1'));
-              }).length === 0 && publications.filter((pub) => {
-                const analytics = processPublicationAnalytics(pub.id);
-                return !analytics && (pub.name.toLowerCase().includes('forbes') || 
-                       pub.name.toLowerCase().includes('wall street') ||
-                       pub.name.toLowerCase().includes('bloomberg') ||
-                       pub.name.toLowerCase().includes('reuters'));
-              }).length === 0 && (
-                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed">
-                  <p className="text-sm">No Tier 1 publications yet</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Tier 2 Publications */}
-          <div>
-            <div className="flex items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Tier 2 Publications</h2>
-              <Badge variant="secondary" className="ml-3 bg-blue-100 text-blue-800">
-                Regional & Industry
-              </Badge>
-            </div>
-            <div className="grid gap-4">
-              {publications
-                .filter((pub) => {
-                  const analytics = processPublicationAnalytics(pub.id);
-                  return analytics && analytics.tierDistribution && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 2'));
-                })
-                .concat(publications.filter((pub) => {
-                  const analytics = processPublicationAnalytics(pub.id);
-                  const isTier1 = !analytics && (pub.name.toLowerCase().includes('forbes') || 
-                                 pub.name.toLowerCase().includes('wall street') ||
-                                 pub.name.toLowerCase().includes('bloomberg') ||
-                                 pub.name.toLowerCase().includes('reuters'));
-                  return !analytics && !isTier1 && (pub.category === 'Technology' || pub.category === 'Finance');
-                }))
-                .map((publication) => (
-                  <PublicationRow key={publication.id} publication={publication} onViewAnalytics={openAnalyticsModal} onEdit={openEditDialog} onDelete={openDeleteDialog} />
-                ))
-              }
-              {publications.filter((pub) => {
-                const analytics = processPublicationAnalytics(pub.id);
-                return analytics && analytics.tierDistribution && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 2'));
-              }).length === 0 && publications.filter((pub) => {
-                const analytics = processPublicationAnalytics(pub.id);
-                const isTier1 = !analytics && (pub.name.toLowerCase().includes('forbes') || 
-                               pub.name.toLowerCase().includes('wall street') ||
-                               pub.name.toLowerCase().includes('bloomberg') ||
-                               pub.name.toLowerCase().includes('reuters'));
-                return !analytics && !isTier1 && (pub.category === 'Technology' || pub.category === 'Finance');
-              }).length === 0 && (
-                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed">
-                  <p className="text-sm">No Tier 2 publications yet</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Tier 3 Publications */}
-          <div>
-            <div className="flex items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Tier 3 Publications</h2>
-              <Badge variant="secondary" className="ml-3 bg-purple-100 text-purple-800">
-                Niche & Emerging
-              </Badge>
-            </div>
-            <div className="grid gap-4">
-              {publications
-                .filter((pub) => {
-                  const analytics = processPublicationAnalytics(pub.id);
-                  const hasT1 = analytics && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 1'));
-                  const hasT2 = analytics && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 2'));
-                  const isTier1Manual = pub.name.toLowerCase().includes('forbes') || 
-                                       pub.name.toLowerCase().includes('wall street') ||
-                                       pub.name.toLowerCase().includes('bloomberg') ||
-                                       pub.name.toLowerCase().includes('reuters');
-                  const isTier2Manual = !isTier1Manual && (pub.category === 'Technology' || pub.category === 'Finance');
-                  
-                  return (analytics && analytics.tierDistribution && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 3'))) ||
-                         (!analytics && !isTier1Manual && !isTier2Manual) ||
-                         (analytics && !hasT1 && !hasT2);
-                })
-                .map((publication) => (
-                  <PublicationRow key={publication.id} publication={publication} onViewAnalytics={openAnalyticsModal} onEdit={openEditDialog} onDelete={openDeleteDialog} />
-                ))
-              }
-              {publications.filter((pub) => {
-                const analytics = processPublicationAnalytics(pub.id);
-                const hasT1 = analytics && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 1'));
-                const hasT2 = analytics && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 2'));
-                const isTier1Manual = pub.name.toLowerCase().includes('forbes') || 
-                                     pub.name.toLowerCase().includes('wall street') ||
-                                     pub.name.toLowerCase().includes('bloomberg') ||
-                                     pub.name.toLowerCase().includes('reuters');
-                const isTier2Manual = !isTier1Manual && (pub.category === 'Technology' || pub.category === 'Finance');
-                
-                return (analytics && analytics.tierDistribution && Object.keys(analytics.tierDistribution).some(tier => tier.includes('Tier 3'))) ||
-                       (!analytics && !isTier1Manual && !isTier2Manual) ||
-                       (analytics && !hasT1 && !hasT2);
-              }).length === 0 && (
-                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed">
-                  <p className="text-sm">No Tier 3 publications yet</p>
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="grid gap-4">
+          {publications.map((publication) => (
+            <PublicationRow 
+              key={publication.id} 
+              publication={publication} 
+              onViewAnalytics={openAnalyticsModal} 
+              onEdit={openEditDialog} 
+              onDelete={openDeleteDialog} 
+            />
+          ))}
         </div>
       ) : (
         <div className="text-center py-16 bg-gray-50 rounded-lg border border-dashed border-gray-300">
