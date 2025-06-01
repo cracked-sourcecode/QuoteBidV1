@@ -149,33 +149,32 @@ function Router() {
         {/* Profile page route removed as requested */}
         
         {/* Protected routes that require both authentication and subscription */}
-        {/* DEVELOPMENT MODE: Subscription requirement temporarily disabled */}
         <ProtectedRoute path="/opportunities" component={() => (
-          <>
+          <SubscriptionGuard>
             <Navbar />
             <Opportunities />
-          </>
+          </SubscriptionGuard>
         )} />
         
         <ProtectedRoute path="/opportunities/:id" component={() => (
-          <>
+          <SubscriptionGuard>
             <Navbar />
             <OpportunityDetail />
-          </>
+          </SubscriptionGuard>
         )} />
         
         <ProtectedRoute path="/my-pitches" component={() => (
-          <>
+          <SubscriptionGuard>
             <Navbar />
             <MyPitches />
-          </>
+          </SubscriptionGuard>
         )} />
 
         <ProtectedRoute path="/pitch-history" component={() => (
-          <>
+          <SubscriptionGuard>
             <Navbar />
             <PitchHistory />
-          </>
+          </SubscriptionGuard>
         )} />
         
         {/* Admin routes - only accessible to admin users */}

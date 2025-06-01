@@ -913,7 +913,7 @@ export default function AccountPage() {
               </a>
               
               <a 
-                href="https://calendly.com/rubicon-pr-group/wholesale-pr-portal-demo" 
+                href="https://calendly.com/rubicon-pr-group/quotebid" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center py-2 px-3 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50"
@@ -1582,7 +1582,7 @@ export default function AccountPage() {
                 <p className="text-gray-600 mb-4">Our team can help optimize your profile to increase your chances of getting quoted.</p>
                 <div className="flex flex-wrap gap-3">
                   <Button variant="default" size="sm" asChild>
-                    <a href="https://calendly.com/rubicon-pr-group/wholesale-pr-portal-demo" target="_blank" rel="noopener noreferrer">
+                    <a href="https://calendly.com/rubicon-pr-group/quotebid" target="_blank" rel="noopener noreferrer">
                       Book a Call
                     </a>
                   </Button>

@@ -396,7 +396,7 @@ export default function AccountPage() {
                   </a>
                   
                   <a 
-                    href="https://calendly.com/quotebid/consultation" 
+                    href="https://calendly.com/rubicon-pr-group/quotebid" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="flex items-center text-gray-700 hover:text-blue-600"
