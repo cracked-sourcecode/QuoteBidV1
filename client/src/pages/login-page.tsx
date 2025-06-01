@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { queryClient } from "@/lib/queryClient";
 
 export default function LoginPage() {
   const [, navigate] = useLocation();
@@ -29,6 +30,9 @@ export default function LoginPage() {
       // Clear any existing tokens before attempting login
       localStorage.removeItem('token');
       
+      // Clear the user query cache to ensure fresh authentication check
+      queryClient.removeQueries({ queryKey: ["/api/user"] });
+      
       // First, logout any existing session
       try {
         await fetch("/api/logout", {
@@ -55,6 +59,18 @@ export default function LoginPage() {
         if (data.token) {
           localStorage.setItem('token', data.token);
         }
+        
+        // Set the user data in the query cache immediately
+        if (data.user) {
+          queryClient.setQueryData(["/api/user"], data.user);
+        }
+        
+        // Force invalidate and refetch user data to ensure authentication is properly set
+        await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        
+        // Wait a brief moment for the query to update
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Navigate to opportunities page
         navigate("/opportunities");
       } else {

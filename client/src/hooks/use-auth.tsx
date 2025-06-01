@@ -20,9 +20,12 @@ type AuthContextType = {
   isProfileComplete: () => boolean;
 };
 
-type LoginData = Pick<InsertUser, "username" | "password">;
+type LoginData = {
+  username: string;
+  password: string;
+};
 
-export const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
@@ -31,9 +34,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     error,
     isLoading,
+    refetch: refetchUser,
   } = useQuery<SelectUser | null, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
+    retry: (failureCount, error) => {
+      // Don't retry on 401 errors (unauthorized)
+      if (error && 'status' in error && error.status === 401) {
+        return false;
+      }
+      // Retry up to 2 times for other errors
+      return failureCount < 2;
+    },
+    staleTime: 0, // Always consider data stale to ensure fresh auth checks
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnMount: true, // Always refetch on mount
   });
 
   // Prevent login/auth redirects on specific pages
@@ -51,13 +66,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return (await res.json()) as { user: SelectUser, token?: string } | SelectUser;
     },
-    onSuccess: (data: { user: SelectUser, token?: string } | SelectUser) => {
+    onSuccess: async (data: { user: SelectUser, token?: string } | SelectUser) => {
       const user = "user" in data ? data.user : data;
+      
       // Store token if present
       if ("token" in data && data.token) {
         localStorage.setItem("token", data.token);
       }
+      
+      // Update the query cache with the user data
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Force refetch to ensure the latest auth state
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -65,11 +87,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Automatically redirect to opportunities page after login
       // Only if we're not already on a valid post-login page
-      if (location === "/auth" || location.includes("?tab=login")) {
+      if (location === "/auth" || location.includes("?tab=login") || location === "/login") {
         navigate("/opportunities");
       }
     },
     onError: (error: Error) => {
+      // Clear any potentially stale tokens
+      localStorage.removeItem("token");
+      
+      // Clear user data from cache
+      queryClient.setQueryData(["/api/user"], null);
+      
       toast({
         title: "Login failed",
         description: error.message,
@@ -78,22 +106,81 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      try {
+        // First, call the logout API
+        await apiRequest("POST", "/api/logout");
+      } catch (error) {
+        // Even if the API call fails, we still want to clear local state
+        console.error("Logout API call failed:", error);
+      }
+      
+      // Clear local storage
+      localStorage.removeItem("token");
+    },
+    onSuccess: () => {
+      // Clear the user from the query cache
+      queryClient.setQueryData(["/api/user"], null);
+      
+      // Clear all queries to ensure a clean state
+      queryClient.clear();
+      
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+      
+      // Navigate to home page
+      navigate("/");
+    },
+    onError: (error: Error) => {
+      // Even on error, clear local state
+      localStorage.removeItem("token");
+      queryClient.setQueryData(["/api/user"], null);
+      queryClient.clear();
+      
+      console.error("Logout error:", error);
+      
+      // Still navigate away
+      navigate("/");
+    },
+  });
+
   const registerMutation = useMutation({
     mutationFn: async (userData: InsertUser) => {
-      const res = await apiRequest("POST", "/api/auth/signup/start", userData);
+      const res = await apiRequest("POST", "/api/register", userData);
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Registration failed");
       }
       return (await res.json()) as { user: SelectUser, token?: string } | SelectUser;
     },
-    onSuccess: (data: { user: SelectUser, token?: string } | SelectUser) => {
+    onSuccess: async (data: { user: SelectUser, token?: string } | SelectUser) => {
       const user = "user" in data ? data.user : data;
+      
       // Store token if present
       if ("token" in data && data.token) {
         localStorage.setItem("token", data.token);
       }
+      
+      // Update the query cache with the user data
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Force refetch to ensure the latest auth state
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
+      toast({
+        title: "Registration successful",
+        description: "Welcome to QuoteBid!",
+      });
+      
+      // Redirect to appropriate page based on user state
+      if (user.signup_stage && user.signup_stage !== 'ready') {
+        navigate("/signup-wizard");
+      } else {
+        navigate("/opportunities");
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -104,62 +191,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
-    },
-    onSuccess: () => {
-      // Clear the token from localStorage
-      localStorage.removeItem("token");
-      
-      // Clear the user from query cache immediately
-      queryClient.setQueryData(["/api/user"], null);
-      
-      // Cancel any outgoing queries
-      queryClient.cancelQueries({ queryKey: ["/api/user"] });
-      
-      // Remove the query from cache entirely
-      queryClient.removeQueries({ queryKey: ["/api/user"] });
-      
-      // Invalidate all queries to ensure fresh data
-      queryClient.invalidateQueries();
-      
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out.",
-      });
-      
-      // No navigation here - this is handled by the LogoutHandler component
-    },
-    onError: (error: Error) => {
-      // Even on error, clear the local state
-      localStorage.removeItem("token");
-      queryClient.setQueryData(["/api/user"], null);
-      queryClient.cancelQueries({ queryKey: ["/api/user"] });
-      queryClient.removeQueries({ queryKey: ["/api/user"] });
-      
-      toast({
-        title: "Logout failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Check if user profile is complete
+  // Function to check if user profile is complete
   const isProfileComplete = () => {
     if (!user) return false;
-    
-    // First check if profileCompleted flag is set
-    if (user.profileCompleted) return true;
-    
-    // Fallback check for required profile fields
-    return !!(
-      user.fullName && 
-      user.email && 
-      user.industry && 
-      user.bio
-    );
+    return user.profileCompleted === true;
   };
 
   return (
@@ -171,7 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
-        isProfileComplete
+        isProfileComplete,
       }}
     >
       {children}
@@ -180,40 +215,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAuth() {
-  const { data: user, isLoading, error } = useQuery({
-    queryKey: ['/api/user'],
-    queryFn: async () => {
-      console.log('[useAuth] Fetching user data...');
-      const token = localStorage.getItem('token');
-      console.log('[useAuth] Token from localStorage:', token ? `exists (length: ${token.length})` : 'missing');
-      
-      // If no token, don't even try to fetch
-      if (!token) {
-        console.log('[useAuth] No token, returning null');
-        return null;
-      }
-      
-      const response = await apiFetch('/api/user');
-      console.log('[useAuth] Response status:', response.status);
-      
-      if (!response.ok) {
-        console.log('[useAuth] Response not OK, throwing error');
-        // Clear token if unauthorized
-        if (response.status === 401) {
-          localStorage.removeItem('token');
-        }
-        throw new Error('Failed to fetch user');
-      }
-      const data = await response.json();
-      console.log('[useAuth] User data received:', data);
-      return data;
-    },
-    retry: false,
-    staleTime: 0, // Don't cache user data
-    gcTime: 0, // Remove from cache immediately when unused
-  });
-
-  console.log('[useAuth] Current state - user:', user, 'isLoading:', isLoading, 'error:', error);
-
-  return { user: user || null, isLoading, error };
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }
