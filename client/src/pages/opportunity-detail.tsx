@@ -33,6 +33,9 @@ export default function OpportunityDetail() {
     const fetchOpportunityData = async () => {
       if (!opportunityId) return;
       
+      // Scroll to top when navigating to a new opportunity
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
       setIsLoading(true);
       setError(null);
       
@@ -241,8 +244,11 @@ export default function OpportunityDetail() {
   // Get tier display
   const getTierDisplay = (tier: any) => {
     if (typeof tier === 'number') return tier;
-    if (typeof tier === 'string' && tier.startsWith('Tier ')) {
-      return parseInt(tier.split('Tier ')[1]);
+    if (typeof tier === 'string') {
+      // Remove all instances of "Tier" (case insensitive) and extract just the number
+      const cleanTier = tier.replace(/tier\s*/gi, '').trim();
+      const parsed = parseInt(cleanTier);
+      return isNaN(parsed) ? 1 : parsed;
     }
     return 1; // Default
   };
@@ -755,11 +761,11 @@ export default function OpportunityDetail() {
                                 </span>
                               </div>
                               <Badge className={`text-xs font-bold px-3 py-1.5 shadow-sm border-0 ${
-                                relatedOpp.tier === 1 ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white' :
-                                relatedOpp.tier === 2 ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' :
+                                getTierDisplay(relatedOpp.tier) === 1 ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white' :
+                                getTierDisplay(relatedOpp.tier) === 2 ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' :
                                 'bg-gradient-to-r from-green-500 to-green-600 text-white'
                               }`}>
-                                Tier {relatedOpp.tier || 3}
+                                Tier {getTierDisplay(relatedOpp.tier)}
                               </Badge>
                             </div>
                             

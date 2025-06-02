@@ -82,6 +82,7 @@ export const publications = pgTable("publications", {
   website: text("website"),
   description: text("description"),
   category: text("category"),
+  tier: text("tier"), // Tier 1, Tier 2, or Tier 3 for publication classification
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -242,7 +243,7 @@ export type AdminUser = typeof adminUsers.$inferSelect;
 export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
 
 export type Publication = typeof publications.$inferSelect;
-export type InsertPublication = z.infer<typeof insertPublicationSchema>;
+export type InsertPublication = typeof publications.$inferInsert;
 
 export type Opportunity = typeof opportunities.$inferSelect;
 export type InsertOpportunity = z.infer<typeof insertOpportunitySchema>;

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   User,
   FileText,
@@ -16,7 +17,6 @@ import {
   Mic,
   Clock,
   Calendar,
-  DownloadCloud,
   Loader2,
   MapPin,
   Building,
@@ -37,7 +37,12 @@ import {
   Phone,
   PlayCircle,
   PauseCircle,
-  FileDown
+  FileDown,
+  Star,
+  TrendingUp,
+  Eye,
+  Users,
+  Sparkles
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
@@ -108,36 +113,48 @@ interface Pitch {
   };
 }
 
-// Simplified status configuration
+// Enhanced status configuration with modern styling
 const statusConfig = {
   pending: { 
     label: 'Pending Review', 
-    color: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+    color: 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white',
+    bgColor: 'bg-yellow-50',
+    borderColor: 'border-yellow-200',
     icon: Clock,
   },
   sent_to_reporter: { 
     label: 'Sent to Reporter', 
-    color: 'bg-blue-50 text-blue-700 border-blue-200',
+    color: 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white',
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-200',
     icon: Send,
   },
   interested: { 
     label: 'Reporter Interested', 
-    color: 'bg-green-50 text-green-700 border-green-200',
-    icon: CheckCircle,
+    color: 'bg-gradient-to-r from-green-500 to-emerald-600 text-white',
+    bgColor: 'bg-green-50',
+    borderColor: 'border-green-200',
+    icon: TrendingUp,
   },
   not_interested: { 
     label: 'Not Interested', 
-    color: 'bg-red-50 text-red-700 border-red-200',
+    color: 'bg-gradient-to-r from-red-500 to-rose-600 text-white',
+    bgColor: 'bg-red-50',
+    borderColor: 'border-red-200',
     icon: XCircle,
   },
   successful: { 
     label: 'Successful Coverage', 
-    color: 'bg-purple-50 text-purple-700 border-purple-200',
+    color: 'bg-gradient-to-r from-purple-600 to-pink-600 text-white',
+    bgColor: 'bg-purple-50',
+    borderColor: 'border-purple-200',
     icon: Award,
   },
   draft: {
     label: 'Draft',
-    color: 'bg-gray-50 text-gray-700 border-gray-200',
+    color: 'bg-gradient-to-r from-gray-500 to-slate-600 text-white',
+    bgColor: 'bg-gray-50',
+    borderColor: 'border-gray-200',
     icon: FileText,
   }
 };
@@ -171,8 +188,7 @@ export default function PitchDetailsModalRedesigned({ isOpen, onClose, pitchId }
   const [pitch, setPitch] = useState<Pitch | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [activeTab, setActiveTab] = useState("details");
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -221,29 +237,74 @@ export default function PitchDetailsModalRedesigned({ isOpen, onClose, pitchId }
   const copyQuoteToClipboard = () => {
     if (!pitch) return;
     
-    const quote = `"${pitch.content.trim().replace(/\n+/g, ' ')}" —${pitch.user?.fullName || 'Anonymous'}${pitch.user?.title ? `, ${pitch.user.title}` : ''}${getDoFollowLinkDisplay(pitch.user)}`;
+    const quote = `"${pitch.content.trim().replace(/\n+/g, ' ')}" —${pitch.user?.fullName || 'Anonymous'}${pitch.user?.title ? `, ${pitch.user.title}` : ''}`;
     
-    navigator.clipboard.writeText(quote).then(() => {
-      toast({
-        title: "Copied!",
-        description: "Quote copied to clipboard",
+    // Fallback for older browsers or if clipboard API fails
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(quote).then(() => {
+        toast({
+          title: "Copied!",
+          description: "Quote copied to clipboard",
+        });
+      }).catch(() => {
+        // Fallback to textarea method
+        fallbackCopyTextToClipboard(quote);
       });
-    });
+    } else {
+      // Fallback for older browsers
+      fallbackCopyTextToClipboard(quote);
+    }
+  };
+
+  const fallbackCopyTextToClipboard = (text: string) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        toast({
+          title: "Copied!",
+          description: "Quote copied to clipboard",
+        });
+      } else {
+        toast({
+          title: "Copy Failed",
+          description: "Please manually select and copy the text",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Copy Failed",
+        description: "Please manually select and copy the text",
+        variant: "destructive",
+      });
+    }
+    
+    document.body.removeChild(textArea);
   };
 
   const StatusBadge = ({ status }: { status: string }) => {
     const config = statusConfig[status as keyof typeof statusConfig] || {
       label: status,
-      color: 'bg-gray-50 text-gray-700 border-gray-200',
+      color: 'bg-gradient-to-r from-gray-500 to-slate-600 text-white',
       icon: AlertCircle
     };
     const Icon = config.icon;
     
     return (
-      <Badge variant="outline" className={`${config.color} flex items-center gap-1.5 px-3 py-1.5 font-medium`}>
-        <Icon className="h-3.5 w-3.5" />
-        <span>{config.label}</span>
-      </Badge>
+      <div className={`${config.color} inline-flex items-center gap-2 px-3 py-2 rounded-lg shadow-lg font-medium text-sm whitespace-nowrap`}>
+        <Icon className="h-4 w-4 flex-shrink-0" />
+        <span className="truncate">{config.label}</span>
+      </div>
     );
   };
 
@@ -695,416 +756,436 @@ export default function PitchDetailsModalRedesigned({ isOpen, onClose, pitchId }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-6xl max-h-[95vh] p-0 gap-0 flex flex-col">
+      <DialogContent className="max-w-7xl max-h-[95vh] p-0 gap-0 flex flex-col bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 [&>button]:hidden">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-96">
             <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-              <p className="text-gray-600">Loading pitch details...</p>
+              <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-6" />
+              <p className="text-lg text-gray-600 font-medium">Loading pitch details...</p>
+              <p className="text-sm text-gray-500 mt-2">Gathering comprehensive information</p>
             </div>
           </div>
         ) : pitch ? (
           <>
-            {/* Compact Header */}
-            <DialogHeader className="border-b border-gray-200 px-4 py-3 bg-white flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <div>
-                  <DialogTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                    <Hash className="h-4 w-4 text-gray-400" />
-                    Pitch {pitch.id}
-                  </DialogTitle>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Submitted {formatDistanceToNow(new Date(pitch.createdAt), { addSuffix: true })}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={generateMediaKitPDF}
-                    className="gap-1 h-8 text-xs px-3 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-                  >
-                    <FileDown className="h-3 w-3" />
-                    Export Media Kit
-                  </Button>
-                  <StatusBadge status={pitch.status} />
-                  {pitch.bidAmount && (
-                    <Badge variant="secondary" className="text-xs px-2 py-1">
-                      <DollarSign className="h-3 w-3 mr-1" />
-                      ${pitch.bidAmount.toFixed(2)}
-                    </Badge>
+            {/* Enhanced Header with Gradient */}
+            <DialogHeader className="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 text-white px-8 py-6 flex-shrink-0 relative overflow-hidden">
+              <div className="absolute inset-0 opacity-20" style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3Cpattern id='grid' width='10' height='10' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 10 0 L 0 0 0 10' fill='none' stroke='rgba(255,255,255,0.1)' stroke-width='0.5'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23grid)'/%3E%3C/svg%3E")`
+              }}></div>
+              
+              {/* Custom Close Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="absolute top-4 right-4 z-10 h-10 w-10 p-0 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white hover:text-white transition-all duration-200 backdrop-blur-sm"
+              >
+                <XCircle className="h-5 w-5" />
+              </Button>
+              
+              <div className="relative flex items-start justify-between pr-16">
+                <div className="flex items-center gap-6 flex-1 min-w-0">
+                  {pitch.user && (
+                    <Avatar className="h-16 w-16 ring-4 ring-white/30 shadow-2xl flex-shrink-0">
+                      <AvatarImage src={pitch.user.avatar} />
+                      <AvatarFallback className="text-xl bg-white/20 text-white font-bold backdrop-blur-sm">
+                        {pitch.user.fullName?.substring(0, 2).toUpperCase() || 'EX'}
+                      </AvatarFallback>
+                    </Avatar>
                   )}
+                  <div className="flex-1 min-w-0">
+                    <DialogTitle className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                      <Sparkles className="h-8 w-8 text-yellow-400 flex-shrink-0" />
+                      <span className="truncate">{pitch.opportunity?.title || 'Pitch Details'}</span>
+                    </DialogTitle>
+                    <div className="flex items-center gap-4 text-white/90 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 flex-shrink-0" />
+                        <span className="font-semibold truncate">{pitch.user?.fullName || 'Anonymous Expert'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">Submitted {formatDistanceToNow(new Date(pitch.createdAt), { addSuffix: true })}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-4 flex-shrink-0">
+                  <StatusBadge status={pitch.status} />
                 </div>
               </div>
             </DialogHeader>
 
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto min-h-0">
-              <div className="p-4 space-y-4">
-                
-                {/* Opportunity Details - Compact */}
-                <Card className="border border-gray-200">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Target className="h-4 w-4 text-gray-600" />
-                        Opportunity Details
-                      </CardTitle>
-                      <Select
-                        value={pitch.status}
-                        onValueChange={updatePitchStatus}
-                        disabled={updatingStatus}
-                      >
-                        <SelectTrigger className="w-40 h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(statusConfig).map(([key, config]) => (
-                            <SelectItem key={key} value={key}>
-                              <div className="flex items-center gap-2">
-                                <config.icon className="h-3 w-3" />
-                                {config.label}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0 pb-3">
-                    <div className="mb-3">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                        {pitch.opportunity?.publication?.name || 'N/A'}: {pitch.opportunity?.title || 'Unnamed Opportunity'}
-                      </h3>
-                      {pitch.opportunity?.description && (
-                        <p className="text-gray-600 text-xs leading-relaxed line-clamp-2">
-                          {pitch.opportunity.description}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className="grid grid-cols-4 gap-3 pt-2 border-t border-gray-100">
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 mb-1">Publication</p>
-                        <p className="text-xs font-medium text-gray-900">{pitch.opportunity?.publication?.name || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 mb-1">Tier</p>
-                        <p className="text-xs font-medium text-gray-900">{pitch.opportunity?.tier || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 mb-1">Deadline</p>
-                        <p className="text-xs font-medium text-gray-900">{formatDate(pitch.opportunity?.deadline || '')}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 mb-1">Bid Amount</p>
-                        <p className="text-xs font-medium text-gray-900">${pitch.bidAmount?.toFixed(2) || '0.00'}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+            {/* Enhanced Tabs Navigation */}
+            <div className="bg-white border-b border-gray-200 px-8 py-4 flex-shrink-0">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 bg-gray-100 rounded-xl p-1">
+                  <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger value="communication" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Communication
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
 
-                {/* User Profile - Redesigned for Better Visual Appeal */}
-                {pitch.user && (
-                  <Card className="border border-gray-200 bg-gradient-to-br from-blue-50 to-indigo-50">
-                    <CardContent className="p-0">
-                      {/* Profile Header with Avatar and Key Info */}
-                      <div className="relative bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-t-lg">
-                        <div className="flex items-start gap-4">
-                          <div className="relative">
-                            <Avatar className="h-16 w-16 border-4 border-white shadow-lg">
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                
+                {/* Overview Tab */}
+                <TabsContent value="overview" className="p-8 space-y-6 m-0">
+                  
+                  {/* Expert Profile Section - NOW AT TOP */}
+                  {pitch.user && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                      
+                      {/* Expert Header Card */}
+                      <Card className="lg:col-span-2 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white border-0 shadow-2xl overflow-hidden">
+                        <div className="absolute inset-0 opacity-20" style={{
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='none' stroke='rgba(255,255,255,0.1)' stroke-width='1'/%3E%3C/svg%3E")`
+                        }}></div>
+                        <CardContent className="p-8 relative">
+                          <div className="flex items-start gap-6">
+                            <Avatar className="h-24 w-24 ring-4 ring-white/40 shadow-2xl">
                               <AvatarImage src={pitch.user.avatar} />
-                              <AvatarFallback className="text-lg bg-white text-blue-600 font-bold">
-                                {pitch.user.fullName?.substring(0, 2).toUpperCase() || 'U'}
+                              <AvatarFallback className="text-2xl bg-white/20 text-white font-bold backdrop-blur-sm">
+                                {pitch.user.fullName?.substring(0, 2).toUpperCase() || 'EX'}
                               </AvatarFallback>
                             </Avatar>
-                            <div className="absolute -bottom-1 -right-1 bg-green-400 rounded-full p-1">
-                              <CheckCircle className="h-3 w-3 text-white" />
+                            <div className="flex-1">
+                              <h2 className="text-3xl font-bold text-white mb-2">{pitch.user.fullName}</h2>
+                              <div className="flex flex-wrap gap-3 mb-4">
+                                {pitch.user.title && (
+                                  <Badge variant="secondary" className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                                    <Briefcase className="h-4 w-4 mr-2" />
+                                    {pitch.user.title}
+                                  </Badge>
+                                )}
+                                {pitch.user.industry && (
+                                  <Badge variant="secondary" className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                                    <Building className="h-4 w-4 mr-2" />
+                                    {pitch.user.industry}
+                                  </Badge>
+                                )}
+                                {pitch.user.location && (
+                                  <Badge variant="secondary" className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                                    <MapPin className="h-4 w-4 mr-2" />
+                                    {pitch.user.location}
+                                  </Badge>
+                                )}
+                              </div>
+                              {pitch.user.bio && (
+                                <p className="text-white/90 text-lg italic leading-relaxed">
+                                  "{pitch.user.bio}"
+                                </p>
+                              )}
                             </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-bold text-white mb-1">{pitch.user.fullName}</h3>
-                            <div className="flex flex-wrap gap-2 mb-2">
-                              {pitch.user.title && (
-                                <Badge variant="secondary" className="bg-white/20 text-white border-white/30 text-xs">
-                                  <Briefcase className="h-3 w-3 mr-1" />
-                                  {pitch.user.title}
-                                </Badge>
-                              )}
-                              {pitch.user.industry && (
-                                <Badge variant="secondary" className="bg-white/20 text-white border-white/30 text-xs">
-                                  <Building className="h-3 w-3 mr-1" />
-                                  {pitch.user.industry}
-                                </Badge>
-                              )}
-                            </div>
-                            {pitch.user.location && (
-                              <p className="text-white/90 text-sm flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {pitch.user.location}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {/* Bio Section */}
-                        {pitch.user.bio && (
-                          <div className="mt-3 pt-3 border-t border-white/20">
-                            <p className="text-white/90 text-sm italic line-clamp-2">
-                              "{pitch.user.bio}"
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                        </CardContent>
+                      </Card>
 
-                      {/* Profile Content */}
-                      <div className="p-4 space-y-4">
-                        
-                        {/* Contact Information Card */}
-                        <div className="bg-white rounded-lg p-3 border border-gray-100 shadow-sm">
-                          <h4 className="font-semibold text-gray-900 mb-3 text-sm flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-blue-600" />
+                      {/* Contact Information */}
+                      <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200 shadow-lg">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-3 text-xl font-bold text-blue-900">
+                            <div className="p-2 bg-blue-500 rounded-xl">
+                              <Mail className="h-6 w-6 text-white" />
+                            </div>
                             Contact Information
-                          </h4>
-                          <div className="grid grid-cols-1 gap-2">
-                            {pitch.user.email && (
-                              <div className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-50 transition-colors">
-                                <div className="bg-blue-100 p-1.5 rounded-md">
-                                  <Mail className="h-3 w-3 text-blue-600" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs text-gray-500">Email</p>
-                                  <a href={`mailto:${pitch.user.email}`} className="text-sm text-blue-600 hover:underline truncate block font-medium">
-                                    {pitch.user.email}
-                                  </a>
-                                </div>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {pitch.user.email && (
+                            <div className="flex items-center gap-4 p-4 bg-white/80 rounded-xl hover:bg-white transition-colors">
+                              <div className="p-3 bg-blue-100 rounded-lg">
+                                <Mail className="h-5 w-5 text-blue-600" />
                               </div>
-                            )}
-                            {pitch.user.phone_number && (
-                              <div className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-50 transition-colors">
-                                <div className="bg-green-100 p-1.5 rounded-md">
-                                  <Phone className="h-3 w-3 text-green-600" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs text-gray-500">Phone</p>
-                                  <p className="text-sm text-gray-900 font-medium">{pitch.user.phone_number}</p>
-                                </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-600">Email Address</p>
+                                <a href={`mailto:${pitch.user.email}`} className="text-lg font-semibold text-blue-600 hover:underline">
+                                  {pitch.user.email}
+                                </a>
                               </div>
-                            )}
-                            {pitch.user.company && (
-                              <div className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-50 transition-colors">
-                                <div className="bg-purple-100 p-1.5 rounded-md">
-                                  <Building2 className="h-3 w-3 text-purple-600" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs text-gray-500">Company</p>
-                                  <p className="text-sm text-gray-900 font-medium">{pitch.user.company}</p>
-                                </div>
+                            </div>
+                          )}
+                          {pitch.user.phone_number && (
+                            <div className="flex items-center gap-4 p-4 bg-white/80 rounded-xl hover:bg-white transition-colors">
+                              <div className="p-3 bg-green-100 rounded-lg">
+                                <Phone className="h-5 w-5 text-green-600" />
                               </div>
-                            )}
-                          </div>
-                        </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-600">Phone Number</p>
+                                <p className="text-lg font-semibold text-gray-900">{pitch.user.phone_number}</p>
+                              </div>
+                            </div>
+                          )}
+                          {pitch.user.company && (
+                            <div className="flex items-center gap-4 p-4 bg-white/80 rounded-xl hover:bg-white transition-colors">
+                              <div className="p-3 bg-purple-100 rounded-lg">
+                                <Building2 className="h-5 w-5 text-purple-600" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-600">Company</p>
+                                <p className="text-lg font-semibold text-gray-900">{pitch.user.company}</p>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
 
-                        {/* Social Media & Links Card */}
-                        <div className="bg-white rounded-lg p-3 border border-gray-100 shadow-sm">
-                          <h4 className="font-semibold text-gray-900 mb-3 text-sm flex items-center gap-2">
-                            <Globe className="h-4 w-4 text-indigo-600" />
+                      {/* Social Media & Links */}
+                      <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-lg">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-3 text-xl font-bold text-green-900">
+                            <div className="p-2 bg-green-500 rounded-xl">
+                              <Globe className="h-6 w-6 text-white" />
+                            </div>
                             Social Media & Links
-                            {pitch.user.doFollowLink && pitch.user.doFollowLink !== 'None' && (
-                              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 ml-auto">
-                                <Award className="h-2 w-2 mr-1" />
-                                Do-Follow
-                              </Badge>
-                            )}
-                          </h4>
-                          <div className="grid grid-cols-2 gap-2">
-                            {pitch.user.website && (
-                              <a href={pitch.user.website} target="_blank" rel="noopener noreferrer" 
-                                 className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50 transition-colors group">
-                                <div className="bg-gray-100 p-1.5 rounded-md group-hover:bg-gray-200 transition-colors">
-                                  <Globe className="h-3 w-3 text-gray-600" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs text-gray-500">Website</p>
-                                  <p className="text-sm text-blue-600 font-medium truncate">Visit Site</p>
-                                </div>
-                                <ExternalLink className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                              </a>
-                            )}
-                            {pitch.user.linkedIn && (
-                              <a href={pitch.user.linkedIn} target="_blank" rel="noopener noreferrer" 
-                                 className="flex items-center gap-2 p-2 rounded-md hover:bg-blue-50 transition-colors group">
-                                <div className="bg-blue-100 p-1.5 rounded-md group-hover:bg-blue-200 transition-colors">
-                                  <Linkedin className="h-3 w-3 text-blue-600" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs text-gray-500">LinkedIn</p>
-                                  <p className="text-sm text-blue-600 font-medium truncate">Connect</p>
-                                </div>
-                                <ExternalLink className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                              </a>
-                            )}
-                            {pitch.user.twitter && (
-                              <a href={pitch.user.twitter} target="_blank" rel="noopener noreferrer" 
-                                 className="flex items-center gap-2 p-2 rounded-md hover:bg-sky-50 transition-colors group">
-                                <div className="bg-sky-100 p-1.5 rounded-md group-hover:bg-sky-200 transition-colors">
-                                  <Twitter className="h-3 w-3 text-sky-600" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs text-gray-500">Twitter</p>
-                                  <p className="text-sm text-sky-600 font-medium truncate">Follow</p>
-                                </div>
-                                <ExternalLink className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                              </a>
-                            )}
-                            {pitch.user.instagram && (
-                              <a href={pitch.user.instagram} target="_blank" rel="noopener noreferrer" 
-                                 className="flex items-center gap-2 p-2 rounded-md hover:bg-pink-50 transition-colors group">
-                                <div className="bg-pink-100 p-1.5 rounded-md group-hover:bg-pink-200 transition-colors">
-                                  <Instagram className="h-3 w-3 text-pink-600" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs text-gray-500">Instagram</p>
-                                  <p className="text-sm text-pink-600 font-medium truncate">Follow</p>
-                                </div>
-                                <ExternalLink className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                              </a>
-                            )}
-                          </div>
-                        </div>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {pitch.user.website && (
+                            <a href={pitch.user.website} target="_blank" rel="noopener noreferrer" 
+                               className="flex items-center gap-4 p-4 bg-white/80 rounded-xl hover:bg-white transition-all hover:shadow-md group">
+                              <div className="p-3 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors">
+                                <Globe className="h-5 w-5 text-gray-600" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-600">Website</p>
+                                <p className="text-lg font-semibold text-blue-600">Visit Site</p>
+                              </div>
+                              <ExternalLink className="h-5 w-5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </a>
+                          )}
+                          {pitch.user.linkedIn && (
+                            <a href={pitch.user.linkedIn} target="_blank" rel="noopener noreferrer" 
+                               className="flex items-center gap-4 p-4 bg-white/80 rounded-xl hover:bg-white transition-all hover:shadow-md group">
+                              <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                                <Linkedin className="h-5 w-5 text-blue-600" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-600">LinkedIn</p>
+                                <p className="text-lg font-semibold text-blue-600">Connect</p>
+                              </div>
+                              <ExternalLink className="h-5 w-5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </a>
+                          )}
+                          {pitch.user.twitter && (
+                            <a href={pitch.user.twitter} target="_blank" rel="noopener noreferrer" 
+                               className="flex items-center gap-4 p-4 bg-white/80 rounded-xl hover:bg-white transition-all hover:shadow-md group">
+                              <div className="p-3 bg-sky-100 rounded-lg group-hover:bg-sky-200 transition-colors">
+                                <Twitter className="h-5 w-5 text-sky-600" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-600">Twitter</p>
+                                <p className="text-lg font-semibold text-sky-600">Follow</p>
+                              </div>
+                              <ExternalLink className="h-5 w-5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </a>
+                          )}
+                          {pitch.user.instagram && (
+                            <a href={pitch.user.instagram} target="_blank" rel="noopener noreferrer" 
+                               className="flex items-center gap-4 p-4 bg-white/80 rounded-xl hover:bg-white transition-all hover:shadow-md group">
+                              <div className="p-3 bg-pink-100 rounded-lg group-hover:bg-pink-200 transition-colors">
+                                <Instagram className="h-5 w-5 text-pink-600" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-600">Instagram</p>
+                                <p className="text-lg font-semibold text-pink-600">Follow</p>
+                              </div>
+                              <ExternalLink className="h-5 w-5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </a>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
 
-                        {/* User Stats */}
-                        <div className="bg-white rounded-lg p-3 border border-gray-100 shadow-sm">
-                          <h4 className="font-semibold text-gray-900 mb-3 text-sm flex items-center gap-2">
-                            <User className="h-4 w-4 text-indigo-600" />
-                            Account Information
-                          </h4>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="text-center p-2 bg-blue-50 rounded-md">
-                              <p className="text-xs text-gray-500 mb-1">Member Since</p>
-                              <p className="text-sm font-semibold text-blue-600">
-                                {formatDate(pitch.user.createdAt || '')}
-                              </p>
-                            </div>
-                            <div className="text-center p-2 bg-green-50 rounded-md">
-                              <p className="text-xs text-gray-500 mb-1">Profile Status</p>
-                              <p className="text-sm font-semibold text-green-600 flex items-center justify-center gap-1">
-                                <CheckCircle className="h-3 w-3" />
-                                Complete
-                              </p>
-                            </div>
+                  {/* Opportunity Card - NOW ABOVE PITCH CONTENT */}
+                  <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 shadow-lg mb-6">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-3 text-xl font-bold text-blue-900">
+                          <div className="p-2 bg-blue-500 rounded-xl">
+                            <Target className="h-6 w-6 text-white" />
                           </div>
+                          Opportunity
+                        </CardTitle>
+                        <Select
+                          value={pitch.status}
+                          onValueChange={updatePitchStatus}
+                          disabled={updatingStatus}
+                        >
+                          <SelectTrigger className="w-48 bg-white shadow-sm border-blue-200">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(statusConfig).map(([key, config]) => (
+                              <SelectItem key={key} value={key}>
+                                <div className="flex items-center gap-3">
+                                  <config.icon className="h-4 w-4" />
+                                  {config.label}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">
+                          {pitch.opportunity?.title || 'Unnamed Opportunity'}
+                        </h3>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Building className="h-4 w-4 text-blue-600" />
+                          <span className="font-semibold text-blue-900">{pitch.opportunity?.publication?.name || 'N/A'}</span>
                         </div>
-
+                        {pitch.opportunity?.description && (
+                          <p className="text-gray-700 leading-relaxed bg-white/60 p-3 rounded-lg text-sm">
+                            {pitch.opportunity.description}
+                          </p>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
-                )}
 
-                {/* Pitch Content - Moved Below User Profile */}
-                <Card className="border border-gray-200">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <FileText className="h-4 w-4 text-gray-600" />
-                      Pitch Content
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 pb-3">
-                    {pitch.audioUrl ? (
-                      <div className="space-y-2">
-                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Mic className="h-3 w-3 text-blue-600" />
-                              <span className="font-medium text-blue-900 text-xs">Audio Pitch</span>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setIsPlaying(!isPlaying)}
-                              className="h-6 w-6 p-0"
-                            >
-                              {isPlaying ? (
-                                <PauseCircle className="h-3 w-3 text-blue-600" />
-                              ) : (
-                                <PlayCircle className="h-3 w-3 text-blue-600" />
-                              )}
-                            </Button>
-                          </div>
-                          <audio controls className="w-full h-6">
-                            <source src={pitch.audioUrl} type="audio/mpeg" />
-                          </audio>
+                  {/* Pitch Content Card - NOW BELOW OPPORTUNITY */}
+                  <Card className="bg-gradient-to-br from-slate-50 to-gray-50 border-gray-200 shadow-lg">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
+                        <div className="p-2 bg-gray-700 rounded-xl">
+                          {pitch.audioUrl ? (
+                            <Mic className="h-6 w-6 text-white" />
+                          ) : (
+                            <FileText className="h-6 w-6 text-white" />
+                          )}
                         </div>
-                        {pitch.transcript && (
-                          <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                            <h4 className="font-medium text-gray-900 mb-1 text-xs">Transcript</h4>
-                            <p className="text-gray-700 text-xs leading-relaxed whitespace-pre-wrap max-h-20 overflow-y-auto">
-                              {pitch.transcript}
+                        {pitch.audioUrl ? 'Audio Pitch' : 'Written Pitch'}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {pitch.audioUrl ? (
+                        <div className="space-y-4">
+                          <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-500 rounded-lg">
+                                  <Mic className="h-5 w-5 text-white" />
+                                </div>
+                                <span className="font-semibold text-blue-900">Audio Recording</span>
+                              </div>
+                            </div>
+                            <audio controls className="w-full h-12 rounded-lg">
+                              <source src={pitch.audioUrl} type="audio/mpeg" />
+                              Your browser does not support the audio element.
+                            </audio>
+                          </div>
+                          {pitch.transcript && (
+                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-gray-600" />
+                                Transcript
+                              </h4>
+                              <div className="prose prose-sm max-w-none">
+                                <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+                                  {pitch.transcript}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-gray-600" />
+                            Pitch Content
+                          </h4>
+                          <div className="prose prose-sm max-w-none">
+                            <p className="text-gray-800 leading-relaxed whitespace-pre-wrap text-lg">
+                              {pitch.content}
                             </p>
                           </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                        <p className="text-gray-800 leading-relaxed whitespace-pre-wrap text-xs max-h-16 overflow-y-auto">
-                          {pitch.content}
-                        </p>
-                      </div>
-                    )}
+                        </div>
+                      )}
 
-                    {/* Formatted Quote - Compact */}
-                    <div className="border-t border-gray-100 pt-3 mt-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-900 text-xs">Formatted Quote</h4>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={copyQuoteToClipboard}
-                          className="gap-1 h-6 text-xs px-2"
-                        >
-                          <Copy className="h-3 w-3" />
-                          Copy
-                        </Button>
+                      {/* Formatted Quote Section */}
+                      <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-semibold text-amber-900 flex items-center gap-2">
+                            <Copy className="h-4 w-4" />
+                            Ready-to-Use Quote
+                          </h4>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={copyQuoteToClipboard}
+                            className="bg-white border-amber-200 text-amber-700 hover:bg-amber-50"
+                          >
+                            <Copy className="h-4 w-4 mr-2" />
+                            Copy Quote
+                          </Button>
+                        </div>
+                        <div className="bg-white p-6 rounded-xl border border-amber-100 shadow-sm">
+                          <div className="relative">
+                            <div className="absolute -top-4 -left-2 text-6xl text-amber-400 font-serif">"</div>
+                            <div className="pl-8">
+                              <p className="italic text-gray-800 leading-relaxed text-lg mb-4">
+                                {pitch.content.trim().replace(/\n+/g, ' ')}
+                              </p>
+                              <div className="text-right">
+                                <p className="font-semibold text-gray-900">
+                                  — {pitch.user?.fullName || 'Anonymous'}{pitch.user?.title ? `, ${pitch.user.title}` : ''}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                        <p className="italic text-gray-800 leading-relaxed text-xs">
-                          "{pitch.content.trim().replace(/\n+/g, ' ')}" —{pitch.user?.fullName || 'Anonymous'}{pitch.user?.title ? `, ${pitch.user.title}` : ''}{getDoFollowLinkDisplay(pitch.user)}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
 
-                {/* Communication Section - Added at Bottom */}
-                <Card className="border border-gray-200">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <MessageSquare className="h-4 w-4 text-gray-600" />
-                      Communication
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 pb-3">
-                    <PitchMessageThread pitch={{
-                      id: pitch.id,
-                      userId: pitch.userId,
-                      opportunityId: pitch.opportunityId,
-                      content: pitch.content,
-                      bidAmount: pitch.bidAmount || 0,
-                      status: pitch.status as any,
-                      createdAt: pitch.createdAt,
-                      opportunity: pitch.opportunity as any,
-                    }} />
-                  </CardContent>
-                </Card>
-                
-              </div>
+                {/* Communication Tab */}
+                <TabsContent value="communication" className="p-8 m-0">
+                  <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200 shadow-lg">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-3 text-xl font-bold text-indigo-900">
+                        <div className="p-2 bg-indigo-500 rounded-xl">
+                          <MessageSquare className="h-6 w-6 text-white" />
+                        </div>
+                        Communication Thread
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="bg-white rounded-xl p-6">
+                      <PitchMessageThread pitch={{
+                        id: pitch.id,
+                        userId: pitch.userId,
+                        opportunityId: pitch.opportunityId,
+                        content: pitch.content,
+                        bidAmount: pitch.bidAmount || 0,
+                        status: pitch.status as any,
+                        createdAt: pitch.createdAt,
+                        opportunity: pitch.opportunity as any,
+                      }} />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+              </Tabs>
             </div>
           </>
         ) : (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-96">
             <div className="text-center">
-              <XCircle className="h-8 w-8 text-red-500 mx-auto mb-4" />
-              <p className="text-gray-600">Failed to load pitch details</p>
+              <XCircle className="h-16 w-16 text-red-500 mx-auto mb-6" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Failed to load pitch details</h3>
+              <p className="text-gray-600">Please try refreshing or contact support if the issue persists.</p>
             </div>
           </div>
         )}

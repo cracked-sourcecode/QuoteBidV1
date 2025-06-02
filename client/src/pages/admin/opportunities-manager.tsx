@@ -51,7 +51,22 @@ import {
   Edit, 
   MoreHorizontal, 
   Trash2,
-  X
+  X,
+  Search,
+  Filter,
+  Target,
+  Activity,
+  Users,
+  TrendingUp,
+  Eye,
+  MessageSquare,
+  Award,
+  ExternalLink,
+  Briefcase,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Zap
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
@@ -98,7 +113,10 @@ export default function OpportunitiesManager() {
   const [showDetails, setShowDetails] = useState<number | null>(null);
   const [isCreatingPublication, setIsCreatingPublication] = useState(false);
   
-  // We've removed the filters as requested
+  // Search and filter state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedTier, setSelectedTier] = useState<string>('all');
   
   // Fetch all opportunities
   const { data: opportunities = [], isLoading: loadingOpportunities } = useQuery<any[]>({
@@ -268,24 +286,344 @@ export default function OpportunitiesManager() {
     form.setValue('tags', currentTags.filter(tag => tag !== tagToRemove));
   };
   
-  // No more filtering at this level
-  const filteredOpportunities = opportunities;
+  // Filter opportunities based on search term, status, and tier
+  const filteredOpportunities = opportunities?.filter(opp => {
+    const matchesSearch = searchTerm === '' || 
+      opp.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      opp.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      opp.publication?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      opp.industry?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = selectedStatus === 'all' || opp.status === selectedStatus;
+    const matchesTier = selectedTier === 'all' || opp.tier === selectedTier;
+    
+    return matchesSearch && matchesStatus && matchesTier;
+  }) || [];
+
+  // Calculate stats
+  const stats = {
+    totalOpportunities: opportunities?.length || 0,
+    openOpportunities: opportunities?.filter(opp => opp.status === 'open').length || 0,
+    closedOpportunities: opportunities?.filter(opp => opp.status === 'closed').length || 0,
+    avgMinimumBid: opportunities?.length ? 
+      Math.round(opportunities.reduce((sum, opp) => sum + (opp.minimumBid || 0), 0) / opportunities.length) : 0
+  };
   
   return (
-    <div>
-      <div className="flex justify-between mb-6">
-        <h2 className="text-2xl font-bold">Manage PR Opportunities</h2>
-        
-        <Button className="flex items-center" onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add New Opportunity
-        </Button>
-        
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Enhanced Header Section */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200/50 p-8 mb-8">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h1 className="text-3xl font-bold flex items-center mb-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center mr-4 shadow-lg">
+                  <Briefcase className="h-6 w-6 text-white" />
+                </div>
+                <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  Opportunity Manager
+                </span>
+              </h1>
+              <p className="text-gray-600 text-lg">
+                Create and manage PR opportunities for users to bid on
+              </p>
+            </div>
+            <button 
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              <Plus className="h-5 w-5" />
+              Add New Opportunity
+            </button>
+          </div>
+
+          {/* Search and Filter Section */}
+          <div className="mb-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* Search Bar */}
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Input
+                  placeholder="Search opportunities by title, description, publication, or industry..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+                />
+              </div>
+              
+              {/* Status Filter */}
+              <div className="sm:w-40">
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
+                    <Filter className="h-4 w-4 mr-2 text-gray-400" />
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Tier Filter */}
+              <div className="sm:w-40">
+                <Select value={selectedTier} onValueChange={setSelectedTier}>
+                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
+                    <Award className="h-4 w-4 mr-2 text-gray-400" />
+                    <SelectValue placeholder="Tier" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Tiers</SelectItem>
+                    <SelectItem value="Tier 1">Tier 1</SelectItem>
+                    <SelectItem value="Tier 2">Tier 2</SelectItem>
+                    <SelectItem value="Tier 3">Tier 3</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* Results Counter */}
+            {searchTerm && (
+              <div className="mt-4 text-sm text-gray-600">
+                Found {filteredOpportunities.length} opportunity{filteredOpportunities.length === 1 ? '' : 'ies'} matching "{searchTerm}"
+              </div>
+            )}
+          </div>
+          
+          {/* Enhanced Stats Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4 border border-blue-200/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-700 mb-1">Total Opportunities</p>
+                  <p className="text-2xl font-bold text-blue-900">{stats.totalOpportunities}</p>
+                </div>
+                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <Briefcase className="h-5 w-5 text-white" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-4 border border-green-200/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-700 mb-1">Open</p>
+                  <p className="text-2xl font-bold text-green-900">{stats.openOpportunities}</p>
+                </div>
+                <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                  <CheckCircle2 className="h-5 w-5 text-white" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-red-50 to-red-100/50 rounded-xl p-4 border border-red-200/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-red-700 mb-1">Closed</p>
+                  <p className="text-2xl font-bold text-red-900">{stats.closedOpportunities}</p>
+                </div>
+                <div className="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
+                  <XCircle className="h-5 w-5 text-white" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-4 border border-purple-200/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-purple-700 mb-1">Avg. Min Bid</p>
+                  <p className="text-2xl font-bold text-purple-900">${stats.avgMinimumBid}</p>
+                </div>
+                <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-white" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Opportunities Grid */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200/50 overflow-hidden">
+          {loadingOpportunities ? (
+            <div className="flex justify-center items-center py-16">
+              <div className="flex items-center space-x-3">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                <span className="text-gray-600 font-medium">Loading opportunities...</span>
+              </div>
+            </div>
+          ) : filteredOpportunities && filteredOpportunities.length > 0 ? (
+            <div className="p-6">
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {filteredOpportunities.map((opportunity: any) => (
+                  <div key={opportunity.id} className="bg-white rounded-2xl shadow-lg border border-gray-200/50 hover:shadow-xl hover:border-gray-300/50 transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
+                    {/* Card Header */}
+                    <div className="p-6 pb-4">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div>
+                            <h3 className="font-semibold text-gray-900 text-sm">{opportunity.publication?.name}</h3>
+                            <p className="text-xs text-gray-500">
+                              {new Date(opportunity.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => setShowDetails(opportunity.id)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => updateStatusMutation.mutate({ 
+                                id: opportunity.id, 
+                                status: opportunity.status === 'open' ? 'closed' : 'open'
+                              })}
+                              className={opportunity.status === 'open' ? 'text-red-600' : 'text-green-600'}
+                            >
+                              {opportunity.status === 'open' ? (
+                                <>
+                                  <XCircle className="mr-2 h-4 w-4" />
+                                  Close Opportunity
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                                  Reopen Opportunity
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      
+                      {/* Status Badge */}
+                      <div className="mb-4">
+                        <Badge className={
+                          opportunity.status === 'open' 
+                            ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border-green-200' 
+                            : 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 border-red-200'
+                        } variant="outline">
+                          {opportunity.status === 'open' ? (
+                            <>
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              OPEN
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="w-3 h-3 mr-1" />
+                              CLOSED
+                            </>
+                          )}
+                        </Badge>
+                      </div>
+                      
+                      {/* Title */}
+                      <h4 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2">{opportunity.title}</h4>
+                      
+                      {/* Description */}
+                      <p className="text-sm text-gray-600 line-clamp-3 mb-4">{opportunity.description}</p>
+                      
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {opportunity.tier && (
+                          <Badge 
+                            variant="secondary" 
+                            className={`
+                              text-xs
+                              ${opportunity.tier === 'Tier 1' ? 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-200' : ''}
+                              ${opportunity.tier === 'Tier 2' ? 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border-blue-200' : ''}
+                              ${opportunity.tier === 'Tier 3' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200' : ''}
+                            `}
+                          >
+                            <Award className="w-3 h-3 mr-1" />
+                            {opportunity.tier}
+                          </Badge>
+                        )}
+                        
+                        {opportunity.industry && (
+                          <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200">
+                            <Tag className="w-3 h-3 mr-1" />
+                            {opportunity.industry}
+                          </Badge>
+                        )}
+                        
+                        {opportunity.mediaType && (
+                          <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                            <Zap className="w-3 h-3 mr-1" />
+                            {opportunity.mediaType}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {/* Key Details */}
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <DollarSign className="h-4 w-4 mr-2 text-green-600" />
+                          <span className="font-medium">${opportunity.minimumBid}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Calendar className="h-4 w-4 mr-2 text-blue-600" />
+                          <span>{new Date(opportunity.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Card Footer */}
+                    <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100">
+                      <button
+                        onClick={() => setShowDetails(opportunity.id)}
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-2 group"
+                      >
+                        <Eye className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                        <span>View Details</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-16 px-6">
+              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center">
+                <Briefcase className="h-12 w-12 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                {searchTerm ? 'No opportunities found' : 'No opportunities yet'}
+              </h3>
+              <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                {searchTerm ? 
+                  `No opportunities match your search criteria "${searchTerm}".` :
+                  'Get started by creating your first PR opportunity for users to bid on.'
+                }
+              </p>
+              {!searchTerm && (
+                <button 
+                  onClick={() => setIsCreateDialogOpen(true)} 
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2 mx-auto"
+                >
+                  <Plus className="h-5 w-5" />
+                  Create Your First Opportunity
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Create Opportunity Dialog */}
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl">Create New PR Opportunity</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white to-gray-50/50 border-0 shadow-2xl">
+            <DialogHeader className="pb-6 border-b border-gray-200/50">
+              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                Create New PR Opportunity
+              </DialogTitle>
+              <DialogDescription className="text-gray-600">
                 Fill out the details below to create a new PR opportunity for users to bid on.
               </DialogDescription>
             </DialogHeader>
@@ -293,9 +631,9 @@ export default function OpportunitiesManager() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {/* Step 1: Select Publication */}
-                <div className="space-y-4 rounded-lg border p-4 bg-muted/10">
-                  <h3 className="text-lg font-medium flex items-center">
-                    <Newspaper className="h-5 w-5 mr-2 text-blue-500" />
+                <div className="space-y-4 rounded-xl border border-gray-200/50 p-6 bg-gradient-to-br from-blue-50/30 to-purple-50/30">
+                  <h3 className="text-lg font-semibold flex items-center text-gray-800">
+                    <Newspaper className="h-5 w-5 mr-3 text-blue-600" />
                     Publication Details
                   </h3>
                   
@@ -304,7 +642,7 @@ export default function OpportunitiesManager() {
                     name="publicationId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Select Publication</FormLabel>
+                        <FormLabel className="font-semibold text-gray-900">Select Publication</FormLabel>
                         <Select
                           onValueChange={(value) => {
                             if (value === "new") {
@@ -319,13 +657,13 @@ export default function OpportunitiesManager() {
                           defaultValue={field.value.toString()}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
                               <SelectValue placeholder="Select a publication" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="new">
-                              <span className="flex items-center text-blue-600">
+                              <span className="flex items-center text-blue-600 font-semibold">
                                 <Plus className="mr-2 h-4 w-4" />
                                 Create New Publication
                               </span>
@@ -349,17 +687,21 @@ export default function OpportunitiesManager() {
                   />
                   
                   {isCreatingPublication && (
-                    <div className="space-y-4 p-4 border rounded-md bg-gray-50">
-                      <h4 className="text-md font-medium text-blue-600">New Publication Details</h4>
+                    <div className="space-y-4 p-4 border border-blue-200 rounded-lg bg-blue-50/30">
+                      <h4 className="text-md font-semibold text-blue-800">New Publication Details</h4>
                       
                       <FormField
                         control={form.control}
                         name="publicationName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Publication Name *</FormLabel>
+                            <FormLabel className="font-semibold text-gray-900">Publication Name *</FormLabel>
                             <FormControl>
-                              <Input placeholder="e.g., Forbes, Wall Street Journal, CNBC" {...field} />
+                              <Input 
+                                placeholder="e.g., Forbes, Wall Street Journal, CNBC" 
+                                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+                                {...field} 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -371,141 +713,16 @@ export default function OpportunitiesManager() {
                         name="publicationWebsite"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Website URL</FormLabel>
+                            <FormLabel className="font-semibold text-gray-900">Website URL</FormLabel>
                             <FormControl>
-                              <Input placeholder="https://publication.com" {...field} />
+                              <Input 
+                                placeholder="https://publication.com" 
+                                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+                                {...field} 
+                              />
                             </FormControl>
                             <FormDescription>
                               Enter the main website for the publication
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="publicationLogo"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Publication Logo</FormLabel>
-                            <div className="flex flex-col gap-4">
-                              <div className="flex gap-4 items-center">
-                                <FormControl>
-                                  <Input
-                                    id="logo-upload"
-                                    type="file"
-                                    accept="image/png"
-                                    className="h-9"
-                                    onChange={async (e) => {
-                                      if (e.target.files && e.target.files[0]) {
-                                        const file = e.target.files[0];
-                                        
-                                        // Check file type - only PNG allowed
-                                        if (!file.type.startsWith('image/png')) {
-                                          toast({
-                                            title: "Invalid file type",
-                                            description: "Only PNG format is allowed for publication logos",
-                                            variant: "destructive"
-                                          });
-                                          return;
-                                        }
-                                        
-                                        // Check file size - max 2MB
-                                        if (file.size > 2 * 1024 * 1024) {
-                                          toast({
-                                            title: "File too large",
-                                            description: "Logo must be less than 2MB in size",
-                                            variant: "destructive"
-                                          });
-                                          return;
-                                        }
-                                        
-                                        // Check image dimensions
-                                        const img = new Image();
-                                        img.onload = async () => {
-                                          if (img.width > 512 || img.height > 512) {
-                                            toast({
-                                              title: "Image too large",
-                                              description: "Logo dimensions must not exceed 512x512 pixels",
-                                              variant: "destructive"
-                                            });
-                                            return;
-                                          }
-                                          
-                                          // If all checks pass, upload the image
-                                          const formData = new FormData();
-                                          formData.append('logo', file);
-                                          
-                                          try {
-                                            const res = await apiFetch('/api/upload/publication-logo', {
-                                              method: 'POST',
-                                              credentials: 'include',
-                                              body: formData
-                                            });
-                                            
-                                            if (!res.ok) {
-                                              const errorData = await res.json();
-                                              throw new Error(errorData.message || 'Upload failed');
-                                            }
-                                            
-                                            const data = await res.json();
-                                            field.onChange(data.fileUrl);
-                                            
-                                            toast({
-                                              title: "Logo uploaded",
-                                              description: "PNG logo has been uploaded successfully.",
-                                            });
-                                          } catch (error) {
-                                            console.error('Upload error:', error);
-                                            toast({
-                                              title: "Upload failed",
-                                              description: error instanceof Error ? error.message : "Failed to upload PNG logo",
-                                              variant: "destructive"
-                                            });
-                                          }
-                                        };
-                                        
-                                        img.onerror = () => {
-                                          toast({
-                                            title: "Invalid image",
-                                            description: "Could not process the uploaded PNG image",
-                                            variant: "destructive"
-                                          });
-                                        };
-                                        
-                                        img.src = URL.createObjectURL(file);
-                                      }
-                                    }}
-                                  />
-                                </FormControl>
-                              </div>
-                              
-                              {field.value && (
-                                <div className="mt-2 flex gap-2 items-center">
-                                  <img 
-                                    src={field.value} 
-                                    alt="Publication logo preview" 
-                                    className="w-16 h-16 object-contain border rounded" 
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).src = 'https://placehold.co/200x200?text=Logo';
-                                    }}
-                                  />
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => field.onChange('')}
-                                    className="h-8"
-                                  >
-                                    <X className="h-4 w-4 mr-1" />
-                                    Remove
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                            <FormDescription>
-                              <strong>Requirements:</strong> PNG format only, maximum 512x512px, under 2MB file size. Recommended: Square logos work best for consistent display.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -516,9 +733,9 @@ export default function OpportunitiesManager() {
                 </div>
                 
                 {/* Step 2: Opportunity Details */}
-                <div className="space-y-4 rounded-lg border p-4 bg-muted/10">
-                  <h3 className="text-lg font-medium flex items-center">
-                    <Tag className="h-5 w-5 mr-2 text-blue-500" />
+                <div className="space-y-4 rounded-xl border border-gray-200/50 p-6 bg-gradient-to-br from-green-50/30 to-blue-50/30">
+                  <h3 className="text-lg font-semibold flex items-center text-gray-800">
+                    <Tag className="h-5 w-5 mr-3 text-green-600" />
                     Opportunity Details
                   </h3>
                   
@@ -527,10 +744,11 @@ export default function OpportunitiesManager() {
                     name="title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Opportunity Title *</FormLabel>
+                        <FormLabel className="font-semibold text-gray-900">Opportunity Title *</FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="e.g., Expert commentary on cryptocurrency market trends" 
+                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
                             {...field} 
                           />
                         </FormControl>
@@ -542,166 +760,181 @@ export default function OpportunitiesManager() {
                     )}
                   />
                 
-                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="requestType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-semibold text-gray-900">Request Type</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
+                                <SelectValue placeholder="Select a request type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {REQUEST_TYPES.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="mediaType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-semibold text-gray-900">Media Type</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
+                                <SelectValue placeholder="Select a media type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {MEDIA_TYPES.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                
                   <FormField
                     control={form.control}
-                    name="requestType"
+                    name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Request Type</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Select a request type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {REQUEST_TYPES.map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormLabel className="font-semibold text-gray-900">Description</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Enter a detailed description" 
+                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg resize-none"
+                            {...field} 
+                            rows={3} 
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+                
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="tier"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-semibold text-gray-900">Opportunity Tier</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
+                                <SelectValue placeholder="Select tier" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {OPPORTUNITY_TIERS.map((tier) => (
+                                <SelectItem key={tier.value} value={tier.value}>
+                                  {tier.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="industry"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-semibold text-gray-900">Industry Category</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
+                                <SelectValue placeholder="Select industry" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {INDUSTRY_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                
                   <FormField
                     control={form.control}
-                    name="mediaType"
+                    name="tags"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Media Type</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Select a media type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {MEDIA_TYPES.map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.label}
-                              </SelectItem>
+                        <FormLabel className="font-semibold text-gray-900">Industry Tags</FormLabel>
+                        <div className="flex flex-col">
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {field.value?.map((tag) => (
+                              <Badge key={tag} className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs py-1 px-3 border border-blue-200">
+                                {tag}
+                                <button
+                                  type="button"
+                                  onClick={() => removeTag(tag)}
+                                  className="ml-1 text-xs rounded-full hover:bg-blue-200 w-4 h-4 flex items-center justify-center"
+                                >
+                                  ×
+                                </button>
+                              </Badge>
                             ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Enter a detailed description" {...field} rows={3} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="tags"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Industry Tags</FormLabel>
-                      <div className="flex flex-col">
-                        <div className="flex flex-wrap gap-1 mb-2">
-                          {field.value?.map((tag) => (
-                            <Badge key={tag} className="flex items-center gap-1 bg-primary text-xs py-0.5 px-2 mb-1">
-                              {tag}
-                              <button
-                                type="button"
-                                onClick={() => removeTag(tag)}
-                                className="ml-1 text-xs rounded-full hover:bg-primary-dark"
-                              >
-                                ×
-                              </button>
-                            </Badge>
-                          ))}
+                          </div>
+                          <Select onValueChange={onTagSelect}>
+                            <FormControl>
+                              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
+                                <SelectValue placeholder="Add industry tag" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {INDUSTRY_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
-                        <Select onValueChange={onTagSelect}>
-                          <FormControl>
-                            <SelectTrigger className="h-8 text-sm">
-                              <SelectValue placeholder="Add industry tag" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {INDUSTRY_OPTIONS.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="minimumBid"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Starting Bid Price ($) *</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                            <Input type="number" min="1" className="pl-7" {...field} />
-                          </div>
-                        </FormControl>
-                        <FormDescription>
-                          Set the initial bid price - will increase as slots fill up
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="deadline"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Deadline *</FormLabel>
-                        <FormControl>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-gray-500" />
-                            <Input type="date" {...field} />
-                          </div>
-                        </FormControl>
-                        <FormDescription>
-                          Final date for accepting bids
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                </div>
-                  
                 {/* Step 3: Pricing & Deadline */}
-                <div className="space-y-4 rounded-lg border p-4 bg-muted/10">
-                  <h3 className="text-lg font-medium flex items-center">
-                    <DollarSign className="h-5 w-5 mr-2 text-blue-500" />
+                <div className="space-y-4 rounded-xl border border-gray-200/50 p-6 bg-gradient-to-br from-purple-50/30 to-pink-50/30">
+                  <h3 className="text-lg font-semibold flex items-center text-gray-800">
+                    <DollarSign className="h-5 w-5 mr-3 text-purple-600" />
                     Pricing & Deadline
                   </h3>
                   
@@ -711,11 +944,16 @@ export default function OpportunitiesManager() {
                       name="minimumBid"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Starting Bid Price ($) *</FormLabel>
+                          <FormLabel className="font-semibold text-gray-900">Starting Bid Price ($) *</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                              <Input type="number" min="1" className="pl-7" {...field} />
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                              <Input 
+                                type="number" 
+                                min="1" 
+                                className="pl-8 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg" 
+                                {...field} 
+                              />
                             </div>
                           </FormControl>
                           <FormDescription>
@@ -731,11 +969,15 @@ export default function OpportunitiesManager() {
                       name="deadline"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Deadline *</FormLabel>
+                          <FormLabel className="font-semibold text-gray-900">Deadline *</FormLabel>
                           <FormControl>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-gray-500" />
-                              <Input type="date" {...field} />
+                            <div className="relative">
+                              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                              <Input 
+                                type="date" 
+                                className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+                                {...field} 
+                              />
                             </div>
                           </FormControl>
                           <FormDescription>
@@ -748,256 +990,227 @@ export default function OpportunitiesManager() {
                   </div>
                 </div>
                 
-                <DialogFooter>
+                <DialogFooter className="border-t border-gray-200/50 pt-6">
                   <Button 
                     type="button" 
                     variant="outline" 
                     onClick={() => setIsCreateDialogOpen(false)}
+                    className="border-gray-300 hover:bg-gray-50"
                   >
                     Cancel
                   </Button>
                   <Button 
                     type="submit" 
                     disabled={createOpportunityMutation.isPending}
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
                   >
-                    {createOpportunityMutation.isPending ? "Creating..." : "Create Opportunity"}
+                    {createOpportunityMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Opportunity
+                      </>
+                    )}
                   </Button>
                 </DialogFooter>
               </form>
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
-      
-      {/* This section is no longer needed as we moved the button to the header */}
-      
-      {loadingOpportunities ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-        </div>
-      ) : filteredOpportunities?.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredOpportunities.map((opportunity: any) => (
-            <Card key={opportunity.id} className="overflow-hidden">
-              <CardHeader className="relative pb-2">
-                <div className="absolute top-3 right-3 z-10">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setShowDetails(opportunity.id)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={() => updateStatusMutation.mutate({ 
-                          id: opportunity.id, 
-                          status: opportunity.status === 'open' ? 'closed' : 'open'
-                        })}
-                        className={opportunity.status === 'open' ? 'text-red-500' : 'text-green-500'}
-                      >
-                        {opportunity.status === 'open' ? (
-                          <>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Close Opportunity
-                          </>
-                        ) : (
-                          <>
-                            <Clock className="mr-2 h-4 w-4" />
-                            Reopen Opportunity
-                          </>
-                        )}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <div className="flex items-center">
-                  {opportunity.publication.logo ? (
-                    <img 
-                      src={opportunity.publication.logo} 
-                      alt={opportunity.publication.name}
-                      className="w-8 h-8 mr-2 rounded"
-                    />
+
+        {/* Opportunity Details Modal */}
+        {showDetails && (
+          <Dialog open={!!showDetails} onOpenChange={() => setShowDetails(null)}>
+            <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto bg-gradient-to-br from-white to-gray-50/50 border-0 shadow-2xl">
+              <DialogHeader className="pb-6 border-b border-gray-200/50">
+                <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  Opportunity Details
+                </DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-6">
+                {opportunities?.find((o: any) => o.id === showDetails) && (
+                  <div className="space-y-6">
+                    {/* Publication Info */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200/50">
+                      <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
+                        <Newspaper className="h-5 w-5 mr-2" />
+                        Publication
+                      </h3>
+                      <div className="flex items-center space-x-4">
+                        <div>
+                          <p className="text-lg font-semibold text-blue-900">
+                            {opportunities.find((o: any) => o.id === showDetails).publication.name}
+                          </p>
+                          {opportunities.find((o: any) => o.id === showDetails).publication?.website && (
+                            <a 
+                              href={opportunities.find((o: any) => o.id === showDetails).publication.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-700 text-sm flex items-center mt-1"
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              {opportunities.find((o: any) => o.id === showDetails).publication.website}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Opportunity Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="font-semibold text-gray-900 mb-2">Title</h3>
+                          <p className="text-gray-700 text-lg">{opportunities.find((o: any) => o.id === showDetails).title}</p>
+                        </div>
+                        
+                        <div>
+                          <h3 className="font-semibold text-gray-900 mb-2">Request Type</h3>
+                          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                            {opportunities.find((o: any) => o.id === showDetails).requestType}
+                          </Badge>
+                        </div>
+                        
+                        <div>
+                          <h3 className="font-semibold text-gray-900 mb-2">Status</h3>
+                          <Badge className={
+                            opportunities.find((o: any) => o.id === showDetails).status === 'open'
+                              ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border-green-200'
+                              : 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 border-red-200'
+                          } variant="outline">
+                            {opportunities.find((o: any) => o.id === showDetails).status === 'open' ? (
+                              <>
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                OPEN
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-3 h-3 mr-1" />
+                                CLOSED
+                              </>
+                            )}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <h3 className="font-semibold text-gray-900 mb-2">Minimum Bid</h3>
+                            <div className="flex items-center text-green-600 font-semibold text-lg">
+                              <DollarSign className="h-5 w-5 mr-1" />
+                              ${opportunities.find((o: any) => o.id === showDetails).minimumBid}
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900 mb-2">Deadline</h3>
+                            <div className="flex items-center text-blue-600 font-semibold">
+                              <Calendar className="h-4 w-4 mr-2" />
+                              {new Date(opportunities.find((o: any) => o.id === showDetails).deadline).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <h3 className="font-semibold text-gray-900 mb-2">Tier</h3>
+                            <Badge 
+                              variant="secondary" 
+                              className={`
+                                ${opportunities.find((o: any) => o.id === showDetails).tier === 'Tier 1' ? 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-200' : ''}
+                                ${opportunities.find((o: any) => o.id === showDetails).tier === 'Tier 2' ? 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border-blue-200' : ''}
+                                ${opportunities.find((o: any) => o.id === showDetails).tier === 'Tier 3' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200' : ''}
+                              `}
+                            >
+                              {opportunities.find((o: any) => o.id === showDetails).tier || "Not specified"}
+                            </Badge>
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900 mb-2">Industry</h3>
+                            <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+                              {opportunities.find((o: any) => o.id === showDetails).industry || "Not specified"}
+                            </Badge>
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900 mb-2">Media Type</h3>
+                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                              {opportunities.find((o: any) => o.id === showDetails).mediaType || "Not specified"}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Description */}
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-3">Description</h3>
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <p className="text-gray-700 leading-relaxed">
+                          {opportunities.find((o: any) => o.id === showDetails).description}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Tags */}
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-3">Industry Tags</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {opportunities.find((o: any) => o.id === showDetails).tags?.map((tag: string) => (
+                          <Badge key={tag} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            <Tag className="w-3 h-3 mr-1" />
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <DialogFooter className="border-t border-gray-200/50 pt-6">
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowDetails(null)}
+                  className="border-gray-300 hover:bg-gray-50"
+                >
+                  Close
+                </Button>
+                <Button 
+                  variant={opportunities?.find((o: any) => o.id === showDetails)?.status === 'open' ? 'destructive' : 'default'}
+                  onClick={() => {
+                    const opportunity = opportunities?.find((o: any) => o.id === showDetails);
+                    if (opportunity) {
+                      updateStatusMutation.mutate({
+                        id: opportunity.id,
+                        status: opportunity.status === 'open' ? 'closed' : 'open'
+                      });
+                      setShowDetails(null);
+                    }
+                  }}
+                  className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                >
+                  {opportunities?.find((o: any) => o.id === showDetails)?.status === 'open' ? (
+                    <>
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Close Opportunity
+                    </>
                   ) : (
-                    <Newspaper className="w-8 h-8 mr-2 text-gray-400" />
+                    <>
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Reopen Opportunity
+                    </>
                   )}
-                  <div>
-                    <CardTitle className="text-lg">{opportunity.title}</CardTitle>
-                    <CardDescription>{opportunity.publication.name}</CardDescription>
-                  </div>
-                </div>
-                <Badge className={
-                  opportunity.status === 'open' 
-                    ? 'bg-green-500 hover:bg-green-600 mt-2' 
-                    : 'bg-red-500 hover:bg-red-600 mt-2'
-                }>
-                  {opportunity.status.toUpperCase()}
-                </Badge>
-              </CardHeader>
-              <CardContent className="pb-3">
-                <div className="text-sm mb-4 line-clamp-3">
-                  {opportunity.description}
-                </div>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {opportunity.tags?.map((tag: string) => (
-                    <Badge key={tag} variant="outline" className="flex items-center gap-1">
-                      <Tag className="h-3 w-3" />
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center text-muted-foreground">
-                    <DollarSign className="h-4 w-4 mr-1" />
-                    Min Bid: ${opportunity.minimumBid}
-                  </div>
-                  <div className="flex items-center text-muted-foreground">
-                    <Calendar className="h-4 w-4 mr-1" />
-                    {new Date(opportunity.deadline).toLocaleDateString()}
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-sm mt-2">
-                  {opportunity.tier && (
-                    <Badge variant="outline" className="justify-center">{opportunity.tier}</Badge>
-                  )}
-                  {opportunity.industry && (
-                    <Badge variant="secondary" className="justify-center">{opportunity.industry}</Badge>
-                  )}
-                  {opportunity.mediaType && (
-                    <Badge variant="outline" className="justify-center bg-primary/10">{opportunity.mediaType}</Badge>
-                  )}
-                </div>
-              </CardContent>
-              <CardFooter className="pt-0 flex justify-between text-sm text-muted-foreground">
-                <span>Pitches: {opportunity.pitchCount || 0}</span>
-                <span>ID: {opportunity.id}</span>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Newspaper className="h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-xl font-semibold mb-2">No opportunities yet</p>
-            <p className="text-muted-foreground mb-4">
-              Create your first PR opportunity to get started.
-            </p>
-            <Button 
-              onClick={() => setIsCreateDialogOpen(true)} 
-              className="flex items-center"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add New Opportunity
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-      
-      {/* Opportunity details modal */}
-      {showDetails && (
-        <Dialog open={!!showDetails} onOpenChange={() => setShowDetails(null)}>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Opportunity Details</DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              {opportunities?.find((o: any) => o.id === showDetails) && (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold">Publication</h3>
-                    <p>{opportunities.find((o: any) => o.id === showDetails).publication.name}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Title</h3>
-                    <p>{opportunities.find((o: any) => o.id === showDetails).title}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Request Type</h3>
-                    <p>{opportunities.find((o: any) => o.id === showDetails).requestType}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Description</h3>
-                    <p>{opportunities.find((o: any) => o.id === showDetails).description}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Industry Tags</h3>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {opportunities.find((o: any) => o.id === showDetails).tags?.map((tag: string) => (
-                        <Badge key={tag} variant="secondary">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <h3 className="font-semibold">Opportunity Tier</h3>
-                      <p>{opportunities.find((o: any) => o.id === showDetails).tier || "Not specified"}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold">Primary Industry</h3>
-                      <p>{opportunities.find((o: any) => o.id === showDetails).industry || "Not specified"}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold">Media Type</h3>
-                      <p>{opportunities.find((o: any) => o.id === showDetails).mediaType || "Not specified"}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h3 className="font-semibold">Minimum Bid</h3>
-                      <p>${opportunities.find((o: any) => o.id === showDetails).minimumBid}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold">Deadline</h3>
-                      <p>{new Date(opportunities.find((o: any) => o.id === showDetails).deadline).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Status</h3>
-                    <Badge className={
-                      opportunities.find((o: any) => o.id === showDetails).status === 'open'
-                        ? 'bg-green-500 hover:bg-green-600 mt-1'
-                        : 'bg-red-500 hover:bg-red-600 mt-1'
-                    }>
-                      {opportunities.find((o: any) => o.id === showDetails).status.toUpperCase()}
-                    </Badge>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <DialogFooter>
-              <Button onClick={() => setShowDetails(null)}>Close</Button>
-              <Button 
-                variant={opportunities?.find((o: any) => o.id === showDetails)?.status === 'open' ? 'destructive' : 'outline'}
-                onClick={() => {
-                  const opportunity = opportunities?.find((o: any) => o.id === showDetails);
-                  if (opportunity) {
-                    updateStatusMutation.mutate({
-                      id: opportunity.id,
-                      status: opportunity.status === 'open' ? 'closed' : 'open'
-                    });
-                    setShowDetails(null);
-                  }
-                }}
-              >
-                {opportunities?.find((o: any) => o.id === showDetails)?.status === 'open' 
-                  ? 'Close Opportunity' 
-                  : 'Reopen Opportunity'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
     </div>
   );
 }

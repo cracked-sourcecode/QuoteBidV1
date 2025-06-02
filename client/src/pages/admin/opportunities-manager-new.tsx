@@ -1019,26 +1019,6 @@ export default function OpportunitiesManager() {
                 
                 {/* Publication Logo and Name */}
                 <div className="flex items-center space-x-3 mb-3">
-                  <div className="flex-shrink-0">
-                    {opportunity.publication.logo ? (
-                      <LogoUniform 
-                        src={opportunity.publication.logo} 
-                        alt={opportunity.publication.name}
-                        width={50}
-                        height={25}
-                        className="rounded border border-gray-100"
-                        onError={(e) => {
-                          const target = e?.target as HTMLImageElement;
-                          if (target) {
-                            target.style.display = 'none';
-                            const fallback = target.parentElement?.parentElement?.nextElementSibling;
-                            fallback?.classList.remove('hidden');
-                          }
-                        }}
-                      />
-                    ) : null}
-                    <Newspaper className={`w-8 h-8 text-gray-400 ${opportunity.publication.logo ? 'hidden' : ''}`} />
-                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-base font-medium text-gray-700 truncate">
                       {opportunity.publication.name}
@@ -1240,7 +1220,7 @@ export default function OpportunitiesManager() {
                             'border-l-gray-400 bg-gray-50/30'
                           }`}
                           onClick={() => {
-                            setLocation(`/admin/pitches?highlight=${pitch.id}`);
+                            setLocation(`/admin/pitches?openDetails=${pitch.id}`);
                           }}
                         >
                           <CardContent className="p-5">
@@ -1407,82 +1387,164 @@ export default function OpportunitiesManager() {
       {/* Opportunity details modal */}
       {showDetails && (
         <Dialog open={!!showDetails} onOpenChange={() => setShowDetails(null)}>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Opportunity Details</DialogTitle>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50/30">
+            <DialogHeader className="pb-6 border-b border-gray-200">
+              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent flex items-center">
+                <Eye className="h-6 w-6 mr-3 text-blue-600" />
+                Opportunity Details
+              </DialogTitle>
             </DialogHeader>
             
-            <div className="space-y-4">
+            <div className="overflow-y-auto py-6 space-y-6">
               {finalOpportunities?.find((o: any) => o.id === showDetails) && (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold">Publication</h3>
-                    <p>{finalOpportunities.find((o: any) => o.id === showDetails).publication.name}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Title</h3>
-                    <p>{finalOpportunities.find((o: any) => o.id === showDetails).title}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Request Type</h3>
-                    <p>{finalOpportunities.find((o: any) => o.id === showDetails).requestType}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Description</h3>
-                    <p>{finalOpportunities.find((o: any) => o.id === showDetails).description}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Industry Tags</h3>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {finalOpportunities.find((o: any) => o.id === showDetails).tags?.map((tag: string) => (
-                        <Badge key={tag} variant="secondary">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <h3 className="font-semibold">Opportunity Tier</h3>
-                      <p>{finalOpportunities.find((o: any) => o.id === showDetails).tier || "Not specified"}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold">Primary Industry</h3>
-                      <p>{finalOpportunities.find((o: any) => o.id === showDetails).industry || "Not specified"}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold">Media Type</h3>
-                      <p>{finalOpportunities.find((o: any) => o.id === showDetails).mediaType || "Not specified"}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h3 className="font-semibold">Minimum Bid</h3>
-                      <p>${finalOpportunities.find((o: any) => o.id === showDetails).minimumBid}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold">Deadline</h3>
-                      <p>{new Date(finalOpportunities.find((o: any) => o.id === showDetails).deadline).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Status</h3>
-                    <Badge className={
-                      finalOpportunities.find((o: any) => o.id === showDetails).status === 'open'
-                        ? 'bg-green-500 hover:bg-green-600 mt-1'
-                        : 'bg-red-500 hover:bg-red-600 mt-1'
-                    }>
-                      {finalOpportunities.find((o: any) => o.id === showDetails).status.toUpperCase()}
-                    </Badge>
-                  </div>
+                <div className="space-y-6">
+                  {(() => {
+                    const opportunity = finalOpportunities.find((o: any) => o.id === showDetails);
+                    return (
+                      <>
+                        {/* Header Card with Publication & Status */}
+                        <div className="bg-gradient-to-r from-white to-gray-50 rounded-xl p-6 border border-gray-200 shadow-sm">
+                          <div className="flex items-start justify-between mb-4">
+                            <div>
+                              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-1">Publication</h3>
+                              <p className="text-xl font-semibold text-gray-900">{opportunity.publication.name}</p>
+                            </div>
+                            <Badge className={
+                              opportunity.status === 'open'
+                                ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200 px-4 py-2 text-sm font-medium'
+                                : 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200 px-4 py-2 text-sm font-medium'
+                            } variant="outline">
+                              {opportunity.status.toUpperCase()}
+                            </Badge>
+                          </div>
+                          
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Opportunity Title</h3>
+                            <p className="text-lg font-medium text-gray-900 leading-relaxed">{opportunity.title}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Description Card */}
+                        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3 flex items-center">
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            Description
+                          </h3>
+                          <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{opportunity.description}</p>
+                        </div>
+                        
+                        {/* Key Details Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200">
+                            <div className="flex items-center mb-2">
+                              <Tag className="h-5 w-5 text-blue-600 mr-2" />
+                              <h3 className="text-sm font-medium text-blue-700 uppercase tracking-wide">Request Type</h3>
+                            </div>
+                            <p className="text-blue-900 font-semibold">{opportunity.requestType}</p>
+                          </div>
+                          
+                          <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-5 border border-purple-200">
+                            <div className="flex items-center mb-2">
+                              <Building2 className="h-5 w-5 text-purple-600 mr-2" />
+                              <h3 className="text-sm font-medium text-purple-700 uppercase tracking-wide">Media Type</h3>
+                            </div>
+                            <p className="text-purple-900 font-semibold">{opportunity.mediaType || "Not specified"}</p>
+                          </div>
+                          
+                          <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-5 border border-amber-200">
+                            <div className="flex items-center mb-2">
+                              <Tag className="h-5 w-5 text-amber-600 mr-2" />
+                              <h3 className="text-sm font-medium text-amber-700 uppercase tracking-wide">Tier</h3>
+                            </div>
+                            <p className="text-amber-900 font-semibold">{opportunity.tier || "Not specified"}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Industry & Tags */}
+                        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3 flex items-center">
+                                <Building2 className="h-4 w-4 mr-2" />
+                                Primary Industry
+                              </h3>
+                              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                                {opportunity.industry || "Not specified"}
+                              </span>
+                            </div>
+                            
+                            <div>
+                              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3 flex items-center">
+                                <Tag className="h-4 w-4 mr-2" />
+                                Industry Tags
+                              </h3>
+                              <div className="flex flex-wrap gap-2">
+                                {opportunity.tags?.map((tag: string) => (
+                                  <Badge key={tag} variant="secondary" className="px-3 py-1.5 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                                    {tag}
+                                  </Badge>
+                                )) || <span className="text-gray-400 text-sm">No tags specified</span>}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Financial & Timeline */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-gradient-to-br from-green-50 to-emerald-100/50 rounded-xl p-6 border border-green-200">
+                            <div className="flex items-center mb-3">
+                              <DollarSign className="h-6 w-6 text-green-600 mr-3" />
+                              <h3 className="text-sm font-medium text-green-700 uppercase tracking-wide">Minimum Bid</h3>
+                            </div>
+                            <p className="text-2xl font-bold text-green-800">${opportunity.minimumBid}</p>
+                          </div>
+                          
+                          <div className="bg-gradient-to-br from-red-50 to-rose-100/50 rounded-xl p-6 border border-red-200">
+                            <div className="flex items-center mb-3">
+                              <Calendar className="h-6 w-6 text-red-600 mr-3" />
+                              <h3 className="text-sm font-medium text-red-700 uppercase tracking-wide">Deadline</h3>
+                            </div>
+                            <p className="text-xl font-bold text-red-800">
+                              {new Date(opportunity.deadline).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Metadata Footer */}
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                          <div className="flex items-center justify-between text-sm text-gray-500">
+                            <span>Opportunity ID: #{opportunity.id}</span>
+                            <span>Created: {new Date(opportunity.createdAt).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}</span>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
             
-            <DialogFooter>
-              <Button onClick={() => setShowDetails(null)}>Close</Button>
+            <DialogFooter className="pt-6 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50/30">
               <Button 
-                variant={finalOpportunities?.find((o: any) => o.id === showDetails)?.status === 'open' ? 'destructive' : 'outline'}
+                onClick={() => setShowDetails(null)}
+                variant="outline"
+                className="mr-3 border-gray-300 hover:bg-gray-50"
+              >
+                Close
+              </Button>
+              <Button 
+                variant={finalOpportunities?.find((o: any) => o.id === showDetails)?.status === 'open' ? 'destructive' : 'default'}
                 onClick={() => {
                   const opportunity = finalOpportunities?.find((o: any) => o.id === showDetails);
                   if (opportunity) {
@@ -1493,6 +1555,11 @@ export default function OpportunitiesManager() {
                     setShowDetails(null);
                   }
                 }}
+                className={
+                  finalOpportunities?.find((o: any) => o.id === showDetails)?.status === 'open' 
+                    ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' 
+                    : 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                }
               >
                 {finalOpportunities?.find((o: any) => o.id === showDetails)?.status === 'open' 
                   ? 'Close Opportunity' 
