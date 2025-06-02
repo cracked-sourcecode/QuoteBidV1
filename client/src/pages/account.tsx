@@ -96,6 +96,16 @@ const profileFormSchema = z.object({
   otherProfileUrl: z.string().url({ message: "Please enter a valid URL" }).optional().or(z.literal("")),
 });
 
+// Password change form schema (same requirements as signup)
+const passwordChangeSchema = z.object({
+  currentPassword: z.string().min(1, { message: "Current password is required" }),
+  newPassword: z.string().min(8, { message: "Password must be at least 8 characters" }),
+  confirmPassword: z.string().min(1, { message: "Please confirm your password" }),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
 export default function AccountPage() {
   const { user } = useAuth();
   const { data: currentUser, isLoading, error } = useCurrentUser();
@@ -127,6 +137,9 @@ export default function AccountPage() {
   
   // Custom past media coverage items (separate from pitches/placements)
   const [customMediaItems, setCustomMediaItems] = useState<any[]>([]);
+  
+  // Password/Security modal state
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   
   // Load custom media items from localStorage on component mount
   useEffect(() => {
@@ -389,6 +402,63 @@ export default function AccountPage() {
     },
   });
   
+  // Password change form
+  const passwordForm = useForm<z.infer<typeof passwordChangeSchema>>({
+    resolver: zodResolver(passwordChangeSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+
+  // Password change mutation
+  const passwordChangeMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof passwordChangeSchema>) => {
+      if (!user) throw new Error("User not found");
+      
+      const response = await apiFetch(`/api/users/${user.id}/password`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to change password');
+      }
+      
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Password Updated",
+        description: "Your password has been successfully changed",
+      });
+      
+      // Reset form and close modal
+      passwordForm.reset();
+      setPasswordModalOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Password Change Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle password change form submission
+  const handlePasswordChange = (data: z.infer<typeof passwordChangeSchema>) => {
+    passwordChangeMutation.mutate(data);
+  };
+
   // Function to intelligently fetch page title and publication using OpenAI
   const fetchPageTitle = async (url: string) => {
     try {
@@ -916,11 +986,12 @@ export default function AccountPage() {
               
               <button 
                 className="flex w-full items-center py-2 px-3 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50"
+                onClick={() => setPasswordModalOpen(true)}
               >
                 <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
-                Password & Security
+                Change Password
               </button>
             </div>
           </div>
@@ -950,18 +1021,6 @@ export default function AccountPage() {
                 </svg>
                 Book a Call
               </a>
-              
-              <a 
-                href="https://quotebid.com/help" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center py-2 px-3 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Help Center
-              </a>
             </div>
           </div>
           
@@ -976,7 +1035,7 @@ export default function AccountPage() {
 
       {/* Main Content - Responsive margin to account for sidebar */}
       <div className={`lg:ml-72 transition-all duration-300 ease-in-out flex-1 p-8 ${sidebarOpen ? 'ml-72' : 'ml-0'} account-content-area bg-gray-50`}>
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl font-bold mb-6">Profile Dashboard</h1>
           
           {!user ? (
@@ -1602,69 +1661,11 @@ export default function AccountPage() {
                 </div>
               </div>
               
-              {/* Support & Communication Section */}
-              <div className="mb-8">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">SUPPORT & COMMUNICATION</h2>
-                </div>
-                <div className="rounded-lg border border-gray-200 p-4">
-                  <h3 className="font-medium text-gray-900 mb-3">Pitch Conversations</h3>
-                  {isLoadingPitches ? (
-                    <div className="flex items-center justify-center py-4">
-                      <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
-                      <span className="ml-2 text-gray-500">Loading your pitches...</span>
-                    </div>
-                  ) : userPitches && userPitches.length > 0 ? (
-                    <div className="space-y-3">
-                      {userPitches.filter(pitch => pitch.status !== 'draft').map((pitch) => (
-                        <div key={pitch.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-gray-900 mb-1">
-                                {pitch.opportunity?.title || 'Pitch Discussion'}
-                              </h4>
-                              <div className="flex items-center gap-4 text-sm text-gray-500">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-4 w-4" />
-                                  <span>Submitted {formatDistanceToNow(new Date(pitch.createdAt), { addSuffix: true })}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Badge variant={pitch.status === 'successful' ? 'default' : pitch.status === 'sent_to_reporter' ? 'secondary' : 'outline'} className="text-xs">
-                                    {pitch.status === 'sent_to_reporter' ? 'Sent to Reporter' : 
-                                     pitch.status === 'successful' ? 'Successful' :
-                                     pitch.status === 'pending' ? 'Pending Review' : pitch.status}
-                                  </Badge>
-                                </div>
-                              </div>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openChatModal(pitch.id, pitch.opportunity?.title || 'Pitch Discussion')}
-                              className="flex items-center gap-2"
-                            >
-                              <MessageCircle className="h-4 w-4" />
-                              Message
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-6">
-                      <MessageCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-500 mb-2">No pitches available for communication yet.</p>
-                      <p className="text-sm text-gray-400">Submit some pitches to opportunities to start conversations with our team.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
               {/* Support Section */}
-              <div className="mb-8 rounded-lg border border-gray-200 p-6 bg-gray-50">
+              <div className="mb-8 rounded-lg border border-gray-200 p-6 bg-gray-50 text-center">
                 <h2 className="text-lg font-medium mb-2">Need help with your profile?</h2>
                 <p className="text-gray-600 mb-4">Our team can help optimize your profile to increase your chances of getting quoted.</p>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap justify-center gap-3">
                   <Button variant="default" size="sm" asChild>
                     <a href="https://calendly.com/rubicon-pr-group/quotebid" target="_blank" rel="noopener noreferrer">
                       Book a Call
@@ -1892,6 +1893,114 @@ export default function AccountPage() {
                 </Button>
                 <Button type="submit">
                   {editingMediaItem ? 'Update Media' : 'Add Media'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password & Security Modal */}
+      <Dialog open={passwordModalOpen} onOpenChange={setPasswordModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Change Password
+            </DialogTitle>
+            <DialogDescription>
+              Update your account password
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...passwordForm}>
+            <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-4 py-4">
+              <FormField
+                control={passwordForm.control}
+                name="currentPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Current Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Enter current password"
+                        className="h-11"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={passwordForm.control}
+                name="newPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>New Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Enter new password"
+                        className="h-11"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Password must be at least 8 characters long
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={passwordForm.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm New Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Confirm new password"
+                        className="h-11"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter className="pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    passwordForm.reset();
+                    setPasswordModalOpen(false);
+                  }}
+                  disabled={passwordChangeMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={passwordChangeMutation.isPending}
+                >
+                  {passwordChangeMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    'Update Password'
+                  )}
                 </Button>
               </DialogFooter>
             </form>

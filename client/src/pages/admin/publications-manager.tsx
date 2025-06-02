@@ -193,6 +193,17 @@ export default function PublicationsManager() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTier, setSelectedTier] = useState<string>('all');
 
+  // Auto-open create modal if coming from opportunity creation
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('create') === 'true') {
+      setIsCreateDialogOpen(true);
+      // Clean up URL without triggering navigation
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
+
   // Debug modal state changes
   useEffect(() => {
     console.log('Modal state changed to:', isAnalyticsModalOpen);

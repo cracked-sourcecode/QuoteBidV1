@@ -117,6 +117,9 @@ export default function OpportunitiesManager() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedTier, setSelectedTier] = useState<string>('all');
+  const [selectedPublication, setSelectedPublication] = useState<string>('all');
+  const [selectedIndustry, setSelectedIndustry] = useState<string>('all');
+  const [selectedRequestType, setSelectedRequestType] = useState<string>('all');
   
   // Fetch all opportunities
   const { data: opportunities = [], isLoading: loadingOpportunities } = useQuery<any[]>({
@@ -286,18 +289,26 @@ export default function OpportunitiesManager() {
     form.setValue('tags', currentTags.filter(tag => tag !== tagToRemove));
   };
   
-  // Filter opportunities based on search term, status, and tier
+  // Filter opportunities based on search term and all filter criteria
   const filteredOpportunities = opportunities?.filter(opp => {
+    // Enhanced search - searches through multiple fields
     const matchesSearch = searchTerm === '' || 
       opp.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       opp.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       opp.publication?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      opp.industry?.toLowerCase().includes(searchTerm.toLowerCase());
+      opp.industry?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      opp.tier?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      opp.requestType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      opp.mediaType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      opp.tags?.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = selectedStatus === 'all' || opp.status === selectedStatus;
     const matchesTier = selectedTier === 'all' || opp.tier === selectedTier;
+    const matchesPublication = selectedPublication === 'all' || opp.publication?.name === selectedPublication;
+    const matchesIndustry = selectedIndustry === 'all' || opp.industry === selectedIndustry;
+    const matchesRequestType = selectedRequestType === 'all' || opp.requestType === selectedRequestType;
     
-    return matchesSearch && matchesStatus && matchesTier;
+    return matchesSearch && matchesStatus && matchesTier && matchesPublication && matchesIndustry && matchesRequestType;
   }) || [];
 
   // Calculate stats
@@ -315,7 +326,7 @@ export default function OpportunitiesManager() {
         {/* Enhanced Header Section */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200/50 p-8 mb-8">
           <div className="flex justify-between items-start mb-6">
-            <div>
+    <div>
               <h1 className="text-3xl font-bold flex items-center mb-3">
                 <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center mr-4 shadow-lg">
                   <Briefcase className="h-6 w-6 text-white" />
@@ -333,30 +344,33 @@ export default function OpportunitiesManager() {
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               <Plus className="h-5 w-5" />
-              Add New Opportunity
+          Add New Opportunity
             </button>
           </div>
 
-          {/* Search and Filter Section */}
+          {/* Enhanced Search and Filter Section */}
           <div className="mb-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              {/* Search Bar */}
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            {/* Search Bar */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <Input
-                  placeholder="Search opportunities by title, description, publication, or industry..."
+                  placeholder="Search by title, description, publication, industry, tier, request type, media type, or tags..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+                  className="pl-12 h-12 text-base border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm"
                 />
               </div>
-              
+            </div>
+            
+            {/* Filter Row */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {/* Status Filter */}
-              <div className="sm:w-40">
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">Status</Label>
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
-                    <Filter className="h-4 w-4 mr-2 text-gray-400" />
-                    <SelectValue placeholder="Status" />
+                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg h-10">
+                    <SelectValue placeholder="All Status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
@@ -367,11 +381,11 @@ export default function OpportunitiesManager() {
               </div>
               
               {/* Tier Filter */}
-              <div className="sm:w-40">
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">Tier</Label>
                 <Select value={selectedTier} onValueChange={setSelectedTier}>
-                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
-                    <Award className="h-4 w-4 mr-2 text-gray-400" />
-                    <SelectValue placeholder="Tier" />
+                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg h-10">
+                    <SelectValue placeholder="All Tiers" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Tiers</SelectItem>
@@ -381,14 +395,104 @@ export default function OpportunitiesManager() {
                   </SelectContent>
                 </Select>
               </div>
+              
+              {/* Publication Filter */}
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">Publication</Label>
+                <Select value={selectedPublication} onValueChange={setSelectedPublication}>
+                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg h-10">
+                    <SelectValue placeholder="All Publications" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Publications</SelectItem>
+                    {Array.from(new Set(opportunities?.map(opp => opp.publication?.name).filter(Boolean))).map((pubName: any) => (
+                      <SelectItem key={pubName} value={pubName}>{pubName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Industry Filter */}
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">Industry</Label>
+                <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
+                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg h-10">
+                    <SelectValue placeholder="All Industries" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Industries</SelectItem>
+                    {Array.from(new Set(opportunities?.map(opp => opp.industry).filter(Boolean))).map((industry: any) => (
+                      <SelectItem key={industry} value={industry}>{industry}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Request Type Filter */}
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">Request Type</Label>
+                <Select value={selectedRequestType} onValueChange={setSelectedRequestType}>
+                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg h-10">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {Array.from(new Set(opportunities?.map(opp => opp.requestType).filter(Boolean))).map((requestType: any) => (
+                      <SelectItem key={requestType} value={requestType}>{requestType}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Clear Filters Button */}
+              <div className="flex items-end">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedStatus('all');
+                    setSelectedTier('all');
+                    setSelectedPublication('all');
+                    setSelectedIndustry('all');
+                    setSelectedRequestType('all');
+                  }}
+                  className="h-10 w-full border-gray-200 hover:bg-gray-50 rounded-lg"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Clear All
+        </Button>
+              </div>
             </div>
             
-            {/* Results Counter */}
-            {searchTerm && (
-              <div className="mt-4 text-sm text-gray-600">
-                Found {filteredOpportunities.length} opportunity{filteredOpportunities.length === 1 ? '' : 'ies'} matching "{searchTerm}"
+            {/* Results Counter and Active Filters */}
+            <div className="mt-4 flex items-center justify-between">
+              <div className="text-sm text-gray-600 flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                Showing {filteredOpportunities.length} of {opportunities?.length || 0} opportunities
+                {searchTerm && (
+                  <span className="text-blue-600">matching "{searchTerm}"</span>
+                )}
               </div>
-            )}
+              
+              {/* Active Filters Display */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {selectedStatus !== 'all' && (
+                  <Badge variant="secondary" className="text-xs">Status: {selectedStatus}</Badge>
+                )}
+                {selectedTier !== 'all' && (
+                  <Badge variant="secondary" className="text-xs">Tier: {selectedTier}</Badge>
+                )}
+                {selectedPublication !== 'all' && (
+                  <Badge variant="secondary" className="text-xs">Publication: {selectedPublication}</Badge>
+                )}
+                {selectedIndustry !== 'all' && (
+                  <Badge variant="secondary" className="text-xs">Industry: {selectedIndustry}</Badge>
+                )}
+                {selectedRequestType !== 'all' && (
+                  <Badge variant="secondary" className="text-xs">Type: {selectedRequestType}</Badge>
+                )}
+              </div>
+            </div>
           </div>
           
           {/* Enhanced Stats Row */}
@@ -714,13 +818,13 @@ export default function OpportunitiesManager() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="font-semibold text-gray-900">Website URL</FormLabel>
-                            <FormControl>
-                              <Input 
+                                <FormControl>
+                                  <Input
                                 placeholder="https://publication.com" 
                                 className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
                                 {...field} 
-                              />
-                            </FormControl>
+                                  />
+                                </FormControl>
                             <FormDescription>
                               Enter the main website for the publication
                             </FormDescription>
@@ -761,120 +865,120 @@ export default function OpportunitiesManager() {
                   />
                 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="requestType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="font-semibold text-gray-900">Request Type</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
-                                <SelectValue placeholder="Select a request type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {REQUEST_TYPES.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="mediaType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="font-semibold text-gray-900">Media Type</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
-                                <SelectValue placeholder="Select a media type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {MEDIA_TYPES.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                
                   <FormField
                     control={form.control}
-                    name="description"
+                    name="requestType"
                     render={({ field }) => (
                       <FormItem>
+                          <FormLabel className="font-semibold text-gray-900">Request Type</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
+                              <SelectValue placeholder="Select a request type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {REQUEST_TYPES.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="mediaType"
+                    render={({ field }) => (
+                      <FormItem>
+                          <FormLabel className="font-semibold text-gray-900">Media Type</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
+                              <SelectValue placeholder="Select a media type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {MEDIA_TYPES.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
                         <FormLabel className="font-semibold text-gray-900">Description</FormLabel>
-                        <FormControl>
+                      <FormControl>
                           <Textarea 
                             placeholder="Enter a detailed description" 
                             className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg resize-none"
                             {...field} 
                             rows={3} 
                           />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
+                <FormField
+                  control={form.control}
                       name="tier"
-                      render={({ field }) => (
-                        <FormItem>
+                  render={({ field }) => (
+                    <FormItem>
                           <FormLabel className="font-semibold text-gray-900">Opportunity Tier</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
+                          <FormControl>
                               <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
                                 <SelectValue placeholder="Select tier" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
                               {OPPORTUNITY_TIERS.map((tier) => (
                                 <SelectItem key={tier.value} value={tier.value}>
                                   {tier.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                  <FormField
+                    control={form.control}
                       name="industry"
-                      render={({ field }) => (
-                        <FormItem>
+                    render={({ field }) => (
+                      <FormItem>
                           <FormLabel className="font-semibold text-gray-900">Industry Category</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
+                        <FormControl>
                               <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
                                 <SelectValue placeholder="Select industry" />
                               </SelectTrigger>
-                            </FormControl>
+                        </FormControl>
                             <SelectContent>
                               {INDUSTRY_OPTIONS.map((option) => (
                                 <SelectItem key={option.value} value={option.value}>
@@ -883,12 +987,12 @@ export default function OpportunitiesManager() {
                               ))}
                             </SelectContent>
                           </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   </div>
-                
+                  
                   <FormField
                     control={form.control}
                     name="tags"
@@ -915,7 +1019,7 @@ export default function OpportunitiesManager() {
                               <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg">
                                 <SelectValue placeholder="Add industry tag" />
                               </SelectTrigger>
-                            </FormControl>
+                        </FormControl>
                             <SelectContent>
                               {INDUSTRY_OPTIONS.map((option) => (
                                 <SelectItem key={option.value} value={option.value}>
@@ -930,7 +1034,7 @@ export default function OpportunitiesManager() {
                     )}
                   />
                 </div>
-                
+                  
                 {/* Step 3: Pricing & Deadline */}
                 <div className="space-y-4 rounded-xl border border-gray-200/50 p-6 bg-gradient-to-br from-purple-50/30 to-pink-50/30">
                   <h3 className="text-lg font-semibold flex items-center text-gray-800">
@@ -1059,8 +1163,8 @@ export default function OpportunitiesManager() {
                           )}
                         </div>
                       </div>
-                    </div>
-                    
+      </div>
+      
                     {/* Opportunity Info */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-4">
@@ -1074,7 +1178,7 @@ export default function OpportunitiesManager() {
                           <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
                             {opportunities.find((o: any) => o.id === showDetails).requestType}
                           </Badge>
-                        </div>
+        </div>
                         
                         <div>
                           <h3 className="font-semibold text-gray-900 mb-2">Status</h3>
@@ -1084,40 +1188,40 @@ export default function OpportunitiesManager() {
                               : 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 border-red-200'
                           } variant="outline">
                             {opportunities.find((o: any) => o.id === showDetails).status === 'open' ? (
-                              <>
+                          <>
                                 <CheckCircle2 className="w-3 h-3 mr-1" />
                                 OPEN
-                              </>
-                            ) : (
-                              <>
+                          </>
+                        ) : (
+                          <>
                                 <XCircle className="w-3 h-3 mr-1" />
                                 CLOSED
-                              </>
-                            )}
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-4">
+                          </>
+                        )}
+                </Badge>
+                </div>
+                </div>
+            
+            <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
-                          <div>
+                  <div>
                             <h3 className="font-semibold text-gray-900 mb-2">Minimum Bid</h3>
                             <div className="flex items-center text-green-600 font-semibold text-lg">
                               <DollarSign className="h-5 w-5 mr-1" />
                               ${opportunities.find((o: any) => o.id === showDetails).minimumBid}
-                            </div>
-                          </div>
-                          <div>
+                  </div>
+                  </div>
+                  <div>
                             <h3 className="font-semibold text-gray-900 mb-2">Deadline</h3>
                             <div className="flex items-center text-blue-600 font-semibold">
                               <Calendar className="h-4 w-4 mr-2" />
                               {new Date(opportunities.find((o: any) => o.id === showDetails).deadline).toLocaleDateString()}
-                            </div>
-                          </div>
-                        </div>
+                  </div>
+                  </div>
+                    </div>
                         
-                        <div className="grid grid-cols-3 gap-4">
-                          <div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
                             <h3 className="font-semibold text-gray-900 mb-2">Tier</h3>
                             <Badge 
                               variant="secondary" 
@@ -1129,21 +1233,21 @@ export default function OpportunitiesManager() {
                             >
                               {opportunities.find((o: any) => o.id === showDetails).tier || "Not specified"}
                             </Badge>
-                          </div>
-                          <div>
+                    </div>
+                    <div>
                             <h3 className="font-semibold text-gray-900 mb-2">Industry</h3>
                             <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
                               {opportunities.find((o: any) => o.id === showDetails).industry || "Not specified"}
                             </Badge>
-                          </div>
-                          <div>
+                    </div>
+                    <div>
                             <h3 className="font-semibold text-gray-900 mb-2">Media Type</h3>
                             <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
                               {opportunities.find((o: any) => o.id === showDetails).mediaType || "Not specified"}
                             </Badge>
-                          </div>
-                        </div>
-                      </div>
+                    </div>
+                  </div>
+                    </div>
                     </div>
                     
                     {/* Description */}
@@ -1153,27 +1257,27 @@ export default function OpportunitiesManager() {
                         <p className="text-gray-700 leading-relaxed">
                           {opportunities.find((o: any) => o.id === showDetails).description}
                         </p>
-                      </div>
                     </div>
+                  </div>
                     
                     {/* Tags */}
-                    <div>
+                  <div>
                       <h3 className="font-semibold text-gray-900 mb-3">Industry Tags</h3>
                       <div className="flex flex-wrap gap-2">
                         {opportunities.find((o: any) => o.id === showDetails).tags?.map((tag: string) => (
                           <Badge key={tag} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                             <Tag className="w-3 h-3 mr-1" />
                             {tag}
-                          </Badge>
+                    </Badge>
                         ))}
                       </div>
-                    </div>
                   </div>
-                )}
-              </div>
-              
+                </div>
+              )}
+            </div>
+            
               <DialogFooter className="border-t border-gray-200/50 pt-6">
-                <Button 
+              <Button 
                   variant="outline"
                   onClick={() => setShowDetails(null)}
                   className="border-gray-300 hover:bg-gray-50"
@@ -1182,18 +1286,18 @@ export default function OpportunitiesManager() {
                 </Button>
                 <Button 
                   variant={opportunities?.find((o: any) => o.id === showDetails)?.status === 'open' ? 'destructive' : 'default'}
-                  onClick={() => {
-                    const opportunity = opportunities?.find((o: any) => o.id === showDetails);
-                    if (opportunity) {
-                      updateStatusMutation.mutate({
-                        id: opportunity.id,
-                        status: opportunity.status === 'open' ? 'closed' : 'open'
-                      });
-                      setShowDetails(null);
-                    }
-                  }}
+                onClick={() => {
+                  const opportunity = opportunities?.find((o: any) => o.id === showDetails);
+                  if (opportunity) {
+                    updateStatusMutation.mutate({
+                      id: opportunity.id,
+                      status: opportunity.status === 'open' ? 'closed' : 'open'
+                    });
+                    setShowDetails(null);
+                  }
+                }}
                   className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-                >
+              >
                   {opportunities?.find((o: any) => o.id === showDetails)?.status === 'open' ? (
                     <>
                       <XCircle className="mr-2 h-4 w-4" />
@@ -1205,11 +1309,11 @@ export default function OpportunitiesManager() {
                       Reopen Opportunity
                     </>
                   )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
       </div>
     </div>
   );

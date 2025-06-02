@@ -47,6 +47,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -68,26 +73,25 @@ import {
   Eye,
   MoreVertical,
   Building2,
-  Loader2
+  Loader2,
+  CalendarIcon
 } from "lucide-react";
 import { INDUSTRY_OPTIONS, MEDIA_TYPES, OPPORTUNITY_TIERS, REQUEST_TYPES } from "@/lib/constants";
 import { useLocation } from 'wouter';
 import { Publication } from '@shared/schema';
 import LogoUniform from '@/components/ui/logo-uniform';
+import { DayPicker } from 'react-day-picker';
+import { format, addDays } from 'date-fns';
+import { cn } from "@/lib/utils";
+import 'react-day-picker/dist/style.css';
 
 const opportunitySchema = z.object({
   publicationId: z.coerce.number(),
-  newPublication: z.boolean().optional(),
-  publicationName: z.string().optional(),
-  publicationWebsite: z.string().url().optional().or(z.string().length(0)),
-  publicationLogo: z.string().optional(),
-  publicationDescription: z.string().optional(),
   title: z.string().min(1, "Title is required"),
   requestType: z.string().min(1, "Request type is required"),
   mediaType: z.string().min(1, "Media type is required"),
   description: z.string().min(1, "Description is required"),
   tags: z.array(z.string()).min(1, "At least one industry tag is required"),
-  tier: z.string().min(1, "Tier is required"),
   industry: z.string().min(1, "Primary industry is required"),
   minimumBid: z.coerce.number().min(1, "Minimum bid must be at least $1"),
   deadline: z.string().min(1, "Deadline is required"),
@@ -99,33 +103,47 @@ export default function OpportunitiesManager() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedTier, setSelectedTier] = useState<string>('all');
+  const [selectedPublication, setSelectedPublication] = useState<string>('all');
+  const [selectedIndustry, setSelectedIndustry] = useState<string>('all');
+  const [selectedRequestType, setSelectedRequestType] = useState<string>('all');
   const [activeTab, setActiveTab] = useState("all");
   const [showDetails, setShowDetails] = useState<number | null>(null);
   const [showPitches, setShowPitches] = useState<number | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isCreatingPublication, setIsCreatingPublication] = useState(false);
   const [location, setLocation] = useLocation();
+  const [selectedPublicationTier, setSelectedPublicationTier] = useState<string>("");
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  
+  // Auto-open create modal if coming from quick actions
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('create') === 'true') {
+      setIsCreateDialogOpen(true);
+      // Clean up URL without triggering navigation
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
   
   const form = useForm<OpportunityFormValues>({
     resolver: zodResolver(opportunitySchema),
     defaultValues: {
+      publicationId: 0,
       title: "",
       requestType: "",
       mediaType: "",
       description: "",
       tags: [],
-      tier: "",
       industry: "",
-      minimumBid: 99,
+      minimumBid: 225, // Default to Tier 1 amount
       deadline: new Date().toISOString().split("T")[0],
-      newPublication: false,
-      publicationId: 0,
-      publicationName: "",
-      publicationWebsite: "",
-      publicationLogo: "",
-      publicationDescription: "",
     },
   });
+  
+  // Watch publication changes to automatically update minimum bid based on publication's tier
+  const watchedPublicationId = form.watch("publicationId");
   
   const { data: publications, isLoading: loadingPublications } = useQuery<Publication[]>({
     queryKey: ["/api/admin/publications"],
@@ -134,6 +152,56 @@ export default function OpportunitiesManager() {
       return res.json();
     },
   });
+
+  // Filter publications by selected tier
+  const filteredPublications = publications?.filter(pub => 
+    !selectedPublicationTier || pub.tier === selectedPublicationTier
+  ) || [];
+
+  // Auto-update minimum bid based on selected publication's tier
+  useEffect(() => {
+    if (watchedPublicationId && publications) {
+      const selectedPublication = publications.find(pub => pub.id === watchedPublicationId);
+      if (selectedPublication?.tier) {
+        let bidAmount = 225; // Default Tier 1
+        switch (selectedPublication.tier) {
+          case "Tier 1":
+            bidAmount = 225;
+            break;
+          case "Tier 2":
+            bidAmount = 175;
+            break;
+          case "Tier 3":
+            bidAmount = 125;
+            break;
+          default:
+            bidAmount = 225;
+        }
+        form.setValue("minimumBid", bidAmount);
+      }
+    }
+  }, [watchedPublicationId, publications, form]);
+  
+  // Also update minimum bid when tier is selected (before publication is chosen)
+  useEffect(() => {
+    if (selectedPublicationTier) {
+      let bidAmount = 225; // Default Tier 1
+      switch (selectedPublicationTier) {
+        case "Tier 1":
+          bidAmount = 225;
+          break;
+        case "Tier 2":
+          bidAmount = 175;
+          break;
+        case "Tier 3":
+          bidAmount = 125;
+          break;
+        default:
+          bidAmount = 225;
+      }
+      form.setValue("minimumBid", bidAmount);
+    }
+  }, [selectedPublicationTier, form]);
   
   const { data: opportunities, isLoading: loadingOpportunities, error: opportunitiesError } = useQuery({
     queryKey: ["/api/admin/opportunities-with-pitches"],
@@ -190,38 +258,7 @@ export default function OpportunitiesManager() {
       }
       console.log('Submitting opportunity with data:', JSON.stringify(data));
       
-      // If creating a new publication
-      if (data.newPublication && data.publicationName) {
-        try {
-          // First create the publication
-          const pubRes = await apiRequest("POST", "/api/admin/publications", {
-            name: data.publicationName,
-            website: data.publicationWebsite || "",
-            logo: data.publicationLogo || "",
-            description: data.publicationDescription || ""
-          });
-          
-          if (!pubRes.ok) {
-            const errorData = await pubRes.json();
-            throw new Error(errorData.message || "Failed to create publication");
-          }
-          
-          // Get the new publication ID
-          const publication = await pubRes.json();
-          
-          // Update the opportunity data with the new publication ID
-          data.publicationId = publication.id;
-        } catch (error: any) {
-          toast({
-            title: "Failed to create publication",
-            description: error.message,
-            variant: "destructive",
-          });
-          throw error;
-        }
-      }
-      
-      // Then create the opportunity
+      // Create the opportunity directly (no inline publication creation)
       const res = await apiRequest("POST", "/api/admin/opportunities", data);
       return res.json();
     },
@@ -271,22 +308,44 @@ export default function OpportunitiesManager() {
     },
   });
   
+  // Enhanced filtering with comprehensive search and multiple filter criteria
   const filteredOpportunities = finalOpportunities
     ? finalOpportunities.filter((opp: any) => {
-        // Filter by search term
-        const matchesSearch =
-          filter === "" ||
+        // Enhanced search - searches through multiple fields
+        const matchesSearch = filter === '' || 
           opp.title.toLowerCase().includes(filter.toLowerCase()) ||
-          opp.description.toLowerCase().includes(filter.toLowerCase()) ||
-          opp.publication.name.toLowerCase().includes(filter.toLowerCase());
+          opp.description?.toLowerCase().includes(filter.toLowerCase()) ||
+          opp.publication?.name.toLowerCase().includes(filter.toLowerCase()) ||
+          opp.industry?.toLowerCase().includes(filter.toLowerCase()) ||
+          opp.tier?.toLowerCase().includes(filter.toLowerCase()) ||
+          opp.requestType?.toLowerCase().includes(filter.toLowerCase()) ||
+          opp.mediaType?.toLowerCase().includes(filter.toLowerCase()) ||
+          opp.tags?.some((tag: string) => tag.toLowerCase().includes(filter.toLowerCase()));
         
-        // Filter by tab
+        // Status filter
+        const matchesStatus = selectedStatus === 'all' || opp.status === selectedStatus;
+        
+        // Tier filter
+        const matchesTier = selectedTier === 'all' || opp.tier === selectedTier;
+        
+        // Publication filter
+        const matchesPublication = selectedPublication === 'all' || 
+          opp.publication?.name === selectedPublication;
+        
+        // Industry filter
+        const matchesIndustry = selectedIndustry === 'all' || opp.industry === selectedIndustry;
+        
+        // Request Type filter
+        const matchesRequestType = selectedRequestType === 'all' || opp.requestType === selectedRequestType;
+        
+        // Tab filter (keeping the existing tab functionality)
         const matchesTab =
           activeTab === "all" ||
           (activeTab === "open" && opp.status === "open") ||
           (activeTab === "closed" && opp.status === "closed");
         
-        return matchesSearch && matchesTab;
+        return matchesSearch && matchesStatus && matchesTier && matchesPublication && 
+               matchesIndustry && matchesRequestType && matchesTab;
       })
     : [];
   
@@ -296,7 +355,19 @@ export default function OpportunitiesManager() {
       data.publicationId = Number(data.publicationId);
       console.log("Pre-submission fix: Converted publicationId to number:", data.publicationId);
     }
-    createOpportunityMutation.mutate(data);
+
+    // Get the tier from the selected publication
+    const selectedPublication = publications?.find(pub => pub.id === data.publicationId);
+    const tier = selectedPublication?.tier || "Tier 1"; // Default to Tier 1 if not found
+
+    // Add tier to the submission data
+    const submissionData = {
+      ...data,
+      tier
+    };
+
+    console.log("Submitting opportunity with automatic tier:", submissionData);
+    createOpportunityMutation.mutate(submissionData);
   };
   
   const onTagSelect = (tag: string) => {
@@ -322,604 +393,153 @@ export default function OpportunitiesManager() {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-          <div className="relative w-full md:w-auto">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search opportunities..."
-              className="pl-8 w-full md:w-[260px]"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-            />
-          </div>
-          
           <Button onClick={() => setIsCreateDialogOpen(true)} className="flex items-center">
             <Plus className="mr-2 h-4 w-4" />
             Add New Opportunity
           </Button>
         </div>
-        
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl">Create New PR Opportunity</DialogTitle>
-              <DialogDescription>
-                Fill out the details below to create a new PR opportunity for users to bid on.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Step 1: Select Publication */}
-                <div className="space-y-4 rounded-lg border p-4 bg-muted/10">
-                  <h3 className="text-lg font-medium flex items-center">
-                    <Newspaper className="h-5 w-5 mr-2 text-blue-500" />
-                    Publication Details
-                  </h3>
-                  
-                  <FormField
-                    control={form.control}
-                    name="publicationId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Select Publication</FormLabel>
-                        <Select
-                          value={String(field.value || '0')}
-                          onValueChange={(value) => {
-                            if (value === "new") {
-                              setIsCreatingPublication(true);
-                              form.setValue("newPublication", true);
-                              field.onChange(0); // Clear the publication ID
-                              // Clear tier when creating new publication
-                              form.setValue("tier", "");
-                            } else {
-                              setIsCreatingPublication(false);
-                              form.setValue("newPublication", false);
-                              // Reset the publication fields
-                              form.setValue("publicationName", "");
-                              form.setValue("publicationWebsite", "");
-                              form.setValue("publicationLogo", "");
-                              form.setValue("publicationDescription", "");
-                              // CRITICAL FIX: Ensure we convert string to number
-                              const numValue = Number(value);
-                              console.log("Converting publicationId from", value, "to", numValue);
-                              field.onChange(numValue);
-                            }
-                          }}
-                          // No defaultValue needed when using controlled component with value prop
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a publication" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="new">
-                              <span className="flex items-center">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Create New Publication
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="separator" disabled>
-                              ──────────────────
-                            </SelectItem>
-                            {publications?.map((pub: any) => (
-                              <SelectItem key={pub.id} value={pub.id.toString()}>
-                                <span>{pub.name}</span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          Choose an existing publication or create a new one
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  {isCreatingPublication && (
-                    <div className="space-y-4 p-4 border rounded-md bg-gray-50">
-                      <h4 className="text-md font-medium">New Publication Details</h4>
-                      
-                      <FormField
-                        control={form.control}
-                        name="publicationName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Publication Name *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="e.g., Forbes, Wall Street Journal, CNBC" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="publicationWebsite"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Website URL</FormLabel>
-                            <FormControl>
-                              <Input placeholder="https://publication.com" {...field} />
-                            </FormControl>
-                            <FormDescription>
-                              Enter the main website for the publication
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+      </div>
 
-                      <FormField
-                        control={form.control}
-                        name="tier"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Publication Tier *</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select tier" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {OPPORTUNITY_TIERS.map((tier) => (
-                                  <SelectItem key={tier.value} value={tier.value}>
-                                    {tier.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Select the appropriate tier for this publication
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="publicationLogo"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Publication Logo</FormLabel>
-                            <div className="flex flex-col gap-4">
-                              <div className="flex gap-4 items-center">
-                                <FormControl>
-                                  <Input
-                                    id="logo-upload"
-                                    type="file"
-                                    accept="image/png"
-                                    className="h-9"
-                                    onChange={async (e) => {
-                                      if (e.target.files && e.target.files[0]) {
-                                        const file = e.target.files[0];
-                                        
-                                        // Check file type - only PNG allowed
-                                        if (!file.type.startsWith('image/png')) {
-                                          toast({
-                                            title: "Invalid file type",
-                                            description: "Only PNG format is allowed for publication logos",
-                                            variant: "destructive"
-                                          });
-                                          return;
-                                        }
-                                        
-                                        // Check file size - max 2MB
-                                        if (file.size > 2 * 1024 * 1024) {
-                                          toast({
-                                            title: "File too large",
-                                            description: "Logo must be less than 2MB in size",
-                                            variant: "destructive"
-                                          });
-                                          return;
-                                        }
-                                        
-                                        // Check image dimensions
-                                        const img = new Image();
-                                        img.onload = () => {
-                                          if (img.width > 512 || img.height > 512) {
-                                            toast({
-                                              title: "Image too large",
-                                              description: "Logo dimensions must not exceed 512x512 pixels",
-                                              variant: "destructive"
-                                            });
-                                            return;
-                                          }
-                                          
-                                          // If all checks pass, process the image
-                                          const reader = new FileReader();
-                                          reader.onload = (event) => {
-                                            if (event.target?.result) {
-                                              field.onChange(event.target.result.toString());
-                                              toast({
-                                                title: "Logo ready",
-                                                description: "PNG logo is ready to be used for the publication.",
-                                              });
-                                            }
-                                          };
-                                          reader.readAsDataURL(file);
-                                        };
-                                        
-                                        img.onerror = () => {
-                                          toast({
-                                            title: "Invalid image",
-                                            description: "Could not process the uploaded image",
-                                            variant: "destructive"
-                                          });
-                                        };
-                                        
-                                        img.src = URL.createObjectURL(file);
-                                      }
-                                    }}
-                                  />
-                                </FormControl>
-                              </div>
-                              
-                              {field.value && (
-                                <div className="mt-2 flex gap-2 items-center">
-                                  <img 
-                                    src={field.value} 
-                                    alt="Publication logo preview" 
-                                    className="w-16 h-16 object-contain border rounded bg-white" 
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).src = 'https://placehold.co/200x200?text=Logo';
-                                    }}
-                                  />
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => field.onChange('')}
-                                    className="h-8"
-                                  >
-                                    <X className="h-4 w-4 mr-1" />
-                                    Remove
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                            <FormDescription>
-                              <strong>Requirements:</strong> PNG format only, maximum 512x512px, under 2MB file size. Recommended: Square logos work best for consistent display.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="publicationDescription"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Publication Description</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Provide details about the publication, its audience, and any other relevant information." 
-                                className="min-h-[100px] resize-y"
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              This description helps users understand the publication better
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+      {/* Enhanced Search and Filter Section */}
+      <div className="mb-6">
+        {/* Search Bar */}
+        <div className="mb-4">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <Input
+              placeholder="Search by title, description, publication, industry, tier, request type, media type, or tags..."
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="pl-12 h-12 text-base border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm"
+            />
+          </div>
+        </div>
+
+        {/* Filter Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {/* Status Filter */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Status</label>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Tier Filter */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Tier</label>
+            <Select value={selectedTier} onValueChange={setSelectedTier}>
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="All Tiers" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Tiers</SelectItem>
+                {OPPORTUNITY_TIERS.map((tier) => (
+                  <SelectItem key={tier.value} value={tier.value}>
+                    {tier.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Publication Filter */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Publication</label>
+            <Select value={selectedPublication} onValueChange={setSelectedPublication}>
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="All Publications" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Publications</SelectItem>
+                {publications && publications.length > 0 && (
+                  <>
+                    <div className="border-t my-2"></div>
+                    <div className="px-2 py-1">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Existing Publications</p>
                     </div>
-                  )}
-                </div>
-                
-                {/* Step 2: Opportunity Details */}
-                <div className="space-y-4 rounded-lg border p-4 bg-muted/10">
-                  <h3 className="text-lg font-medium flex items-center">
-                    <Tag className="h-5 w-5 mr-2 text-blue-500" />
-                    Opportunity Details
-                  </h3>
-                  
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Opportunity Title *</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="e.g., Expert commentary on cryptocurrency market trends" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Create a clear, compelling title that describes what you're looking for
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="tier"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Publication Tier *</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select tier" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {OPPORTUNITY_TIERS.map((tier) => (
-                                <SelectItem key={tier.value} value={tier.value}>
-                                  {tier.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            Select the appropriate tier for this publication
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="industry"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Primary Industry *</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select primary industry" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {INDUSTRY_OPTIONS.map((industry) => (
-                                <SelectItem key={industry.value} value={industry.value}>
-                                  {industry.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            This determines which users receive notifications
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="requestType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Request Type *</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select request type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {REQUEST_TYPES.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="mediaType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Media Type *</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select media type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {MEDIA_TYPES.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Opportunity Description *</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Provide a detailed description of what you're looking for from experts. Include information about the story angle, expertise required, and any specific requirements." 
-                            className="min-h-[150px] resize-y"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Be specific about what you're looking for to attract the right experts
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="tags"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Industry Tags *</FormLabel>
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap gap-2 mb-2 min-h-[36px] p-2 border rounded-md bg-white">
-                            {form.getValues('tags')?.length ? (
-                              form.getValues('tags')?.map((tag) => (
-                                <Badge key={tag} variant="secondary" className="h-6 gap-1 pl-2">
-                                  {tag}
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-4 w-4 p-0 hover:bg-transparent"
-                                    onClick={() => removeTag(tag)}
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </Badge>
-                              ))
-                            ) : (
-                              <span className="text-gray-400 text-sm">No tags selected</span>
+                    {publications.map((pub: any) => (
+                      <SelectItem key={pub.id} value={pub.id.toString()}>
+                        <div className="flex items-center py-1">
+                          <Building2 className="mr-3 h-4 w-4 text-gray-400" />
+                          <div>
+                            <p className="font-medium">{pub.name}</p>
+                            {pub.tier && (
+                              <p className="text-xs text-gray-500">
+                                {pub.tier} - Min bid: ${pub.tier === "Tier 1" ? "225" : pub.tier === "Tier 2" ? "175" : "125"}
+                              </p>
                             )}
                           </div>
-                          
-                          <div className="flex gap-2">
-                            <Select onValueChange={onTagSelect}>
-                              <FormControl>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Add industry tag" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {INDUSTRY_OPTIONS.map((industry) => (
-                                  <SelectItem key={industry.value} value={industry.value}>
-                                    {industry.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          <FormDescription>
-                            Select all relevant industries to help experts find this opportunity
-                          </FormDescription>
-                          <FormMessage />
                         </div>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                  
-                {/* Step 3: Pricing & Deadline */}
-                <div className="space-y-4 rounded-lg border p-4 bg-muted/10">
-                  <h3 className="text-lg font-medium flex items-center">
-                    <DollarSign className="h-5 w-5 mr-2 text-blue-500" />
-                    Pricing & Deadline
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="minimumBid"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Starting Bid Price ($) *</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                              <Input type="number" min="1" className="pl-7" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormDescription>
-                            Set the initial bid price - will increase as slots fill up
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="deadline"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Deadline *</FormLabel>
-                          <FormControl>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-gray-500" />
-                              <Input type="date" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormDescription>
-                            Final date for accepting bids
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-                
-                <DialogFooter className="pt-4 space-x-2">
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    onClick={() => setIsCreateDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    className="bg-blue-600 hover:bg-blue-700"
-                    disabled={createOpportunityMutation.isPending}
-                  >
-                    {createOpportunityMutation.isPending ? (
-                      <>
-                        <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-                        Creating...
-                      </>
-                    ) : (
-                      "Create Opportunity"
-                    )}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Industry Filter */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Industry</label>
+            <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="All Industries" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Industries</SelectItem>
+                {INDUSTRY_OPTIONS.map((industry) => (
+                  <SelectItem key={industry.value} value={industry.value}>
+                    {industry.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Request Type Filter */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Request Type</label>
+            <Select value={selectedRequestType} onValueChange={setSelectedRequestType}>
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {REQUEST_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Clear Filters Button */}
+          <div className="flex items-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setFilter('');
+                setSelectedStatus('all');
+                setSelectedTier('all');
+                setSelectedPublication('all');
+                setSelectedIndustry('all');
+                setSelectedRequestType('all');
+              }}
+              className="h-10 w-full"
+            >
+              Clear Filters
+            </Button>
+          </div>
+        </div>
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -1059,7 +679,7 @@ export default function OpportunitiesManager() {
                 <div className="grid grid-cols-2 gap-3 text-sm mb-4">
                   <div className="flex items-center text-gray-600">
                     <DollarSign className="h-4 w-4 mr-1.5 text-green-600" />
-                    <span className="font-medium">${opportunity.minimumBid}</span>
+                    <span className="font-medium">{opportunity.currentPrice || opportunity.minimumBid}</span>
                   </div>
                   <div className="flex items-center text-gray-600">
                     <Calendar className="h-4 w-4 mr-1.5 text-blue-600" />
@@ -1344,7 +964,7 @@ export default function OpportunitiesManager() {
                         <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                           <MessageSquare className="h-10 w-10 text-gray-400" />
                         </div>
-                        <h3 className="text-xl font-semibold text-gray-900 mb-3">No Pitches Yet</h3>
+                        <h3 className="text-xl font-semibold text-gray-600 mb-2">No Pitches Yet</h3>
                         <p className="text-gray-600 leading-relaxed mb-6">
                           No pitches have been submitted for this opportunity yet. Once experts start bidding, 
                           their pitches will appear here for you to review and manage.
@@ -1490,42 +1110,114 @@ export default function OpportunitiesManager() {
                         </div>
                         
                         {/* Financial & Timeline */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="bg-gradient-to-br from-green-50 to-emerald-100/50 rounded-xl p-6 border border-green-200">
-                            <div className="flex items-center mb-3">
-                              <DollarSign className="h-6 w-6 text-green-600 mr-3" />
-                              <h3 className="text-sm font-medium text-green-700 uppercase tracking-wide">Minimum Bid</h3>
-                            </div>
-                            <p className="text-2xl font-bold text-green-800">${opportunity.minimumBid}</p>
-                          </div>
-                          
-                          <div className="bg-gradient-to-br from-red-50 to-rose-100/50 rounded-xl p-6 border border-red-200">
-                            <div className="flex items-center mb-3">
-                              <Calendar className="h-6 w-6 text-red-600 mr-3" />
-                              <h3 className="text-sm font-medium text-red-700 uppercase tracking-wide">Deadline</h3>
-                            </div>
-                            <p className="text-xl font-bold text-red-800">
-                              {new Date(opportunity.deadline).toLocaleDateString('en-US', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })}
+                        <div className="space-y-8">
+                          <div className="text-center">
+                            <h3 className="text-2xl font-bold text-gray-900 mb-3">Budget & Timeline</h3>
+                            <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
+                              Automatic pricing based on publication tier and deadline selection
                             </p>
                           </div>
-                        </div>
-                        
-                        {/* Metadata Footer */}
-                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                          <div className="flex items-center justify-between text-sm text-gray-500">
-                            <span>Opportunity ID: #{opportunity.id}</span>
-                            <span>Created: {new Date(opportunity.createdAt).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}</span>
+                          
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Automatic Minimum Bid Display */}
+                            <div className="space-y-6">
+                              <div className="text-center lg:text-left">
+                                <h4 className="text-xl font-semibold text-gray-900 mb-2">Minimum Bid (Auto-Set)</h4>
+                                <p className="text-gray-600 leading-relaxed">
+                                  Automatically determined by your selected publication's tier
+                                </p>
+                              </div>
+                              
+                              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border border-green-200 shadow-sm">
+                                <div className="text-center space-y-4">
+                                  <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                                    <DollarSign className="h-8 w-8 text-white" />
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <p className="text-sm font-medium text-green-700 uppercase tracking-wide">Minimum Bid Amount</p>
+                                    <div className="text-4xl font-bold text-green-800">
+                                      ${form.watch("minimumBid") || 225}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Status indicators */}
+                                  <div className="space-y-3 pt-4 border-t border-green-200">
+                                    {!watchedPublicationId ? (
+                                      <div className="flex items-center justify-center text-amber-600">
+                                        <Clock className="h-4 w-4 mr-2" />
+                                        <span className="text-sm font-medium">Select a publication above</span>
+                                      </div>
+                                    ) : (
+                                      watchedPublicationId && publications && (() => {
+                                        const selectedPub = publications.find(pub => pub.id === watchedPublicationId);
+                                        return selectedPub?.tier && (
+                                          <div className="flex items-center justify-center text-green-600">
+                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                            <span className="text-sm font-medium">
+                                              {selectedPub.name} • {selectedPub.tier}
+                                            </span>
+                                          </div>
+                                        );
+                                      })()
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Hidden field to ensure minimumBid is submitted */}
+                                <input type="hidden" {...form.register("minimumBid")} />
+                              </div>
+                            </div>
+
+                            {/* Response Deadline */}
+                            <div className="space-y-6">
+                              <div className="text-center lg:text-left">
+                                <h4 className="text-xl font-semibold text-gray-900 mb-2">Response Deadline</h4>
+                                <p className="text-gray-600 leading-relaxed">
+                                  Choose when you need expert responses by
+                                </p>
+                              </div>
+                              
+                              <FormField
+                                control={form.control}
+                                name="deadline"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormControl>
+                                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-200 shadow-sm">
+                                        <div className="text-center space-y-6">
+                                          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                                            <CalendarIcon className="h-8 w-8 text-white" />
+                                          </div>
+                                          
+                                          <div className="space-y-4">
+                                            <p className="text-sm font-medium text-blue-700 uppercase tracking-wide">Deadline Date</p>
+                                            
+                                            <div className="space-y-3">
+                                              <input
+                                                type="date"
+                                                value={field.value || ''}
+                                                onChange={(e) => field.onChange(e.target.value)}
+                                                min={new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0]}
+                                                className="w-full h-14 px-4 text-lg font-medium text-center bg-white border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                                              />
+                                              {field.value && (
+                                                <div className="bg-white rounded-lg p-3 text-center">
+                                                  <p className="text-xs text-blue-600 font-medium">
+                                                    {format(new Date(field.value), "EEEE, MMMM do, yyyy")}
+                                                  </p>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
                           </div>
                         </div>
                       </>
@@ -1569,6 +1261,590 @@ export default function OpportunitiesManager() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Create Opportunity Dialog - Clean, Scrollable Design */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
+          {/* Header */}
+          <div className="sticky top-0 bg-white border-b border-gray-200 p-8 z-10">
+            <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center">
+              <Plus className="h-6 w-6 mr-3 text-blue-600" />
+              Create New PR Opportunity
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 mt-2 text-base">
+              Fill out the form below to create a new opportunity for experts to bid on.
+            </DialogDescription>
+          </div>
+          
+          {/* Scrollable Content */}
+          <div className="p-8">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                
+                {/* Publication */}
+                <div className="space-y-8">
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Publication & Outlet Selection</h3>
+                    <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
+                      Choose the tier first to filter publications, then select your target outlet
+                    </p>
+                  </div>
+                  
+                  {/* Tier Selection Cards */}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        {
+                          tier: "Tier 1",
+                          title: "Premium Outlets",
+                          price: "$225",
+                          description: "Top-tier publications like Yahoo Finance, Forbes",
+                          color: "emerald",
+                          examples: ["Yahoo Finance", "Forbes", "TechCrunch"]
+                        },
+                        {
+                          tier: "Tier 2", 
+                          title: "Standard Outlets",
+                          price: "$175",
+                          description: "Established publications with strong readership",
+                          color: "blue",
+                          examples: ["Industry Today", "Business Weekly", "Tech News"]
+                        },
+                        {
+                          tier: "Tier 3",
+                          title: "Emerging Outlets", 
+                          price: "$125",
+                          description: "Growing publications with targeted audiences",
+                          color: "orange",
+                          examples: ["Startup Daily", "Niche News", "Local Business"]
+                        }
+                      ].map((tierOption) => (
+                        <div
+                          key={tierOption.tier}
+                          onClick={() => {
+                            setSelectedPublicationTier(tierOption.tier);
+                            form.setValue("publicationId", 0);
+                          }}
+                          className={`relative cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${
+                            selectedPublicationTier === tierOption.tier
+                              ? tierOption.tier === "Tier 1" 
+                                ? 'border-emerald-500 bg-emerald-50 shadow-lg ring-4 ring-emerald-100'
+                                : tierOption.tier === "Tier 2"
+                                ? 'border-blue-500 bg-blue-50 shadow-lg ring-4 ring-blue-100'
+                                : 'border-orange-500 bg-orange-50 shadow-lg ring-4 ring-orange-100'
+                              : 'border-gray-200 bg-white hover:border-gray-300'
+                          }`}
+                        >
+                          {/* Selection indicator */}
+                          {selectedPublicationTier === tierOption.tier && (
+                            <div className={`absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
+                              tierOption.tier === "Tier 1" ? 'bg-emerald-500' :
+                              tierOption.tier === "Tier 2" ? 'bg-blue-500' : 'bg-orange-500'
+                            }`}>
+                              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                          
+                          {/* Tier badge */}
+                          <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mb-4 ${
+                            tierOption.tier === "Tier 1" ? "bg-emerald-100 text-emerald-800" :
+                            tierOption.tier === "Tier 2" ? "bg-blue-100 text-blue-800" :
+                            "bg-orange-100 text-orange-800"
+                          }`}>
+                            {tierOption.tier}
+                          </div>
+                          
+                          {/* Content */}
+                          <div className="space-y-4">
+                            <div>
+                              <h5 className="text-lg font-semibold text-gray-900 mb-2">{tierOption.title}</h5>
+                              <p className="text-gray-600 text-sm leading-relaxed">{tierOption.description}</p>
+                            </div>
+                            
+                            {/* Price */}
+                            <div className="flex items-center justify-between">
+                              <span className="text-2xl font-bold text-gray-900">{tierOption.price}</span>
+                              <span className="text-sm text-gray-500">min bid</span>
+                            </div>
+                            
+                            {/* Examples */}
+                            <div className="pt-3 border-t border-gray-100">
+                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Examples</p>
+                              <div className="flex flex-wrap gap-1">
+                                {tierOption.examples.map((example) => (
+                                  <span key={example} className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-md">
+                                    {example}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Publication Selection */}
+                  {selectedPublicationTier && (
+                    <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+                      <div className="text-center mb-8">
+                        <h4 className="text-xl font-semibold text-gray-900 mb-2">
+                          Step 2: Choose Your {selectedPublicationTier} Publication
+                        </h4>
+                        <p className="text-gray-600">
+                          Select from available {selectedPublicationTier} publications or add a new one
+                        </p>
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="publicationId"
+                        render={({ field }) => (
+                          <FormItem className="space-y-4">
+                            <Select
+                              value={field.value && field.value !== 0 ? String(field.value) : ""}
+                              onValueChange={(value) => {
+                                if (value === "new") {
+                                  window.open('/admin/publications?create=true', '_blank');
+                                } else if (value) {
+                                  field.onChange(Number(value));
+                                }
+                              }}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="h-16 text-base bg-white border-2 border-gray-300 hover:border-blue-400 focus:border-blue-500 transition-colors shadow-sm rounded-xl">
+                                  <SelectValue placeholder={`Choose a ${selectedPublicationTier} publication...`} />
+                                  <style dangerouslySetInnerHTML={{
+                                    __html: `
+                                      .h-16 svg {
+                                        display: none !important;
+                                      }
+                                    `
+                                  }} />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="max-w-2xl bg-white border border-gray-200 shadow-lg">
+                                {/* Create New Publication Option */}
+                                <SelectItem value="new" className="p-4 hover:bg-gray-50">
+                                  Create New Publication (Opens in new tab)
+                                </SelectItem>
+                                
+                                {/* Existing Publications */}
+                                {filteredPublications.length > 0 && (
+                                  <>
+                                    <div className="border-t border-gray-200 my-3"></div>
+                                    <div className="px-4 py-3 bg-gray-50 rounded-lg mx-2 mb-3">
+                                      <p className="text-sm font-semibold text-gray-700 flex items-center">
+                                        <Building2 className="h-4 w-4 mr-2" />
+                                        {selectedPublicationTier} Publications ({filteredPublications.length})
+                                      </p>
+                                    </div>
+                                    {filteredPublications.map((pub: any) => (
+                                      <SelectItem key={pub.id} value={pub.id.toString()} className="p-4 hover:bg-gray-50">
+                                        {pub.name}
+                                      </SelectItem>
+                                    ))}
+                                  </>
+                                )}
+                                
+                                {/* No Publications Available */}
+                                {filteredPublications.length === 0 && selectedPublicationTier && (
+                                  <div className="px-6 py-12 text-center bg-white">
+                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                      <Building2 className="h-8 w-8 text-gray-400" />
+                                    </div>
+                                    <h5 className="text-lg font-medium text-gray-600 mb-2">
+                                      No {selectedPublicationTier} publications available
+                                    </h5>
+                                    <p className="text-gray-500 mb-4">
+                                      Click "Create New Publication" to add your first {selectedPublicationTier} outlet
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() => window.open('/admin/publications?create=true', '_blank')}
+                                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                      <Plus className="h-4 w-4 mr-2" />
+                                      Add First {selectedPublicationTier} Publication
+                                    </button>
+                                  </div>
+                                )}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
+
+                  {/* Instruction when no tier selected */}
+                  {!selectedPublicationTier && (
+                    <div className="text-center py-16">
+                      <div className="w-20 h-20 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Building2 className="h-10 w-10 text-blue-600" />
+                      </div>
+                      <h4 className="text-xl font-semibold text-gray-800 mb-3">Select a Publication Tier Above</h4>
+                      <p className="text-gray-600 leading-relaxed max-w-md mx-auto">
+                        Choose Tier 1, 2, or 3 to see available publications for that tier level. This helps organize your growing library of outlets.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Basic Details */}
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-3">Opportunity Details</h3>
+                  
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">Opportunity Title *</FormLabel>
+                        <FormDescription className="text-sm text-gray-600">
+                          Create a clear, compelling title that describes what you're looking for
+                        </FormDescription>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            placeholder="e.g., Expert Commentary on AI Market Trends for TechCrunch Article"
+                            className="text-base h-12"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">Detailed Description *</FormLabel>
+                        <FormDescription className="text-sm text-gray-600">
+                          Provide comprehensive details about the story, angle, and what type of expertise you're seeking
+                        </FormDescription>
+                        <FormControl>
+                          <Textarea 
+                            {...field} 
+                            placeholder="Describe the story context, specific angles you're exploring, the type of expert commentary needed, and any relevant background information..."
+                            rows={5}
+                            className="resize-none text-base"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="requestType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base font-medium">Request Type *</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="h-12">
+                                <SelectValue placeholder="Select request type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {REQUEST_TYPES.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  <div className="py-1">
+                                    <p className="font-medium">{type.label}</p>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="mediaType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base font-medium">Media Type *</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="h-12">
+                                <SelectValue placeholder="Select media type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {MEDIA_TYPES.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  <div className="py-1">
+                                    <p className="font-medium">{type.label}</p>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Targeting */}
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-3">Expert Targeting</h3>
+                  
+                  <div className="grid grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="industry"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base font-medium">Primary Industry *</FormLabel>
+                          <FormDescription className="text-sm text-gray-600">
+                            Main industry focus for this opportunity
+                          </FormDescription>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="h-12">
+                                <SelectValue placeholder="Select primary industry" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {INDUSTRY_OPTIONS.map((industry) => (
+                                <SelectItem key={industry.value} value={industry.value}>
+                                  <div className="py-1">
+                                    <p className="font-medium">{industry.label}</p>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="tags"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base font-medium">Industry Tags *</FormLabel>
+                          <FormDescription className="text-sm text-gray-600">
+                            Add relevant industry tags to help experts find this opportunity
+                          </FormDescription>
+                          <div className="space-y-4">
+                            {/* Add Tags */}
+                            <div>
+                              <Select onValueChange={(value) => onTagSelect(value)}>
+                                <SelectTrigger className="h-auto min-h-12 p-3">
+                                  {field.value?.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2 w-full">
+                                      {field.value.map((tag: string) => (
+                                        <span 
+                                          key={tag} 
+                                          className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-md text-sm font-medium"
+                                        >
+                                          {tag}
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              removeTag(tag);
+                                            }}
+                                            className="ml-2 hover:bg-blue-200 rounded-full p-1 transition-colors"
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </button>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <SelectValue placeholder="Add industry tags..." />
+                                  )}
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {INDUSTRY_OPTIONS
+                                    .filter((industry) => !field.value?.includes(industry.value))
+                                    .map((industry) => (
+                                      <SelectItem key={industry.value} value={industry.value}>
+                                        <div className="py-1">
+                                          <p className="font-medium">{industry.label}</p>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Dynamic Pricing & Timeline */}
+                <div className="space-y-8">
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Dynamic Pricing & Timeline</h3>
+                    <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
+                      Automatic pricing based on publication tier and deadline selection
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Automatic Minimum Bid Display */}
+                    <div className="space-y-6 flex flex-col">
+                      <div className="text-center lg:text-left">
+                        <h4 className="text-xl font-semibold text-gray-900 mb-2">Minimum Bid (Auto-Set)</h4>
+                        <p className="text-gray-600 leading-relaxed">
+                          Automatically determined by your selected publication's tier
+                        </p>
+                      </div>
+                      
+                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border border-green-200 shadow-sm flex-1">
+                        <div className="text-center space-y-4 h-full flex flex-col justify-center">
+                          <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                            <DollarSign className="h-8 w-8 text-white" />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-green-700 uppercase tracking-wide">Minimum Bid Amount</p>
+                            <div className="text-4xl font-bold text-green-800">
+                              ${form.watch("minimumBid") || 225}
+                            </div>
+                          </div>
+                          
+                          {/* Status indicators */}
+                          <div className="space-y-3 pt-4 border-t border-green-200">
+                            {!watchedPublicationId ? (
+                              <div className="flex items-center justify-center text-amber-600">
+                                <Clock className="h-4 w-4 mr-2" />
+                                <span className="text-sm font-medium">Select a publication above</span>
+                              </div>
+                            ) : (
+                              watchedPublicationId && publications && (() => {
+                                const selectedPub = publications.find(pub => pub.id === watchedPublicationId);
+                                return selectedPub?.tier && (
+                                  <div className="flex items-center justify-center text-green-600">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                    <span className="text-sm font-medium">
+                                      {selectedPub.name} • {selectedPub.tier}
+                                    </span>
+                                  </div>
+                                );
+                              })()
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Hidden field to ensure minimumBid is submitted */}
+                        <input type="hidden" {...form.register("minimumBid")} />
+                      </div>
+                    </div>
+
+                    {/* Response Deadline */}
+                    <div className="space-y-6 flex flex-col">
+                      <div className="text-center lg:text-left">
+                        <h4 className="text-xl font-semibold text-gray-900 mb-2">Response Deadline</h4>
+                        <p className="text-gray-600 leading-relaxed">
+                          Choose when you need expert responses by
+                        </p>
+                      </div>
+                      
+                      <FormField
+                        control={form.control}
+                        name="deadline"
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormControl>
+                              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-200 shadow-sm h-full">
+                                <div className="text-center space-y-6 h-full flex flex-col justify-center">
+                                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                                    <CalendarIcon className="h-8 w-8 text-white" />
+                                  </div>
+                                  
+                                  <div className="space-y-4">
+                                    <p className="text-sm font-medium text-blue-700 uppercase tracking-wide">Deadline Date</p>
+                                    
+                                    <div className="space-y-3">
+                                      <input
+                                        type="date"
+                                        value={field.value || ''}
+                                        onChange={(e) => field.onChange(e.target.value)}
+                                        min={new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0]}
+                                        className="w-full h-14 px-4 text-lg font-medium text-center bg-white border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                                      />
+                                      {field.value && (
+                                        <div className="bg-white rounded-lg p-3 text-center">
+                                          <p className="text-xs text-blue-600 font-medium">
+                                            {format(new Date(field.value), "EEEE, MMMM do, yyyy")}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </Form>
+          </div>
+
+          {/* Footer */}
+          <div className="sticky bottom-0 bg-white border-t border-gray-200 p-8 z-10">
+            <div className="flex gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsCreateDialogOpen(false);
+                  form.reset();
+                }}
+                className="flex-1 h-12"
+                disabled={createOpportunityMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                onClick={form.handleSubmit(onSubmit)}
+                className="flex-1 h-12"
+                disabled={createOpportunityMutation.isPending}
+              >
+                {createOpportunityMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Opportunity
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

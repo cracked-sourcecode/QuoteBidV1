@@ -206,9 +206,9 @@ export default function PitchDetailsModalRedesigned({ isOpen, onClose, pitchId }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 flex flex-col [&>button]:hidden">
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 flex flex-col [&>button]:hidden border-0 shadow-none bg-transparent overflow-hidden">
         {isLoading ? (
-          <div className="flex items-center justify-center h-96">
+          <div className="flex items-center justify-center h-96 bg-white">
             <div className="text-center">
               <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-6" />
               <p className="text-lg text-gray-600 font-medium">Loading pitch details...</p>
@@ -261,11 +261,11 @@ export default function PitchDetailsModalRedesigned({ isOpen, onClose, pitchId }
             </DialogHeader>
 
             {/* Single Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto p-8 space-y-6">
+            <div className="flex-1 overflow-y-auto space-y-6 bg-gray-50">
               
               {/* Expert Profile Card - MOVED TO TOP */}
               {pitch.user && (
-                <Card className="bg-white border border-gray-200 shadow-xl overflow-hidden">
+                <Card className="bg-white border border-gray-200 shadow-xl overflow-hidden mx-6 mt-6">
                   <div className="relative">
                     {/* Background Pattern */}
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"></div>
@@ -397,7 +397,7 @@ export default function PitchDetailsModalRedesigned({ isOpen, onClose, pitchId }
               )}
 
               {/* Opportunity Card */}
-              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 shadow-lg">
+              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 shadow-lg mx-6">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-3 text-xl font-bold text-blue-900">
@@ -446,7 +446,7 @@ export default function PitchDetailsModalRedesigned({ isOpen, onClose, pitchId }
               </Card>
 
               {/* Pitch Content Card */}
-              <Card className="bg-gradient-to-br from-slate-50 to-gray-50 border-gray-200 shadow-lg">
+              <Card className="bg-gradient-to-br from-slate-50 to-gray-50 border-gray-200 shadow-lg mx-6 mb-6">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
                     <div className="p-2 bg-gray-700 rounded-xl">

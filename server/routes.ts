@@ -1086,200 +1086,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stripeSubscriptionId: user.stripeSubscriptionId,
         premiumStatus: user.premiumStatus
       });
-
-      // If user has existing subscription, try to reactivate it
-      if (user.stripeSubscriptionId) {
-        console.log("🔄 User has existing subscription, checking with Stripe...");
-        try {
-          console.log("📞 Calling Stripe to retrieve subscription:", user.stripeSubscriptionId);
-          const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
-          console.log("📋 Stripe subscription status:", {
-            id: subscription.id,
-            status: subscription.status,
-            cancel_at_period_end: subscription.cancel_at_period_end,
-            current_period_end: subscription.current_period_end
-          });
-          
-          // If subscription is cancelled but not yet ended, reactivate it
-          if (subscription.cancel_at_period_end && subscription.status === 'active') {
-            console.log("✅ Subscription can be reactivated - removing cancel_at_period_end");
-            const reactivatedSubscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
-              cancel_at_period_end: false
-            });
-            console.log("🎉 Subscription reactivated successfully");
-            
-            // Update user status
-            await getDb().update(users)
-              .set({ 
-                premiumStatus: 'active'
-              })
-              .where(eq(users.id, userId));
-            console.log("💾 Database updated with active status");
-            
-            return res.json({
-              success: true,
-              message: "Subscription reactivated successfully",
-              subscription: {
-                id: reactivatedSubscription.id,
-                status: reactivatedSubscription.status,
-                current_period_end: new Date((reactivatedSubscription as any).current_period_end * 1000)
-              }
-            });
-          } else {
-            console.log("ℹ️ Subscription cannot be simply reactivated:", {
-              status: subscription.status,
-              cancel_at_period_end: subscription.cancel_at_period_end
-            });
-          }
-        } catch (stripeError: any) {
-          console.log("❌ Stripe error retrieving subscription:", stripeError.message);
-          console.log("🔄 Will try to create new subscription instead");
-        }
-      } else {
-        console.log("ℹ️ User has no existing subscription ID");
+      
+      if (!user.stripeSubscriptionId) {
+        console.log("❌ No subscription found for user");
+        return res.status(404).json({ error: 'No subscription found for this user' });
       }
-
-      // If user has a Stripe customer but no active subscription, create a new one
-      if (user.stripeCustomerId) {
-        console.log("💳 User has Stripe customer ID, creating new subscription...");
-        try {
-          console.log("📞 Retrieving Stripe customer:", user.stripeCustomerId);
-          // Get the customer's default payment method
-          const customer = await stripe.customers.retrieve(user.stripeCustomerId, {
-            expand: ['invoice_settings.default_payment_method']
-          });
-          console.log("👤 Customer retrieved:", {
-            id: customer.id,
-            email: (customer as any).email,
-            hasDefaultPaymentMethod: !!(customer as any).invoice_settings?.default_payment_method
-          });
-          
-          let paymentMethod = (customer as any).invoice_settings?.default_payment_method;
-          
-          // If no default payment method, check for any payment methods attached to customer
-          if (!paymentMethod) {
-            console.log("🔍 No default payment method, searching for any attached payment methods...");
-            const paymentMethods = await stripe.paymentMethods.list({
-              customer: user.stripeCustomerId,
-              type: 'card',
-            });
-            
-            console.log(`💳 Found ${paymentMethods.data.length} payment methods for customer`);
-            
-            if (paymentMethods.data.length > 0) {
-              paymentMethod = paymentMethods.data[0];
-              console.log("✅ Using first available payment method:", paymentMethod.id);
-              
-              // Optionally set it as the default for future use
-              try {
-                await stripe.customers.update(user.stripeCustomerId, {
-                  invoice_settings: {
-                    default_payment_method: paymentMethod.id
-                  }
-                });
-                console.log("📌 Set payment method as default for future use");
-              } catch (defaultError: any) {
-                console.log("⚠️ Could not set as default, but will proceed:", defaultError.message);
-              }
-            }
-          } else {
-            console.log("✅ Using default payment method:", paymentMethod.id);
-          }
-          
-          if (!paymentMethod) {
-            console.log("❌ No payment method found on customer");
-            return res.status(400).json({ 
-              error: 'No payment method on file. Please update your payment information.' 
-            });
-          }
-
-          console.log("💳 Payment method found:", paymentMethod.id);
-
-          // Get the price ID (same as in other subscription endpoints)
-          let priceId = process.env.STRIPE_PRICE_ID;
-          console.log("💰 Price ID from env:", priceId);
-          
-          if (!priceId) {
-            console.log("🔍 No price ID in env, searching for product prices...");
-            const prices = await stripe.prices.list({
-              product: 'prod_SGqepEtdqqQYcW',
-              active: true,
-              limit: 1,
-            });
-            
-            if (prices.data.length === 0) {
-              console.log("❌ No active prices found for product");
-              throw new Error('No active prices found for product');
-            }
-            
-            priceId = prices.data[0].id;
-            console.log("💰 Found price ID:", priceId);
-          }
-
-          console.log("🆕 Creating new subscription with:", {
-            customer: user.stripeCustomerId,
-            priceId: priceId,
-            paymentMethodId: paymentMethod.id
-          });
-
-          // Create new subscription with existing payment method
-          const newSubscription = await stripe.subscriptions.create({
-            customer: user.stripeCustomerId,
-            items: [{ price: priceId }],
-            default_payment_method: paymentMethod.id
-          });
-
-          console.log("🎉 New subscription created:", {
-            id: newSubscription.id,
-            status: newSubscription.status,
-            current_period_end: (newSubscription as any).current_period_end
-          });
-
-          // Update user record
-          await getDb().update(users)
-            .set({
-              stripeSubscriptionId: newSubscription.id,
-              premiumStatus: 'active',
-              premiumExpiry: new Date((newSubscription as any).current_period_end * 1000)
-            })
-            .where(eq(users.id, userId));
-
-          console.log("💾 Database updated with new subscription");
-
-          return res.json({
-            success: true,
-            message: "New subscription created successfully",
-            subscription: {
-              id: newSubscription.id,
-              status: newSubscription.status,
-              current_period_end: new Date((newSubscription as any).current_period_end * 1000)
-            }
-          });
-
-        } catch (error: any) {
-          console.error("❌ Error creating new subscription:", error);
-          console.error("📋 Error details:", {
-            message: error.message,
-            type: error.type,
-            code: error.code
-          });
-          return res.status(400).json({ 
-            error: 'Failed to reactivate subscription. Please try using a new payment method.',
-            details: error.message
-          });
-        }
-      }
-
-      // If no Stripe customer exists, they need to go through the full signup flow
-      console.log("❌ No Stripe customer ID found");
-      return res.status(400).json({ 
-        error: 'No payment information on file. Please set up a new payment method.' 
+      
+      console.log("🔄 Reactivating subscription with Stripe...");
+      const subscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        cancel_at_period_end: false
       });
-
+      
+      console.log("✅ Stripe subscription updated successfully");
+      
+      // Update user status in database
+      console.log("💾 Updating user status in database...");
+      await getDb().update(users)
+        .set({ 
+          premiumStatus: 'premium',
+          subscription_status: 'active'
+        })
+        .where(eq(users.id, userId));
+      
+      console.log("✅ Database updated successfully");
+      
+      res.json({ 
+        success: true, 
+        message: "Subscription reactivated successfully",
+        status: 'active'
+      });
     } catch (error: any) {
-      console.error("💥 CRITICAL ERROR in reactivation endpoint:", error);
-      console.error("📋 Error stack:", error.stack);
+      console.error("❌ Error reactivating subscription:", error);
       res.status(500).json({ error: "Error reactivating subscription: " + error.message });
+    }
+  });
+
+  // Change user password
+  app.patch("/api/users/:userId/password", jwtAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId) || userId !== req.user.id) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: 'Current password and new password are required' });
+      }
+      
+      // Validate new password requirements (same as signup)
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: 'New password must be at least 8 characters long' });
+      }
+      
+      // Get user from database
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      // Verify current password
+      const { comparePasswords } = await import('./utils/passwordUtils');
+      const isCurrentPasswordValid = await comparePasswords(currentPassword, user.password);
+      
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+      
+      // Hash new password
+      const { hashPassword } = await import('./utils/passwordUtils');
+      const hashedNewPassword = await hashPassword(newPassword);
+      
+      // Update password in database
+      await getDb().update(users)
+        .set({ password: hashedNewPassword })
+        .where(eq(users.id, userId));
+      
+      res.json({ 
+        success: true, 
+        message: 'Password updated successfully' 
+      });
+    } catch (error: any) {
+      console.error("Error changing password:", error);
+      res.status(500).json({ error: "Error changing password: " + error.message });
     }
   });
 
