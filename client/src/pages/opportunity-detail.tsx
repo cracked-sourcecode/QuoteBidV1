@@ -9,9 +9,12 @@ import { useToast } from '@/hooks/use-toast';
 import { apiFetch } from '@/lib/apiFetch';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, ReferenceDot, Tooltip } from 'recharts';
 import LogoUniform from '@/components/ui/logo-uniform';
+import { queryClient } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function OpportunityDetail() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [, params] = useRoute('/opportunities/:id');
   const opportunityId = params ? parseInt(params.id) : 0;
   const [isBriefMinimized, setIsBriefMinimized] = useState(false);
@@ -39,7 +42,57 @@ export default function OpportunityDetail() {
   const [recorderError, setRecorderError] = useState<string | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
   
+  // User pitch status state - prevent duplicate pitches
+  const [userPitchStatus, setUserPitchStatus] = useState<{
+    hasSubmitted: boolean;
+    isPending: boolean;
+    pitch: any;
+    message: string;
+    hasDraft?: boolean;
+  } | null>(null);
+  const [isCheckingPitchStatus, setIsCheckingPitchStatus] = useState(false);
+  
   const recordingInterval = useRef<NodeJS.Timeout | null>(null);
+  
+  // Check if user has already pitched for this opportunity
+  const checkUserPitchStatus = async (opportunityId: number) => {
+    try {
+      setIsCheckingPitchStatus(true);
+      
+      const response = await apiFetch(`/api/opportunities/${opportunityId}/user-pitch-status`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const pitchStatus = await response.json();
+        setUserPitchStatus(pitchStatus);
+        
+        // If user has a draft, load it into the pitch content
+        if (pitchStatus.hasDraft && pitchStatus.draftPitch?.content) {
+          setPitchContent(pitchStatus.draftPitch.content);
+        }
+      } else {
+        // If it fails (like user not authenticated), just set default state
+        setUserPitchStatus({
+          hasSubmitted: false,
+          isPending: false,
+          pitch: null,
+          message: "No pitch submitted yet."
+        });
+      }
+    } catch (error) {
+      console.log('Error checking user pitch status:', error);
+      // Default to allowing pitch submission if check fails
+      setUserPitchStatus({
+        hasSubmitted: false,
+        isPending: false,
+        pitch: null,
+        message: "No pitch submitted yet."
+      });
+    } finally {
+      setIsCheckingPitchStatus(false);
+    }
+  };
   
   // Fetch opportunity data
   useEffect(() => {
@@ -145,6 +198,9 @@ export default function OpportunityDetail() {
             setRelatedOpportunities([]);
           }
         }
+
+        // Check if user has already pitched for this opportunity
+        await checkUserPitchStatus(opportunityData.id);
         
       } catch (err) {
         console.error('Error fetching opportunity data:', err);
@@ -225,6 +281,16 @@ export default function OpportunityDetail() {
 
   const handleSecurePitch = async () => {
     try {
+      // Check if user has already submitted a pitch
+      if (userPitchStatus?.hasSubmitted) {
+        toast({
+          title: "Pitch Already Submitted",
+          description: userPitchStatus.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Validation
       if (!pitchContent.trim()) {
         toast({
@@ -271,6 +337,14 @@ export default function OpportunityDetail() {
       const result = await response.json();
       console.log('Pitch submitted successfully:', result);
 
+      // Update user pitch status to reflect submission
+      setUserPitchStatus({
+        hasSubmitted: true,
+        isPending: true,
+        pitch: result,
+        message: "Your pitch has been submitted and is being reviewed."
+      });
+
       // Show success message
       toast({
         title: "Pitch Submitted Successfully! 🎉",
@@ -280,8 +354,18 @@ export default function OpportunityDetail() {
       // Clear the pitch content
       setPitchContent('');
 
-      // Optionally redirect to my pitches page
-      // window.location.href = '/my-pitches';
+      // Invalidate cache for My Pitches page to show the new pitch
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/users/${user.id}/pitches`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/users/${user.id}/drafts`] });
+        // Also invalidate the pitch status check for this opportunity
+        queryClient.invalidateQueries({ queryKey: [`/api/opportunities/${opportunity.id}/user-pitch-status`] });
+      }
+
+      // Re-check pitch status to update UI immediately
+      setTimeout(() => {
+        checkUserPitchStatus(opportunity.id);
+      }, 500);
 
     } catch (error) {
       console.error('Error submitting pitch:', error);
@@ -812,72 +896,146 @@ export default function OpportunityDetail() {
 
                     {/* Pitch Input */}
                     <div className="mb-6">
-                      <div className="flex items-center justify-between mb-3">
-                        <label className="text-gray-700 font-semibold text-lg">Craft your pitch</label>
-                        <span className={`text-sm font-medium ${
-                          remainingChars < 100 ? 'text-red-500' : 'text-gray-500'
-                        }`}>
-                          {remainingChars} characters remaining
+                      {isCheckingPitchStatus ? (
+                        /* Loading Pitch Status */
+                        <div className="bg-gray-50 rounded-2xl border border-gray-200/50 p-8">
+                          <div className="text-center">
+                            <div className="flex justify-center mb-4">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            </div>
+                            <p className="text-gray-600 font-medium">Checking your pitch status...</p>
+                          </div>
+                        </div>
+                      ) : userPitchStatus?.hasSubmitted ? (
+                        /* Already Submitted State */
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200/50 overflow-hidden">
+                          <div className="p-8 text-center">
+                            {/* Success Icon */}
+                            <div className="flex justify-center mb-6">
+                              <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center shadow-lg">
+                                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"></path>
+                                </svg>
+                              </div>
+                            </div>
+                            
+                            {/* Title */}
+                            <h3 className="text-2xl font-bold text-green-800 mb-4">
+                              Pitch Already Submitted!
+                            </h3>
+                            
+                            {/* Message */}
+                            <p className="text-green-700 text-lg mb-6 leading-relaxed">
+                              You've already submitted a pitch for this opportunity. Each user can only submit one pitch per opportunity.
+                            </p>
+                            
+                            {/* Bid Amount Display */}
+                            {userPitchStatus.pitch?.bidAmount && (
+                              <div className="bg-white/60 rounded-xl p-4 mb-6 border border-green-200/50">
+                                <div className="text-sm font-medium text-green-600 mb-1">Your bid amount:</div>
+                                <div className="text-3xl font-bold text-green-800">
+                                  ${userPitchStatus.pitch.bidAmount}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Action Buttons */}
+                            <div className="space-y-3">
+                              <Link href="/opportunities">
+                                <Button className="w-full bg-white hover:bg-gray-50 text-green-700 border border-green-200 font-semibold py-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+                                  <div className="flex items-center justify-center space-x-2">
+                                    <ChevronLeft className="h-5 w-5 rotate-180" />
+                                    <span>Browse Other Opportunities</span>
+                                  </div>
+                                </Button>
+                              </Link>
+                              
+                              <Link href="/my-pitches">
+                                <Button variant="outline" className="w-full bg-white/80 hover:bg-white text-green-700 border border-green-200 font-semibold py-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+                                  <div className="flex items-center justify-center space-x-2">
+                                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                    <span>View My Pitches</span>
+                                  </div>
+                                </Button>
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Normal Pitch Input State */
+                        <>
+                          <div className="flex items-center justify-between mb-3">
+                            <label className="text-gray-700 font-semibold text-lg">Craft your pitch</label>
+                            <span className={`text-sm font-medium ${
+                              remainingChars < 100 ? 'text-red-500' : 'text-gray-500'
+                            }`}>
+                              {remainingChars} characters remaining
+                            </span>
+                          </div>
+                          
+                          <div className="relative">
+                            <Textarea
+                              value={pitchContent}
+                              onChange={(e) => setPitchContent(e.target.value)}
+                              placeholder="Share your expertise, credentials, and unique perspective that would make you perfect for this story. Explain why you're the ideal expert for this opportunity..."
+                              className="min-h-[240px] w-full p-4 border border-gray-200 rounded-xl bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-50 transition-all duration-200 resize-none text-gray-800 text-base font-medium placeholder:text-gray-400 placeholder:font-normal shadow-sm hover:border-gray-300"
+                              maxLength={maxPitchLength}
+                              style={{
+                                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                                lineHeight: '1.5',
+                                letterSpacing: '0.01em'
+                              }}
+                            />
+                            
+                            {/* Word count indicator */}
+                            <div className="absolute bottom-3 right-3 text-xs text-gray-400 bg-white/80 backdrop-blur-sm px-2 py-1 rounded">
+                              {pitchContent.trim().split(/\s+/).filter(word => word.length > 0).length} words
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Record Pitch Button - Only show if not submitted and not loading */}
+                    {!isCheckingPitchStatus && !userPitchStatus?.hasSubmitted && (
+                      <div className="flex items-center justify-between mb-6">
+                        <Button
+                          variant="outline"
+                          className={`flex items-center space-x-2 border-red-200 hover:bg-red-50 ${
+                            isRecording ? 'bg-red-50 text-red-700 border-red-300' : 
+                            isTranscribing ? 'bg-blue-50 text-blue-700 border-blue-300' :
+                            'text-red-500'
+                          }`}
+                          onClick={isRecording ? stopRecording : startRecording}
+                          disabled={isTranscribing}
+                        >
+                          {isRecording ? (
+                            <>
+                              <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
+                              <span className="font-medium">Recording {formatTime(recordingTime)}</span>
+                            </>
+                          ) : isTranscribing ? (
+                            <>
+                              <div className="w-3 h-3 bg-blue-600 rounded-full animate-pulse"></div>
+                              <span className="font-medium">Transcribing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                              <span className="font-medium">Record Pitch</span>
+                            </>
+                          )}
+                        </Button>
+                        <span className="text-blue-600 text-sm font-medium">
+                          Powered by QuoteBid AI
                         </span>
                       </div>
-                      
-                      <div className="relative">
-                        <Textarea
-                          value={pitchContent}
-                          onChange={(e) => setPitchContent(e.target.value)}
-                          placeholder="Share your expertise, credentials, and unique perspective that would make you perfect for this story. Explain why you're the ideal expert for this opportunity..."
-                          className="min-h-[240px] w-full p-4 border border-gray-200 rounded-xl bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-50 transition-all duration-200 resize-none text-gray-800 text-base font-medium placeholder:text-gray-400 placeholder:font-normal shadow-sm hover:border-gray-300"
-                          maxLength={maxPitchLength}
-                          style={{
-                            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                            lineHeight: '1.5',
-                            letterSpacing: '0.01em'
-                          }}
-                        />
-                        
-                        {/* Word count indicator */}
-                        <div className="absolute bottom-3 right-3 text-xs text-gray-400 bg-white/80 backdrop-blur-sm px-2 py-1 rounded">
-                          {pitchContent.trim().split(/\s+/).filter(word => word.length > 0).length} words
-                        </div>
-                      </div>
-                    </div>
+                    )}
 
-                    {/* Record Pitch Button */}
-                    <div className="flex items-center justify-between mb-6">
-                      <Button
-                        variant="outline"
-                        className={`flex items-center space-x-2 border-red-200 hover:bg-red-50 ${
-                          isRecording ? 'bg-red-50 text-red-700 border-red-300' : 
-                          isTranscribing ? 'bg-blue-50 text-blue-700 border-blue-300' :
-                          'text-red-500'
-                        }`}
-                        onClick={isRecording ? stopRecording : startRecording}
-                        disabled={isTranscribing}
-                      >
-                        {isRecording ? (
-                          <>
-                            <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
-                            <span className="font-medium">Recording {formatTime(recordingTime)}</span>
-                          </>
-                        ) : isTranscribing ? (
-                          <>
-                            <div className="w-3 h-3 bg-blue-600 rounded-full animate-pulse"></div>
-                            <span className="font-medium">Transcribing...</span>
-                          </>
-                        ) : (
-                          <>
-                            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                            <span className="font-medium">Record Pitch</span>
-                          </>
-                        )}
-                      </Button>
-                      <span className="text-blue-600 text-sm font-medium">
-                        Powered by QuoteBid AI
-                      </span>
-                    </div>
-
-                    {/* Recording Error Display */}
-                    {recorderError && (
+                    {/* Recording Error Display - Only show if not submitted and not loading */}
+                    {!isCheckingPitchStatus && !userPitchStatus?.hasSubmitted && recorderError && (
                       <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
                         <p className="text-sm text-red-800">{recorderError}</p>
                         {audioURL && (
@@ -895,8 +1053,8 @@ export default function OpportunityDetail() {
                       </div>
                     )}
 
-                    {/* Audio Playback (only if transcription failed) */}
-                    {audioURL && recorderError && (
+                    {/* Audio Playback - Only show if not submitted and not loading */}
+                    {!isCheckingPitchStatus && !userPitchStatus?.hasSubmitted && audioURL && recorderError && (
                       <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
                         <div className="flex items-center space-x-2 mb-2">
                           <Mic className="h-4 w-4 text-yellow-600" />
@@ -926,21 +1084,25 @@ export default function OpportunityDetail() {
                       </div>
                     )}
 
-                    {/* Secure Pitch Button */}
-                    <Button
-                      onClick={handleSecurePitch}
-                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 mb-4"
-                    >
-                      <div className="flex items-center justify-center space-x-2">
-                        <Lock className="h-5 w-5" />
-                        <span>Secure Pitch at ${currentPrice}</span>
-                      </div>
-                    </Button>
+                    {/* Secure Pitch Button - Only show if not submitted and not loading */}
+                    {!isCheckingPitchStatus && !userPitchStatus?.hasSubmitted && (
+                      <>
+                        <Button
+                          onClick={handleSecurePitch}
+                          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 mb-4"
+                        >
+                          <div className="flex items-center justify-center space-x-2">
+                            <Lock className="h-5 w-5" />
+                            <span>Secure Pitch at ${currentPrice}</span>
+                          </div>
+                        </Button>
 
-                    {/* Disclaimer */}
-                    <p className="text-gray-500 text-sm text-center leading-relaxed">
-                      By pitching, you agree to pay the accepted market rate at the time of submission—only if you're included in the article.
-                    </p>
+                        {/* Disclaimer */}
+                        <p className="text-gray-500 text-sm text-center leading-relaxed">
+                          By pitching, you agree to pay the accepted market rate at the time of submission—only if you're included in the article.
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
