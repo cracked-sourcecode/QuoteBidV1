@@ -3,6 +3,8 @@ import { useState, useRef, useEffect } from "react";
 interface RecorderOptions {
   maxTimeInSeconds?: number;
   mimeType?: string;
+  audioBitsPerSecond?: number;
+  sampleRate?: number;
 }
 
 interface RecorderState {
@@ -12,90 +14,198 @@ interface RecorderState {
   recordingBlob: Blob | null;
   isProcessing: boolean;
   error: string | null;
+  audioLevel?: number;
 }
 
-export function useRecorder({ maxTimeInSeconds = 120, mimeType = 'audio/webm' }: RecorderOptions = {}) {
+export function useRecorder({ 
+  maxTimeInSeconds = 120, 
+  mimeType = 'audio/webm;codecs=opus',
+  audioBitsPerSecond = 128000,
+  sampleRate = 48000
+}: RecorderOptions = {}) {
   const [recorderState, setRecorderState] = useState<RecorderState>({
     audioURL: null,
     isRecording: false,
     recordingTime: 0,
     recordingBlob: null,
     isProcessing: false,
-    error: null
+    error: null,
+    audioLevel: 0
   });
 
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const mediaStream = useRef<MediaStream | null>(null);
   const audioChunks = useRef<Blob[]>([]);
   const timeInterval = useRef<number | null>(null);
+  const audioContext = useRef<AudioContext | null>(null);
+  const analyser = useRef<AnalyserNode | null>(null);
+  const dataArray = useRef<Uint8Array | null>(null);
+  const animationFrame = useRef<number | null>(null);
 
-  // Initialize media recorder
   const initializeRecorder = async () => {
     try {
       setRecorderState(prev => ({ ...prev, isProcessing: true, error: null }));
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: sampleRate,
+          channelCount: 1
+        } 
+      });
+      
       mediaStream.current = stream;
       
-      const recorder = new MediaRecorder(stream, { mimeType });
+      audioContext.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const source = audioContext.current.createMediaStreamSource(stream);
+      analyser.current = audioContext.current.createAnalyser();
+      analyser.current.fftSize = 256;
+      const bufferLength = analyser.current.frequencyBinCount;
+      dataArray.current = new Uint8Array(bufferLength);
+      source.connect(analyser.current);
+      
+      let selectedMimeType = mimeType;
+      const supportedTypes = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+        'audio/wav'
+      ];
+      
+      for (const type of supportedTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          selectedMimeType = type;
+          break;
+        }
+      }
+      
+      console.log('[Recorder] Using MIME type:', selectedMimeType);
+      
+      const recorder = new MediaRecorder(stream, { 
+        mimeType: selectedMimeType,
+        audioBitsPerSecond: audioBitsPerSecond
+      });
+      
       mediaRecorder.current = recorder;
       
       recorder.addEventListener("dataavailable", handleDataAvailable);
       recorder.addEventListener("stop", handleRecordingStop);
+      recorder.addEventListener("error", handleRecordingError);
       
       setRecorderState(prev => ({ 
         ...prev, 
         isProcessing: false,
         error: null
       }));
+      
+      console.log('[Recorder] Initialized successfully with enhanced settings');
     } catch (err) {
       console.error("Error initializing recorder:", err);
+      let errorMessage = "Microphone access error";
+      
+      if (err instanceof Error) {
+        if (err.name === 'NotAllowedError') {
+          errorMessage = "Microphone access denied. Please allow microphone permissions and try again.";
+        } else if (err.name === 'NotFoundError') {
+          errorMessage = "No microphone found. Please connect a microphone and try again.";
+        } else {
+          errorMessage = `Microphone error: ${err.message}`;
+        }
+      }
+      
       setRecorderState(prev => ({ 
         ...prev, 
         isProcessing: false, 
-        error: `Microphone access error: ${err instanceof Error ? err.message : String(err)}`
+        error: errorMessage
       }));
     }
   };
 
-  // Handle data chunks as they become available
   const handleDataAvailable = (event: BlobEvent) => {
     if (event.data.size > 0) {
       audioChunks.current.push(event.data);
+      console.log('[Recorder] Audio chunk received:', event.data.size, 'bytes');
     }
   };
 
-  // Process recorded audio when recording stops
+  const handleRecordingError = (event: Event) => {
+    console.error('[Recorder] Recording error:', event);
+    setRecorderState(prev => ({ 
+      ...prev, 
+      error: "Recording error occurred. Please try again.",
+      isRecording: false
+    }));
+  };
+
   const handleRecordingStop = () => {
-    const audioBlob = new Blob(audioChunks.current, { type: mimeType });
+    console.log('[Recorder] Recording stopped, processing audio...');
+    
+    const audioBlob = new Blob(audioChunks.current, { 
+      type: mediaRecorder.current?.mimeType || 'audio/webm' 
+    });
     const audioUrl = URL.createObjectURL(audioBlob);
+    
+    console.log('[Recorder] Audio blob created:', audioBlob.size, 'bytes');
     
     setRecorderState(prev => ({
       ...prev,
       audioURL: audioUrl,
       recordingBlob: audioBlob,
-      isRecording: false
+      isRecording: false,
+      audioLevel: 0
     }));
+    
+    if (animationFrame.current) {
+      cancelAnimationFrame(animationFrame.current);
+      animationFrame.current = null;
+    }
   };
 
-  // Timer to track recording duration
+  const monitorAudioLevel = () => {
+    if (!analyser.current || !dataArray.current) return;
+    
+    analyser.current.getByteFrequencyData(dataArray.current);
+    
+    let sum = 0;
+    for (let i = 0; i < dataArray.current.length; i++) {
+      sum += dataArray.current[i];
+    }
+    const average = sum / dataArray.current.length;
+    const audioLevel = Math.round((average / 255) * 100);
+    
+    setRecorderState(prev => ({ ...prev, audioLevel }));
+    
+    if (recorderState.isRecording) {
+      animationFrame.current = requestAnimationFrame(monitorAudioLevel);
+    }
+  };
+
   const startTimer = () => {
     clearInterval(timeInterval.current || undefined);
     setRecorderState(prev => ({ ...prev, recordingTime: 0 }));
     
     timeInterval.current = window.setInterval(() => {
       setRecorderState(prev => {
-        if (prev.recordingTime >= maxTimeInSeconds) {
+        const newTime = prev.recordingTime + 1;
+        
+        if (newTime >= maxTimeInSeconds) {
+          console.log('[Recorder] Max recording time reached, stopping...');
           stopRecording();
-          return prev;
+          return { ...prev, recordingTime: maxTimeInSeconds };
         }
-        return { ...prev, recordingTime: prev.recordingTime + 1 };
+        
+        return { ...prev, recordingTime: newTime };
       });
     }, 1000);
   };
 
-  // Start recording
   const startRecording = async () => {
     if (recorderState.isRecording) return;
+    
+    console.log('[Recorder] Starting recording...');
+    
     if (!mediaRecorder.current) {
       await initializeRecorder();
     }
@@ -108,11 +218,16 @@ export function useRecorder({ maxTimeInSeconds = 120, mimeType = 'audio/webm' }:
           isRecording: true, 
           audioURL: null,
           recordingBlob: null,
-          recordingTime: 0
+          recordingTime: 0,
+          error: null
         }));
         
-        mediaRecorder.current.start();
+        mediaRecorder.current.start(100);
         startTimer();
+        
+        monitorAudioLevel();
+        
+        console.log('[Recorder] Recording started successfully');
       } catch (err) {
         console.error("Error starting recording:", err);
         setRecorderState(prev => ({ 
@@ -123,53 +238,70 @@ export function useRecorder({ maxTimeInSeconds = 120, mimeType = 'audio/webm' }:
     }
   };
 
-  // Stop recording
   const stopRecording = () => {
+    console.log('[Recorder] Stopping recording...');
+    
     if (mediaRecorder.current && mediaRecorder.current.state === "recording") {
       mediaRecorder.current.stop();
       clearInterval(timeInterval.current || undefined);
+      
+      if (animationFrame.current) {
+        cancelAnimationFrame(animationFrame.current);
+        animationFrame.current = null;
+      }
     }
   };
 
-  // Cancel recording
   const cancelRecording = () => {
+    console.log('[Recorder] Cancelling recording...');
+    
     stopRecording();
+    
+    if (recorderState.audioURL) {
+      URL.revokeObjectURL(recorderState.audioURL);
+    }
+    
     setRecorderState({
       audioURL: null,
       isRecording: false,
       recordingTime: 0,
       recordingBlob: null,
       isProcessing: false,
-      error: null
+      error: null,
+      audioLevel: 0
     });
   };
 
-  // Clean up resources when component unmounts
   useEffect(() => {
     return () => {
-      // Stop the media recorder if it's recording
+      console.log('[Recorder] Cleaning up resources...');
+      
       if (mediaRecorder.current && mediaRecorder.current.state === "recording") {
         mediaRecorder.current.stop();
       }
       
-      // Stop all media stream tracks
       if (mediaStream.current) {
         mediaStream.current.getTracks().forEach(track => track.stop());
       }
       
-      // Clear the timer
+      if (audioContext.current) {
+        audioContext.current.close();
+      }
+      
       if (timeInterval.current) {
         clearInterval(timeInterval.current);
       }
       
-      // Revoke any object URLs to avoid memory leaks
+      if (animationFrame.current) {
+        cancelAnimationFrame(animationFrame.current);
+      }
+      
       if (recorderState.audioURL) {
         URL.revokeObjectURL(recorderState.audioURL);
       }
     };
   }, [recorderState.audioURL]);
 
-  // Return the recorder state and controls
   return {
     audioURL: recorderState.audioURL,
     isRecording: recorderState.isRecording,
@@ -177,6 +309,7 @@ export function useRecorder({ maxTimeInSeconds = 120, mimeType = 'audio/webm' }:
     recordingBlob: recorderState.recordingBlob,
     isProcessing: recorderState.isProcessing,
     error: recorderState.error,
+    audioLevel: recorderState.audioLevel || 0,
     startRecording,
     stopRecording,
     cancelRecording
