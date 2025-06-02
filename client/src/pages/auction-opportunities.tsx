@@ -309,7 +309,7 @@ export default function AuctionStyleOpportunities() {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <Card key={i} className="animate-pulse">
                   <CardContent className="p-6">
@@ -321,7 +321,7 @@ export default function AuctionStyleOpportunities() {
               ))}
             </div>
           ) : filteredOpportunities.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredOpportunities.map((opp) => (
                 <OpportunityCard
                   key={opp.id}

@@ -123,12 +123,27 @@ export default function OpportunitiesManager() {
   
   // Fetch all opportunities
   const { data: opportunities = [], isLoading: loadingOpportunities } = useQuery<any[]>({
-    queryKey: ['/api/opportunities'],
+    queryKey: ['/api/admin/opportunities'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/opportunities");
+      if (!res.ok) {
+        throw new Error('Failed to fetch opportunities');
+      }
+      const data = await res.json();
+      return data;
+    },
   });
   
   // Fetch all publications for the dropdown
   const { data: publications = [], isLoading: loadingPublications } = useQuery<any[]>({
-    queryKey: ['/api/publications'],
+    queryKey: ['/api/admin/publications'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/publications");
+      if (!res.ok) {
+        throw new Error('Failed to fetch publications');
+      }
+      return res.json();
+    },
   });
   
   // Form setup
@@ -164,7 +179,7 @@ export default function OpportunitiesManager() {
     },
     onSuccess: () => {
       // Immediately invalidate the publications query to fetch the latest data
-      queryClient.invalidateQueries({ queryKey: ["/api/publications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/publications"] });
       toast({
         title: "Publication created",
         description: "New publication added successfully and is now available in the dropdown."
@@ -223,8 +238,8 @@ export default function OpportunitiesManager() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/opportunities'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/publications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/opportunities'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/publications'] });
       toast({
         title: "Opportunity created",
         description: "The new PR opportunity has been successfully created.",
@@ -253,7 +268,7 @@ export default function OpportunitiesManager() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/opportunities'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/opportunities'] });
       toast({
         title: "Status updated",
         description: "The opportunity status has been updated successfully.",
@@ -293,9 +308,9 @@ export default function OpportunitiesManager() {
   const filteredOpportunities = opportunities?.filter(opp => {
     // Enhanced search - searches through multiple fields
     const matchesSearch = searchTerm === '' || 
-      opp.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      opp.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       opp.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      opp.publication?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      opp.publication?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       opp.industry?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       opp.tier?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       opp.requestType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -310,6 +325,12 @@ export default function OpportunitiesManager() {
     
     return matchesSearch && matchesStatus && matchesTier && matchesPublication && matchesIndustry && matchesRequestType;
   }) || [];
+  
+  // DEBUG: Log the data to see what's wrong
+  console.log('OPPORTUNITIES DATA:', opportunities);
+  console.log('PUBLICATIONS DATA:', publications);
+  console.log('SELECTED PUBLICATION:', selectedPublication);
+  console.log('PUBLICATION NAMES FROM OPPS:', opportunities?.map(opp => opp.publication?.name));
 
   // Calculate stats
   const stats = {
@@ -405,9 +426,16 @@ export default function OpportunitiesManager() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Publications</SelectItem>
-                    {Array.from(new Set(opportunities?.map(opp => opp.publication?.name).filter(Boolean))).map((pubName: any) => (
-                      <SelectItem key={pubName} value={pubName}>{pubName}</SelectItem>
+                    {/* Use actual publications data instead of extracting from opportunities */}
+                    {publications?.map((pub: any) => (
+                      <SelectItem key={pub.id} value={pub.name}>{pub.name}</SelectItem>
                     ))}
+                    {/* Fallback: If no publications data, extract from opportunities */}
+                    {!publications?.length && opportunities?.length && 
+                      Array.from(new Set(opportunities.map(opp => opp.publication?.name).filter(Boolean))).map((pubName: any) => (
+                        <SelectItem key={pubName} value={pubName}>{pubName}</SelectItem>
+                      ))
+                    }
                   </SelectContent>
                 </Select>
               </div>

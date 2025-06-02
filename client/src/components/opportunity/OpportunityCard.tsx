@@ -93,14 +93,14 @@ export default function OpportunityCard({
   
   return (
     <Card className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg ${pulseIndicators.bgColor} ${pulseIndicators.borderColor} border-2 ${pulseIndicators.pulse}`}>
-      <CardContent className="p-6">
+      <CardContent className="p-4">
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex items-start justify-between mb-3">
           <div className="flex items-center space-x-2">
             <img 
               src={opportunity.outletLogo} 
               alt={opportunity.outlet}
-              className="h-8 w-8 rounded object-contain"
+              className="h-6 w-6 rounded object-contain"
               onError={(e) => {
                 e.currentTarget.src = '/placeholder-logo.png';
               }}
@@ -124,17 +124,17 @@ export default function OpportunityCard({
         </div>
         
         {/* Title */}
-        <h2 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 leading-tight">
+        <h2 className="text-base font-bold text-gray-900 mb-2 line-clamp-2 leading-tight">
           {opportunity.title}
         </h2>
         
         {/* Summary */}
-        <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
+        <p className="text-gray-600 text-sm mb-3 line-clamp-2 leading-relaxed">
           {opportunity.summary}
         </p>
         
         {/* Topic Tags */}
-        <div className="flex flex-wrap gap-1 mb-4">
+        <div className="flex flex-wrap gap-1 mb-3">
           {opportunity.topicTags.slice(0, 3).map((tag, index) => (
             <Badge key={index} variant="secondary" className="text-xs px-2 py-0.5">
               {tag}
@@ -148,39 +148,39 @@ export default function OpportunityCard({
         </div>
         
         {/* Price Section */}
-        <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">Current Price</span>
+        <div className="bg-white rounded-lg p-3 mb-3 border border-gray-200">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-medium text-gray-600">Current Price</span>
             <div className="flex items-center space-x-1">
               {priceDirection === 'up' && (
-                <TrendingUp className={`h-4 w-4 text-green-500 ${showPriceAnimation ? 'animate-bounce' : ''}`} />
+                <TrendingUp className={`h-3 w-3 text-green-500 ${showPriceAnimation ? 'animate-bounce' : ''}`} />
               )}
               {priceDirection === 'down' && (
-                <TrendingDown className={`h-4 w-4 text-red-500 ${showPriceAnimation ? 'animate-bounce' : ''}`} />
+                <TrendingDown className={`h-3 w-3 text-red-500 ${showPriceAnimation ? 'animate-bounce' : ''}`} />
               )}
               {priceDirection === 'neutral' && (
-                <Minus className="h-4 w-4 text-gray-400" />
+                <Minus className="h-3 w-3 text-gray-400" />
               )}
             </div>
           </div>
           
           <div className="flex items-baseline justify-between">
             <div className="flex items-baseline space-x-2">
-              <span className={`text-2xl font-bold ${
+              <span className={`text-xl font-bold ${
                 showPriceAnimation && priceDirection === 'up' ? 'text-green-600 animate-pulse' :
                 showPriceAnimation && priceDirection === 'down' ? 'text-red-600 animate-pulse' :
                 'text-gray-900'
               } transition-colors duration-300`}>
                 ${opportunity.currentPrice}
               </span>
-              <span className="text-sm text-gray-500">
+              <span className="text-xs text-gray-500">
                 from ${opportunity.basePrice}
               </span>
             </div>
             
             {priceChange > 0 && (
               <div className="flex items-center space-x-1">
-                <TrendingUp className="h-3 w-3 text-green-500" />
+                <TrendingUp className="h-2.5 w-2.5 text-green-500" />
                 <span className="text-xs font-medium text-green-600">
                   +{priceChange.toFixed(0)}%
                 </span>
@@ -190,9 +190,9 @@ export default function OpportunityCard({
         </div>
         
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-2 gap-3 mb-3">
           <div className="text-center">
-            <div className="text-lg font-bold text-gray-900">{opportunity.slotsRemaining}</div>
+            <div className="text-base font-bold text-gray-900">{opportunity.slotsRemaining}</div>
             <div className="text-xs text-gray-500">Slots Left</div>
           </div>
           <div className="text-center">

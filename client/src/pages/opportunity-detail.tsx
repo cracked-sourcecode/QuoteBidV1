@@ -223,11 +223,74 @@ export default function OpportunityDetail() {
     { day: 7, price: currentPrice, label: '7d' }
   ];
 
-  const handleSecurePitch = () => {
-    toast({
-      title: "Pitch Submitted",
-      description: `Your pitch has been submitted at the current market rate of $${currentPrice}`,
-    });
+  const handleSecurePitch = async () => {
+    try {
+      // Validation
+      if (!pitchContent.trim()) {
+        toast({
+          title: "Pitch Required",
+          description: "Please write your pitch before submitting.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (pitchContent.length < 50) {
+        toast({
+          title: "Pitch Too Short",
+          description: "Please provide a more detailed pitch (minimum 50 characters).",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Submit the pitch
+      const pitchData = {
+        opportunityId: opportunity.id,
+        content: pitchContent.trim(),
+        bidAmount: currentPrice,
+        status: 'pending'
+      };
+
+      console.log('Submitting pitch:', pitchData);
+
+      const response = await fetch('/api/pitches', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(pitchData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit pitch');
+      }
+
+      const result = await response.json();
+      console.log('Pitch submitted successfully:', result);
+
+      // Show success message
+      toast({
+        title: "Pitch Submitted Successfully! 🎉",
+        description: `Your pitch has been submitted at $${currentPrice} and is now being reviewed by the admin team.`,
+      });
+
+      // Clear the pitch content
+      setPitchContent('');
+
+      // Optionally redirect to my pitches page
+      // window.location.href = '/my-pitches';
+
+    } catch (error) {
+      console.error('Error submitting pitch:', error);
+      toast({
+        title: "Submission Failed",
+        description: error instanceof Error ? error.message : 'Failed to submit pitch. Please try again.',
+        variant: "destructive"
+      });
+    }
   };
 
   // Custom tooltip component

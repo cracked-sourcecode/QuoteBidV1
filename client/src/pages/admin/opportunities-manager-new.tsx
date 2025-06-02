@@ -284,11 +284,16 @@ export default function OpportunitiesManager() {
   
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      console.log("Updating opportunity status:", { id, status });
       const res = await apiRequest(
-        "PATCH",
-        `/api/admin/opportunities/${id}/status`,
+        "PUT",
+        `/api/admin/opportunities/${id}`,
         { status }
       );
+      if (!res.ok) {
+        const errorData = await res.text();
+        throw new Error(`Failed to update status: ${res.status} - ${errorData}`);
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -300,6 +305,7 @@ export default function OpportunitiesManager() {
       });
     },
     onError: (error: Error) => {
+      console.error("Status update error:", error);
       toast({
         title: "Failed to update status",
         description: error.message,
@@ -576,7 +582,7 @@ export default function OpportunitiesManager() {
           </CardContent>
         </Card>
       ) : filteredOpportunities?.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredOpportunities.map((opportunity: any) => (
             <Card key={opportunity.id} className="bg-white border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-lg flex flex-col h-full">
               <CardHeader className="pb-3 pt-4 flex-shrink-0">
@@ -1007,231 +1013,168 @@ export default function OpportunitiesManager() {
       {/* Opportunity details modal */}
       {showDetails && (
         <Dialog open={!!showDetails} onOpenChange={() => setShowDetails(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50/30">
-            <DialogHeader className="pb-6 border-b border-gray-200">
-              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent flex items-center">
-                <Eye className="h-6 w-6 mr-3 text-blue-600" />
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-4 border-b">
+              <DialogTitle className="text-xl font-bold flex items-center">
+                <Eye className="h-5 w-5 mr-2 text-blue-600" />
                 Opportunity Details
               </DialogTitle>
             </DialogHeader>
             
-            <div className="overflow-y-auto py-6 space-y-6">
-              {finalOpportunities?.find((o: any) => o.id === showDetails) && (
-                <div className="space-y-6">
-                  {(() => {
-                    const opportunity = finalOpportunities.find((o: any) => o.id === showDetails);
-                    return (
-                      <>
-                        {/* Header Card with Publication & Status */}
-                        <div className="bg-gradient-to-r from-white to-gray-50 rounded-xl p-6 border border-gray-200 shadow-sm">
-                          <div className="flex items-start justify-between mb-4">
-                            <div>
-                              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-1">Publication</h3>
-                              <p className="text-xl font-semibold text-gray-900">{opportunity.publication.name}</p>
-                            </div>
+            <div className="py-4 space-y-6">
+              {(() => {
+                const opportunity = finalOpportunities?.find((o: any) => o.id === showDetails);
+                
+                if (!opportunity) {
+                  return (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">Opportunity not found</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-6">
+                    {/* Basic Info */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Basic Information</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Title</label>
+                          <p className="text-base font-medium">{opportunity.title || 'No title'}</p>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Publication</label>
+                          <p className="text-base">{opportunity.publication?.name || 'Unknown Publication'}</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Status</label>
                             <Badge className={
-                              opportunity.status === 'open'
-                                ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200 px-4 py-2 text-sm font-medium'
-                                : 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200 px-4 py-2 text-sm font-medium'
-                            } variant="outline">
-                              {opportunity.status.toUpperCase()}
+                              opportunity.status === 'open' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }>
+                              {opportunity.status || 'Unknown'}
                             </Badge>
                           </div>
                           
                           <div>
-                            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Opportunity Title</h3>
-                            <p className="text-lg font-medium text-gray-900 leading-relaxed">{opportunity.title}</p>
+                            <label className="text-sm font-medium text-gray-500">Tier</label>
+                            <p className="text-base">{opportunity.tier || 'Not specified'}</p>
                           </div>
                         </div>
-                        
-                        {/* Description Card */}
-                        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3 flex items-center">
-                            <MessageSquare className="h-4 w-4 mr-2" />
-                            Description
-                          </h3>
-                          <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{opportunity.description}</p>
-                        </div>
-                        
-                        {/* Key Details Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200">
-                            <div className="flex items-center mb-2">
-                              <Tag className="h-5 w-5 text-blue-600 mr-2" />
-                              <h3 className="text-sm font-medium text-blue-700 uppercase tracking-wide">Request Type</h3>
-                            </div>
-                            <p className="text-blue-900 font-semibold">{opportunity.requestType}</p>
+                      </CardContent>
+                    </Card>
+                    
+                    {/* Description */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Description</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-gray-700 whitespace-pre-wrap">
+                          {opportunity.description || 'No description provided'}
+                        </p>
+                      </CardContent>
+                    </Card>
+                    
+                    {/* Details */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Additional Details</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Request Type</label>
+                            <p className="text-base">{opportunity.requestType || 'Not specified'}</p>
                           </div>
                           
-                          <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-5 border border-purple-200">
-                            <div className="flex items-center mb-2">
-                              <Building2 className="h-5 w-5 text-purple-600 mr-2" />
-                              <h3 className="text-sm font-medium text-purple-700 uppercase tracking-wide">Media Type</h3>
-                            </div>
-                            <p className="text-purple-900 font-semibold">{opportunity.mediaType || "Not specified"}</p>
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Media Type</label>
+                            <p className="text-base">{opportunity.mediaType || 'Not specified'}</p>
                           </div>
                           
-                          <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-5 border border-amber-200">
-                            <div className="flex items-center mb-2">
-                              <Tag className="h-5 w-5 text-amber-600 mr-2" />
-                              <h3 className="text-sm font-medium text-amber-700 uppercase tracking-wide">Tier</h3>
-                            </div>
-                            <p className="text-amber-900 font-semibold">{opportunity.tier || "Not specified"}</p>
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Industry</label>
+                            <p className="text-base">{opportunity.industry || 'Not specified'}</p>
+                          </div>
+                          
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Minimum Bid</label>
+                            <p className="text-base">${opportunity.minimumBid || opportunity.currentPrice || 0}</p>
                           </div>
                         </div>
                         
-                        {/* Industry & Tags */}
-                        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3 flex items-center">
-                                <Building2 className="h-4 w-4 mr-2" />
-                                Primary Industry
-                              </h3>
-                              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-800 border border-gray-200">
-                                {opportunity.industry || "Not specified"}
-                              </span>
-                            </div>
-                            
-                            <div>
-                              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3 flex items-center">
-                                <Tag className="h-4 w-4 mr-2" />
-                                Industry Tags
-                              </h3>
-                              <div className="flex flex-wrap gap-2">
-                                {opportunity.tags?.map((tag: string) => (
-                                  <Badge key={tag} variant="secondary" className="px-3 py-1.5 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                                    {tag}
-                                  </Badge>
-                                )) || <span className="text-gray-400 text-sm">No tags specified</span>}
-                              </div>
+                        {opportunity.tags && opportunity.tags.length > 0 && (
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Tags</label>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {opportunity.tags.map((tag: string) => (
+                                <Badge key={tag} variant="secondary">{tag}</Badge>
+                              ))}
                             </div>
                           </div>
-                        </div>
+                        )}
                         
-                        {/* Financial & Timeline */}
-                        <div className="space-y-8">
-                          <div className="text-center">
-                            <h3 className="text-2xl font-bold text-gray-900 mb-3">Budget & Timeline</h3>
-                            <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
-                              Automatic pricing based on publication tier and deadline selection
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Deadline</label>
+                            <p className="text-base">
+                              {opportunity.deadline 
+                                ? new Date(opportunity.deadline).toLocaleDateString()
+                                : 'Not specified'
+                              }
                             </p>
                           </div>
                           
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Automatic Minimum Bid Display */}
-                            <div className="space-y-6">
-                              <div className="text-center lg:text-left">
-                                <h4 className="text-xl font-semibold text-gray-900 mb-2">Minimum Bid (Auto-Set)</h4>
-                                <p className="text-gray-600 leading-relaxed">
-                                  Automatically determined by your selected publication's tier
-                                </p>
-                              </div>
-                              
-                              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border border-green-200 shadow-sm">
-                                <div className="text-center space-y-4">
-                                  <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
-                                    <DollarSign className="h-8 w-8 text-white" />
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <p className="text-sm font-medium text-green-700 uppercase tracking-wide">Minimum Bid Amount</p>
-                                    <div className="text-4xl font-bold text-green-800">
-                                      ${form.watch("minimumBid") || 225}
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Status indicators */}
-                                  <div className="space-y-3 pt-4 border-t border-green-200">
-                                    {!watchedPublicationId ? (
-                                      <div className="flex items-center justify-center text-amber-600">
-                                        <Clock className="h-4 w-4 mr-2" />
-                                        <span className="text-sm font-medium">Select a publication above</span>
-                                      </div>
-                                    ) : (
-                                      watchedPublicationId && publications && (() => {
-                                        const selectedPub = publications.find(pub => pub.id === watchedPublicationId);
-                                        return selectedPub?.tier && (
-                                          <div className="flex items-center justify-center text-green-600">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                                            <span className="text-sm font-medium">
-                                              {selectedPub.name} • {selectedPub.tier}
-                                            </span>
-                                          </div>
-                                        );
-                                      })()
-                                    )}
-                                  </div>
-                                </div>
-                                
-                                {/* Hidden field to ensure minimumBid is submitted */}
-                                <input type="hidden" {...form.register("minimumBid")} />
-                              </div>
-                            </div>
-
-                            {/* Response Deadline */}
-                            <div className="space-y-6">
-                              <div className="text-center lg:text-left">
-                                <h4 className="text-xl font-semibold text-gray-900 mb-2">Response Deadline</h4>
-                                <p className="text-gray-600 leading-relaxed">
-                                  Choose when you need expert responses by
-                                </p>
-                              </div>
-                              
-                              <FormField
-                                control={form.control}
-                                name="deadline"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormControl>
-                                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-200 shadow-sm">
-                                        <div className="text-center space-y-6">
-                                          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
-                                            <CalendarIcon className="h-8 w-8 text-white" />
-                                          </div>
-                                          
-                                          <div className="space-y-4">
-                                            <p className="text-sm font-medium text-blue-700 uppercase tracking-wide">Deadline Date</p>
-                                            
-                                            <div className="space-y-3">
-                                              <input
-                                                type="date"
-                                                value={field.value || ''}
-                                                onChange={(e) => field.onChange(e.target.value)}
-                                                min={new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0]}
-                                                className="w-full h-14 px-4 text-lg font-medium text-center bg-white border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                                              />
-                                              {field.value && (
-                                                <div className="bg-white rounded-lg p-3 text-center">
-                                                  <p className="text-xs text-blue-600 font-medium">
-                                                    {format(new Date(field.value), "EEEE, MMMM do, yyyy")}
-                                                  </p>
-                                                </div>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Created</label>
+                            <p className="text-base">
+                              {opportunity.createdAt 
+                                ? new Date(opportunity.createdAt).toLocaleDateString()
+                                : 'Unknown'
+                              }
+                            </p>
                           </div>
                         </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
+                      </CardContent>
+                    </Card>
+                    
+                    {/* Pitch Summary */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Pitch Summary</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-2xl font-bold">{opportunity.pitchCount || 0}</p>
+                            <p className="text-sm text-gray-500">Total Pitches</p>
+                          </div>
+                          {opportunity.highestBid > 0 && (
+                            <div>
+                              <p className="text-2xl font-bold text-green-600">${opportunity.highestBid}</p>
+                              <p className="text-sm text-gray-500">Highest Bid</p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                );
+              })()}
             </div>
             
-            <DialogFooter className="pt-6 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50/30">
+            <DialogFooter className="pt-4 border-t">
               <Button 
                 onClick={() => setShowDetails(null)}
                 variant="outline"
-                className="mr-3 border-gray-300 hover:bg-gray-50"
               >
                 Close
               </Button>
@@ -1247,12 +1190,9 @@ export default function OpportunitiesManager() {
                     setShowDetails(null);
                   }
                 }}
-                className={
-                  finalOpportunities?.find((o: any) => o.id === showDetails)?.status === 'open' 
-                    ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' 
-                    : 'bg-green-600 hover:bg-green-700 text-white border-green-600'
-                }
+                disabled={updateStatusMutation.isPending}
               >
+                {updateStatusMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {finalOpportunities?.find((o: any) => o.id === showDetails)?.status === 'open' 
                   ? 'Close Opportunity' 
                   : 'Reopen Opportunity'}

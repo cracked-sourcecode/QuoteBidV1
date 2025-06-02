@@ -1,0 +1,1 @@
+ALTER TABLE "opportunities" ADD COLUMN "preview_text" text;

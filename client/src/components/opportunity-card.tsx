@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Clock, Users, TrendingUp, AlertTriangle, Flame, Award, Building } from 'lucide-react';
+import { Clock, Users, TrendingUp, AlertTriangle, Flame, Award, Building, DollarSign, Eye, TrendingDown, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Opportunity, OutletTier } from '@shared/types/opportunity';
 import { Button } from '@/components/ui/button';
@@ -41,42 +41,39 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     summary
   } = opportunity;
 
-  // Calculate price increase percentage
+  // Calculate price changes and trends
   const priceIncrease = currentPrice > basePrice
     ? Math.round(((currentPrice - basePrice) / basePrice) * 100)
     : 0;
 
-  // Format deadline - handle potential invalid date objects safely
+  // Simulate hourly price movement (in production this would come from API)
+  const hourlyChange = Math.floor(Math.random() * 21) - 10; // -10 to +10
+  const recentTrend = hourlyChange > 0 ? 'up' : hourlyChange < 0 ? 'down' : 'stable';
+
+  // Format deadline
   let deadlineDate: Date;
   try {
     deadlineDate = new Date(deadline);
     if (isNaN(deadlineDate.getTime())) {
-      // If invalid, set to 7 days from now as fallback
       deadlineDate = new Date();
       deadlineDate.setDate(deadlineDate.getDate() + 7);
     }
   } catch (e) {
-    // If there's an error, set to 7 days from now as fallback
     deadlineDate = new Date();
     deadlineDate.setDate(deadlineDate.getDate() + 7);
   }
   
-  const formattedDeadline = format(deadlineDate, 'MMM d, yyyy');
-  
-  // Calculate days remaining
-  const daysRemaining = Math.ceil(
-    (deadlineDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-  );
+  // Calculate days and hours remaining
+  const timeRemaining = deadlineDate.getTime() - Date.now();
+  const daysRemaining = Math.ceil(timeRemaining / (1000 * 60 * 60 * 24));
+  const hoursRemaining = Math.ceil(timeRemaining / (1000 * 60 * 60));
 
-  // Simulate number of pitches (in production would come from API)
-  const pitchCount = slotsTotal - slotsRemaining;
-  const pitchCapacity = slotsTotal;
-  const pitchFillPercentage = Math.min(100, Math.round((pitchCount / pitchCapacity) * 100));
-
-  // Determine status indicators
-  const isHot = priceIncrease > 30;
-  const isUrgent = daysRemaining <= 2;
-  const isPremium = tier === 1;
+  // Smart tag logic
+  const isPremium = tier === 1; // Only Tier 1 is premium
+  const isUrgent = hoursRemaining <= 24; // Less than 24 hours
+  const isHot = priceIncrease > 25; // Price increased significantly
+  const isTrending = Math.abs(hourlyChange) >= 5; // Recent significant movement
+  const isNew = timeRemaining < (7 * 24 * 60 * 60 * 1000) && daysRemaining >= 6; // Posted recently
 
   const handleCardClick = () => {
     if (!hasActiveSubscription) {
@@ -105,181 +102,155 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
       />
       
       <div 
-        className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow hover:shadow-md transition-all h-[470px] flex flex-col cursor-pointer" 
+        className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-1 group" 
         onClick={handleCardClick}
       >
-        {/* Outlet header */}
-        <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            {/* Publication Logo */}
-            {outletLogo && !logoFailed ? (
-              <img
-                src={outletLogo}
-                alt={outlet}
-                className="w-10 h-10 object-contain rounded-lg"
-                onError={() => setLogoFailed(true)}
-              />
-            ) : (
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                <Building className="h-5 w-5 text-gray-400" />
+        {/* Header */}
+        <div className="p-4 pb-3 border-b border-gray-100">
+          <div className="flex justify-between items-start mb-3">
+            {/* Publication Logo & Name */}
+            <div className="flex items-center space-x-3">
+              {outletLogo && !logoFailed ? (
+                <div className="w-8 h-8 rounded-lg overflow-hidden">
+                  <img
+                    src={outletLogo}
+                    alt={outlet}
+                    className="w-full h-full object-contain"
+                    onError={() => setLogoFailed(true)}
+                  />
+                </div>
+              ) : (
+                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <Building className="h-4 w-4 text-gray-500" />
+                </div>
+              )}
+              
+              <div>
+                <h3 className="text-base font-bold text-gray-900">{outlet}</h3>
               </div>
-            )}
+            </div>
             
-            <h3 className="text-xl font-semibold text-gray-800">{outlet}</h3>
+            {/* Tier badge */}
+            <Badge 
+              className={cn(
+                "font-bold text-xs px-2 py-0.5 rounded-full", 
+                tier === 1 ? "bg-blue-600 text-white" : 
+                tier === 2 ? "bg-purple-600 text-white" : 
+                "bg-gray-600 text-white"
+              )}
+            >
+              Tier {tier}
+            </Badge>
           </div>
           
-          {/* Tier badge on right */}
-          <Badge 
-            className={cn(
-              "font-medium rounded-md px-3 py-1", 
-              tier === 1 ? "bg-blue-100 text-blue-700" : 
-              tier === 2 ? "bg-purple-100 text-purple-700" : 
-              "bg-gray-100 text-gray-700"
-            )}
-          >
-            Tier {tier}
-          </Badge>
+          {/* Expert Request label */}
+          <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide">EXPERT REQUEST</div>
         </div>
         
-        {/* Content area with fixed height */}
-        <div className="p-4 flex-1 flex flex-col">
-          {/* Expert Request label */}
-          <div className="text-sm font-medium text-indigo-800 mb-2">EXPERT REQUEST</div>
-          
-          {/* Title with fixed height and truncation */}
-          <h2 className="text-2xl font-semibold text-gray-900 mb-3 line-clamp-2 h-[64px]">
+        {/* Content */}
+        <div className="px-4 py-3 flex-1 flex flex-col">
+          {/* Title */}
+          <h2 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 leading-snug">
             {title}
           </h2>
           
-          {/* Description preview with small font */}
-          <div className="text-sm text-gray-700 mb-4 line-clamp-3 h-[60px]">
-            {summary ? summary.substring(0, 120) + (summary.length > 120 ? '...' : '') : 'No description available'}
+          {/* Description */}
+          <div className="text-sm text-gray-600 mb-3 line-clamp-2 leading-relaxed font-medium">
+            {summary ? summary.substring(0, 120) + (summary.length > 120 ? '...' : '') : 'We\'re looking for experts: 1. 2. 3.'}
           </div>
           
-          {/* Tags with scrollable area to prevent overflow */}
-          <div className="flex flex-wrap gap-2 mb-3 max-h-[32px] overflow-hidden">
+          {/* Enhanced Category Tag */}
+          <div className="mb-3">
             {topicTags && topicTags.length > 0 ? (
-              topicTags.slice(0, 3).map((tag, index) => (
-                <Badge key={index} variant="outline" className="px-2 py-0.5 text-xs rounded-full bg-gray-50">
-                  #{tag}
-                </Badge>
-              ))
+              <span className="inline-flex items-center px-2 py-1 text-xs font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 rounded-lg border border-blue-200 shadow-sm">
+                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-1.5"></span>
+                {topicTags[0]}
+              </span>
             ) : (
-              <Badge variant="outline" className="px-2 py-0.5 text-xs rounded-full bg-gray-50">
-                #General
-              </Badge>
-            )}
-            {topicTags && topicTags.length > 3 && (
-              <Badge variant="outline" className="px-2 py-0.5 text-xs rounded-full bg-gray-50">+{topicTags.length - 3}</Badge>
+              <span className="inline-flex items-center px-2 py-1 text-xs font-semibold bg-gradient-to-r from-gray-50 to-slate-50 text-gray-700 rounded-lg border border-gray-200 shadow-sm">
+                <span className="w-1.5 h-1.5 bg-gray-500 rounded-full mr-1.5"></span>
+                General
+              </span>
             )}
           </div>
           
-          {/* Current Price with status indicators */}
-          <div className="mb-5">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600 text-sm font-medium">Current Price</span>
-              <span className="text-2xl font-bold">${currentPrice}</span>
+          {/* Price Section with Background */}
+          <div className="mb-3 p-3 bg-gradient-to-r from-gray-50/50 to-blue-50/30 rounded-lg border border-gray-100">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-semibold text-gray-700">Current Price</span>
+              {recentTrend !== 'stable' && (
+                <div className={cn(
+                  "flex items-center text-xs font-bold px-1.5 py-0.5 rounded-full",
+                  recentTrend === 'up' ? "text-green-700 bg-green-50" : "text-red-700 bg-red-50"
+                )}>
+                  {recentTrend === 'up' ? (
+                    <TrendingUp className="h-2.5 w-2.5 mr-1" />
+                  ) : (
+                    <TrendingDown className="h-2.5 w-2.5 mr-1" />
+                  )}
+                  <span>{recentTrend === 'up' ? '+' : ''}${Math.abs(hourlyChange)} past hour</span>
+                </div>
+              )}
             </div>
-            
-            {/* Price trend indicator */}
-            {priceIncrease > 0 && (
-              <div className="flex items-center text-emerald-600 text-sm mt-1 font-medium">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                <span>Price up {priceIncrease}% from base</span>
-              </div>
-            )}
+            <div className="text-2xl font-black text-gray-900">${currentPrice}</div>
           </div>
           
-          {/* Status indicators */}
-          <div className="flex items-center gap-2 mb-5">
+          {/* Smart Status Badges */}
+          <div className="flex flex-wrap gap-1.5 mb-3">
             {isPremium && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge className="bg-blue-100 text-blue-700 flex items-center gap-1 rounded-full font-medium">
-                      <Award className="h-3 w-3" /> 
-                      <span>Premium</span>
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Tier 1 premium opportunity</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            
-            {isHot && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge className="bg-red-100 text-red-700 flex items-center gap-1 rounded-full font-medium">
-                      <Flame className="h-3 w-3" /> 
-                      <span>Hot</span>
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Price has increased significantly</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Badge className="bg-blue-100 text-blue-700 flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5">
+                <Award className="h-2.5 w-2.5" /> 
+                Premium
+              </Badge>
             )}
             
             {isUrgent && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge className="bg-amber-100 text-amber-700 flex items-center gap-1 rounded-full font-medium">
-                      <AlertTriangle className="h-3 w-3" /> 
-                      <span>Closing Soon</span>
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Less than 2 days remaining</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Badge className="bg-red-100 text-red-700 flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5">
+                <AlertTriangle className="h-2.5 w-2.5" /> 
+                {hoursRemaining <= 6 ? 'Urgent' : 'Closing Soon'}
+              </Badge>
+            )}
+
+            {isHot && !isUrgent && (
+              <Badge className="bg-orange-100 text-orange-700 flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5">
+                <Flame className="h-2.5 w-2.5" /> 
+                Hot
+              </Badge>
+            )}
+
+            {isTrending && !isHot && !isUrgent && (
+              <Badge className="bg-green-100 text-green-700 flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5">
+                <Zap className="h-2.5 w-2.5" /> 
+                Trending
+              </Badge>
+            )}
+
+            {isNew && !isPremium && !isUrgent && !isHot && (
+              <Badge className="bg-purple-100 text-purple-700 flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5">
+                <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span> 
+                New
+              </Badge>
             )}
           </div>
           
-          {/* Progress bar for pitches */}
-          <div className="mb-5">
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
-              <span>{pitchCount} pitches</span>
-              <span>{pitchCapacity - pitchCount} slots remaining</span>
-            </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div 
-                className={cn(
-                  "h-full rounded-full", 
-                  pitchFillPercentage > 75 ? "bg-red-500" :
-                  pitchFillPercentage > 50 ? "bg-amber-500" :
-                  pitchFillPercentage > 25 ? "bg-green-500" :
-                  "bg-blue-500"
-                )}
-                style={{ width: `${pitchFillPercentage}%` }}
-              />
-            </div>
-          </div>
-          
-          {/* Slots & Deadline */}
-          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-5">
-            <div className="flex items-center">
-              <Users className="h-4 w-4 text-gray-500 mr-2" />
-              <span>{slotsRemaining}/{slotsTotal} slots left</span>
-            </div>
-            
-            <div className="flex items-center">
-              <Clock className="h-4 w-4 text-gray-500 mr-2" />
-              <span>{daysRemaining <= 0 ? 'Closes today' : `${daysRemaining} days left`}</span>
-            </div>
+          {/* Deadline info */}
+          <div className="flex items-center text-sm text-gray-600">
+            <Clock className="h-3.5 w-3.5 mr-1.5 text-gray-500" />
+            <span className="font-semibold">
+              {hoursRemaining <= 0 ? 'Closed' :
+               hoursRemaining <= 6 ? `${hoursRemaining}h left` :
+               hoursRemaining <= 24 ? 'Closes today' : 
+               daysRemaining === 1 ? 'Closes tomorrow' :
+               `${daysRemaining} days left`}
+            </span>
           </div>
         </div>
         
-        {/* Button at bottom, fixed position */}
-        <div className="p-4 border-t border-gray-100 mt-auto">
+        {/* Action button with separator */}
+        <div className="border-t border-gray-100 p-4 pt-3">
           <Button 
-            className="w-full bg-blue-800 hover:bg-blue-900 text-white" 
-            size="lg"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl transition-all duration-200" 
+            size="sm"
             onClick={handleButtonClick}
           >
             View Details

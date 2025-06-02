@@ -370,7 +370,7 @@ export default function OpportunitiesPage() {
       {/* Opportunities grid with background gradient */}
       <div className="px-4 sm:px-6 lg:px-8 py-8 bg-gradient-to-b from-gray-50 to-white">
         {filteredOpportunities.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredOpportunities.map((opportunity) => (
               <OpportunityCard
                 key={opportunity.id}
