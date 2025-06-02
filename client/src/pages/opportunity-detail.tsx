@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useRoute, Link } from 'wouter';
+import { useRoute, Link, useLocation } from 'wouter';
 import { ChevronLeft, Calendar, Clock, DollarSign, TrendingUp, Flame, ChevronUp, Info, Mic, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -102,8 +102,18 @@ export default function OpportunityDetail() {
       // Scroll to top when navigating to a new opportunity
       window.scrollTo({ top: 0, behavior: 'smooth' });
       
-      setIsLoading(true);
+      // Reset all state when opportunity changes
+      setOpportunity(null);
+      setPriceHistory([]);
+      setBidInfo(null);
+      setPitches([]);
+      setRelatedOpportunities([]);
+      setUserPitchStatus(null);
+      setPitchContent('');
       setError(null);
+      setLogoFailed(false);
+      
+      setIsLoading(true);
       
       try {
         // Fetch opportunity details
@@ -1236,10 +1246,14 @@ export default function OpportunityDetail() {
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {relatedOpportunities.length > 0 ? (
                     relatedOpportunities.map((relatedOpp, index) => (
-                      <Link 
+                      <Link
                         key={relatedOpp.id} 
                         href={`/opportunities/${relatedOpp.id}`}
                         className="group block"
+                        onClick={() => {
+                          // Set loading state immediately for smooth transition
+                          setIsLoading(true);
+                        }}
                       >
                         <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200/60 overflow-hidden hover:shadow-xl hover:border-blue-200/60 transition-all duration-300 hover:-translate-y-1 cursor-pointer">
                           {/* Card Header */}
