@@ -25,12 +25,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import PitchEditModal from "@/components/pitch-edit-modal";
 import PitchReviewModal from "@/components/pitch-review-modal";
 import { getStage, PitchStatus } from "@/utils/pitchStage";
 import { PitchDTO } from "@/utils/pitchInterfaces";
-import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 // Types for pitches
 interface Publication {

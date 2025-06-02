@@ -65,6 +65,19 @@ import {
 } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CancelRetentionModal } from '@/components/CancelRetentionModal';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  User, 
+  Settings, 
+  Bell, 
+  MessageCircle,
+  Clock,
+  FileText
+} from 'lucide-react';
+import PitchChatModal from '@/components/PitchChatModal';
+import { formatDistanceToNow } from 'date-fns';
 
 
 // Form validation schema
@@ -97,6 +110,11 @@ export default function AccountPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+  
+  // Chat modal state
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [selectedPitchId, setSelectedPitchId] = useState<number | null>(null);
+  const [selectedPitchTitle, setSelectedPitchTitle] = useState<string>('');
   
   // Media coverage modal state
   const [addMediaModalOpen, setAddMediaModalOpen] = useState(false);
@@ -148,6 +166,12 @@ export default function AccountPage() {
   // Fetch user's successful placements
   const { data: successfulPlacements, isLoading: isLoadingPlacements } = useQuery<any[]>({
     queryKey: [`/api/users/${user?.id}/placements`],
+    enabled: !!user?.id,
+  });
+
+  // Fetch user's pitches for communication
+  const { data: userPitches, isLoading: isLoadingPitches } = useQuery<any[]>({
+    queryKey: [`/api/pitches/user/${user?.id}`],
     enabled: !!user?.id,
   });
 
@@ -704,15 +728,21 @@ export default function AccountPage() {
   }
 
   const onSubmit = (data: z.infer<typeof profileFormSchema>) => {
-    // Special handling for custom doFollowLink URLs
-    const formData = { ...data };
-    
-    // If the user selected 'custom' but didn't enter a URL, reset to none
-    if (formData.doFollowLink === 'custom' && !formData.doFollowLink.startsWith('http')) {
-      formData.doFollowLink = 'none';
-    }
-    
-    profileUpdateMutation.mutate(formData);
+    console.log("Form submitted with data:", data);
+    profileUpdateMutation.mutate(data);
+  };
+  
+  // Chat modal handlers
+  const openChatModal = (pitchId: number, pitchTitle: string) => {
+    setSelectedPitchId(pitchId);
+    setSelectedPitchTitle(pitchTitle);
+    setIsChatModalOpen(true);
+  };
+  
+  const closeChatModal = () => {
+    setIsChatModalOpen(false);
+    setSelectedPitchId(null);
+    setSelectedPitchTitle('');
   };
 
   return (
@@ -1572,6 +1602,63 @@ export default function AccountPage() {
                 </div>
               </div>
               
+              {/* Support & Communication Section */}
+              <div className="mb-8">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">SUPPORT & COMMUNICATION</h2>
+                </div>
+                <div className="rounded-lg border border-gray-200 p-4">
+                  <h3 className="font-medium text-gray-900 mb-3">Pitch Conversations</h3>
+                  {isLoadingPitches ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
+                      <span className="ml-2 text-gray-500">Loading your pitches...</span>
+                    </div>
+                  ) : userPitches && userPitches.length > 0 ? (
+                    <div className="space-y-3">
+                      {userPitches.filter(pitch => pitch.status !== 'draft').map((pitch) => (
+                        <div key={pitch.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900 mb-1">
+                                {pitch.opportunity?.title || 'Pitch Discussion'}
+                              </h4>
+                              <div className="flex items-center gap-4 text-sm text-gray-500">
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-4 w-4" />
+                                  <span>Submitted {formatDistanceToNow(new Date(pitch.createdAt), { addSuffix: true })}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Badge variant={pitch.status === 'successful' ? 'default' : pitch.status === 'sent_to_reporter' ? 'secondary' : 'outline'} className="text-xs">
+                                    {pitch.status === 'sent_to_reporter' ? 'Sent to Reporter' : 
+                                     pitch.status === 'successful' ? 'Successful' :
+                                     pitch.status === 'pending' ? 'Pending Review' : pitch.status}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openChatModal(pitch.id, pitch.opportunity?.title || 'Pitch Discussion')}
+                              className="flex items-center gap-2"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                              Message
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <MessageCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-500 mb-2">No pitches available for communication yet.</p>
+                      <p className="text-sm text-gray-400">Submit some pitches to opportunities to start conversations with our team.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
               
               {/* Support Section */}
               <div className="mb-8 rounded-lg border border-gray-200 p-6 bg-gray-50">
@@ -1594,6 +1681,17 @@ export default function AccountPage() {
           )}
         </div>
       </div>
+
+      {/* Pitch Chat Modal */}
+      {selectedPitchId && (
+        <PitchChatModal
+          isOpen={isChatModalOpen}
+          onClose={closeChatModal}
+          pitchId={selectedPitchId}
+          pitchTitle={selectedPitchTitle}
+          isAdmin={false}
+        />
+      )}
 
       {/* Subscription Modal */}
       <Dialog open={subscriptionModalOpen} onOpenChange={setSubscriptionModalOpen}>

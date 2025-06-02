@@ -427,7 +427,7 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
             {pitch.bidAmount && (
               <div className="flex items-center gap-2 text-green-700 bg-green-50 px-3 py-1 rounded-full">
                 <DollarSign className="h-4 w-4" />
-                <span className="font-semibold">${pitch.bidAmount}</span>
+                <span className="font-semibold">{pitch.bidAmount}</span>
               </div>
             )}
           </div>

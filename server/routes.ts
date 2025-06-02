@@ -33,6 +33,7 @@ import signupStageRouter from './routes/signupStage';
 import createSubscriptionRouter from './routes/createSubscription';
 import signupStateRouter from './routes/signupState';
 import signupRouter from './routes/signup';
+import messagesRouter from './routes/messages';
 import { hashPassword } from './utils/passwordUtils';
 import jwt from 'jsonwebtoken';
 import OpenAI from 'openai';
@@ -509,6 +510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/stripe', createSubscriptionRouter);
   app.use('/api/signup/state', signupStateRouter);
   app.use('/api/signup', signupRouter);
+  app.use('/api/messages', messagesRouter);
   
   // Serve the agreement HTML template
   app.get('/api/onboarding/agreement.html', serveAgreementHTML);
