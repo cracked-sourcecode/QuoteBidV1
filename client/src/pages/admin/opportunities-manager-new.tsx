@@ -334,9 +334,9 @@ export default function OpportunitiesManager() {
         // Tier filter
         const matchesTier = selectedTier === 'all' || opp.tier === selectedTier;
         
-        // Publication filter
+        // Publication filter - FIX: Compare publication ID with selected publication ID
         const matchesPublication = selectedPublication === 'all' || 
-          opp.publication?.name === selectedPublication;
+          opp.publication?.id?.toString() === selectedPublication;
         
         // Industry filter
         const matchesIndustry = selectedIndustry === 'all' || opp.industry === selectedIndustry;
@@ -477,11 +477,6 @@ export default function OpportunitiesManager() {
                           <Building2 className="mr-3 h-4 w-4 text-gray-400" />
                           <div>
                             <p className="font-medium">{pub.name}</p>
-                            {pub.tier && (
-                              <p className="text-xs text-gray-500">
-                                {pub.tier} - Min bid: ${pub.tier === "Tier 1" ? "225" : pub.tier === "Tier 2" ? "175" : "125"}
-                              </p>
-                            )}
                           </div>
                         </div>
                       </SelectItem>
