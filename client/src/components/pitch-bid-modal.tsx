@@ -63,16 +63,18 @@ export default function PitchBidModal({
   // Text pitch state
   const [pitchContent, setPitchContent] = useState<string>("");
   
-  // Voice recorder state and handlers
-  const {
-    audioURL,
-    isRecording,
-    recordingTime,
-    startRecording,
-    stopRecording,
-    recordingBlob,
-    isProcessing
-  } = useRecorder({ maxTimeInSeconds: 120 });
+  // Simple direct voice recording state (replacing useRecorder)
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioURL, setAudioURL] = useState<string | null>(null);
+  const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [recorderError, setRecorderError] = useState<string | null>(null);
+  
+  // Recording timer
+  const recordingInterval = useRef<NodeJS.Timeout | null>(null);
   
   const [transcript, setTranscript] = useState<string>("");
   
@@ -269,51 +271,110 @@ export default function PitchBidModal({
   }, [bids, isBidsLoading, currentHighestBid, timeRemaining, bidCount, 
       urgencyType, priceJumpPercentage, slotsFilledCount, slotsLeftCount, expertViewCount]);
   
-  // Process the recording to get transcript
-  const processRecording = useMutation({
-    mutationFn: async () => {
-      if (!recordingBlob) {
-        throw new Error("No recording available");
-      }
-
-      const reader = new FileReader();
-      const audioBase64Promise = new Promise<string>((resolve) => {
-        reader.onloadend = () => {
-          const base64 = reader.result as string;
-          const base64Data = base64.split(',')[1]; // Remove the data URL prefix
-          resolve(base64Data);
-        };
-        reader.readAsDataURL(recordingBlob);
+  // Direct recording functions
+  const startRecording = async () => {
+    console.log('[Direct Recording] Starting recording...');
+    try {
+      setRecorderError(null);
+      
+      // Request microphone access
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
       });
-
-      const audioBase64 = await audioBase64Promise;
-      const response = await apiRequest("POST", "/api/pitches/voice", { audio: audioBase64 });
-      const data = await response.json();
-      return data;
-    },
-    onSuccess: (data) => {
-      setTranscript(data.text);
-      toast({
-        title: "Recording processed",
-        description: "Your recording has been transcribed successfully.",
+      
+      console.log('[Direct Recording] Got media stream:', mediaStream);
+      setStream(mediaStream);
+      
+      // Create MediaRecorder
+      const recorder = new MediaRecorder(mediaStream, {
+        mimeType: 'audio/webm;codecs=opus'
       });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to process the recording. Please try again.",
-        variant: "destructive"
-      });
+      
+      const chunks: Blob[] = [];
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+          console.log('[Direct Recording] Got chunk:', event.data.size, 'bytes');
+        }
+      };
+      
+      recorder.onstop = () => {
+        console.log('[Direct Recording] Recording stopped, creating blob...');
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const url = URL.createObjectURL(blob);
+        setRecordingBlob(blob);
+        setAudioURL(url);
+        setIsRecording(false);
+        
+        // Stop the stream
+        if (mediaStream) {
+          mediaStream.getTracks().forEach(track => track.stop());
+        }
+        
+        if (recordingInterval.current) {
+          clearInterval(recordingInterval.current);
+        }
+        
+        console.log('[Direct Recording] Recording complete, blob size:', blob.size);
+      };
+      
+      recorder.onerror = (event) => {
+        console.error('[Direct Recording] Recording error:', event);
+        setRecorderError('Recording failed. Please try again.');
+        setIsRecording(false);
+      };
+      
+      // Start recording
+      recorder.start(100);
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+      setRecordingTime(0);
+      
+      // Start timer
+      recordingInterval.current = setInterval(() => {
+        setRecordingTime(prev => {
+          const newTime = prev + 1;
+          if (newTime >= 120) { // Max 2 minutes
+            stopRecording();
+            return 120;
+          }
+          return newTime;
+        });
+      }, 1000);
+      
+      console.log('[Direct Recording] Recording started successfully!');
+      
+    } catch (err) {
+      console.error('[Direct Recording] Error starting recording:', err);
+      setRecorderError(err instanceof Error ? err.message : 'Failed to start recording');
+      setIsRecording(false);
     }
-  });
+  };
   
-  // When recording stops, process it to get transcript
-  useEffect(() => {
-    if (recordingBlob && !isRecording && !transcript) {
-      processRecording.mutate();
+  const stopRecording = () => {
+    console.log('[Direct Recording] Stopping recording...');
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
     }
-  }, [recordingBlob, isRecording]);
-
+    if (recordingInterval.current) {
+      clearInterval(recordingInterval.current);
+    }
+  };
+  
+  const cancelRecording = () => {
+    console.log('[Direct Recording] Cancelling recording...');
+    stopRecording();
+    setAudioURL(null);
+    setRecordingBlob(null);
+    setRecordingTime(0);
+    setRecorderError(null);
+  };
+  
   // Format recording time
   const formatTime = (timeInSeconds: number) => {
     const minutes = Math.floor(timeInSeconds / 60);
@@ -478,6 +539,51 @@ export default function PitchBidModal({
       }
     }
   });
+
+  // Process the recording to get transcript
+  const processRecording = useMutation({
+    mutationFn: async () => {
+      if (!recordingBlob) {
+        throw new Error("No recording available");
+      }
+
+      const reader = new FileReader();
+      const audioBase64Promise = new Promise<string>((resolve) => {
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          const base64Data = base64.split(',')[1]; // Remove the data URL prefix
+          resolve(base64Data);
+        };
+        reader.readAsDataURL(recordingBlob);
+      });
+
+      const audioBase64 = await audioBase64Promise;
+      const response = await apiRequest("POST", "/api/pitches/voice", { audio: audioBase64 });
+      const data = await response.json();
+      return data;
+    },
+    onSuccess: (data) => {
+      setTranscript(data.text);
+      toast({
+        title: "Recording processed",
+        description: "Your recording has been transcribed successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to process the recording. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // When recording stops, process it to get transcript
+  useEffect(() => {
+    if (recordingBlob && !isRecording && !transcript) {
+      processRecording.mutate();
+    }
+  }, [recordingBlob, isRecording, transcript]);
 
   return (
     <>
@@ -671,16 +777,140 @@ export default function PitchBidModal({
                         />
                       </svg>
                     </div>
+                    
+                    {/* Error Display */}
+                    {recorderError && (
+                      <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+                        <div className="flex items-center">
+                          <svg className="h-5 w-5 text-red-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <p className="text-sm text-red-800">{recorderError}</p>
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="text-sm text-gray-600 mb-2">
-                      {isRecording ? 
-                        <span className="text-red-500 font-medium">Recording: {formatTime(recordingTime)}</span> :
+                      {isRecording ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="text-red-500 font-medium">Recording: {formatTime(recordingTime)}</span>
+                          {/* Audio Level Indicator */}
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((bar) => (
+                              <div 
+                                key={bar}
+                                className={`w-1 h-3 rounded-full transition-colors ${
+                                  audioLevel && audioLevel > (bar * 20) ? 'bg-green-500' : 'bg-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
                         <span>Recording Time: <span className="font-medium">{formatTime(recordingTime)}</span></span>
-                      }
+                      )}
                     </div>
                     <div className="flex justify-center space-x-3">
+                      {/* Simple test button */}
+                      <button 
+                        onClick={() => alert('TEST BUTTON WORKS!')}
+                        style={{
+                          background: 'red', 
+                          color: 'white', 
+                          padding: '10px', 
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        TEST CLICK
+                      </button>
+                      
+                      {/* Browser compatibility test */}
+                      {process.env.NODE_ENV === 'development' && (
+                        <>
+                          <Button 
+                            onClick={async () => {
+                              console.log('[Debug] Testing browser capabilities...');
+                              
+                              // Test MediaRecorder support
+                              if (!window.MediaRecorder) {
+                                toast({
+                                  title: "Browser Not Supported",
+                                  description: "❌ MediaRecorder API not available",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              
+                              // Test getUserMedia support  
+                              if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                                toast({
+                                  title: "Browser Not Supported", 
+                                  description: "❌ getUserMedia API not available",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              
+                              // Test HTTPS requirement
+                              if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                                toast({
+                                  title: "HTTPS Required",
+                                  description: "❌ Microphone requires HTTPS or localhost",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              
+                              toast({
+                                title: "Browser Check",
+                                description: "✅ Browser supports voice recording!"
+                              });
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                          >
+                            🔍 Check Browser
+                          </Button>
+                          
+                          <Button 
+                            onClick={async () => {
+                              console.log('[Debug] Testing microphone access...');
+                              try {
+                                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                                console.log('[Debug] Microphone test successful:', stream);
+                                toast({
+                                  title: "Microphone Test",
+                                  description: "✅ Microphone access granted successfully!"
+                                });
+                                // Stop the test stream
+                                stream.getTracks().forEach(track => track.stop());
+                              } catch (err) {
+                                console.error('[Debug] Microphone test failed:', err);
+                                toast({
+                                  title: "Microphone Test Failed",
+                                  description: `❌ ${err instanceof Error ? err.message : 'Unknown error'}`,
+                                  variant: "destructive"
+                                });
+                              }
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                          >
+                            🎤 Test Mic
+                          </Button>
+                        </>
+                      )}
+                      
                       {isRecording ? (
                         <Button 
-                          onClick={stopRecording}
+                          onClick={() => {
+                            console.log('[Debug] Stop recording button clicked');
+                            stopRecording();
+                          }}
                           className="px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700"
                         >
                           <svg 
@@ -703,16 +933,23 @@ export default function PitchBidModal({
                               d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" 
                             />
                           </svg>
+                          Stop Recording
                         </Button>
                       ) : (
                         <Button 
-                          onClick={startRecording}
-                          disabled={!!audioURL || isProcessing}
-                          className="px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-qpurple hover:bg-qpurple-dark"
+                          onClick={() => {
+                            alert('Record button clicked!'); // Debug alert
+                            console.log('[Debug] Start recording button clicked');
+                            console.log('[Debug] Current recording state:', isRecording);
+                            console.log('[Debug] Current audioURL:', audioURL);
+                            startRecording();
+                          }}
+                          disabled={!!audioURL || isRecording}
+                          className="px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-qpurple hover:bg-qpurple-dark disabled:opacity-50"
                         >
                           <svg 
                             xmlns="http://www.w3.org/2000/svg" 
-                            className="h-5 w-5" 
+                            className="h-5 w-5 mr-2" 
                             fill="none" 
                             viewBox="0 0 24 24" 
                             stroke="currentColor"
@@ -721,15 +958,10 @@ export default function PitchBidModal({
                               strokeLinecap="round" 
                               strokeLinejoin="round" 
                               strokeWidth="2" 
-                              d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" 
-                            />
-                            <path 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round" 
-                              strokeWidth="2" 
-                              d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" 
                             />
                           </svg>
+                          {recorderError ? "Try Again" : "Start Recording"}
                         </Button>
                       )}
                     </div>
@@ -740,8 +972,12 @@ export default function PitchBidModal({
                       </div>
                     )}
                     
-                    {isProcessing && (
-                      <div className="mt-3 text-sm text-gray-600">
+                    {(isRecording || processRecording.isPending) && (
+                      <div className="mt-3 text-sm text-gray-600 flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
                         Processing your recording...
                       </div>
                     )}
@@ -755,7 +991,7 @@ export default function PitchBidModal({
                           value={transcript}
                           onChange={(e) => setTranscript(e.target.value)}
                           onBlur={saveDraft}
-                          disabled={isProcessing || processRecording.isPending}
+                          disabled={isRecording || processRecording.isPending}
                         />
                         {lastSavedAt && (
                           <div className="text-xs text-gray-500 mt-1 text-right">
@@ -811,7 +1047,7 @@ export default function PitchBidModal({
                 bidAmount < currentHighestBid || 
                 submitPitchAndBid.isPending || 
                 (activeTab === "text" && !pitchContent.trim()) ||
-                (activeTab === "voice" && (!audioURL || !transcript || isProcessing || processRecording.isPending))
+                (activeTab === "voice" && (!audioURL || !transcript || isRecording || processRecording.isPending))
               }
               className="bg-qpurple hover:bg-qpurple/90"
             >

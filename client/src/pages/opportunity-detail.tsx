@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRoute, Link } from 'wouter';
 import { ChevronLeft, Calendar, Clock, DollarSign, TrendingUp, Flame, ChevronUp, Info, Mic, Lock } from 'lucide-react';
 import { format } from 'date-fns';
@@ -27,6 +27,19 @@ export default function OpportunityDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [logoFailed, setLogoFailed] = useState(false);
+  
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioURL, setAudioURL] = useState<string | null>(null);
+  const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [transcript, setTranscript] = useState<string>("");
+  const [recorderError, setRecorderError] = useState<string | null>(null);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  
+  const recordingInterval = useRef<NodeJS.Timeout | null>(null);
   
   // Fetch opportunity data
   useEffect(() => {
@@ -251,6 +264,175 @@ export default function OpportunityDetail() {
       return isNaN(parsed) ? 1 : parsed;
     }
     return 1; // Default
+  };
+
+  // Voice recording functions
+  const startRecording = async () => {
+    console.log('[Voice Recording] Starting recording...');
+    try {
+      setRecorderError(null);
+      
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+      
+      console.log('[Voice Recording] Got media stream:', mediaStream);
+      setStream(mediaStream);
+      
+      const recorder = new MediaRecorder(mediaStream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      
+      const chunks: Blob[] = [];
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+          console.log('[Voice Recording] Got chunk:', event.data.size, 'bytes');
+        }
+      };
+      
+      recorder.onstop = async () => {
+        console.log('[Voice Recording] Recording stopped, creating blob...');
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        setRecordingBlob(blob);
+        setIsRecording(false);
+        
+        if (mediaStream) {
+          mediaStream.getTracks().forEach(track => track.stop());
+        }
+        
+        if (recordingInterval.current) {
+          clearInterval(recordingInterval.current);
+        }
+        
+        console.log('[Voice Recording] Recording complete, blob size:', blob.size);
+        
+        // Automatically transcribe the audio
+        await transcribeAudio(blob);
+      };
+      
+      recorder.onerror = (event) => {
+        console.error('[Voice Recording] Recording error:', event);
+        setRecorderError('Recording failed. Please try again.');
+        setIsRecording(false);
+      };
+      
+      recorder.start(100);
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+      setRecordingTime(0);
+      
+      recordingInterval.current = setInterval(() => {
+        setRecordingTime(prev => {
+          const newTime = prev + 1;
+          if (newTime >= 120) {
+            stopRecording();
+            return 120;
+          }
+          return newTime;
+        });
+      }, 1000);
+      
+      console.log('[Voice Recording] Recording started successfully!');
+      
+    } catch (err) {
+      console.error('[Voice Recording] Error starting recording:', err);
+      setRecorderError(err instanceof Error ? err.message : 'Failed to start recording');
+      setIsRecording(false);
+    }
+  };
+  
+  const stopRecording = () => {
+    console.log('[Voice Recording] Stopping recording...');
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+    }
+    if (recordingInterval.current) {
+      clearInterval(recordingInterval.current);
+    }
+  };
+
+  const transcribeAudio = async (audioBlob: Blob) => {
+    try {
+      setIsTranscribing(true);
+      setRecorderError(null);
+      
+      console.log('[Transcription] Starting transcription...');
+      
+      // Convert blob to base64
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result);
+        };
+        reader.onerror = reject;
+      });
+      
+      reader.readAsDataURL(audioBlob);
+      const base64Audio = await base64Promise;
+      
+      // Send to transcription API
+      const response = await apiFetch('/api/pitches/voice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          audio: base64Audio
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Transcription failed');
+      }
+      
+      const result = await response.json();
+      
+      console.log('[Transcription] Success:', result);
+      
+      // Add transcribed text to the pitch content
+      if (result.text) {
+        const transcribedText = result.text.trim();
+        setPitchContent(prev => {
+          // If there's existing content, add a line break before the new text
+          const separator = prev.trim() ? '\n\n' : '';
+          return prev + separator + transcribedText;
+        });
+        
+        toast({
+          title: "Voice Transcribed",
+          description: `Added ${transcribedText.length} characters to your pitch`,
+        });
+      }
+      
+      // Clean up
+      setRecordingBlob(null);
+      setAudioURL(null);
+      setRecordingTime(0);
+      
+    } catch (error) {
+      console.error('[Transcription] Error:', error);
+      setRecorderError('Failed to transcribe audio. Please try again.');
+      
+      // Keep the audio blob in case user wants to retry manually
+      const url = URL.createObjectURL(audioBlob);
+      setAudioURL(url);
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
+  const formatTime = (timeInSeconds: number) => {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = timeInSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -568,30 +750,118 @@ export default function OpportunityDetail() {
                     {/* Pitch Input */}
                     <div className="mb-6">
                       <div className="flex items-center justify-between mb-3">
-                        <label className="text-gray-700 font-medium">Add your pitch manually here</label>
-                        <span className="text-red-500 text-sm font-medium">{remainingChars} characters remaining</span>
+                        <label className="text-gray-700 font-semibold text-lg">Craft your pitch</label>
+                        <span className={`text-sm font-medium ${
+                          remainingChars < 100 ? 'text-red-500' : 'text-gray-500'
+                        }`}>
+                          {remainingChars} characters remaining
+                        </span>
                       </div>
                       
-                      <Textarea
-                        value={pitchContent}
-                        onChange={(e) => setPitchContent(e.target.value)}
-                        placeholder="Your pitch..."
-                        className="min-h-[200px] w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500 resize-none text-gray-700"
-                        maxLength={maxPitchLength}
-                      />
+                      <div className="relative">
+                        <Textarea
+                          value={pitchContent}
+                          onChange={(e) => setPitchContent(e.target.value)}
+                          placeholder="Share your expertise, credentials, and unique perspective that would make you perfect for this story. Explain why you're the ideal expert for this opportunity..."
+                          className="min-h-[240px] w-full p-4 border border-gray-200 rounded-xl bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-50 transition-all duration-200 resize-none text-gray-800 text-base font-medium placeholder:text-gray-400 placeholder:font-normal shadow-sm hover:border-gray-300"
+                          maxLength={maxPitchLength}
+                          style={{
+                            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                            lineHeight: '1.5',
+                            letterSpacing: '0.01em'
+                          }}
+                        />
+                        
+                        {/* Word count indicator */}
+                        <div className="absolute bottom-3 right-3 text-xs text-gray-400 bg-white/80 backdrop-blur-sm px-2 py-1 rounded">
+                          {pitchContent.trim().split(/\s+/).filter(word => word.length > 0).length} words
+                        </div>
+                      </div>
                     </div>
 
                     {/* Record Pitch Button */}
                     <div className="flex items-center justify-between mb-6">
                       <Button
                         variant="outline"
-                        className="flex items-center space-x-2 text-red-500 border-red-200 hover:bg-red-50"
+                        className={`flex items-center space-x-2 border-red-200 hover:bg-red-50 ${
+                          isRecording ? 'bg-red-50 text-red-700 border-red-300' : 
+                          isTranscribing ? 'bg-blue-50 text-blue-700 border-blue-300' :
+                          'text-red-500'
+                        }`}
+                        onClick={isRecording ? stopRecording : startRecording}
+                        disabled={isTranscribing}
                       >
-                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span className="font-medium">Record Pitch</span>
+                        {isRecording ? (
+                          <>
+                            <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
+                            <span className="font-medium">Recording {formatTime(recordingTime)}</span>
+                          </>
+                        ) : isTranscribing ? (
+                          <>
+                            <div className="w-3 h-3 bg-blue-600 rounded-full animate-pulse"></div>
+                            <span className="font-medium">Transcribing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                            <span className="font-medium">Record Pitch</span>
+                          </>
+                        )}
                       </Button>
-                      <span className="text-blue-600 text-sm font-medium">Powered by QuoteBid AI</span>
+                      <span className="text-blue-600 text-sm font-medium">
+                        Powered by QuoteBid AI
+                      </span>
                     </div>
+
+                    {/* Recording Error Display */}
+                    {recorderError && (
+                      <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+                        <p className="text-sm text-red-800">{recorderError}</p>
+                        {audioURL && (
+                          <button
+                            onClick={() => {
+                              setRecorderError(null);
+                              setAudioURL(null);
+                              setRecordingBlob(null);
+                            }}
+                            className="text-sm text-red-600 hover:text-red-700 mt-2 underline"
+                          >
+                            Dismiss
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Audio Playback (only if transcription failed) */}
+                    {audioURL && recorderError && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Mic className="h-4 w-4 text-yellow-600" />
+                          <span className="text-sm font-medium text-yellow-800">Recording Available (Transcription Failed)</span>
+                        </div>
+                        <audio controls src={audioURL} className="w-full mb-2"></audio>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => recordingBlob && transcribeAudio(recordingBlob)}
+                            disabled={isTranscribing}
+                            className="text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                          >
+                            {isTranscribing ? 'Transcribing...' : 'Retry Transcription'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setAudioURL(null);
+                              setRecordingBlob(null);
+                              setRecorderError(null);
+                              setRecordingTime(0);
+                            }}
+                            className="text-sm text-red-600 hover:text-red-700"
+                          >
+                            Clear recording
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Secure Pitch Button */}
                     <Button

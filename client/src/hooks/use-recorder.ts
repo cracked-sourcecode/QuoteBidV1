@@ -44,8 +44,10 @@ export function useRecorder({
 
   const initializeRecorder = async () => {
     try {
+      console.log('[Recorder] Initializing recorder...');
       setRecorderState(prev => ({ ...prev, isProcessing: true, error: null }));
       
+      console.log('[Recorder] Requesting microphone access...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -56,8 +58,11 @@ export function useRecorder({
         } 
       });
       
+      console.log('[Recorder] Microphone access granted, stream:', stream);
+      console.log('[Recorder] Audio tracks:', stream.getAudioTracks());
       mediaStream.current = stream;
       
+      console.log('[Recorder] Creating audio context...');
       audioContext.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       const source = audioContext.current.createMediaStreamSource(stream);
       analyser.current = audioContext.current.createAnalyser();
@@ -74,8 +79,11 @@ export function useRecorder({
         'audio/wav'
       ];
       
+      console.log('[Recorder] Checking supported MIME types...');
       for (const type of supportedTypes) {
-        if (MediaRecorder.isTypeSupported(type)) {
+        const isSupported = MediaRecorder.isTypeSupported(type);
+        console.log(`[Recorder] ${type}: ${isSupported ? 'supported' : 'not supported'}`);
+        if (isSupported) {
           selectedMimeType = type;
           break;
         }
@@ -106,10 +114,14 @@ export function useRecorder({
       let errorMessage = "Microphone access error";
       
       if (err instanceof Error) {
+        console.log('[Recorder] Error name:', err.name);
+        console.log('[Recorder] Error message:', err.message);
         if (err.name === 'NotAllowedError') {
           errorMessage = "Microphone access denied. Please allow microphone permissions and try again.";
         } else if (err.name === 'NotFoundError') {
           errorMessage = "No microphone found. Please connect a microphone and try again.";
+        } else if (err.name === 'NotSupportedError') {
+          errorMessage = "Your browser doesn't support audio recording. Please try a different browser.";
         } else {
           errorMessage = `Microphone error: ${err.message}`;
         }
@@ -205,8 +217,10 @@ export function useRecorder({
     if (recorderState.isRecording) return;
     
     console.log('[Recorder] Starting recording...');
+    console.log('[Recorder] Current recorder state:', recorderState);
     
     if (!mediaRecorder.current) {
+      console.log('[Recorder] MediaRecorder not initialized, initializing...');
       await initializeRecorder();
     }
     
@@ -222,6 +236,7 @@ export function useRecorder({
           error: null
         }));
         
+        console.log('[Recorder] Starting MediaRecorder...');
         mediaRecorder.current.start(100);
         startTimer();
         
@@ -235,6 +250,8 @@ export function useRecorder({
           error: `Recording error: ${err instanceof Error ? err.message : String(err)}`
         }));
       }
+    } else {
+      console.log('[Recorder] MediaRecorder state:', mediaRecorder.current?.state);
     }
   };
 
