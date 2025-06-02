@@ -2261,6 +2261,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch pitches" });
     }
   });
+
+  // Get pitches with user data for an opportunity (includes profile photos)
+  app.get("/api/opportunities/:id/pitches-with-users", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      console.log(`[API DEBUG] Fetching pitches-with-users for opportunity ${id}`);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid opportunity ID" });
+      }
+      
+      const pitchesWithUsers = await storage.getPitchesWithUserDataByOpportunityId(id);
+      console.log(`[API DEBUG] Retrieved ${pitchesWithUsers.length} pitches for opportunity ${id}`);
+      
+      if (pitchesWithUsers.length > 0) {
+        console.log(`[API DEBUG] Sample pitch:`, pitchesWithUsers[0]);
+      }
+      
+      res.json(pitchesWithUsers);
+    } catch (error) {
+      console.log(`[API DEBUG] Error fetching pitches:`, error);
+      res.status(500).json({ message: "Failed to fetch pitches with user data" });
+    }
+  });
   
   // Create a new pitch
   app.post("/api/pitches", async (req: Request, res: Response) => {
@@ -6269,6 +6293,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: "Internal server error",
         message: error.message 
       });
+    }
+  });
+  
+  // Get related opportunities by industry/category
+  app.get("/api/opportunities/related/:industry", jwtAuth, async (req: Request, res: Response) => {
+    try {
+      // Check if user is authenticated - use the same pattern as other endpoints
+      if (!req.user) {
+        return res.status(401).json({ 
+          message: "Authentication required to view opportunities" 
+        });
+      }
+
+      const industry = req.params.industry;
+      const currentOpportunityId = parseInt(req.query.exclude as string) || 0;
+      
+      if (!industry) {
+        return res.status(400).json({ message: "Industry parameter is required" });
+      }
+      
+      console.log(`🔍 [RELATED] Fetching related opportunities for industry: "${industry}", excluding ID: ${currentOpportunityId}`);
+      
+      // Get all opportunities with publications
+      const allOpportunities = await storage.getOpportunitiesWithPublications();
+      console.log(`📊 [RELATED] Total opportunities in database: ${allOpportunities.length}`);
+      
+      // Log all opportunities with their industry and tags for debugging
+      allOpportunities.forEach(opp => {
+        console.log(`📋 [RELATED] Opp ${opp.id}: "${opp.title}" | Industry: "${opp.industry || 'none'}" | Tags: [${Array.isArray(opp.tags) ? opp.tags.join(', ') : 'none'}] | Status: ${opp.status}`);
+      });
+      
+      // Filter opportunities by industry/category and exclude current opportunity
+      const relatedOpportunities = allOpportunities.filter(opp => {
+        // Skip the current opportunity
+        if (opp.id === currentOpportunityId) {
+          console.log(`⏭️  [RELATED] Skipping current opportunity ${opp.id}`);
+          return false;
+        }
+        
+        // Check if the opportunity matches the industry
+        const oppIndustry = opp.industry || '';
+        const oppTags = Array.isArray(opp.tags) ? opp.tags : [];
+        
+        // Match by industry field or tags (case insensitive)
+        const industryMatch = oppIndustry.toLowerCase().includes(industry.toLowerCase()) ||
+                            oppTags.some(tag => tag.toLowerCase().includes(industry.toLowerCase()));
+        
+        const statusMatch = opp.status === 'open';
+        
+        console.log(`🔎 [RELATED] Opp ${opp.id}: Industry match: ${industryMatch} (searching for "${industry}" in "${oppIndustry}" or tags [${oppTags.join(', ')}]) | Status match: ${statusMatch} (${opp.status})`);
+        
+        // Only show open opportunities
+        return industryMatch && statusMatch;
+      });
+      
+      console.log(`✅ [RELATED] Found ${relatedOpportunities.length} matching opportunities before sorting`);
+      
+      // Sort by creation date (newest first) and limit to 3
+      const sortedOpportunities = relatedOpportunities
+        .sort((a, b) => {
+          const aDate = new Date(a.createdAt || 0).getTime();
+          const bDate = new Date(b.createdAt || 0).getTime();
+          return bDate - aDate;
+        })
+        .slice(0, 3);
+      
+      console.log(`📤 [RELATED] Returning ${sortedOpportunities.length} opportunities:`, 
+        sortedOpportunities.map(opp => `${opp.id}: "${opp.title}"`));
+      
+      res.json(sortedOpportunities);
+    } catch (error) {
+      console.error("Error fetching related opportunities:", error);
+      res.status(500).json({ message: "Failed to fetch related opportunities" });
     }
   });
   

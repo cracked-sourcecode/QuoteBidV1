@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { mockOpportunity } from '@/mocks/opportunity';
+import { apiFetch } from '@/lib/apiFetch';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, ReferenceDot, Tooltip } from 'recharts';
+import LogoUniform from '@/components/ui/logo-uniform';
 
 export default function OpportunityDetail() {
   const { toast } = useToast();
@@ -17,39 +18,193 @@ export default function OpportunityDetail() {
   const [pitchContent, setPitchContent] = useState('');
   const [selectedTimeframe, setSelectedTimeframe] = useState<'Daily' | 'Weekly'>('Daily');
   
-  // Use the demo opportunity data for now
-  const [opportunity] = useState({
-    ...mockOpportunity,
-    id: opportunityId,
-    title: "Crypto Experts Needed For A Story on Agentic AI in Crypto",
-    outlet: "Bloomberg",
-    tier: 1,
-    topicTags: ["Crypto", "Capital Markets"],
-    summary: "Looking for Crypto Experts to give insight on the following:\n\n1. Is the Crypto Market good for AI?\n\n2. Will Crypto use Agentic AI?\n\n3. How does this help companies in the Crypto space?",
-    basePrice: 199,
-    currentPrice: 249,
-    deadline: new Date("2025-05-24").toISOString(),
-    postedAt: new Date("2025-04-30").toISOString()
-  });
+  // State for real data
+  const [opportunity, setOpportunity] = useState<any>(null);
+  const [priceHistory, setPriceHistory] = useState<any[]>([]);
+  const [bidInfo, setBidInfo] = useState<any>(null);
+  const [pitches, setPitches] = useState<any[]>([]);
+  const [relatedOpportunities, setRelatedOpportunities] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [logoFailed, setLogoFailed] = useState(false);
+  
+  // Fetch opportunity data
+  useEffect(() => {
+    const fetchOpportunityData = async () => {
+      if (!opportunityId) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        // Fetch opportunity details
+        const opportunityResponse = await apiFetch(`/api/opportunities/${opportunityId}`, {
+          credentials: 'include'
+        });
+        
+        if (!opportunityResponse.ok) {
+          throw new Error('Failed to fetch opportunity details');
+        }
+        
+        const opportunityData = await opportunityResponse.json();
+        setOpportunity(opportunityData);
+        
+        // Fetch price history
+        try {
+          const priceResponse = await apiFetch(`/api/opportunities/${opportunityId}/price-history`, {
+            credentials: 'include'
+          });
+          
+          if (priceResponse.ok) {
+            const priceData = await priceResponse.json();
+            // Transform price history data for the chart
+            const chartData = priceData.map((item: any, index: number) => ({
+              day: index + 1,
+              price: item.price,
+              label: `${index + 1}d`,
+              timestamp: item.timestamp
+            }));
+            setPriceHistory(chartData);
+          }
+        } catch (priceError) {
+          console.log('Price history not available, using fallback data');
+          // Generate fallback price data
+          const fallbackData = generateFallbackPriceData(opportunityData);
+          setPriceHistory(fallbackData);
+        }
+        
+        // Fetch bid info
+        try {
+          const bidResponse = await apiFetch(`/api/opportunities/${opportunityId}/bid-info`, {
+            credentials: 'include'
+          });
+          
+          if (bidResponse.ok) {
+            const bidData = await bidResponse.json();
+            setBidInfo(bidData);
+          }
+        } catch (bidError) {
+          console.log('Bid info not available, using fallback data');
+          // Generate fallback bid info
+          setBidInfo({
+            opportunityId: opportunityData.id,
+            currentPrice: opportunityData.currentPrice || opportunityData.basePrice || 100,
+            minBid: (opportunityData.currentPrice || opportunityData.basePrice || 100) + 50,
+            deadline: opportunityData.deadline,
+            slotsRemaining: opportunityData.slotsRemaining || 3,
+            slotsTotal: opportunityData.slotsTotal || 5
+          });
+        }
+        
+        // Fetch pitches with user data
+        try {
+          const pitchesResponse = await apiFetch(`/api/opportunities/${opportunityId}/pitches-with-users`, {
+            credentials: 'include'
+          });
+          
+          if (pitchesResponse.ok) {
+            const pitchesData = await pitchesResponse.json();
+            setPitches(pitchesData || []);
+          }
+        } catch (pitchError) {
+          console.log('Pitches not available, using fallback data');
+          setPitches([]);
+        }
 
-  const currentPrice = 249;
-  const priceIncrease = 25;
-  const belowListPercentage = 17;
+        // Fetch related opportunities by industry
+        if (opportunityData) {
+          try {
+            // Get the primary industry/category from topic tags
+            const primaryCategory = opportunityData.topicTags?.[0] || opportunityData.industry || 'General';
+            const relatedResponse = await apiFetch(`/api/opportunities/related/${encodeURIComponent(primaryCategory)}?exclude=${opportunityId}`, {
+              credentials: 'include'
+            });
+            
+            if (relatedResponse.ok) {
+              const relatedData = await relatedResponse.json();
+              setRelatedOpportunities(relatedData || []);
+            }
+          } catch (relatedError) {
+            console.log('Related opportunities not available, using fallback data');
+            setRelatedOpportunities([]);
+          }
+        }
+        
+      } catch (err) {
+        console.error('Error fetching opportunity data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load opportunity');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchOpportunityData();
+  }, [opportunityId]);
+  
+  // Generate fallback price data if API doesn't have it
+  const generateFallbackPriceData = (opp: any) => {
+    const basePrice = opp.basePrice || 100;
+    const currentPrice = opp.currentPrice || basePrice;
+    const days = 7;
+    
+    const data = [];
+    for (let i = 0; i < days; i++) {
+      const progress = i / (days - 1);
+      const price = Math.round(basePrice + (currentPrice - basePrice) * progress);
+      data.push({
+        day: i + 1,
+        price: price,
+        label: `${i + 1}d`
+      });
+    }
+    
+    return data;
+  };
+  
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading opportunity details...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Error state
+  if (error || !opportunity) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error || 'Opportunity not found'}</p>
+          <Link href="/opportunities">
+            <Button>Back to Opportunities</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const currentPrice = bidInfo?.currentPrice || opportunity?.currentPrice || opportunity?.basePrice || 100;
+  const priceIncrease = currentPrice - (opportunity?.basePrice || 100);
+  const belowListPercentage = 17; // This could be calculated based on real data later
   const maxPitchLength = 2000;
   const remainingChars = maxPitchLength - pitchContent.length;
   
   // Calculate if today is the deadline
-  const isToday = format(new Date(opportunity.deadline), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+  const isToday = opportunity?.deadline ? format(new Date(opportunity.deadline), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') : false;
 
-  // Price chart data - with numeric x-axis for proper linear spacing
-  const priceData = [
-    { day: 1, price: 199, label: '1d' },
-    { day: 2, price: 203, label: '2d' },
-    { day: 3, price: 215, label: '3d' },
-    { day: 4, price: 208, label: '4d' },
-    { day: 5, price: 228, label: '5d' },
-    { day: 6, price: 240, label: '6d' },
-    { day: 7, price: 249, label: '7d' }
+  // Use real price data or fallback data
+  const priceData = priceHistory.length > 0 ? priceHistory : [
+    { day: 1, price: currentPrice - 50, label: '1d' },
+    { day: 2, price: currentPrice - 30, label: '2d' },
+    { day: 3, price: currentPrice - 20, label: '3d' },
+    { day: 4, price: currentPrice - 35, label: '4d' },
+    { day: 5, price: currentPrice - 10, label: '5d' },
+    { day: 6, price: currentPrice - 5, label: '6d' },
+    { day: 7, price: currentPrice, label: '7d' }
   ];
 
   const handleSecurePitch = () => {
@@ -83,32 +238,42 @@ export default function OpportunityDetail() {
     return null;
   };
 
+  // Get tier display
+  const getTierDisplay = (tier: any) => {
+    if (typeof tier === 'number') return tier;
+    if (typeof tier === 'string' && tier.startsWith('Tier ')) {
+      return parseInt(tier.split('Tier ')[1]);
+    }
+    return 1; // Default
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
       {/* Main Content */}
       <div className="mx-auto px-4 py-4">
         {/* White Container Wrapper */}
         <div className="bg-white rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden">
-          <div className="p-6">
+          <div className="px-6 pb-6">
             {/* Publication Name */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between">
-                {/* TODO: Implement publication logo system - use actual logo assets instead of text */}
-                <div className="flex items-center">
-                  <h2 className="text-3xl font-semibold text-black tracking-tight">
-                    {opportunity.outlet}
-                  </h2>
-                  {/* Future: <img src={`/logos/${opportunity.outlet.toLowerCase()}-logo.svg`} alt={opportunity.outlet} className="h-12" /> */}
-                </div>
-                <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md px-4 py-2 text-sm font-semibold">
-                  Tier 1
-                </Badge>
-              </div>
+            <div className="-mt-2">
+              {/* Show publication logo if available, otherwise show name */}
+              {opportunity.outletLogo && !logoFailed ? (
+                <img
+                  src={opportunity.outletLogo}
+                  alt={opportunity.outlet}
+                  className="h-32 w-auto object-contain"
+                  onError={() => setLogoFailed(true)}
+                />
+              ) : (
+                <h2 className="text-4xl font-semibold text-black tracking-tight">
+                  {opportunity.outlet}
+                </h2>
+              )}
             </div>
 
             {/* Opportunity Title */}
-            <div className="mb-8">
-              <h1 className="text-5xl font-medium text-black leading-tight tracking-tighter max-w-5xl">
+            <div className="mb-6 -mt-4">
+              <h1 className="text-5xl font-medium text-black leading-tight tracking-tighter">
                 {opportunity.title}
               </h1>
             </div>
@@ -116,9 +281,12 @@ export default function OpportunityDetail() {
             {/* Topic Tags */}
             <div className="mb-10">
               <div className="flex items-center space-x-3">
-                {opportunity.topicTags.map((tag, index) => (
+                <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md px-4 py-2 text-sm font-semibold">
+                  Tier {getTierDisplay(opportunity.tier)}
+                </Badge>
+                {(opportunity.topicTags || []).map((tag: string, index: number) => (
                   <div 
-                    key={tag} 
+                    key={`${tag}-${index}`}
                     className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full shadow-sm border border-gray-200 hover:bg-gray-150 transition-colors"
                   >
                     {tag}
@@ -138,7 +306,7 @@ export default function OpportunityDetail() {
                 <div>
                   <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">Posted</div>
                   <div className="text-xl font-semibold text-gray-900 mt-1">
-                    {format(new Date(opportunity.postedAt), 'MMM d, yyyy')}
+                    {format(new Date(opportunity.postedAt || opportunity.createdAt), 'MMM d, yyyy')}
                   </div>
                 </div>
               </div>
@@ -175,7 +343,7 @@ export default function OpportunityDetail() {
                   
                   <div className="flex items-center space-x-2 bg-green-50 px-4 py-2 rounded-xl border border-green-200/50">
                     <TrendingUp className="h-5 w-5 text-green-600" />
-                    <span className="text-sm font-medium text-green-700">$25 increase (last hour)</span>
+                    <span className="text-sm font-medium text-green-700">${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'} (last hour)</span>
                   </div>
                   
                   <div className="flex items-center space-x-2 bg-blue-50 px-4 py-2 rounded-xl border border-blue-200/50">
@@ -185,7 +353,9 @@ export default function OpportunityDetail() {
                   
                   <div className="flex items-center space-x-2 bg-orange-50 px-4 py-2 rounded-xl border border-orange-200/50">
                     <Clock className="h-5 w-5 text-orange-600" />
-                    <span className="text-sm font-medium text-orange-700">18h remaining</span>
+                    <span className="text-sm font-medium text-orange-700">
+                      {Math.max(0, Math.ceil((new Date(opportunity.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60)))}h remaining
+                    </span>
                   </div>
                 </div>
               </div>
@@ -208,8 +378,12 @@ export default function OpportunityDetail() {
                   </div>
                   <div className="flex items-center space-x-3">
                     <span className="text-sm font-medium text-gray-500">Classification:</span>
-                    <Badge className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0 px-4 py-2 font-semibold shadow-md">
-                      Open
+                    <Badge className={`border-0 px-4 py-2 font-semibold shadow-md ${
+                      opportunity.status === 'open' 
+                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
+                        : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+                    }`}>
+                      {opportunity.status ? opportunity.status.charAt(0).toUpperCase() + opportunity.status.slice(1) : 'Open'}
                     </Badge>
                   </div>
                 </div>
@@ -220,23 +394,18 @@ export default function OpportunityDetail() {
                     <div className="bg-gradient-to-r from-white to-gray-50 border-l-4 border-blue-500 rounded-r-2xl shadow-inner overflow-hidden">
                       <div className="p-6">
                         <div className="text-gray-900 text-lg leading-relaxed">
-                          <p className="font-semibold text-gray-800 mb-4 text-xl">
-                            Looking for Crypto Experts to give insight on the following:
-                          </p>
-                          <div className="space-y-3">
-                            <div className="flex items-start space-x-4 p-3 bg-white/70 rounded-xl border border-gray-200/50 shadow-sm">
-                              <span className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-md">1</span>
-                              <span className="text-gray-700 font-medium pt-1">Is the Crypto Market good for AI?</span>
+                          {opportunity.summary ? (
+                            <div className="whitespace-pre-wrap">{opportunity.summary}</div>
+                          ) : (
+                            <div>
+                              <p className="font-semibold text-gray-800 mb-4 text-xl">
+                                {opportunity.title}
+                              </p>
+                              <p className="text-gray-700">
+                                This opportunity is seeking expert commentary and insights. Please provide your relevant experience and perspective in your pitch.
+                              </p>
                             </div>
-                            <div className="flex items-start space-x-4 p-3 bg-white/70 rounded-xl border border-gray-200/50 shadow-sm">
-                              <span className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-md">2</span>
-                              <span className="text-gray-700 font-medium pt-1">Will Crypto use Agentic AI?</span>
-                            </div>
-                            <div className="flex items-start space-x-4 p-3 bg-white/70 rounded-xl border border-gray-200/50 shadow-sm">
-                              <span className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-md">3</span>
-                              <span className="text-gray-700 font-medium pt-1">How does this help companies in the Crypto space?</span>
-                            </div>
-                          </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -310,8 +479,10 @@ export default function OpportunityDetail() {
                           
                           <YAxis 
                             type="number"
-                            domain={[190, 260]}
-                            ticks={[190, 210, 230, 250]}
+                            domain={[
+                              Math.floor(Math.min(...priceData.map(p => p.price)) * 0.95), 
+                              Math.ceil(Math.max(...priceData.map(p => p.price)) * 1.05)
+                            ]}
                             axisLine={false}
                             tickLine={false}
                             tick={{ fontSize: 11, fill: '#9CA3AF' }}
@@ -337,8 +508,8 @@ export default function OpportunityDetail() {
                           />
                           
                           <ReferenceDot
-                            x={7}
-                            y={249}
+                            x={priceData.length}
+                            y={currentPrice}
                             r={4}
                             fill="#3B82F6"
                             stroke="#FFFFFF"
@@ -351,11 +522,11 @@ export default function OpportunityDetail() {
                     {/* Price range */}
                     <div className="flex justify-between items-center mt-6">
                       <div className="flex items-center space-x-2">
-                        <span className="text-green-600 font-bold text-lg">$199</span>
+                        <span className="text-green-600 font-bold text-lg">${Math.min(...priceData.map(p => p.price))}</span>
                         <span className="text-gray-500 text-sm">Low</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="text-red-500 font-bold text-lg">$259</span>
+                        <span className="text-red-500 font-bold text-lg">${Math.max(...priceData.map(p => p.price))}</span>
                         <span className="text-gray-500 text-sm">High</span>
                       </div>
                     </div>
@@ -375,10 +546,12 @@ export default function OpportunityDetail() {
 
                     <div className="flex items-baseline space-x-3 mb-4">
                       <span className="text-4xl font-bold text-blue-600">${currentPrice}</span>
-                      <div className="flex items-center space-x-1 text-green-600 text-lg font-semibold">
-                        <TrendingUp className="h-5 w-5" />
-                        <span>+${priceIncrease}</span>
-                      </div>
+                      {priceIncrease !== 0 && (
+                        <div className={`flex items-center space-x-1 text-lg font-semibold ${priceIncrease >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <TrendingUp className={`h-5 w-5 ${priceIncrease < 0 ? 'rotate-180' : ''}`} />
+                          <span>{priceIncrease >= 0 ? '+' : ''}${priceIncrease}</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center space-x-2 mb-8">
@@ -421,7 +594,7 @@ export default function OpportunityDetail() {
                     >
                       <div className="flex items-center justify-center space-x-2">
                         <Lock className="h-5 w-5" />
-                        <span>Secure Pitch at Current Market Rate</span>
+                        <span>Secure Pitch at ${currentPrice}</span>
                       </div>
                     </Button>
 
@@ -448,7 +621,10 @@ export default function OpportunityDetail() {
                     </div>
                   </div>
                   <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 text-sm font-bold shadow-md">
-                    Low Demand
+                    {pitches.length === 0 ? 'No Interest' : 
+                     pitches.length <= 2 ? 'Low Demand' : 
+                     pitches.length <= 5 ? 'Medium Demand' : 
+                     'High Demand'}
                   </Badge>
                 </div>
 
@@ -456,14 +632,14 @@ export default function OpportunityDetail() {
                 <div className="mb-8">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-sm font-medium text-gray-600">Demand Level</span>
-                    <span className="text-sm font-bold text-orange-600">32% Competitive</span>
+                    <span className="text-sm font-bold text-orange-600">{Math.min(pitches.length * 15, 100)}% Competitive</span>
                   </div>
                   
                   {/* Progress Bar */}
                   <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
                     <div 
                       className="h-3 rounded-full bg-gradient-to-r from-green-400 via-yellow-400 to-orange-400 transition-all duration-1000 ease-out shadow-sm"
-                      style={{ width: '32%' }}
+                      style={{ width: `${Math.min(pitches.length * 15, 100)}%` }}
                     ></div>
                   </div>
                   
@@ -480,34 +656,45 @@ export default function OpportunityDetail() {
                     <div className="flex items-center space-x-4">
                       {/* Count Display */}
                       <div className="flex items-center justify-center w-16 h-16 bg-blue-500 text-white rounded-xl shadow-md">
-                        <span className="font-bold text-2xl">12</span>
+                        <span className="font-bold text-2xl">{pitches.length}</span>
                       </div>
                       
                       {/* Info */}
                       <div>
                         <div className="text-lg font-bold text-gray-900">Experts Pitched</div>
-                        <div className="text-green-600 text-sm font-semibold">↗ +3 today</div>
+                        <div className="text-green-600 text-sm font-semibold">↗ +{pitches.length} today</div>
                         <div className="text-gray-500 text-sm">Driving current demand level</div>
                       </div>
                     </div>
                     
-                    {/* Expert Avatars */}
+                    {/* Expert Avatars - Real user profile photos */}
                     <div className="flex items-center">
-                      <div className="flex items-center justify-center w-10 h-10 bg-emerald-500 text-white rounded-full text-sm font-bold shadow-md border-2 border-white">
-                        ET
-                      </div>
-                      <div className="flex items-center justify-center w-10 h-10 bg-blue-500 text-white rounded-full text-sm font-bold shadow-md border-2 border-white -ml-2">
-                        WC
-                      </div>
-                      <div className="flex items-center justify-center w-10 h-10 bg-purple-500 text-white rounded-full text-sm font-bold shadow-md border-2 border-white -ml-2">
-                        WS
-                      </div>
-                      <div className="flex items-center justify-center w-10 h-10 bg-orange-500 text-white rounded-full text-sm font-bold shadow-md border-2 border-white -ml-2">
-                        JP
-                      </div>
-                      <div className="flex items-center justify-center w-10 h-10 bg-red-500 text-white rounded-full text-sm font-bold shadow-md border-2 border-white -ml-2">
-                        +8
-                      </div>
+                      {pitches.length > 0 ? (
+                        <>
+                          {pitches.slice(0, 5).map((pitch, index) => (
+                            <div key={pitch.id} className={`flex items-center justify-center w-10 h-10 rounded-full shadow-md border-2 border-white ${index > 0 ? '-ml-2' : ''}`}>
+                              {pitch.user?.avatar ? (
+                                <img 
+                                  src={`http://localhost:5050${pitch.user.avatar}`}
+                                  alt={pitch.user.fullName || 'Expert'}
+                                  className="w-full h-full rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                                  {pitch.user?.fullName ? pitch.user.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2) : 'EX'}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          {pitches.length > 5 && (
+                            <div className="flex items-center justify-center w-10 h-10 bg-gray-600 text-white rounded-full text-xs font-bold shadow-md border-2 border-white -ml-2">
+                              +{pitches.length - 5}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-gray-500 text-sm">No pitches yet</div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -515,134 +702,169 @@ export default function OpportunityDetail() {
             </div>
 
             {/* Suggested for You Section */}
-            <div className="mt-12 bg-white rounded-3xl border border-gray-200/50 overflow-hidden shadow-lg">
+            <div className="mt-12 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 rounded-3xl border border-gray-200/50 overflow-hidden shadow-xl">
               <div className="p-8">
+                {/* Header Section */}
                 <div className="flex items-center justify-between mb-8">
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-900">Suggested for you • Active {opportunity.topicTags[0]} Stories</h3>
-                    <p className="text-gray-600 mt-1">Similar opportunities in your expertise area</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
+                      <div>
+                        <h3 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
+                          <span>Suggested for you</span>
+                          <span className="text-blue-600">•</span>
+                          <span className="text-lg text-blue-600 font-semibold">
+                            Active {opportunity?.topicTags?.[0] || 'Related'} Stories
+                          </span>
+                        </h3>
+                      </div>
+                    </div>
                   </div>
                   <Link href="/opportunities">
-                    <Button variant="outline" className="flex items-center space-x-2 hover:bg-blue-50 border-blue-200 text-blue-600">
-                      <span>View All</span>
-                      <ChevronLeft className="h-4 w-4 rotate-180" />
+                    <Button 
+                      variant="outline" 
+                      className="group bg-white/80 backdrop-blur-sm hover:bg-white border-blue-200 text-blue-600 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md px-6 py-3"
+                    >
+                      <span className="font-semibold">View All</span>
+                      <ChevronLeft className="h-4 w-4 ml-2 rotate-180 group-hover:translate-x-1 transition-transform duration-200" />
                     </Button>
                   </Link>
                 </div>
 
-                {/* Suggested Opportunities Grid */}
-                <div className="grid grid-cols-3 gap-6">
-                  {/* Opportunity 1 */}
-                  <div className="bg-gray-50 rounded-2xl border border-gray-200/50 overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer group">
-                    <div className="p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-sm font-medium text-gray-500">TechCrunch</span>
-                        <Badge className="bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1">
-                          Tier 1
-                        </Badge>
-                      </div>
-                      
-                      <h4 className="text-lg font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
-                        AI Startups Disrupting Traditional Banking: Expert Analysis Needed
-                      </h4>
-                      
-                      <div className="flex items-center space-x-4 mb-4">
-                        <div className="flex items-center space-x-1 text-red-500 text-sm font-medium">
-                          <Flame className="h-4 w-4" />
-                          <span>Trending</span>
-                        </div>
-                        <span className="text-gray-500 text-sm">18h remaining</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-2xl font-bold text-green-600">$299</span>
-                          <div className="flex items-center space-x-1 text-green-600 text-sm font-medium">
-                            <TrendingUp className="h-4 w-4" />
-                            <span>+$15</span>
+                {/* Opportunities Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {relatedOpportunities.length > 0 ? (
+                    relatedOpportunities.map((relatedOpp, index) => (
+                      <Link 
+                        key={relatedOpp.id} 
+                        href={`/opportunities/${relatedOpp.id}`}
+                        className="group block"
+                      >
+                        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200/60 overflow-hidden hover:shadow-xl hover:border-blue-200/60 transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+                          {/* Card Header */}
+                          <div className="p-6 pb-4">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                                  <span className="text-white text-xs font-bold">
+                                    {(relatedOpp.publication?.name || relatedOpp.outlet || 'UK')[0]}
+                                  </span>
+                                </div>
+                                <span className="text-sm font-semibold text-gray-600">
+                                  {relatedOpp.publication?.name || relatedOpp.outlet || 'Unknown Outlet'}
+                                </span>
+                              </div>
+                              <Badge className={`text-xs font-bold px-3 py-1.5 shadow-sm border-0 ${
+                                relatedOpp.tier === 1 ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white' :
+                                relatedOpp.tier === 2 ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' :
+                                'bg-gradient-to-r from-green-500 to-green-600 text-white'
+                              }`}>
+                                Tier {relatedOpp.tier || 3}
+                              </Badge>
+                            </div>
+                            
+                            {/* Title */}
+                            <h4 className="text-lg font-bold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors line-clamp-2 leading-tight">
+                              {relatedOpp.title}
+                            </h4>
+                            
+                            {/* Status and Time */}
+                            <div className="flex items-center justify-between mb-4">
+                              <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-semibold ${
+                                relatedOpp.status === 'urgent' ? 'bg-red-50 text-red-600 border border-red-200' :
+                                relatedOpp.status === 'trending' ? 'bg-orange-50 text-orange-600 border border-orange-200' :
+                                'bg-green-50 text-green-600 border border-green-200'
+                              }`}>
+                                {relatedOpp.status === 'urgent' ? (
+                                  <>
+                                    <Clock className="h-4 w-4" />
+                                    <span>Urgent</span>
+                                  </>
+                                ) : relatedOpp.status === 'trending' ? (
+                                  <>
+                                    <Flame className="h-4 w-4" />
+                                    <span>Trending</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <span>Open</span>
+                                  </>
+                                )}
+                              </div>
+                              <span className="text-gray-500 text-sm font-medium bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+                                {relatedOpp.deadline ? 
+                                  `${Math.ceil((new Date(relatedOpp.deadline).getTime() - Date.now()) / (1000 * 60 * 60))}h left` :
+                                  'Active'
+                                }
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Card Footer */}
+                          <div className="px-6 pb-6">
+                            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50/50 rounded-xl border border-gray-100">
+                              <div className="flex items-baseline space-x-2">
+                                <span className="text-2xl font-bold text-green-600">
+                                  ${relatedOpp.minimumBid || relatedOpp.currentPrice || 0}
+                                </span>
+                                {relatedOpp.increment && (
+                                  <span className="text-gray-500 text-sm font-medium">
+                                    +${relatedOpp.increment}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xs text-gray-500 mb-1">Current Rate</div>
+                                <div className="text-green-600 text-sm font-semibold flex items-center space-x-1">
+                                  <TrendingUp className="h-3 w-3" />
+                                  <span>Live</span>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white px-6">
-                          Pitch Now
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Opportunity 2 */}
-                  <div className="bg-gray-50 rounded-2xl border border-gray-200/50 overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer group">
-                    <div className="p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-sm font-medium text-gray-500">Forbes</span>
-                        <Badge className="bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1">
-                          Tier 2
-                        </Badge>
-                      </div>
-                      
-                      <h4 className="text-lg font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
-                        DeFi Protocol Security: Risk Assessment for New Regulations
-                      </h4>
-                      
-                      <div className="flex items-center space-x-4 mb-4">
-                        <div className="flex items-center space-x-1 text-orange-500 text-sm font-medium">
-                          <Clock className="h-4 w-4" />
-                          <span>Urgent</span>
-                        </div>
-                        <span className="text-gray-500 text-sm">32h remaining</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-2xl font-bold text-green-600">$199</span>
-                          <div className="flex items-center space-x-1 text-green-600 text-sm font-medium">
-                            <TrendingUp className="h-4 w-4" />
-                            <span>+$15</span>
+                      </Link>
+                    ))
+                  ) : (
+                    // Enhanced fallback design
+                    Array.from({ length: 3 }, (_, index) => (
+                      <div 
+                        key={`fallback-${index}`}
+                        className="bg-white/50 backdrop-blur-sm rounded-2xl border border-gray-200/50 overflow-hidden"
+                      >
+                        <div className="p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-8 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
+                              <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+                            </div>
+                            <div className="h-6 bg-gray-200 rounded w-16 animate-pulse"></div>
                           </div>
-                        </div>
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white px-6">
-                          Pitch Now
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Opportunity 3 */}
-                  <div className="bg-gray-50 rounded-2xl border border-gray-200/50 overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer group">
-                    <div className="p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-sm font-medium text-gray-500">Wall Street Journal</span>
-                        <Badge className="bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1">
-                          Tier 1
-                        </Badge>
-                      </div>
-                      
-                      <h4 className="text-lg font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
-                        Corporate Adoption of Blockchain Technology in 2025
-                      </h4>
-                      
-                      <div className="flex items-center space-x-4 mb-4">
-                        <div className="flex items-center space-x-1 text-green-500 text-sm font-medium">
-                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                          <span>Flash Sale</span>
-                        </div>
-                        <span className="text-gray-500 text-sm">24h remaining</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-2xl font-bold text-green-600">$399</span>
-                          <div className="flex items-center space-x-1 text-green-600 text-sm font-medium">
-                            <TrendingUp className="h-4 w-4" />
-                            <span>+$15</span>
+                          <div className="h-6 bg-gray-200 rounded w-full mb-2 animate-pulse"></div>
+                          <div className="h-6 bg-gray-200 rounded w-3/4 mb-4 animate-pulse"></div>
+                          <div className="flex justify-between mb-4">
+                            <div className="h-8 bg-gray-200 rounded w-20 animate-pulse"></div>
+                            <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
                           </div>
+                          <div className="h-16 bg-gray-100 rounded-xl animate-pulse"></div>
                         </div>
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white px-6">
-                          Pitch Now
-                        </Button>
                       </div>
-                    </div>
-                  </div>
+                    ))
+                  )}
                 </div>
+
+                {/* Additional Info */}
+                {relatedOpportunities.length > 0 && (
+                  <div className="mt-8 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+                    <div className="flex items-center justify-center space-x-2 text-sm text-blue-700">
+                      <Info className="h-4 w-4" />
+                      <span className="font-medium">
+                        Found {relatedOpportunities.length} related {relatedOpportunities.length === 1 ? 'opportunity' : 'opportunities'} in {opportunity?.topicTags?.[0] || 'your area'}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

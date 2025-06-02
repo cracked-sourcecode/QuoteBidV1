@@ -64,6 +64,7 @@ export interface IStorage {
   getPitchById(id: number): Promise<Pitch | undefined>; // Alias for getPitch
   getPitchWithRelations(id: number): Promise<PitchWithRelations | undefined>;
   getPitchesByOpportunityId(opportunityId: number): Promise<Pitch[]>;
+  getPitchesWithUserDataByOpportunityId(opportunityId: number): Promise<any[]>;
   getPitchesByUserId(userId: number): Promise<Pitch[]>;
   getPitchByUserAndOpportunity(userId: number, opportunityId: number): Promise<Pitch | undefined>;
   getAllPitches(): Promise<Pitch[]>;
@@ -622,6 +623,92 @@ export class DatabaseStorage implements IStorage {
       .from(pitches)
       .where(eq(pitches.opportunityId, opportunityId))
       .orderBy(desc(pitches.createdAt));
+  }
+
+  async getPitchesWithUserDataByOpportunityId(opportunityId: number): Promise<any[]> {
+    console.log(`[DEBUG] Fetching pitches for opportunity ${opportunityId}`);
+    
+    // First, let's check if there are ANY pitches for this opportunity
+    const allPitchesForOpportunity = await getDb()
+      .select({ 
+        id: pitches.id, 
+        status: pitches.status, 
+        isDraft: pitches.isDraft,
+        userId: pitches.userId 
+      })
+      .from(pitches)
+      .where(eq(pitches.opportunityId, opportunityId));
+    
+    console.log(`[DEBUG] Total pitches in DB for opportunity ${opportunityId}:`, allPitchesForOpportunity);
+    
+    // Let's also check without any filters to see all pitches for this opportunity
+    const allPitchesQuery = await getDb()
+      .select()
+      .from(pitches)
+      .where(eq(pitches.opportunityId, opportunityId));
+    
+    console.log(`[DEBUG] All pitches raw data for opportunity ${opportunityId}:`, allPitchesQuery.length, 'pitches found');
+    
+    if (allPitchesQuery.length > 0) {
+      console.log(`[DEBUG] Sample raw pitch:`, allPitchesQuery[0]);
+    }
+    
+    // Get all pitches for this opportunity with user data (NO FILTERING BY DRAFT STATUS)
+    const opportunityPitches = await getDb()
+      .select({
+        id: pitches.id,
+        userId: pitches.userId,
+        opportunityId: pitches.opportunityId,
+        content: pitches.content,
+        audioUrl: pitches.audioUrl,
+        transcript: pitches.transcript,
+        status: pitches.status,
+        bidAmount: pitches.bidAmount,
+        createdAt: pitches.createdAt,
+        paymentIntentId: pitches.paymentIntentId,
+        isDraft: pitches.isDraft,
+        // User data
+        userName: users.fullName,
+        userUsername: users.username,
+        userAvatar: users.avatar,
+        userTitle: users.title,
+        userCompany: users.company_name
+      })
+      .from(pitches)
+      .leftJoin(users, eq(pitches.userId, users.id))
+      .where(eq(pitches.opportunityId, opportunityId))
+      .orderBy(desc(pitches.createdAt));
+
+    console.log(`[DEBUG] Found ${opportunityPitches.length} pitches with user join for opportunity ${opportunityId}`);
+    
+    if (opportunityPitches.length > 0) {
+      console.log(`[DEBUG] Sample pitch data with user:`, {
+        id: opportunityPitches[0].id,
+        status: opportunityPitches[0].status,
+        isDraft: opportunityPitches[0].isDraft,
+        userName: opportunityPitches[0].userName,
+        userUsername: opportunityPitches[0].userUsername
+      });
+    }
+
+    // Filter out drafts for the final result (but only here, not in the query)
+    const nonDraftPitches = opportunityPitches.filter(pitch => !pitch.isDraft);
+    console.log(`[DEBUG] After filtering out drafts: ${nonDraftPitches.length} pitches remaining`);
+
+    const result = nonDraftPitches.map(pitch => ({
+      ...pitch,
+      user: {
+        id: pitch.userId,
+        fullName: pitch.userName || pitch.userUsername || 'Unknown User',
+        username: pitch.userUsername || 'unknown',
+        avatar: pitch.userAvatar,
+        title: pitch.userTitle,
+        company_name: pitch.userCompany
+      }
+    }));
+    
+    console.log(`[DEBUG] Returning ${result.length} formatted pitches`);
+    return result;
   }
 
   async getPitchesByUserId(userId: number): Promise<Pitch[]> {

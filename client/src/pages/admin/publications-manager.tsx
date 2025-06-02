@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { apiFetch } from '@/lib/apiFetch';
 import { Publication, InsertPublication, Opportunity } from '@shared/schema';
@@ -47,6 +47,7 @@ import {
   Loader2, Plus, Pencil, Trash, Calendar, DollarSign, 
   TrendingUp, BarChart3, Database, Target, Zap, Activity
 } from 'lucide-react';
+import LogoUniform from '@/components/ui/logo-uniform';
 
 const publicationFormSchema = z.object({
   name: z.string().min(2, {
@@ -93,6 +94,8 @@ const PublicationRow: React.FC<{
   onEdit: (pub: Publication) => void;
   onDelete: (pub: Publication) => void;
 }> = ({ publication, onViewAnalytics, onEdit, onDelete }) => {
+  const [logoFailed, setLogoFailed] = useState(false);
+  
   return (
     <Card className="hover:shadow-md transition-all duration-200">
       <CardContent className="p-4">
@@ -100,14 +103,22 @@ const PublicationRow: React.FC<{
           <div className="flex items-center space-x-4 flex-1">
             {/* Logo */}
             <div className="flex-shrink-0">
-              <img 
-                src={publication.logo} 
-                alt={publication.name} 
-                className="w-12 h-12 rounded object-contain bg-white border"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://placehold.co/48x48?text=Logo';
-                }}
-              />
+              {publication.logo && !logoFailed ? (
+                <LogoUniform 
+                  src={publication.logo} 
+                  alt={publication.name} 
+                  width={60}
+                  height={30}
+                  className="rounded border"
+                  onError={() => setLogoFailed(true)}
+                />
+              ) : (
+                <div className="w-15 h-7.5 bg-gray-100 rounded border flex items-center justify-center">
+                  <span className="text-gray-400 text-sm font-bold">
+                    {publication.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
             </div>
             
             {/* Publication Info */}

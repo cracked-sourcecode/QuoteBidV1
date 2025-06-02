@@ -212,10 +212,28 @@ export default function Navbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div className="flex items-center cursor-pointer">
-                    <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
+                    <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
+                      {user?.avatar ? (
+                        <img 
+                          src={user.avatar.startsWith('http') ? user.avatar : `http://localhost:5050${user.avatar}`}
+                          alt={user.fullName || 'Profile'}
+                          className="h-full w-full object-cover rounded-full"
+                          onError={(e) => {
+                            // Fallback to SVG icon if image fails to load
+                            e.currentTarget.style.display = 'none';
+                            const parent = e.currentTarget.parentElement;
+                            if (parent) {
+                              const svg = parent.querySelector('.fallback-avatar');
+                              if (svg) {
+                                (svg as HTMLElement).style.display = 'block';
+                              }
+                            }
+                          }}
+                        />
+                      ) : null}
                       <svg 
                         xmlns="http://www.w3.org/2000/svg" 
-                        className="h-5 w-5 text-gray-600" 
+                        className={`h-5 w-5 text-gray-600 fallback-avatar ${user?.avatar ? 'hidden' : 'block'}`}
                         fill="none" 
                         viewBox="0 0 24 24" 
                         stroke="currentColor"

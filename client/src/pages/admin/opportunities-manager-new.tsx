@@ -66,11 +66,14 @@ import {
   User,
   MessageSquare,
   Eye,
-  MoreVertical
+  MoreVertical,
+  Building2,
+  Loader2
 } from "lucide-react";
 import { INDUSTRY_OPTIONS, MEDIA_TYPES, OPPORTUNITY_TIERS, REQUEST_TYPES } from "@/lib/constants";
 import { useLocation } from 'wouter';
 import { Publication } from '@shared/schema';
+import LogoUniform from '@/components/ui/logo-uniform';
 
 const opportunitySchema = z.object({
   publicationId: z.coerce.number(),
@@ -1018,28 +1021,33 @@ export default function OpportunitiesManager() {
                 <div className="flex items-center space-x-3 mb-3">
                   <div className="flex-shrink-0">
                     {opportunity.publication.logo ? (
-                      <img 
+                      <LogoUniform 
                         src={opportunity.publication.logo} 
                         alt={opportunity.publication.name}
-                        className="w-6 h-6 rounded object-contain bg-white border border-gray-100"
+                        width={50}
+                        height={25}
+                        className="rounded border border-gray-100"
                         onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.nextElementSibling?.classList.remove('hidden');
+                          const target = e?.target as HTMLImageElement;
+                          if (target) {
+                            target.style.display = 'none';
+                            const fallback = target.parentElement?.parentElement?.nextElementSibling;
+                            fallback?.classList.remove('hidden');
+                          }
                         }}
                       />
                     ) : null}
-                    <Newspaper className={`w-6 h-6 text-gray-400 ${opportunity.publication.logo ? 'hidden' : ''}`} />
+                    <Newspaper className={`w-8 h-8 text-gray-400 ${opportunity.publication.logo ? 'hidden' : ''}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-600 truncate">
+                    <p className="text-base font-medium text-gray-700 truncate">
                       {opportunity.publication.name}
                     </p>
                   </div>
                 </div>
                 
                 {/* Opportunity Title */}
-                <CardTitle className="text-lg leading-tight text-gray-900 mb-2">
+                <CardTitle className="text-xl leading-tight text-gray-900 mb-2">
                   {opportunity.title}
                 </CardTitle>
               </CardHeader>

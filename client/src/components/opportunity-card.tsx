@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Clock, Users, TrendingUp, AlertTriangle, Flame, Award } from 'lucide-react';
+import { Clock, Users, TrendingUp, AlertTriangle, Flame, Award, Building } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Opportunity, OutletTier } from '@shared/types/opportunity';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useSubscription } from '@/hooks/use-subscription';
 import PaywallModal from '@/components/paywall-modal';
 import { useState } from 'react';
+import LogoUniform from '@/components/ui/logo-uniform';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -23,6 +24,7 @@ const tierLabels: Record<OutletTier, string> = {
 export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
   const { hasActiveSubscription } = useSubscription();
   const [showPaywallModal, setShowPaywallModal] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   const {
     id,
@@ -110,25 +112,20 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
         <div className="p-4 border-b border-gray-100 flex justify-between items-center">
           <div className="flex items-center space-x-3">
             {/* Publication Logo */}
-            {outletLogo ? (
-              <img 
-                src={outletLogo} 
-                alt={`${outlet} logo`}
-                className="w-8 h-8 object-contain rounded bg-white border border-gray-100"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  target.nextElementSibling?.classList.remove('hidden');
-                }}
+            {outletLogo && !logoFailed ? (
+              <img
+                src={outletLogo}
+                alt={outlet}
+                className="w-10 h-10 object-contain rounded-lg"
+                onError={() => setLogoFailed(true)}
               />
-            ) : null}
-            <div className={`w-8 h-8 bg-gray-100 rounded flex items-center justify-center ${outletLogo ? 'hidden' : ''}`}>
-              <span className="text-gray-400 text-xs font-bold">
-                {outlet.charAt(0).toUpperCase()}
-              </span>
-            </div>
+            ) : (
+              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Building className="h-5 w-5 text-gray-400" />
+              </div>
+            )}
             
-            <h3 className="text-lg font-bold text-gray-800">{outlet}</h3>
+            <h3 className="text-xl font-semibold text-gray-800">{outlet}</h3>
           </div>
           
           {/* Tier badge on right */}
@@ -150,7 +147,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
           <div className="text-sm font-medium text-indigo-800 mb-2">EXPERT REQUEST</div>
           
           {/* Title with fixed height and truncation */}
-          <h2 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 h-[56px]">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-3 line-clamp-2 h-[64px]">
             {title}
           </h2>
           
