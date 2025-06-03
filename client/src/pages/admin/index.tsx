@@ -10,7 +10,7 @@ import OpportunitiesManager from "./opportunities-manager";
 import PitchesManager from "./pitches-manager";
 import PublicationsManager from "./publications-manager";
 import UsersManager from "./users-manager";
-import BillingManager from "./billing-manager";
+import BillingManagerNew from "./billing-manager-new";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
         </TabsContent>
         
         <TabsContent value="billing" className="space-y-4">
-          <BillingManager />
+          <BillingManagerNew />
         </TabsContent>
       </Tabs>
     </div>

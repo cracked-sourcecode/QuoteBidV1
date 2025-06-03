@@ -319,18 +319,88 @@ export default function OpportunitiesManager() {
     
     const matchesStatus = selectedStatus === 'all' || opp.status === selectedStatus;
     const matchesTier = selectedTier === 'all' || opp.tier === selectedTier;
-    const matchesPublication = selectedPublication === 'all' || opp.publication?.name === selectedPublication;
+    
+    // Enhanced publication filtering with debugging
+    let matchesPublication;
+    if (selectedPublication === 'all') {
+      matchesPublication = true;
+    } else {
+      // Try multiple comparison methods to handle data format issues
+      const oppPubName = opp.publication?.name;
+      const selectedPub = selectedPublication;
+      
+      // Method 1: Exact match
+      const exactMatch = oppPubName === selectedPub;
+      
+      // Method 2: Case-insensitive match
+      const caseInsensitiveMatch = oppPubName?.toLowerCase() === selectedPub?.toLowerCase();
+      
+      // Method 3: Trimmed match (remove whitespace)
+      const trimmedMatch = oppPubName?.trim() === selectedPub?.trim();
+      
+      // Method 4: Combined case-insensitive and trimmed
+      const normalizedMatch = oppPubName?.toLowerCase().trim() === selectedPub?.toLowerCase().trim();
+      
+      // Method 5: Check if it's a partial match
+      const partialMatch = oppPubName?.toLowerCase().includes(selectedPub?.toLowerCase());
+      
+      matchesPublication = exactMatch || caseInsensitiveMatch || trimmedMatch || normalizedMatch;
+      
+      // Debug logging for publication filtering
+      if (selectedPublication !== 'all') {
+        console.log('🔍 PUBLICATION FILTER DEBUG:', {
+          selectedPublication: selectedPub,
+          opportunityPubName: oppPubName,
+          opportunityId: opp.id,
+          opportunityTitle: opp.title,
+          exactMatch,
+          caseInsensitiveMatch,
+          trimmedMatch,
+          normalizedMatch,
+          partialMatch,
+          finalMatch: matchesPublication,
+          oppPubType: typeof oppPubName,
+          selectedPubType: typeof selectedPub,
+          oppPubLength: oppPubName?.length,
+          selectedPubLength: selectedPub?.length,
+        });
+      }
+    }
+    
     const matchesIndustry = selectedIndustry === 'all' || opp.industry === selectedIndustry;
     const matchesRequestType = selectedRequestType === 'all' || opp.requestType === selectedRequestType;
     
     return matchesSearch && matchesStatus && matchesTier && matchesPublication && matchesIndustry && matchesRequestType;
   }) || [];
   
-  // DEBUG: Log the data to see what's wrong
-  console.log('OPPORTUNITIES DATA:', opportunities);
-  console.log('PUBLICATIONS DATA:', publications);
-  console.log('SELECTED PUBLICATION:', selectedPublication);
-  console.log('PUBLICATION NAMES FROM OPPS:', opportunities?.map(opp => opp.publication?.name));
+  // ENHANCED DEBUG: Log the data to see what's wrong
+  console.log('📊 OPPORTUNITIES DATA:', opportunities);
+  console.log('📰 PUBLICATIONS DATA:', publications);
+  console.log('🎯 SELECTED PUBLICATION:', selectedPublication);
+  console.log('📋 PUBLICATION NAMES FROM OPPS:', opportunities?.map(opp => ({
+    id: opp.id,
+    title: opp.title,
+    pubName: opp.publication?.name,
+    pubId: opp.publication?.id,
+    pubObject: opp.publication
+  })));
+  console.log('🔢 PUBLICATION COMPARISON:', {
+    selectedPublication,
+    selectedPublicationType: typeof selectedPublication,
+    availablePublications: publications?.map(pub => ({
+      id: pub.id, 
+      name: pub.name,
+      nameType: typeof pub.name,
+      nameLength: pub.name?.length
+    })),
+    opportunityPublications: Array.from(new Set(opportunities?.map(opp => opp.publication?.name).filter(Boolean))).map(name => ({
+      name,
+      type: typeof name,
+      length: name?.length
+    }))
+  });
+  console.log('✅ FILTERED OPPORTUNITIES COUNT:', filteredOpportunities.length);
+  console.log('📈 TOTAL OPPORTUNITIES COUNT:', opportunities?.length);
 
   // Calculate stats
   const stats = {
@@ -361,119 +431,195 @@ export default function OpportunitiesManager() {
               </p>
             </div>
             <button 
+              type="button"
               onClick={() => setIsCreateDialogOpen(true)}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 focus:ring-2 focus:ring-blue-500 focus:outline-none active:scale-95"
             >
               <Plus className="h-5 w-5" />
-          Add New Opportunity
+              Add New Opportunity
             </button>
           </div>
 
-          {/* Enhanced Search and Filter Section */}
+          {/* New Enhanced Search and Filter Section */}
           <div className="mb-6">
-            {/* Search Bar */}
-            <div className="mb-4">
+            {/* Primary Search Bar */}
+            <div className="mb-6">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-6 w-6" />
                 <Input
-                  placeholder="Search by title, description, publication, industry, tier, request type, media type, or tags..."
+                  placeholder="Search opportunities by title, description, publication, industry, tier, request type, media type, or tags..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 h-12 text-base border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm"
+                  className="pl-14 h-14 text-base border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-md bg-white"
                 />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
               </div>
             </div>
             
-            {/* Filter Row */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {/* Status Filter */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">Status</Label>
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg h-10">
-                    <SelectValue placeholder="All Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="open">Open</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Advanced Filters Row */}
+            <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-200/50">
+              <div className="flex items-center gap-3 mb-4">
+                <Filter className="h-5 w-5 text-gray-600" />
+                <h3 className="font-semibold text-gray-900">Advanced Filters</h3>
               </div>
               
-              {/* Tier Filter */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">Tier</Label>
-                <Select value={selectedTier} onValueChange={setSelectedTier}>
-                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg h-10">
-                    <SelectValue placeholder="All Tiers" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Tiers</SelectItem>
-                    <SelectItem value="Tier 1">Tier 1</SelectItem>
-                    <SelectItem value="Tier 2">Tier 2</SelectItem>
-                    <SelectItem value="Tier 3">Tier 3</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Publication Filter */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">Publication</Label>
-                <Select value={selectedPublication} onValueChange={setSelectedPublication}>
-                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg h-10">
-                    <SelectValue placeholder="All Publications" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Publications</SelectItem>
-                    {/* Use actual publications data instead of extracting from opportunities */}
-                    {publications?.map((pub: any) => (
-                      <SelectItem key={pub.id} value={pub.name}>{pub.name}</SelectItem>
-                    ))}
-                    {/* Fallback: If no publications data, extract from opportunities */}
-                    {!publications?.length && opportunities?.length && 
-                      Array.from(new Set(opportunities.map(opp => opp.publication?.name).filter(Boolean))).map((pubName: any) => (
-                        <SelectItem key={pubName} value={pubName}>{pubName}</SelectItem>
-                      ))
-                    }
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Industry Filter */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">Industry</Label>
-                <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
-                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg h-10">
-                    <SelectValue placeholder="All Industries" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Industries</SelectItem>
-                    {Array.from(new Set(opportunities?.map(opp => opp.industry).filter(Boolean))).map((industry: any) => (
-                      <SelectItem key={industry} value={industry}>{industry}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Request Type Filter */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">Request Type</Label>
-                <Select value={selectedRequestType} onValueChange={setSelectedRequestType}>
-                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg h-10">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    {Array.from(new Set(opportunities?.map(opp => opp.requestType).filter(Boolean))).map((requestType: any) => (
-                      <SelectItem key={requestType} value={requestType}>{requestType}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {/* Status Filter */}
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">Status</Label>
+                  <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                    <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg h-11 bg-white">
+                      <SelectValue placeholder="All Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="open">
+                        <div className="flex items-center">
+                          <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />
+                          Open
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="closed">
+                        <div className="flex items-center">
+                          <XCircle className="w-4 h-4 mr-2 text-red-600" />
+                          Closed
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Tier Filter */}
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">Tier</Label>
+                  <Select value={selectedTier} onValueChange={setSelectedTier}>
+                    <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg h-11 bg-white">
+                      <SelectValue placeholder="All Tiers" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Tiers</SelectItem>
+                      <SelectItem value="Tier 1">
+                        <div className="flex items-center">
+                          <Award className="w-4 h-4 mr-2 text-amber-600" />
+                          Tier 1
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Tier 2">
+                        <div className="flex items-center">
+                          <Award className="w-4 h-4 mr-2 text-blue-600" />
+                          Tier 2
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Tier 3">
+                        <div className="flex items-center">
+                          <Award className="w-4 h-4 mr-2 text-green-600" />
+                          Tier 3
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Enhanced Publication Filter */}
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    Publication
+                    {loadingPublications && (
+                      <Loader2 className="inline h-3 w-3 ml-1 animate-spin" />
+                    )}
+                  </Label>
+                  <Select value={selectedPublication} onValueChange={setSelectedPublication}>
+                    <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg h-11 bg-white">
+                      <SelectValue placeholder="All Publications" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Publications</SelectItem>
+                      
+                      {/* Primary source: Publications from API */}
+                      {publications && publications.length > 0 && (
+                        <>
+                          {publications.map((pub: any) => (
+                            <SelectItem key={`pub-${pub.id}`} value={pub.name}>
+                              {pub.name}
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                      
+                      {/* Fallback: Publications from opportunities if API data not available */}
+                      {(!publications || publications.length === 0) && opportunities && opportunities.length > 0 && (
+                        <>
+                          {Array.from(new Set(opportunities.map(opp => opp.publication?.name).filter(Boolean))).map((pubName: any) => (
+                            <SelectItem key={`opp-${pubName}`} value={pubName}>
+                              {pubName}
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                      
+                      {/* Show message if no publications available */}
+                      {(!publications || publications.length === 0) && (!opportunities || opportunities.length === 0) && (
+                        <SelectItem value="none" disabled>
+                          <span className="text-gray-500 italic">No publications available</span>
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Industry Filter */}
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">Industry</Label>
+                  <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
+                    <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg h-11 bg-white">
+                      <SelectValue placeholder="All Industries" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Industries</SelectItem>
+                      {Array.from(new Set(opportunities?.map(opp => opp.industry).filter(Boolean))).map((industry: any) => (
+                        <SelectItem key={industry} value={industry}>
+                          <div className="flex items-center">
+                            <Tag className="w-4 h-4 mr-2 text-purple-600" />
+                            {industry}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Request Type Filter */}
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">Request Type</Label>
+                  <Select value={selectedRequestType} onValueChange={setSelectedRequestType}>
+                    <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg h-11 bg-white">
+                      <SelectValue placeholder="All Types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      {Array.from(new Set(opportunities?.map(opp => opp.requestType).filter(Boolean))).map((requestType: any) => (
+                        <SelectItem key={requestType} value={requestType}>
+                          <div className="flex items-center">
+                            <MessageSquare className="w-4 h-4 mr-2 text-indigo-600" />
+                            {requestType}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               
               {/* Clear Filters Button */}
-              <div className="flex items-end">
+              <div className="mt-4 flex justify-end">
                 <Button 
                   variant="outline" 
                   onClick={() => {
@@ -484,43 +630,100 @@ export default function OpportunitiesManager() {
                     setSelectedIndustry('all');
                     setSelectedRequestType('all');
                   }}
-                  className="h-10 w-full border-gray-200 hover:bg-gray-50 rounded-lg"
+                  className="border-gray-300 hover:bg-gray-50 rounded-lg h-10 px-4"
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Clear All
-        </Button>
+                  Clear All Filters
+                </Button>
               </div>
             </div>
             
-            {/* Results Counter and Active Filters */}
-            <div className="mt-4 flex items-center justify-between">
-              <div className="text-sm text-gray-600 flex items-center gap-2">
-                <Target className="h-4 w-4" />
-                Showing {filteredOpportunities.length} of {opportunities?.length || 0} opportunities
-                {searchTerm && (
-                  <span className="text-blue-600">matching "{searchTerm}"</span>
-                )}
+            {/* Results Summary and Active Filters */}
+            <div className="mt-6 flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <div className="text-sm text-gray-600 flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  <span className="font-medium">
+                    Showing {filteredOpportunities.length} of {opportunities?.length || 0} opportunities
+                  </span>
+                  {searchTerm && (
+                    <span className="text-blue-600 font-medium">matching "{searchTerm}"</span>
+                  )}
+                </div>
+                
+                {/* Data source indicator */}
+                <div className="text-xs text-gray-500 flex items-center gap-1">
+                  <Activity className="h-3 w-3" />
+                  Publications: {publications?.length || 0} from API, {opportunities ? Array.from(new Set(opportunities.map(opp => opp.publication?.name).filter(Boolean))).length : 0} from opportunities
+                </div>
               </div>
               
               {/* Active Filters Display */}
               <div className="flex items-center gap-2 flex-wrap">
                 {selectedStatus !== 'all' && (
-                  <Badge variant="secondary" className="text-xs">Status: {selectedStatus}</Badge>
+                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                    Status: {selectedStatus}
+                  </Badge>
                 )}
                 {selectedTier !== 'all' && (
-                  <Badge variant="secondary" className="text-xs">Tier: {selectedTier}</Badge>
+                  <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800">
+                    Tier: {selectedTier}
+                  </Badge>
                 )}
                 {selectedPublication !== 'all' && (
-                  <Badge variant="secondary" className="text-xs">Publication: {selectedPublication}</Badge>
+                  <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                    Publication: {selectedPublication}
+                  </Badge>
                 )}
                 {selectedIndustry !== 'all' && (
-                  <Badge variant="secondary" className="text-xs">Industry: {selectedIndustry}</Badge>
+                  <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800">
+                    Industry: {selectedIndustry}
+                  </Badge>
                 )}
                 {selectedRequestType !== 'all' && (
-                  <Badge variant="secondary" className="text-xs">Type: {selectedRequestType}</Badge>
+                  <Badge variant="secondary" className="text-xs bg-indigo-100 text-indigo-800">
+                    Type: {selectedRequestType}
+                  </Badge>
                 )}
               </div>
             </div>
+            
+            {/* DEBUG PANEL - Publication Filtering (Remove after fixing) */}
+            {selectedPublication !== 'all' && (
+              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <Activity className="h-4 w-4 text-yellow-600" />
+                  <h4 className="font-medium text-yellow-800">Publication Debug Panel</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                  <div>
+                    <p className="font-medium text-yellow-800 mb-1">Selected Publication:</p>
+                    <p className="text-yellow-700 font-mono bg-yellow-100 p-2 rounded">
+                      "{selectedPublication}" (Type: {typeof selectedPublication}, Length: {selectedPublication?.length})
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-yellow-800 mb-1">Available in Opportunities:</p>
+                    <div className="space-y-1">
+                      {Array.from(new Set(opportunities?.map(opp => opp.publication?.name).filter(Boolean))).slice(0, 3).map((pubName: any, idx) => (
+                        <p key={idx} className="text-yellow-700 font-mono bg-yellow-100 p-1 rounded text-xs">
+                          "{pubName}" (Type: {typeof pubName}, Length: {pubName?.length})
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-medium text-yellow-800 mb-1">Filter Results:</p>
+                    <p className="text-yellow-700">
+                      Showing {filteredOpportunities.length} / {opportunities?.length || 0} opportunities
+                    </p>
+                    <p className="text-yellow-700 text-xs mt-1">
+                      Check browser console for detailed comparison logs
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Enhanced Stats Row */}
@@ -600,14 +803,22 @@ export default function OpportunitiesManager() {
                         
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
-                              <MoreHorizontal className="h-4 w-4" />
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-10 w-10 p-0 hover:bg-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            >
+                              <MoreHorizontal className="h-5 w-5" />
+                              <span className="sr-only">Open menu</span>
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="z-50">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setShowDetails(opportunity.id)}>
+                            <DropdownMenuItem 
+                              onClick={() => setShowDetails(opportunity.id)}
+                              className="cursor-pointer"
+                            >
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
@@ -617,7 +828,7 @@ export default function OpportunitiesManager() {
                                 id: opportunity.id, 
                                 status: opportunity.status === 'open' ? 'closed' : 'open'
                               })}
-                              className={opportunity.status === 'open' ? 'text-red-600' : 'text-green-600'}
+                              className={`cursor-pointer ${opportunity.status === 'open' ? 'text-red-600 focus:text-red-700' : 'text-green-600 focus:text-green-700'}`}
                             >
                               {opportunity.status === 'open' ? (
                                 <>
@@ -710,8 +921,9 @@ export default function OpportunitiesManager() {
                     {/* Card Footer */}
                     <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100">
                       <button
+                        type="button"
                         onClick={() => setShowDetails(opportunity.id)}
-                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-2 group"
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-2 group focus:ring-2 focus:ring-blue-500 focus:outline-none active:scale-95"
                       >
                         <Eye className="w-4 h-4 group-hover:scale-110 transition-transform" />
                         <span>View Details</span>
@@ -737,8 +949,9 @@ export default function OpportunitiesManager() {
               </p>
               {!searchTerm && (
                 <button 
+                  type="button"
                   onClick={() => setIsCreateDialogOpen(true)} 
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2 mx-auto"
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2 mx-auto focus:ring-2 focus:ring-blue-500 focus:outline-none active:scale-95"
                 >
                   <Plus className="h-5 w-5" />
                   Create Your First Opportunity
@@ -1191,8 +1404,8 @@ export default function OpportunitiesManager() {
                           )}
                         </div>
                       </div>
-      </div>
-      
+                    </div>
+                    
                     {/* Opportunity Info */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-4">
@@ -1206,7 +1419,7 @@ export default function OpportunitiesManager() {
                           <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
                             {opportunities.find((o: any) => o.id === showDetails).requestType}
                           </Badge>
-        </div>
+                        </div>
                         
                         <div>
                           <h3 className="font-semibold text-gray-900 mb-2">Status</h3>
@@ -1305,27 +1518,29 @@ export default function OpportunitiesManager() {
             </div>
             
               <DialogFooter className="border-t border-gray-200/50 pt-6">
-              <Button 
+                <Button 
+                  type="button"
                   variant="outline"
                   onClick={() => setShowDetails(null)}
-                  className="border-gray-300 hover:bg-gray-50"
+                  className="border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:outline-none"
                 >
                   Close
                 </Button>
                 <Button 
+                  type="button"
                   variant={opportunities?.find((o: any) => o.id === showDetails)?.status === 'open' ? 'destructive' : 'default'}
-                onClick={() => {
-                  const opportunity = opportunities?.find((o: any) => o.id === showDetails);
-                  if (opportunity) {
-                    updateStatusMutation.mutate({
-                      id: opportunity.id,
-                      status: opportunity.status === 'open' ? 'closed' : 'open'
-                    });
-                    setShowDetails(null);
-                  }
-                }}
-                  className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-              >
+                  onClick={() => {
+                    const opportunity = opportunities?.find((o: any) => o.id === showDetails);
+                    if (opportunity) {
+                      updateStatusMutation.mutate({
+                        id: opportunity.id,
+                        status: opportunity.status === 'open' ? 'closed' : 'open'
+                      });
+                      setShowDetails(null);
+                    }
+                  }}
+                  className="shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:ring-2 focus:outline-none"
+                >
                   {opportunities?.find((o: any) => o.id === showDetails)?.status === 'open' ? (
                     <>
                       <XCircle className="mr-2 h-4 w-4" />
@@ -1337,11 +1552,11 @@ export default function OpportunitiesManager() {
                       Reopen Opportunity
                     </>
                   )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </div>
   );

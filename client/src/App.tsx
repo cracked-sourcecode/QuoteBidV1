@@ -32,7 +32,7 @@ import OpportunitiesManager from "@/pages/admin/opportunities-manager-new";
 import UsersManager from "@/pages/admin/users-manager";
 import Support from "@/pages/admin/support";
 import AdminPitchesPage from "@/pages/admin/pitches";
-import BillingManager from "@/pages/admin/billing-manager";
+import BillingManagerNew from "@/pages/admin/billing-manager-new";
 import CoverageManager from "@/pages/admin/coverage-manager";
 import AgreementsViewer from "@/pages/admin/agreements-viewer";
 import AdminAnalytics from "@/pages/admin/analytics";
@@ -219,7 +219,7 @@ function Router() {
         <AdminProtectedRoute path="/admin/billing" component={() => (
           <AdminLayout>
             <div className="container mx-auto py-8 px-4">
-              <BillingManager />
+              <BillingManagerNew />
             </div>
           </AdminLayout>
         )} />

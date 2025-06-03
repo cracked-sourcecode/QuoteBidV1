@@ -6265,5 +6265,218 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ============ NEW BILLING MANAGER ENDPOINTS ============
+  
+  // Get successful pitches ready for billing (new billing manager format)
+  app.get("/api/admin/billing/ready", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      // Get all pitches with their relations
+      const pitches = await storage.getAllPitchesWithRelations();
+      
+      // Filter and format for the new billing manager UI
+      const readyForBilling = pitches
+        .filter(pitch => pitch.status === 'successful' && !pitch.billedAt) // Successful but not yet billed
+        .map(pitch => ({
+          id: pitch.id.toString(),
+          userId: pitch.userId.toString(),
+          bidAmount: pitch.bidAmount || 0,
+          billed: !!pitch.billedAt,
+          createdAt: pitch.createdAt,
+          publication: pitch.publication ? {
+            id: pitch.publication.id,
+            name: pitch.publication.name
+          } : null,
+          title: pitch.opportunity?.title || 'Unknown Opportunity',
+          customerName: pitch.user?.fullName || pitch.user?.username,
+          user: {
+            id: pitch.user.id,
+            fullName: pitch.user.fullName,
+            email: pitch.user.email,
+            username: pitch.user.username,
+            company_name: pitch.user.companyName || null,
+            stripeCustomerId: pitch.user.stripeCustomerId
+          }
+        }));
+      
+      console.log(`📊 Found ${readyForBilling.length} pitches ready for billing`);
+      res.json(readyForBilling);
+    } catch (error: any) {
+      console.error("Error fetching billing-ready pitches:", error);
+      res.status(500).json({ message: "Failed to fetch billing data: " + error.message });
+    }
+  });
+  
+  // Get payment methods for a specific user (admin only)
+  app.get("/api/admin/billing/payment-methods", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId;
+      if (!userId) {
+        return res.status(400).json({ message: "userId parameter is required" });
+      }
+      
+      // Get the user
+      const user = await storage.getUser(parseInt(userId as string));
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (!user.stripeCustomerId) {
+        return res.json([]); // No payment methods if no Stripe customer
+      }
+      
+      try {
+        // Get customer with payment methods from Stripe
+        const customer = await stripe.customers.retrieve(user.stripeCustomerId, {
+          expand: ['invoice_settings.default_payment_method']
+        });
+        
+        // Get all payment methods for the customer
+        const paymentMethods = await stripe.paymentMethods.list({
+          customer: user.stripeCustomerId,
+          type: 'card',
+        });
+        
+        // Format payment methods for the UI
+        const formattedPaymentMethods = paymentMethods.data.map(pm => ({
+          id: pm.id,
+          brand: pm.card?.brand || 'unknown',
+          last4: pm.card?.last4 || '0000',
+          exp_month: pm.card?.exp_month || 0,
+          exp_year: pm.card?.exp_year || 0,
+          isDefault: (customer as any).invoice_settings?.default_payment_method?.id === pm.id
+        }));
+        
+        console.log(`💳 Found ${formattedPaymentMethods.length} payment methods for user ${userId}`);
+        res.json(formattedPaymentMethods);
+      } catch (stripeError: any) {
+        console.error("Stripe error fetching payment methods:", stripeError);
+        res.json([]); // Return empty array if Stripe fails
+      }
+    } catch (error: any) {
+      console.error("Error fetching user payment methods:", error);
+      res.status(500).json({ message: "Failed to fetch payment methods: " + error.message });
+    }
+  });
+  
+  // Charge a user for a specific pitch using a payment method
+  app.post("/api/admin/billing/charge", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const { pitchId, paymentMethodId } = req.body;
+      
+      if (!pitchId || !paymentMethodId) {
+        return res.status(400).json({ message: "pitchId and paymentMethodId are required" });
+      }
+      
+      // Get the pitch with relations
+      const pitch = await storage.getPitchWithRelations(parseInt(pitchId));
+      if (!pitch) {
+        return res.status(404).json({ message: "Pitch not found" });
+      }
+      
+      // Check if already billed
+      if (pitch.billedAt) {
+        return res.status(400).json({ message: "Pitch has already been billed" });
+      }
+      
+      // Ensure pitch is successful
+      if (pitch.status !== 'successful') {
+        return res.status(400).json({ message: "Only successful pitches can be billed" });
+      }
+      
+      // Get the user
+      const user = await storage.getUser(pitch.userId);
+      if (!user || !user.stripeCustomerId) {
+        return res.status(400).json({ message: "User has no Stripe customer ID" });
+      }
+      
+      try {
+        // Create and immediately capture a payment intent
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(pitch.bidAmount * 100), // Convert to cents
+          currency: 'usd',
+          customer: user.stripeCustomerId,
+          payment_method: paymentMethodId,
+          description: `QuoteBid charge for "${pitch.opportunity?.title || 'Unknown Opportunity'}" in ${pitch.publication?.name || 'Unknown Publication'}`,
+          metadata: {
+            pitchId: pitch.id.toString(),
+            userId: user.id.toString(),
+            opportunityTitle: pitch.opportunity?.title || '',
+            publicationName: pitch.publication?.name || ''
+          },
+          confirm: true, // Confirm immediately
+          off_session: true, // Since this is admin-initiated, not user-initiated
+          return_url: `${req.protocol}://${req.get('host')}/admin/billing`
+        });
+        
+        // Update the pitch with billing info
+        const updatedPitch = await storage.updatePitchBillingInfo(
+          pitch.id,
+          paymentIntent.id,
+          new Date()
+        );
+        
+        console.log(`💳 Successfully charged user ${user.id} $${pitch.bidAmount} for pitch ${pitch.id}`);
+        
+        // Create notification for successful payment
+        try {
+          await notificationService.createNotification({
+            userId: user.id,
+            type: 'payment',
+            title: '💳 Payment Processed Successfully!',
+            message: `Your payment of $${pitch.bidAmount} for "${pitch.opportunity?.title || 'your pitch'}" has been processed successfully.`,
+            linkUrl: '/account',
+            relatedId: pitch.id,
+            relatedType: 'pitch',
+            icon: 'credit-card',
+            iconColor: 'green',
+          });
+        } catch (notificationError) {
+          console.error('Error creating payment success notification:', notificationError);
+          // Don't fail the request if notification creation fails
+        }
+        
+        res.json({
+          success: true,
+          message: "Payment charged successfully",
+          pitch: updatedPitch,
+          paymentIntent: {
+            id: paymentIntent.id,
+            status: paymentIntent.status,
+            amount: paymentIntent.amount / 100
+          }
+        });
+      } catch (stripeError: any) {
+        console.error("Stripe charge error:", stripeError);
+        
+        // Record the billing error
+        await storage.updatePitchBillingError(pitch.id, stripeError.message);
+        
+        // Return specific error messages based on Stripe error types
+        if (stripeError.code === 'card_declined') {
+          return res.status(400).json({ 
+            message: "Card was declined. Please try a different payment method or contact the customer." 
+          });
+        } else if (stripeError.code === 'insufficient_funds') {
+          return res.status(400).json({ 
+            message: "Insufficient funds. Please contact the customer." 
+          });
+        } else if (stripeError.code === 'payment_method_unactivated') {
+          return res.status(400).json({ 
+            message: "Payment method is not activated. Please contact the customer." 
+          });
+        } else {
+          return res.status(400).json({ 
+            message: `Payment failed: ${stripeError.message}` 
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error("Error processing charge:", error);
+      res.status(500).json({ message: "Failed to process charge: " + error.message });
+    }
+  });
+
+  // ============ END NEW BILLING MANAGER ENDPOINTS ============
+  
   return httpServer;
 }
