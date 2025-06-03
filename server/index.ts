@@ -33,7 +33,16 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // Allow localhost on any port for development
+    // Debug logging
+    console.log('CORS check - Origin:', origin, 'NODE_ENV:', process.env.NODE_ENV);
+    
+    // In development, allow any origin
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Development mode - allowing origin:', origin);
+      return callback(null, true);
+    }
+    
+    // In production, use specific allowed origins
     const allowedOrigins = [
       'http://localhost:5050',
       'http://localhost:5173', // Vite default port
@@ -42,14 +51,10 @@ app.use(cors({
       'http://localhost:3001', // Alternative React port
     ];
     
-    // Also allow any localhost origin in development
-    if (process.env.NODE_ENV === 'development' && origin.includes('localhost')) {
-      return callback(null, true);
-    }
-    
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      console.log('CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -57,7 +62,25 @@ app.use(cors({
 }));
 
 // Serve static files from the uploads directory
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
+  setHeaders: (res, path) => {
+    // Add CORS headers for static files
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // Set proper content type for images
+    if (path.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    } else if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (path.endsWith('.gif')) {
+      res.setHeader('Content-Type', 'image/gif');
+    } else if (path.endsWith('.svg')) {
+      res.setHeader('Content-Type', 'image/svg+xml');
+    }
+  }
+}));
 
 /* ----------   PUBLIC ENDPOINTS (no auth)   ---------- */
 app.get("/api/users/check-unique", checkUnique);

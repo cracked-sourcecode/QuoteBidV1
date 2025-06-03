@@ -1592,7 +1592,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: oppWithPub.id,
         title: oppWithPub.title,
         outlet: oppWithPub.publication?.name || null,
-        outletLogo: oppWithPub.publication?.logo || null,
+        outletLogo: oppWithPub.publication?.logo ? 
+          // Convert absolute URLs to relative URLs
+          oppWithPub.publication.logo.replace(/^https?:\/\/[^\/]+/, '') : null,
         tier: oppWithPub.tier ? parseInt(oppWithPub.tier.replace('Tier ', '')) as 1 | 2 | 3 : 1,
         status: oppWithPub.status as 'open' | 'closed',
         summary: oppWithPub.description || '',
@@ -1650,7 +1652,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: oppWithPub.id,
         title: oppWithPub.title,
         outlet: oppWithPub.publication.name,
-        outletLogo: oppWithPub.publication.logo,
+        outletLogo: oppWithPub.publication.logo ? 
+          // Convert absolute URLs to relative URLs
+          oppWithPub.publication.logo.replace(/^https?:\/\/[^\/]+/, '') : null,
         tier: oppWithPub.tier ? parseInt(oppWithPub.tier.replace('Tier ', '')) as 1 | 2 | 3 : 1,
         status: oppWithPub.status as 'open' | 'closed',
         summary: oppWithPub.description || '',
