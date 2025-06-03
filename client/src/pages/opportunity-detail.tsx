@@ -633,85 +633,120 @@ export default function OpportunityDetail() {
         {/* White Container Wrapper */}
         <div className="bg-white rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden">
           <div className="px-6 pb-6">
-            {/* Publication Name with improved responsive spacing */}
-            <div className="mb-6 pt-6">
-              {/* Show publication logo if available, otherwise show name */}
-              {getLogoUrl() && !logoFailed ? (
-                <div className="flex items-center justify-start">
-                  <img
-                    src={getLogoUrl()}
-                    alt={opportunity.outlet}
-                    className="h-16 sm:h-20 md:h-24 lg:h-28 xl:h-32 2xl:h-36 w-auto object-contain max-w-full"
-                    onError={handleLogoError}
-                    onLoad={handleLogoLoad}
-                    style={{ 
-                      imageRendering: 'crisp-edges',
-                      WebkitImageRendering: 'crisp-edges'
-                    } as React.CSSProperties}
-                    loading="lazy"
-                  />
+            {/* Compact Professional Header with Logo + Name */}
+            <div className="pt-6 pb-4 border-b border-gray-200">
+              <div className="flex items-center space-x-4 mb-4">
+                {/* Logo Container */}
+                <div className="flex-shrink-0">
+                  {getLogoUrl() && !logoFailed ? (
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 flex items-center justify-center bg-white rounded-lg shadow-sm border border-gray-200">
+                      <img
+                        src={getLogoUrl()}
+                        alt={opportunity.outlet}
+                        className="w-full h-full object-contain p-1.5 sm:p-2"
+                        onError={handleLogoError}
+                        onLoad={handleLogoLoad}
+                        style={{ 
+                          imageRendering: 'crisp-edges',
+                          WebkitImageRendering: 'crisp-edges'
+                        } as React.CSSProperties}
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm flex items-center justify-center">
+                      <span className="text-white font-bold text-base sm:text-lg md:text-xl lg:text-2xl">
+                        {opportunity.outlet?.split(' ').map((word: string) => word[0]).join('').slice(0, 2).toUpperCase() || 'NA'}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-4xl 2xl:text-5xl font-semibold text-black tracking-tight leading-tight">
-                  {opportunity.outlet}
-                </h2>
-              )}
+                
+                {/* Publication Name and Tier */}
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3">
+                    <h2 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl font-bold text-gray-900">
+                      {opportunity.outlet}
+                    </h2>
+                    <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md px-3 py-1.5 text-xs sm:text-sm font-semibold">
+                      Tier {getTierDisplay(opportunity.tier)}
+                    </Badge>
+                  </div>
+                  {/* Optional: Add publication tagline or category */}
+                  <p className="text-sm sm:text-base text-gray-600 mt-1">Premium Media Opportunity</p>
+                </div>
+              </div>
             </div>
 
-            {/* Opportunity Title with improved responsive spacing */}
-            <div className="mb-8 lg:mb-10">
-              <h1 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl xl:text-5xl 2xl:text-6xl font-medium text-black leading-tight tracking-tighter">
+            {/* Opportunity Title - Now more prominent */}
+            <div className="pt-6 mb-6">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-bold text-black leading-tight">
                 {opportunity.title}
               </h1>
             </div>
 
-            {/* Topic Tags */}
-            <div className="mb-10">
-              <div className="flex items-center space-x-3">
-                <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md px-4 py-2 text-sm font-semibold">
-                  Tier {getTierDisplay(opportunity.tier)}
-                </Badge>
+            {/* Topic Tags - Compact inline display */}
+            <div className="mb-6">
+              <div className="flex items-center flex-wrap gap-2">
                 {(opportunity.topicTags || []).map((tag: string, index: number) => (
                   <div 
                     key={`${tag}-${index}`}
-                    className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full shadow-sm border border-gray-200 hover:bg-gray-150 transition-colors"
+                    className="text-xs sm:text-sm px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full shadow-sm border border-gray-200 hover:bg-gray-150 transition-colors"
                   >
                     {tag}
                   </div>
                 ))}
               </div>
-              <div className="mt-4 h-1.5 w-20 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-sm"></div>
             </div>
 
-            {/* Key Info Row */}
-            <div className="grid grid-cols-2 gap-8 mb-10">
+            {/* Key Info Row - More compact design */}
+            <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4 mb-6">
               {/* Posted Date */}
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-blue-50 rounded-xl shadow-sm">
-                  <Calendar className="h-6 w-6 text-blue-600" />
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Calendar className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">Posted</div>
-                  <div className="text-xl font-semibold text-gray-900 mt-1">
+                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Posted</div>
+                  <div className="text-sm font-semibold text-gray-900">
                     {format(new Date(opportunity.postedAt || opportunity.createdAt), 'MMM d, yyyy')}
                   </div>
                 </div>
               </div>
 
+              {/* Separator */}
+              <div className="h-12 w-px bg-gray-300"></div>
+
               {/* Deadline */}
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-orange-50 rounded-xl shadow-sm">
-                  <Clock className="h-6 w-6 text-orange-600" />
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-orange-50 rounded-lg">
+                  <Clock className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">Deadline</div>
-                  <div className="text-xl font-semibold text-gray-900 mt-1 flex items-center space-x-3">
+                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Deadline</div>
+                  <div className="text-sm font-semibold text-gray-900 flex items-center space-x-2">
                     <span>{format(new Date(opportunity.deadline), 'MMM d, yyyy')}</span>
                     {isToday && (
-                      <Badge className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold px-3 py-1 shadow-md">
+                      <Badge className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold px-2 py-0.5 shadow-sm">
                         Today
                       </Badge>
                     )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Separator */}
+              <div className="h-12 w-px bg-gray-300"></div>
+
+              {/* Status */}
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-green-50 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Current Price</div>
+                  <div className="text-sm font-semibold text-gray-900">
+                    ${currentPrice}
                   </div>
                 </div>
               </div>
