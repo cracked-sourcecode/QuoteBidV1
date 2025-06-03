@@ -154,7 +154,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
                   />
                 ) : (
                   // Text-based fallback when logo fails or is not available
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded">
+                  <div className="w-full h-full flex items-center justify-center bg-white rounded">
                     <span className="text-xs font-semibold text-gray-600 text-center px-1">
                       {outlet?.split(' ').map((word: string) => word[0]).join('').slice(0, 2).toUpperCase() || 'NA'}
                     </span>

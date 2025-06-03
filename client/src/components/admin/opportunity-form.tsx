@@ -44,7 +44,7 @@ const requestTypeOptions = [
 
 // Define the form schema with validation
 const opportunitySchema = z.object({
-  title: z.string().min(1, "Title is required"),
+  title: z.string().min(50, "Title must be at least 50 characters").max(80, "Title must be 80 characters or less"),
   description: z.string().min(1, "Description is required"),
   publicationId: z.coerce.number().min(1, "Publication is required"),
   requestType: z.string().min(1, "Request type is required"),
@@ -129,10 +129,29 @@ export function OpportunityForm({ onSubmit, isEdit = false, defaultValues }: Opp
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="What kind of expert are you looking for?" {...field} />
+                    <div className="relative">
+                      <Input 
+                        placeholder="What kind of expert are you looking for?" 
+                        {...field} 
+                        maxLength={80}
+                        minLength={50}
+                        className="pr-16"
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm font-medium z-10">
+                        <span className={`px-2 py-1 rounded-md ${
+                          field.value?.length < 50 
+                            ? "bg-red-100 text-red-700 border border-red-300"
+                            : field.value?.length > 70 
+                            ? "bg-orange-100 text-orange-700 border border-orange-300" 
+                            : "bg-green-100 text-green-700 border border-green-300"
+                        }`}>
+                          {field.value?.length || 0}/80
+                        </span>
+                      </div>
+                    </div>
                   </FormControl>
                   <FormDescription>
-                    Summarize your request in one line
+                    Create a descriptive title between 50-80 characters for consistent card display
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

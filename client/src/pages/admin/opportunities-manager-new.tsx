@@ -78,7 +78,7 @@ import { getPublicationLogo } from '@/lib/responsive-utils';
 
 const opportunitySchema = z.object({
   publicationId: z.coerce.number(),
-  title: z.string().min(1, "Title is required").max(80, "Title must be 80 characters or less"),
+  title: z.string().min(50, "Title must be at least 50 characters").max(80, "Title must be 80 characters or less"),
   requestType: z.string().min(1, "Request type is required"),
   mediaType: z.string().min(1, "Media type is required"),
   description: z.string().min(1, "Description is required").max(300, "Description must be 300 characters or less"),
@@ -90,7 +90,7 @@ const opportunitySchema = z.object({
 
 // Schema specifically for editing (content only - no pricing/deadline changes)
 const editOpportunitySchema = z.object({
-  title: z.string().min(1, "Title is required").max(80, "Title must be 80 characters or less"),
+  title: z.string().min(50, "Title must be at least 50 characters").max(80, "Title must be 80 characters or less"),
   description: z.string().min(1, "Description is required").max(300, "Description must be 300 characters or less"),
   tags: z.array(z.string()).min(1, "At least one industry tag is required"),
 });
@@ -1441,7 +1441,7 @@ export default function OpportunitiesManager() {
                       <FormItem>
                         <FormLabel className="text-base font-medium">Opportunity Title *</FormLabel>
                         <FormDescription className="text-sm text-gray-600">
-                          Create a clear, compelling title that describes what you're looking for
+                          Create a descriptive title between 50-80 characters for consistent card display
                         </FormDescription>
                         <FormControl>
                           <div className="relative">
@@ -1450,12 +1450,15 @@ export default function OpportunitiesManager() {
                               placeholder="e.g., Expert Commentary on AI Market Trends for TechCrunch Article"
                               className="text-base h-12 pr-16"
                               maxLength={80}
+                              minLength={50}
                             />
                             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm font-medium z-10">
                               <span className={`px-2 py-1 rounded-md ${
-                                field.value?.length > 70 
+                                field.value?.length < 50 
+                                  ? "bg-red-100 text-red-700 border border-red-300"
+                                  : field.value?.length > 70 
                                   ? "bg-orange-100 text-orange-700 border border-orange-300" 
-                                  : "bg-gray-100 text-gray-700 border border-gray-300"
+                                  : "bg-green-100 text-green-700 border border-green-300"
                               }`}>
                                 {field.value?.length || 0}/80
                               </span>
@@ -1836,6 +1839,9 @@ export default function OpportunitiesManager() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-base font-medium">Opportunity Title *</FormLabel>
+                        <FormDescription className="text-sm text-gray-600">
+                          Update the title (50-80 characters for consistent card display)
+                        </FormDescription>
                         <FormControl>
                           <div className="relative">
                             <Input 
@@ -1843,12 +1849,15 @@ export default function OpportunitiesManager() {
                               placeholder="e.g., Expert Commentary on AI Market Trends for TechCrunch Article"
                               className="text-base h-12 pr-16"
                               maxLength={80}
+                              minLength={50}
                             />
                             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm font-medium z-10">
                               <span className={`px-2 py-1 rounded-md ${
-                                field.value?.length > 70 
+                                field.value?.length < 50 
+                                  ? "bg-red-100 text-red-700 border border-red-300"
+                                  : field.value?.length > 70 
                                   ? "bg-orange-100 text-orange-700 border border-orange-300" 
-                                  : "bg-gray-100 text-gray-700 border border-gray-300"
+                                  : "bg-green-100 text-green-700 border border-green-300"
                               }`}>
                                 {field.value?.length || 0}/80
                               </span>

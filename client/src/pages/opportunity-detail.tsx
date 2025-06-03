@@ -79,20 +79,22 @@ export default function OpportunityDetail() {
     setLogoLoaded(false);
   };
 
-  // Get the appropriate logo URL - original first, fallback if needed
+  // Get the appropriate logo URL - same approach as opportunity card
   const getLogoUrl = () => {
     if (!opportunity) return '';
     
-    if (logoFailed && opportunity.outletLogo) {
-      // If original logo failed, use our fallback system
-      console.log(`🔄 Using fallback logo for ${opportunity.outlet}`);
-      // Create a minimal publication object for the function
-      const pubObj = { name: opportunity.outlet, logo: opportunity.outletLogo } as any;
-      return getPublicationLogo(pubObj);
-    }
-    // Use original logo first
-    const pubObj = { name: opportunity.outlet, logo: opportunity.outletLogo } as any;
-    return getPublicationLogo(pubObj);
+    const logo = opportunity.outletLogo;
+    
+    // Same logic as opportunity card
+    const logoUrl = logo && logo.trim() && logo !== 'null' && logo !== 'undefined' 
+      ? (logo.startsWith('http') || logo.startsWith('data:') 
+          ? logo 
+          : `${window.location.origin}${logo}`)
+      : '';
+    
+    console.log(`OpportunityDetail - ${opportunity.outlet}: logo URL = ${logoUrl}, original = ${logo}`);
+    
+    return logoUrl;
   };
   
   // Check if user has already pitched for this opportunity
@@ -633,35 +635,31 @@ export default function OpportunityDetail() {
         {/* White Container Wrapper */}
         <div className="bg-white rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden">
           <div className="px-6 pb-6">
-            {/* Compact Professional Header with Logo + Name */}
+            {/* Compact Professional Header with Logo + Name - ORIGINAL DESIGN */}
             <div className="pt-6 pb-4 border-b border-gray-200">
               <div className="flex items-center space-x-4 mb-4">
                 {/* Logo Container */}
                 <div className="flex-shrink-0">
                   {getLogoUrl() && !logoFailed ? (
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 flex items-center justify-center bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 flex-shrink-0 flex items-center justify-center bg-white rounded-lg border border-gray-200 overflow-hidden">
                       <img
                         src={getLogoUrl()}
-                        alt={opportunity.outlet}
-                        className="w-full h-full object-contain p-1.5 sm:p-2"
+                        alt={`${opportunity.outlet} logo`}
+                        className="w-full h-full object-contain"
                         onError={handleLogoError}
                         onLoad={handleLogoLoad}
-                        style={{ 
-                          imageRendering: 'crisp-edges',
-                          WebkitImageRendering: 'crisp-edges'
-                        } as React.CSSProperties}
                         loading="lazy"
                       />
                     </div>
                   ) : (
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm flex items-center justify-center">
-                      <span className="text-white font-bold text-base sm:text-lg md:text-xl lg:text-2xl">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 flex-shrink-0 flex items-center justify-center bg-white rounded-lg border border-gray-200 overflow-hidden">
+                      <span className="text-gray-600 font-bold text-base sm:text-lg md:text-xl lg:text-2xl">
                         {opportunity.outlet?.split(' ').map((word: string) => word[0]).join('').slice(0, 2).toUpperCase() || 'NA'}
                       </span>
                     </div>
                   )}
                 </div>
-                
+
                 {/* Publication Name and Tier */}
                 <div className="flex-1">
                   <div className="flex items-center space-x-3">
@@ -699,35 +697,35 @@ export default function OpportunityDetail() {
               </div>
             </div>
 
-            {/* Key Info Row - More compact design */}
-            <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4 mb-6">
-              {/* Posted Date */}
+            {/* Key Info Row - More colorful design with left-aligned dates */}
+            <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl p-4 mb-6 border border-blue-200/20 shadow-md">
+              {/* Posted Date - Left aligned */}
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <Calendar className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg shadow-md">
+                  <Calendar className="h-5 w-5 text-white" />
                 </div>
-                <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Posted</div>
-                  <div className="text-sm font-semibold text-gray-900">
+                <div className="text-left">
+                  <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Posted</div>
+                  <div className="text-sm font-bold text-gray-900">
                     {format(new Date(opportunity.postedAt || opportunity.createdAt), 'MMM d, yyyy')}
                   </div>
                 </div>
               </div>
 
               {/* Separator */}
-              <div className="h-12 w-px bg-gray-300"></div>
+              <div className="h-12 w-px bg-gradient-to-b from-transparent via-blue-300 to-transparent"></div>
 
-              {/* Deadline */}
+              {/* Deadline - Left aligned */}
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-orange-50 rounded-lg">
-                  <Clock className="h-5 w-5 text-orange-600" />
+                <div className="p-2 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg shadow-md">
+                  <Clock className="h-5 w-5 text-white" />
                 </div>
-                <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Deadline</div>
-                  <div className="text-sm font-semibold text-gray-900 flex items-center space-x-2">
+                <div className="text-left">
+                  <div className="text-xs font-semibold text-orange-600 uppercase tracking-wide">Deadline</div>
+                  <div className="text-sm font-bold text-gray-900 flex items-center space-x-2">
                     <span>{format(new Date(opportunity.deadline), 'MMM d, yyyy')}</span>
                     {isToday && (
-                      <Badge className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold px-2 py-0.5 shadow-sm">
+                      <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-2 py-0.5 shadow-md animate-pulse">
                         Today
                       </Badge>
                     )}
@@ -736,46 +734,46 @@ export default function OpportunityDetail() {
               </div>
 
               {/* Separator */}
-              <div className="h-12 w-px bg-gray-300"></div>
+              <div className="h-12 w-px bg-gradient-to-b from-transparent via-green-300 to-transparent"></div>
 
-              {/* Status */}
+              {/* Status - Left aligned */}
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-50 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-green-600" />
+                <div className="p-2 bg-gradient-to-br from-green-400 to-green-500 rounded-lg shadow-md">
+                  <DollarSign className="h-5 w-5 text-white" />
                 </div>
-                <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Current Price</div>
-                  <div className="text-sm font-semibold text-gray-900">
+                <div className="text-left">
+                  <div className="text-xs font-semibold text-green-600 uppercase tracking-wide">Current Price</div>
+                  <div className="text-sm font-bold text-gray-900">
                     ${currentPrice}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Live Activity */}
+            {/* Live Activity - Enhanced with gradients */}
             <div className="mb-10">
-              <div className="bg-gray-50 rounded-2xl border border-gray-200/50 p-6">
+              <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-2xl border border-purple-200/30 p-6 shadow-lg">
                 <div className="flex items-center space-x-6">
                   <div className="flex items-center space-x-4">
                     <div className="relative flex items-center justify-center w-6 h-6">
-                      <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg"></span>
+                      <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-400/50"></span>
                     </div>
-                    <span className="text-lg font-medium text-gray-800">Live Activity:</span>
+                    <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Live Activity:</span>
                   </div>
                   
-                  <div className="flex items-center space-x-2 bg-green-50 px-4 py-2 rounded-xl border border-green-200/50">
+                  <div className="flex items-center space-x-2 bg-gradient-to-r from-green-50 to-emerald-50 px-4 py-2 rounded-xl border border-green-200/50 shadow-md">
                     <TrendingUp className="h-5 w-5 text-green-600" />
-                    <span className="text-sm font-medium text-green-700">${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'} (last hour)</span>
+                    <span className="text-sm font-semibold text-green-700">${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'} (last hour)</span>
                   </div>
                   
-                  <div className="flex items-center space-x-2 bg-blue-50 px-4 py-2 rounded-xl border border-blue-200/50">
+                  <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-cyan-50 px-4 py-2 rounded-xl border border-blue-200/50 shadow-md">
                     <Flame className="h-5 w-5 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-700">8 pitches (last hour)</span>
+                    <span className="text-sm font-semibold text-blue-700">8 pitches (last hour)</span>
                   </div>
                   
-                  <div className="flex items-center space-x-2 bg-orange-50 px-4 py-2 rounded-xl border border-orange-200/50">
+                  <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-50 to-amber-50 px-4 py-2 rounded-xl border border-orange-200/50 shadow-md">
                     <Clock className="h-5 w-5 text-orange-600" />
-                    <span className="text-sm font-medium text-orange-700">
+                    <span className="text-sm font-semibold text-orange-700">
                       {Math.max(0, Math.ceil((new Date(opportunity.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60)))}h remaining
                     </span>
                   </div>
@@ -783,27 +781,27 @@ export default function OpportunityDetail() {
               </div>
             </div>
 
-            {/* Opportunity Brief Card */}
-            <div className="bg-gray-50 rounded-3xl border border-gray-200/50 overflow-hidden mb-10">
+            {/* Opportunity Brief Card - Lighter, more professional blue */}
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl overflow-hidden mb-10 shadow-lg border border-blue-200/50">
               <div className="p-6">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-4">
                     <div className="flex space-x-1.5">
-                      <span className="w-3 h-3 bg-blue-500 rounded-full shadow-md"></span>
-                      <span className="w-3 h-3 bg-blue-400 rounded-full shadow-md"></span>
-                      <span className="w-3 h-3 bg-blue-300 rounded-full shadow-md"></span>
+                      <span className="w-3 h-3 bg-blue-500 rounded-full shadow-md animate-pulse"></span>
+                      <span className="w-3 h-3 bg-blue-400 rounded-full shadow-md animate-pulse animation-delay-200"></span>
+                      <span className="w-3 h-3 bg-blue-300 rounded-full shadow-md animate-pulse animation-delay-400"></span>
                     </div>
-                    <h3 className="text-xl font-bold text-blue-600 uppercase tracking-wider">
-                      OPPORTUNITY BRIEF
+                    <h3 className="text-xl font-semibold text-blue-900 tracking-wide">
+                      Opportunity Brief
                     </h3>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <span className="text-sm font-medium text-gray-500">Classification:</span>
-                    <Badge className={`border-0 px-4 py-2 font-semibold shadow-md ${
+                    <span className="text-sm font-medium text-blue-700">Classification:</span>
+                    <Badge className={`border-0 px-4 py-2 font-semibold shadow-sm ${
                       opportunity.status === 'open' 
-                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                        : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+                        : 'bg-gradient-to-r from-red-400 to-pink-500 text-white'
                     }`}>
                       {opportunity.status ? opportunity.status.charAt(0).toUpperCase() + opportunity.status.slice(1) : 'Open'}
                     </Badge>
@@ -813,17 +811,28 @@ export default function OpportunityDetail() {
                 {/* Content */}
                 {!isBriefMinimized && (
                   <div className="mb-6">
-                    <div className="bg-gradient-to-r from-white to-gray-50 border-l-4 border-blue-500 rounded-r-2xl shadow-inner overflow-hidden">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm overflow-hidden border border-blue-100">
                       <div className="p-6">
-                        <div className="text-gray-900 text-lg leading-relaxed">
+                        <div className="text-black text-lg leading-loose space-y-4 font-medium">
                           {opportunity.summary ? (
-                            <div className="whitespace-pre-wrap">{opportunity.summary}</div>
+                            <div className="whitespace-pre-wrap">
+                              {opportunity.summary.split('\n\n').map((paragraph: string, index: number) => (
+                                <p key={index} className="mb-4 last:mb-0 font-medium text-black">
+                                  {paragraph.split('\n').map((line: string, lineIndex: number) => (
+                                    <span key={lineIndex}>
+                                      {line}
+                                      {lineIndex < paragraph.split('\n').length - 1 && <br />}
+                                    </span>
+                                  ))}
+                                </p>
+                              ))}
+                            </div>
                           ) : (
                             <div>
-                              <p className="font-semibold text-gray-800 mb-4 text-xl">
+                              <p className="font-semibold text-black mb-4 text-xl">
                                 {opportunity.title}
                               </p>
-                              <p className="text-gray-700">
+                              <p className="text-black leading-loose text-lg font-medium">
                                 This opportunity is seeking expert commentary and insights. Please provide your relevant experience and perspective in your pitch.
                               </p>
                             </div>
@@ -840,17 +849,17 @@ export default function OpportunityDetail() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsBriefMinimized(!isBriefMinimized)}
-                    className="flex items-center space-x-3 text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200 px-4 py-3 rounded-xl font-semibold"
+                    className="flex items-center space-x-3 text-blue-700 hover:text-blue-900 hover:bg-blue-100/50 transition-all duration-200 px-4 py-3 rounded-xl font-medium"
                   >
                     <ChevronUp className={`h-5 w-5 transition-transform duration-300 ${isBriefMinimized ? 'rotate-180' : ''}`} />
-                    <span className="uppercase tracking-wide text-sm">{isBriefMinimized ? 'EXPAND BRIEF' : 'MINIMIZE BRIEF'}</span>
+                    <span className="text-sm">{isBriefMinimized ? 'Expand Brief' : 'Minimize Brief'}</span>
                   </Button>
                 </div>
               </div>
             </div>
 
-            {/* Marketplace Pricing Section */}
-            <div className="bg-gray-50 rounded-3xl border border-gray-200/50 overflow-hidden">
+            {/* Marketplace Pricing Section - Enhanced with gradients */}
+            <div className="bg-gradient-to-br from-indigo-50 via-white to-purple-50 rounded-3xl border border-indigo-200/30 overflow-hidden shadow-xl">
               <div className="grid grid-cols-2 gap-0">
                 {/* Price Trend Section - Left Side */}
                 <div className="p-8 border-r border-gray-200/50">

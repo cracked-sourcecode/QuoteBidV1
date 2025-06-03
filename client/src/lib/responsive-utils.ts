@@ -171,7 +171,7 @@ export const getResponsiveImageClasses = (baseSize: string = 'w-10 h-10'): strin
 
 // Logo container classes that work across all devices
 export const getLogoContainerClasses = (): string => {
-  return 'flex-shrink-0 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200 overflow-hidden';
+  return 'flex-shrink-0 flex items-center justify-center bg-white rounded-lg border border-gray-200 overflow-hidden';
 };
 
 // Comprehensive logo fallback component props
