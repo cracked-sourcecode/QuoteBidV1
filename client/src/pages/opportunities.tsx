@@ -78,8 +78,9 @@ export default function OpportunitiesPage() {
             createdAt: opp.createdAt || new Date().toISOString(),
             updatedAt: opp.updatedAt || new Date().toISOString(),
             publicationId: opp.publicationId || pub.id || 0,
-            industry: opp.industry || ''
-          } as Opportunity & { industry?: string };
+            // Include publication data for the card component
+            publication: pub
+          } as Opportunity & { publication: any };
         });
         
         console.log('Formatted opportunities:', formattedOpportunities);

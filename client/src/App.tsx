@@ -42,6 +42,8 @@ import TermsOfService from "@/pages/TermsOfService";
 import AdminLogin from "@/pages/admin/login";
 import CreateAdmin from "@/pages/admin/create-admin";
 import AdminLayout from "@/components/admin/AdminLayout";
+import "./index.css";
+import "./styles/desktop-fixes.css";
 
 // Logout component to handle the regular user logout process
 function LogoutHandler() {

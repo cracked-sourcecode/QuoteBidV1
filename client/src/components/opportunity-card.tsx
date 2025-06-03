@@ -12,7 +12,7 @@ import LogoUniform from '@/components/ui/logo-uniform';
 import { getPublicationLogo, getResponsiveImageClasses, getLogoContainerClasses, getDeviceOptimizedClasses } from '@/lib/responsive-utils';
 
 interface OpportunityCardProps {
-  opportunity: Opportunity;
+  opportunity: Opportunity & { publication?: any };
 }
 
 // Map tier to display label
@@ -40,7 +40,8 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     deadline,
     slotsRemaining,
     slotsTotal,
-    summary
+    summary,
+    publication
   } = opportunity;
 
   // Improved logo loading handler for retina displays
@@ -131,7 +132,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
       />
       
       <div 
-        className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-1 group" 
+        className="opportunity-card bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-1 group" 
         onClick={handleCardClick}
       >
         {/* Header */}
@@ -139,37 +140,28 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
           <div className="flex justify-between items-start mb-3">
             {/* Publication Logo & Name */}
             <div className="flex items-center space-x-3 flex-1 min-w-0">
-              <div className={`${getLogoContainerClasses()} ${getDeviceOptimizedClasses()}`}>
-                {logoUrl ? (
+              <div className="publication-logo-container w-12 h-12 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                {(publication?.logo || outletLogo) && (publication?.logo || outletLogo) !== 'null' && (publication?.logo || outletLogo) !== 'undefined' ? (
                   <img
-                    src={logoUrl}
+                    src={publication?.logo || outletLogo}
                     alt={`${outlet} logo`}
-                    className="w-full h-full object-contain"
+                    className="publication-logo"
                     loading="lazy"
                     onError={(e) => {
                       console.warn(`Failed to load logo for ${outlet}`);
-                      // Set fallback icon
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      const parent = target.parentElement;
-                      if (parent && !parent.querySelector('.fallback-icon')) {
-                        const fallbackIcon = document.createElement('div');
-                        fallbackIcon.className = 'fallback-icon flex items-center justify-center w-full h-full';
-                        fallbackIcon.innerHTML = `
-                          <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                          </svg>
-                        `;
-                        parent.appendChild(fallbackIcon);
+                      // Hide the broken image
+                      e.currentTarget.style.display = 'none';
+                      // Show publication name instead
+                      const container = e.currentTarget.parentElement;
+                      if (container) {
+                        container.innerHTML = `<span class="text-xs font-bold text-gray-600">${outlet.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}</span>`;
                       }
                     }}
                   />
                 ) : (
-                  <div className="flex items-center justify-center w-full h-full">
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                    </svg>
-                  </div>
+                  <span className="text-xs font-bold text-gray-600">
+                    {outlet.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+                  </span>
                 )}
               </div>
               
