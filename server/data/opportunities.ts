@@ -121,5 +121,27 @@ export const sampleOpportunities: Partial<Opportunity>[] = [
     tags: ["Relationships", "Psychology", "Communication", "Lifestyle", "Dating"],
     minimumBid: 175,
     deadline: addDays(new Date(), 14)
+  },
+  {
+    publicationId: 10, // Yahoo Finance
+    title: "Real Estate Experts For Story on Tariffs",
+    requestType: "EXPERT REQUEST",
+    description: "We are writing a strong on Tariffs: 1. Are tariffs going to affect the real estate market? 2. Will it effect New York...",
+    status: "open",
+    tags: ["Real Estate"],
+    minimumBid: 225,
+    deadline: addDays(new Date(), 3),
+    industry: "Real Estate"
+  },
+  {
+    publicationId: 10, // Yahoo Finance
+    title: "Stock Market Expert",
+    requestType: "EXPERT REQUEST", 
+    description: "We're looking for stock market experts to comment on current market trends and provide insights for our readers.",
+    status: "open",
+    tags: ["Capital Markets"],
+    minimumBid: 225,
+    deadline: addDays(new Date(), 5),
+    industry: "Capital Markets"
   }
 ];

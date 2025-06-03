@@ -5,6 +5,19 @@ export default {
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      // Custom breakpoints for large displays
+      screens: {
+        '3xl': '1920px', // 27" and larger displays
+        '4xl': '2560px', // Ultra-wide displays
+      },
+      
+      // Custom max-width utilities for large screens
+      maxWidth: {
+        '8xl': '90rem',    // 1440px
+        '9xl': '100rem',   // 1600px
+        '10xl': '120rem',  // 1920px
+      },
+      
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

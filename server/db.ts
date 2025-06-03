@@ -3,13 +3,50 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import { eq, SQL } from 'drizzle-orm';
 import ws from "ws";
 import * as schema from "@shared/schema";
-import { users } from "@shared/schema";
+import { users, publications } from "@shared/schema";
+import { samplePublications } from './data/publications';
 
 // Configure neon to use websockets
 neonConfig.webSocketConstructor = ws;
 
 let pool: Pool | null = null;
 let db: ReturnType<typeof drizzle> | null = null;
+
+// Database seeding function
+async function seedDatabase() {
+  if (!db) {
+    throw new Error("Database not initialized");
+  }
+  
+  try {
+    // Check if publications table is empty
+    const existingPublications = await db.select().from(publications);
+    
+    if (existingPublications.length === 0) {
+      console.log('🌱 Seeding database with sample publications...');
+      
+      // Insert sample publications
+      for (const pub of samplePublications) {
+        if (pub.name && pub.logo) {
+          await db.insert(publications).values({
+            name: pub.name,
+            logo: pub.logo,
+            website: pub.website || null,
+            description: pub.description || null,
+            category: pub.category || null,
+            tier: pub.tier || null
+          });
+        }
+      }
+      
+      console.log(`✅ Successfully seeded ${samplePublications.length} publications`);
+    } else {
+      console.log(`📊 Database already contains ${existingPublications.length} publications`);
+    }
+  } catch (error) {
+    console.error('❌ Error seeding database:', error);
+  }
+}
 
 export function initializeDatabase() {
   // Debug logging
@@ -35,6 +72,9 @@ export function initializeDatabase() {
   // Create a drizzle client from pool
   db = drizzle(pool, { schema });
 
+  // Seed the database
+  seedDatabase().catch(console.error);
+
   return { pool, db };
 }
 
@@ -57,7 +97,8 @@ export const signupWizardUtils = {
   // Get user signup stage by email
   async userStage(email: string): Promise<string> {
     try {
-      const result = await db.select({
+      const database = getDb();
+      const result = await database.select({
         id: users.id,
         profileCompleted: users.profileCompleted
       })
@@ -81,6 +122,7 @@ export const signupWizardUtils = {
   // Advance user signup stage
   async advanceStage(email: string, action: string): Promise<string> {
     try {
+      const database = getDb();
       const currentStage = await this.userStage(email);
       let nextStage;
       if (action === 'payment' && currentStage === 'payment') {
@@ -91,11 +133,11 @@ export const signupWizardUtils = {
         return currentStage;
       }
       if (nextStage === 'profile') {
-        await db.update(users)
+        await database.update(users)
           .set({ subscription_status: 'active' })
           .where(eq(users.email, email));
       } else if (nextStage === 'ready') {
-        await db.update(users)
+        await database.update(users)
           .set({ profileCompleted: true })
           .where(eq(users.email, email));
       }

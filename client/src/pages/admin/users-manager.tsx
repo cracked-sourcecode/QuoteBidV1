@@ -44,7 +44,8 @@ import {
   Instagram,
   Globe,
   XCircle,
-  Phone
+  Phone,
+  X
 } from "lucide-react";
 import { 
   Table, 
@@ -133,38 +134,55 @@ export default function UsersManager() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-6">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-8 shadow-xl">
         <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Manage Users</h1>
-            <p className="text-gray-600 mt-1">View and manage user accounts and subscriptions</p>
+          <div className="text-white">
+            <h1 className="text-3xl font-bold flex items-center">
+              <UserIcon className="h-8 w-8 mr-3" />
+              Manage Users
+            </h1>
+            <p className="text-blue-100 mt-2">View and manage user accounts and subscriptions</p>
           </div>
         </div>
       </div>
       
       {/* Search and Filter Bar */}
       <div className="px-8 py-6">
-        <Card className="shadow-sm">
+        <Card className="shadow-lg border-0">
           <CardContent className="p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+              <Search className="h-5 w-5 mr-2 text-blue-600" />
+              Search & Filter Users
+            </h3>
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-500" />
                 <Input
                   placeholder="Search by name, username, email, or industry..."
-                  className="pl-10 h-10 text-sm border-gray-300 focus:border-blue-500"
+                  className="pl-10 h-11 text-sm border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px] h-10 text-sm border-gray-300">
+                <SelectTrigger className="w-[180px] h-11 text-sm border-2 border-gray-200 hover:border-blue-300 focus:border-blue-500 rounded-lg">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="past_due">Past Due</SelectItem>
+                  <SelectItem value="active">
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                      Active
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="past_due">
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                      Past Due
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -190,84 +208,90 @@ export default function UsersManager() {
           </div>
         ) : paginatedUsers.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
               {paginatedUsers.map((user: any) => {
                 const isPremium = getBillingStatus(user);
                 
                 return (
-                  <Card key={user.id} className="bg-white border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden relative">
-                    <CardContent className="p-0">
+                  <Card key={user.id} className="bg-white border border-gray-200 hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col h-full">
+                    <CardContent className="p-0 flex flex-col h-full">
                       {/* User Header */}
-                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 border-b border-gray-100">
-                        <div className="flex items-center justify-between mb-4">
-                          <Avatar className="h-16 w-16 ring-4 ring-white shadow-xl">
-                            <AvatarImage src={user.avatar || undefined} alt={user.fullName || user.username} />
-                            <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                      <div className="bg-gradient-to-br from-gray-50 to-white p-4 border-b border-gray-100">
+                        <div className="flex items-start justify-between mb-3">
+                          <Avatar className="h-12 w-12 ring-2 ring-white shadow-md">
+                            <AvatarImage 
+                              src={user.avatar || undefined} 
+                              alt={user.fullName || user.username}
+                              className="object-cover"
+                            />
+                            <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
                               {getInitials(user.fullName || user.username)}
                             </AvatarFallback>
                           </Avatar>
                           
-                          <div className="flex flex-col gap-2">
+                          <div className="flex gap-1.5">
                             {user.isAdmin && (
-                              <Badge className="bg-purple-500 hover:bg-purple-600 text-xs px-2 py-1">ADMIN</Badge>
+                              <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-xs px-2 py-0.5">ADMIN</Badge>
                             )}
                             {isPremium ? (
-                              <Badge className="bg-green-500 hover:bg-green-600 text-xs px-2 py-1">ACTIVE</Badge>
+                              <Badge className="bg-green-100 text-green-700 border-green-200 text-xs px-2 py-0.5">ACTIVE</Badge>
                             ) : (
-                              <Badge className="bg-red-500 hover:bg-red-600 text-xs px-2 py-1">PAST DUE</Badge>
+                              <Badge className="bg-red-100 text-red-700 border-red-200 text-xs px-2 py-0.5">PAST DUE</Badge>
                             )}
                           </div>
                         </div>
                         
-                        <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
-                          {user.fullName || user.username}
-                        </h3>
-                        {user.title && (
-                          <p className="text-blue-600 font-medium text-sm mb-2 truncate">{user.title}</p>
-                        )}
-                        <p className="text-gray-600 text-sm truncate">{user.email}</p>
+                        <div>
+                          <h3 className="text-base font-semibold text-gray-900 truncate">
+                            {user.fullName || user.username}
+                          </h3>
+                          <p className="text-sm text-blue-600 truncate h-5">
+                            {user.title || <span className="text-gray-400">No title</span>}
+                          </p>
+                          <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                        </div>
                       </div>
                       
-                      {/* User Details - Fixed height content area */}
-                      <div className="p-6 h-[240px]">
-                        <div className="space-y-3">
+                      {/* User Details - Fixed height */}
+                      <div className="p-4 flex-1 flex flex-col">
+                        <div className="space-y-2 flex-1">
                           <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <UserIcon className="h-4 w-4 flex-shrink-0" />
-                            <span className="font-mono truncate text-xs">{user.username}</span>
+                            <UserIcon className="h-3.5 w-3.5 text-gray-400" />
+                            <span className="font-mono text-xs truncate">{user.username}</span>
                           </div>
                           
-                          {user.industry && (
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <Briefcase className="h-4 w-4 flex-shrink-0" />
-                              <span className="truncate text-xs">{user.industry}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2 text-sm text-gray-600 h-5">
+                            <Briefcase className="h-3.5 w-3.5 text-gray-400" />
+                            <span className="text-xs truncate">
+                              {user.industry || <span className="text-gray-400">No industry</span>}
+                            </span>
+                          </div>
                           
-                          {user.location && (
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <MapPin className="h-4 w-4 flex-shrink-0" />
-                              <span className="truncate text-xs">{user.location}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2 text-sm text-gray-600 h-5">
+                            <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                            <span className="text-xs truncate">
+                              {user.location || <span className="text-gray-400">No location</span>}
+                            </span>
+                          </div>
                           
                           <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Calendar className="h-4 w-4 flex-shrink-0" />
+                            <Calendar className="h-3.5 w-3.5 text-gray-400" />
                             <span className="text-xs">Joined {new Date(user.createdAt).toLocaleDateString()}</span>
                           </div>
                         </div>
                         
-                        {/* Action Button - Absolutely positioned at bottom */}
-                        <div className="absolute bottom-6 left-6 right-6">
+                        {/* Action Button - Always at bottom */}
+                        <div className="pt-4">
                           <Button 
                             variant="outline" 
                             size="sm"
-                            className="w-full border-gray-300 hover:bg-gray-50 h-10 text-sm"
+                            className="w-full border-gray-200 hover:bg-gray-50 text-sm h-9"
                             onClick={() => {
                               setSelectedUser(user);
                               setIsAccountInfoModalOpen(true);
                             }}
                           >
-                            <UserIcon className="h-4 w-4 mr-2" />
+                            <UserIcon className="h-3.5 w-3.5 mr-2" />
                             View Details
                           </Button>
                         </div>
@@ -280,70 +304,78 @@ export default function UsersManager() {
             
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-8">
-                <div className="text-sm text-gray-600">
-                  Page {currentPage} of {totalPages}
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                    className="border-gray-300"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  
-                  {/* Page numbers */}
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = currentPage - 2 + i;
-                      }
+              <Card className="mt-8 shadow-lg border-0">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium text-gray-600">
+                      Page {currentPage} of {totalPages}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="border-gray-200 hover:bg-gray-50"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
                       
-                      return (
-                        <Button
-                          key={pageNum}
-                          variant={currentPage === pageNum ? "default" : "outline"}
-                          size="sm"
-                          className={`w-8 h-8 p-0 ${currentPage !== pageNum ? 'border-gray-300' : ''}`}
-                          onClick={() => setCurrentPage(pageNum)}
-                        >
-                          {pageNum}
-                        </Button>
-                      );
-                    })}
+                      {/* Page numbers */}
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <Button
+                              key={pageNum}
+                              variant={currentPage === pageNum ? "default" : "outline"}
+                              size="sm"
+                              className={`w-8 h-8 p-0 ${
+                                currentPage === pageNum 
+                                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                                  : 'border-gray-200 hover:bg-gray-50'
+                              }`}
+                              onClick={() => setCurrentPage(pageNum)}
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        className="border-gray-200 hover:bg-gray-50"
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                    className="border-gray-300"
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             )}
           </>
         ) : (
-          <Card className="shadow-sm">
+          <Card className="shadow-lg border-0">
             <CardContent className="flex flex-col items-center justify-center py-16">
-              <div className="bg-gray-100 rounded-full p-6 mb-6">
-                <UserIcon className="h-12 w-12 text-gray-400" />
+              <div className="bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full p-6 mb-6">
+                <UserIcon className="h-12 w-12 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2 text-gray-900">No users found</h3>
               <p className="text-gray-600 mb-6 text-center max-w-md">
@@ -356,8 +388,9 @@ export default function UsersManager() {
                     setSearchQuery("");
                     setStatusFilter("all");
                   }}
-                  className="border-gray-300"
+                  className="border-2 border-blue-300 text-blue-700 hover:bg-blue-50"
                 >
+                  <X className="h-4 w-4 mr-2" />
                   Clear Filters
                 </Button>
               )}

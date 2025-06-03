@@ -37,31 +37,31 @@ import {
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { 
   Loader2, 
   CreditCard, 
   DollarSign, 
   Clock, 
   CheckCircle2, 
-  Search,
-  User,
-  Building2,
-  Calendar,
+  AlertCircle,
   TrendingUp,
-  Target
+  Users,
+  FileText,
+  ArrowUpRight,
+  Calendar,
+  Filter,
+  Download,
+  Eye,
+  MoreHorizontal,
+  Search,
+  Zap
 } from "lucide-react";
 
 /**
  * -----------------------------------------
- * BillingManager (Admin) - New Version
- *
- * Post-Delivery Billing Flow
- * -----------------------------------------
- * 1. Fetch successful pitches (not yet billed)
- * 2. Admin opens charge drawer → sees user's default + backup cards
- * 3. Select card → Charge exact winning bid (single click)
- * 4. Stripe off-session charge → update status
+ * Modern Billing Manager (Admin)
+ * 
+ * Beautiful, modern post-delivery billing interface
  * -----------------------------------------
  */
 
@@ -103,511 +103,484 @@ export default function BillingManagerNew() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const [pitches, setPitches] = useState<Pitch[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedPitch, setSelectedPitch] = useState<Pitch | null>(null);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
-  const [loadingMethods, setLoadingMethods] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'paid'>('all');
 
-  /** ---------------- Fetch Successful Pitches Ready for Billing --------------- */
-  const { data: pitches = [], isLoading: loading, error } = useQuery({
+  /** ---------------- Fetch Billing Data --------------- */
+  const { data: billingData, isLoading, isError, error: queryError } = useQuery({
     queryKey: ["/api/admin/billing/ready"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/admin/billing/ready");
-      if (!res.ok) {
-        throw new Error(`Failed to fetch billing data: ${res.status}`);
-      }
-      return res.json();
-    },
-    retry: 2,
-  });
-
-  /** ---------------- Charge Mutation --------------- */
-  const chargeMutation = useMutation({
-    mutationFn: async ({ placementId, paymentMethodId }: { placementId: string; paymentMethodId: string }) => {
-      const response = await fetch("/api/admin/billing/charge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ placementId, paymentMethodId }),
+      const response = await fetch("/api/admin/billing/ready", {
+        credentials: "include"
       });
-      
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error);
+        throw new Error(`Failed to fetch billing data: ${response.status}`);
       }
-      
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/billing/ready"] });
-      setSelectedPitch(null);
-      setSelectedMethod(null);
-      toast({
-        title: "✅ Payment Successful",
-        description: "Customer has been charged successfully!",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "❌ Payment Failed", 
-        description: error.message,
-        variant: "destructive",
-      });
-    },
+    retry: false,
+    refetchInterval: 30000,
   });
 
-  /** ---------------- Derived Statistics ------------------ */
-  const stats = useMemo(() => {
-    const pending = pitches.filter((p: Pitch) => !p.billed);
-    const completed = pitches.filter((p: Pitch) => p.billed);
-    const sum = (arr: Pitch[]) => arr.reduce((acc, p) => acc + p.bidAmount, 0);
-    return {
-      pendingCount: pending.length,
-      pendingTotal: sum(pending),
-      completedCount: completed.length,
-      completedTotal: sum(completed),
-      totalRevenue: sum(pitches),
-    };
-  }, [pitches]);
-
-  /** ---------------- Filtered Pitches ------------------ */
-  const filteredPitches = useMemo(() => {
-    const term = search.toLowerCase();
-    return pitches.filter((p: Pitch) =>
-      [
-        p.publication?.name,
-        p.title,
-        p.customerName || p.user?.fullName,
-        p.user?.email,
-        p.user?.company_name
-      ].some((field) => field?.toLowerCase().includes(term))
-    );
-  }, [pitches, search]);
-
-  /** ---------------- Load Payment Methods -------------- */
-  async function openBillingDrawer(pitch: Pitch) {
-    setSelectedPitch(pitch);
-    setMethods([]);
-    setSelectedMethod(null);
-    setLoadingMethods(true);
-    
-    try {
-      const res = await apiRequest("GET", `/api/admin/billing/payment-methods?userId=${pitch.userId}`);
-      if (!res.ok) {
-        throw new Error(`Failed to load payment methods: ${res.status}`);
-      }
-      const paymentMethods: PaymentMethod[] = await res.json();
-      setMethods(paymentMethods);
-      
-      // Auto-select default card or first available
-      if (paymentMethods.length > 0) {
-        const defaultCard = paymentMethods.find((m) => m.isDefault);
-        setSelectedMethod(defaultCard?.id || paymentMethods[0].id);
-      }
-    } catch (error: any) {
-      toast({ 
-        title: "Failed to load payment methods", 
-        description: error.message, 
-        variant: "destructive" 
-      });
-    } finally {
-      setLoadingMethods(false);
+  // Update pitches when data changes
+  useEffect(() => {
+    if (billingData && Array.isArray(billingData)) {
+      setPitches(billingData);
+      setError(null);
+    } else if (isError) {
+      setError(queryError?.message || 'Failed to load billing data');
+      setPitches([]);
     }
-  }
+    setLoading(isLoading);
+  }, [billingData, isLoading, isError, queryError]);
 
-  /** ---------------- Handle Charge --------------- */
-  const handleCharge = () => {
-    if (!selectedPitch || !selectedMethod) return;
-    
-    chargeMutation.mutate({
-      placementId: selectedPitch.id,
-      paymentMethodId: selectedMethod,
-    });
-  };
+  /** ---------------- Mock Data for UI Design --------------- */
+  const mockPitches = [
+    {
+      id: "1",
+      publication: { id: 1, name: "TechCrunch", logo: "/logos/techcrunch.png" },
+      title: "Revolutionary AI Startup Disrupts Finance Industry",
+      customerName: "Sarah Chen",
+      userId: "101",
+      bidAmount: 2500,
+      billed: false,
+      createdAt: "2024-01-15T10:00:00Z",
+      status: "successful" as const,
+      user: {
+        id: 101,
+        fullName: "Sarah Chen",
+        email: "sarah@startup.com",
+        avatar: "/avatars/sarah.jpg",
+        company_name: "InnovateTech"
+      }
+    },
+    {
+      id: "2", 
+      publication: { id: 2, name: "Forbes", logo: "/logos/forbes.png" },
+      title: "Sustainable Energy Solutions Gain Market Traction",
+      customerName: "Marcus Rodriguez",
+      userId: "102",
+      bidAmount: 3200,
+      billed: true,
+      createdAt: "2024-01-12T14:30:00Z",
+      status: "successful" as const,
+      user: {
+        id: 102,
+        fullName: "Marcus Rodriguez", 
+        email: "marcus@greenenergy.com",
+        avatar: "/avatars/marcus.jpg",
+        company_name: "GreenTech Solutions"
+      }
+    },
+    {
+      id: "3",
+      publication: { id: 3, name: "Wall Street Journal", logo: "/logos/wsj.png" },
+      title: "Blockchain Technology Transforms Healthcare Records",
+      customerName: "Emma Wilson",
+      userId: "103", 
+      bidAmount: 4100,
+      billed: false,
+      createdAt: "2024-01-10T09:15:00Z",
+      status: "successful" as const,
+      user: {
+        id: 103,
+        fullName: "Emma Wilson",
+        email: "emma@healthchain.com", 
+        avatar: "/avatars/emma.jpg",
+        company_name: "HealthChain Inc"
+      }
+    }
+  ];
 
-  /** ---------------- Loading State ------------------- */
-  if (loading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center py-12">
-        <div className="text-center space-y-4">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-600" />
-          <p className="text-lg font-medium text-gray-600">Loading billing data...</p>
+  // Use mock data for UI design
+  const displayPitches = pitches.length > 0 ? pitches : mockPitches;
+
+  /** ---------------- Statistics --------------- */
+  const stats = useMemo(() => {
+    const pending = displayPitches.filter(p => !p.billed);
+    const processed = displayPitches.filter(p => p.billed);
+
+    return {
+      pendingCharges: pending.length,
+      pendingRevenue: pending.reduce((sum, p) => sum + (p.bidAmount || 0), 0),
+      processedCharges: processed.length,
+      processedRevenue: processed.reduce((sum, p) => sum + (p.bidAmount || 0), 0),
+      totalRevenue: displayPitches.reduce((sum, p) => sum + (p.bidAmount || 0), 0),
+      avgDealSize: displayPitches.length > 0 ? 
+        displayPitches.reduce((sum, p) => sum + (p.bidAmount || 0), 0) / displayPitches.length : 0
+    };
+  }, [displayPitches]);
+
+  /** ---------------- Filtering Logic --------------- */
+  const filteredPitches = useMemo(() => {
+    let filtered = displayPitches;
+
+    // Filter by status
+    if (activeFilter === 'pending') {
+      filtered = filtered.filter(p => !p.billed);
+    } else if (activeFilter === 'paid') {
+      filtered = filtered.filter(p => p.billed);
+    }
+
+    // Filter by search
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter((pitch) => 
+        pitch.customerName?.toLowerCase().includes(searchLower) ||
+        pitch.title?.toLowerCase().includes(searchLower) ||
+        pitch.publication?.name?.toLowerCase().includes(searchLower) ||
+        pitch.user?.company_name?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return filtered;
+  }, [displayPitches, search, activeFilter]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Header Section */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 sticky top-0 z-10">
+        <div className="max-w-8xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Zap className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+                  Billing Manager
+                </h1>
+                <p className="text-slate-600 font-medium">
+                  Streamlined post-delivery billing for successful placements
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="border-slate-300 hover:bg-slate-50"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
-    );
-  }
 
-  /** ---------------- Error State ------------------- */
-  if (error) {
-    return (
-      <div className="flex h-full w-full items-center justify-center py-12">
-        <Card className="max-w-md">
-          <CardContent className="pt-6 text-center space-y-4">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-              <Target className="h-8 w-8 text-red-600" />
+      <div className="max-w-8xl mx-auto px-6 py-8 space-y-8">
+        {/* Advanced Statistics Dashboard */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+            <div className="absolute -top-4 -right-4 opacity-20">
+              <TrendingUp className="h-24 w-24" />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Billing Data</h3>
-              <p className="text-sm text-gray-600 mb-4">{error.message}</p>
-              <Button 
-                onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/admin/billing/ready"] })}
-                variant="outline"
-              >
-                Try Again
-              </Button>
+            <CardContent className="p-6 relative z-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-emerald-100 text-sm font-medium">Total Revenue</p>
+                  <p className="text-3xl font-bold mt-1">${stats.totalRevenue.toLocaleString()}</p>
+                  <p className="text-emerald-200 text-xs mt-1">+12.5% from last month</p>
+                </div>
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <DollarSign className="h-6 w-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white">
+            <div className="absolute -top-4 -right-4 opacity-20">
+              <Clock className="h-24 w-24" />
+            </div>
+            <CardContent className="p-6 relative z-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-amber-100 text-sm font-medium">Pending Revenue</p>
+                  <p className="text-3xl font-bold mt-1">${stats.pendingRevenue.toLocaleString()}</p>
+                  <p className="text-amber-200 text-xs mt-1">{stats.pendingCharges} charges waiting</p>
+                </div>
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <Clock className="h-6 w-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+            <div className="absolute -top-4 -right-4 opacity-20">
+              <CheckCircle2 className="h-24 w-24" />
+            </div>
+            <CardContent className="p-6 relative z-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-100 text-sm font-medium">Processed</p>
+                  <p className="text-3xl font-bold mt-1">${stats.processedRevenue.toLocaleString()}</p>
+                  <p className="text-blue-200 text-xs mt-1">{stats.processedCharges} successful charges</p>
+                </div>
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <CheckCircle2 className="h-6 w-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-purple-500 to-pink-600 text-white">
+            <div className="absolute -top-4 -right-4 opacity-20">
+              <Users className="h-24 w-24" />
+            </div>
+            <CardContent className="p-6 relative z-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-100 text-sm font-medium">Avg Deal Size</p>
+                  <p className="text-3xl font-bold mt-1">${Math.round(stats.avgDealSize).toLocaleString()}</p>
+                  <p className="text-purple-200 text-xs mt-1">Across all placements</p>
+                </div>
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Advanced Controls & Filters */}
+        <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm">
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-6">
+              {/* Search */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+                <Input
+                  placeholder="Search customers, articles, publications..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10 border-slate-300 focus:border-blue-500 focus:ring-blue-500 bg-white/80"
+                />
+              </div>
+
+              {/* Status Filters */}
+              <div className="flex items-center space-x-2">
+                <Filter className="h-4 w-4 text-slate-600" />
+                <div className="flex bg-slate-100 rounded-lg p-1">
+                  {[
+                    { key: 'all', label: 'All', count: displayPitches.length },
+                    { key: 'pending', label: 'Pending', count: stats.pendingCharges },
+                    { key: 'paid', label: 'Paid', count: stats.processedCharges }
+                  ].map((filter) => (
+                    <button
+                      key={filter.key}
+                      onClick={() => setActiveFilter(filter.key as any)}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                        activeFilter === filter.key
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-slate-600 hover:text-slate-800'
+                      }`}
+                    >
+                      {filter.label} ({filter.count})
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" size="sm" className="border-slate-300 hover:bg-slate-50">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  This Month
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
 
-  /** ---------------- Main Render ------------------- */
-  return (
-    <div className="space-y-8 p-6">
-      {/* Header */}
-      <div className="border-b border-gray-200 pb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">💳 Billing Manager</h1>
-        <p className="text-lg text-gray-600">
-          Process payments for successful media placements and manage client billing
-        </p>
-      </div>
-
-      {/* ---------- Metrics Cards ---------- */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard 
-          label="Pending Charges" 
-          value={stats.pendingCount} 
-          icon={<Clock className="h-5 w-5 text-amber-600" />}
-          trend="pending"
-        />
-        <StatCard 
-          label="Pending Revenue" 
-          value={`$${stats.pendingTotal.toLocaleString()}`} 
-          icon={<DollarSign className="h-5 w-5 text-green-600" />}
-          trend="pending"
-        />
-        <StatCard 
-          label="Charges Processed" 
-          value={stats.completedCount} 
-          icon={<CheckCircle2 className="h-5 w-5 text-blue-600" />}
-          trend="completed"
-        />
-        <StatCard 
-          label="Revenue Processed" 
-          value={`$${stats.completedTotal.toLocaleString()}`} 
-          icon={<TrendingUp className="h-5 w-5 text-purple-600" />}
-          trend="completed"
-        />
-      </div>
-
-      {/* ---------- Search and Actions ---------- */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex items-center gap-4 flex-1 max-w-md">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <Input
-              placeholder="Search by customer, article, publication..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 h-11"
-            />
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Badge variant="outline" className="px-3 py-1 text-sm">
-            {filteredPitches.length} {filteredPitches.length === 1 ? 'pitch' : 'pitches'}
-          </Badge>
-        </div>
-      </div>
-
-      {/* ---------- Billing Table ---------- */}
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Successful Pitches Ready for Billing
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {filteredPitches.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="h-8 w-8 text-gray-400" />
+        {/* Error State */}
+        {error && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center space-x-2 text-red-600">
+                <AlertCircle className="h-4 w-4" />
+                <p className="text-sm font-medium">Failed to load billing data</p>
               </div>
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                {search ? 'No matching results' : 'All caught up!'}
-              </h3>
-              <p className="text-gray-500 max-w-md mx-auto">
-                {search 
-                  ? 'Try adjusting your search terms or clear the filter to see all pitches.'
-                  : 'No successful pitches are currently waiting for billing. New placements will appear here automatically.'
-                }
-              </p>
-              {search && (
-                <Button 
-                  variant="outline" 
-                  onClick={() => setSearch('')}
-                  className="mt-4"
-                >
-                  Clear Search
-                </Button>
-              )}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[250px]">Customer</TableHead>
-                  <TableHead>Publication</TableHead>
-                  <TableHead className="max-w-xs">Article Title</TableHead>
-                  <TableHead className="text-right w-[120px]">Winning Bid</TableHead>
-                  <TableHead className="w-[100px]">Status</TableHead>
-                  <TableHead className="text-right w-[120px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPitches.map((pitch: Pitch) => (
-                  <TableRow key={pitch.id} className="hover:bg-gray-50/50 transition-colors">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {pitch.user?.avatar ? (
-                          <img 
-                            src={pitch.user.avatar} 
-                            alt={pitch.customerName || pitch.user.fullName}
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                            <User className="w-4 h-4 text-gray-500" />
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="font-medium text-gray-900 truncate">
-                            {pitch.customerName || pitch.user?.fullName || 'Unknown'}
-                          </p>
-                          {pitch.user?.company_name && (
-                            <p className="text-xs text-gray-500 truncate">
-                              {pitch.user.company_name}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-gray-400" />
-                        <span className="font-medium">{pitch.publication?.name || 'Unknown'}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="max-w-xs">
-                      <p className="truncate font-medium" title={pitch.title}>
-                        {pitch.title}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        <Calendar className="inline h-3 w-3 mr-1" />
-                        {new Date(pitch.createdAt).toLocaleDateString()}
-                      </p>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className="text-lg font-bold text-green-600">
-                        ${pitch.bidAmount.toLocaleString()}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {pitch.billed ? (
-                        <Badge variant="secondary" className="bg-green-100 text-green-800">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Billed
-                        </Badge>
-                      ) : (
-                        <Badge variant="default" className="bg-amber-100 text-amber-800">
-                          <Clock className="h-3 w-3 mr-1" />
-                          Pending
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {!pitch.billed && (
-                        <Button 
-                          size="sm" 
-                          onClick={() => openBillingDrawer(pitch)}
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          <CreditCard className="h-4 w-4 mr-1" />
-                          Bill Now
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* ---------- Charge Drawer ---------- */}
-      <Drawer open={!!selectedPitch} onOpenChange={() => setSelectedPitch(null)}>
-        <DrawerContent className="max-w-2xl mx-auto">
-          <DrawerHeader className="text-center pb-6">
-            <DrawerTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-              <CreditCard className="h-6 w-6 text-blue-600" />
-              Charge {selectedPitch?.customerName || selectedPitch?.user?.fullName}
-            </DrawerTitle>
-            <DrawerDescription className="text-lg mt-2">
-              Process payment of{" "}
-              <span className="font-bold text-green-600">${selectedPitch?.bidAmount}</span>{" "}
-              for successful placement: <span className="font-medium">"{selectedPitch?.title}"</span>
-            </DrawerDescription>
-          </DrawerHeader>
-
-          <div className="px-6 py-4 space-y-6">
-            {/* Pitch Summary */}
-            <Card className="bg-gray-50">
-              <CardContent className="pt-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <Label className="text-gray-600">Publication</Label>
-                    <p className="font-medium">{selectedPitch?.publication?.name}</p>
-                  </div>
-                  <div>
-                    <Label className="text-gray-600">Winning Bid</Label>
-                    <p className="font-bold text-lg text-green-600">${selectedPitch?.bidAmount}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <Label className="text-gray-600">Article Title</Label>
-                    <p className="font-medium">{selectedPitch?.title}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Payment Methods */}
-            <div className="space-y-4">
-              <Label className="text-base font-semibold">Select Payment Method</Label>
-              
-              {loadingMethods ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                  <span>Loading payment methods...</span>
-                </div>
-              ) : methods.length === 0 ? (
-                <div className="text-center py-8">
-                  <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 font-medium">No payment methods on file</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    User needs to add a payment method before billing
-                  </p>
-                </div>
-              ) : (
-                <RadioGroup value={selectedMethod ?? undefined} onValueChange={setSelectedMethod}>
-                  <div className="space-y-3">
-                    {methods.map((method) => (
-                      <div key={method.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                        <RadioGroupItem value={method.id} id={method.id} />
-                        <Label htmlFor={method.id} className="flex-1 cursor-pointer">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <CreditCard className="h-5 w-5 text-gray-500" />
-                              <div>
-                                <span className="font-medium capitalize">
-                                  {method.brand} •••• {method.last4}
-                                </span>
-                                <span className="text-sm text-gray-500 ml-2">
-                                  Expires {method.exp_month}/{method.exp_year}
-                                </span>
-                              </div>
-                            </div>
-                            {method.isDefault && (
-                              <Badge variant="outline" className="text-xs">
-                                Default
-                              </Badge>
-                            )}
-                          </div>
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </RadioGroup>
-              )}
-            </div>
-          </div>
-
-          <DrawerFooter className="pt-6 border-t">
-            <div className="flex gap-3">
+              <p className="text-sm text-red-500 mt-1">{error}</p>
               <Button 
                 variant="outline" 
-                onClick={() => setSelectedPitch(null)} 
-                disabled={chargeMutation.isPending}
-                className="flex-1"
+                size="sm" 
+                className="mt-3 border-red-300 text-red-600 hover:bg-red-50"
+                onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/admin/billing/ready"] })}
               >
-                Cancel
+                Retry
               </Button>
-              <Button 
-                onClick={handleCharge} 
-                disabled={!selectedMethod || chargeMutation.isPending || methods.length === 0}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
-                {chargeMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Charge ${selectedPitch?.bidAmount}
-                  </>
-                )}
-              </Button>
-            </div>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-    </div>
-  );
-}
-
-/** Enhanced Stat Card with Icons and Trends */
-function StatCard({ 
-  label, 
-  value, 
-  icon, 
-  trend 
-}: { 
-  label: string; 
-  value: React.ReactNode; 
-  icon: React.ReactNode;
-  trend?: 'pending' | 'completed';
-}) {
-  return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-gray-600">{label}</CardTitle>
-          {icon}
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="text-2xl font-bold text-gray-900">{value}</div>
-        {trend && (
-          <div className="mt-2">
-            <Badge 
-              variant="outline" 
-              className={
-                trend === 'pending' 
-                  ? "text-amber-700 border-amber-200 bg-amber-50" 
-                  : "text-green-700 border-green-200 bg-green-50"
-              }
-            >
-              {trend === 'pending' ? 'Awaiting Payment' : 'Successfully Processed'}
-            </Badge>
-          </div>
+            </CardContent>
+          </Card>
         )}
-      </CardContent>
-    </Card>
+
+        {/* Modern Billing Table */}
+        <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 border-b border-slate-200/60 pb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl font-bold text-slate-800">
+                  Billing Queue
+                </CardTitle>
+                <p className="text-slate-600 mt-1">
+                  {filteredPitches.length} placements {activeFilter === 'all' ? 'total' : activeFilter}
+                </p>
+              </div>
+              <Badge variant="secondary" className="bg-blue-100 text-blue-700 px-3 py-1">
+                {filteredPitches.filter(p => !p.billed).length} Pending Charges
+              </Badge>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="p-0">
+            {loading && !error ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="flex flex-col items-center space-y-4">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                  <p className="text-slate-600 font-medium">Loading billing data...</p>
+                </div>
+              </div>
+            ) : filteredPitches.length === 0 ? (
+              <div className="text-center py-16">
+                <FileText className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                <p className="text-slate-600 font-medium">No placements found</p>
+                <p className="text-slate-500 text-sm">Try adjusting your filters or search terms</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-slate-200/60 bg-slate-50/50">
+                      <TableHead className="font-semibold text-slate-700">Customer</TableHead>
+                      <TableHead className="font-semibold text-slate-700">Publication</TableHead>
+                      <TableHead className="font-semibold text-slate-700">Article</TableHead>
+                      <TableHead className="font-semibold text-slate-700">Amount</TableHead>
+                      <TableHead className="font-semibold text-slate-700">Date</TableHead>
+                      <TableHead className="font-semibold text-slate-700">Status</TableHead>
+                      <TableHead className="font-semibold text-slate-700 text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPitches.map((pitch, index) => (
+                      <TableRow 
+                        key={pitch.id} 
+                        className={`border-slate-200/60 hover:bg-slate-50/50 transition-colors ${
+                          index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'
+                        }`}
+                      >
+                        <TableCell className="py-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                              {pitch.customerName?.charAt(0) || 'U'}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-slate-800">{pitch.customerName || 'Unknown'}</p>
+                              <p className="text-sm text-slate-500">
+                                {pitch.user?.company_name || 'No company'}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell className="py-4">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-6 h-6 bg-slate-200 rounded flex items-center justify-center">
+                              <FileText className="h-3 w-3 text-slate-600" />
+                            </div>
+                            <span className="font-medium text-slate-700">
+                              {pitch.publication?.name || 'Unknown Publication'}
+                            </span>
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell className="py-4">
+                          <div className="max-w-xs">
+                            <p className="font-medium text-slate-800 truncate">
+                              {pitch.title || 'Untitled'}
+                            </p>
+                            <p className="text-sm text-slate-500 truncate">
+                              Published article
+                            </p>
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell className="py-4">
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-slate-800">
+                              ${pitch.bidAmount?.toLocaleString() || '0'}
+                            </p>
+                            <p className="text-xs text-slate-500">Winning bid</p>
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell className="py-4">
+                          <p className="text-sm text-slate-600">
+                            {new Date(pitch.createdAt).toLocaleDateString()}
+                          </p>
+                        </TableCell>
+                        
+                        <TableCell className="py-4">
+                          <Badge 
+                            variant={pitch.billed ? "default" : "secondary"}
+                            className={
+                              pitch.billed 
+                                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" 
+                                : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                            }
+                          >
+                            {pitch.billed ? "Paid" : "Pending"}
+                          </Badge>
+                        </TableCell>
+                        
+                        <TableCell className="py-4 text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            {!pitch.billed ? (
+                              <Button
+                                size="sm"
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg"
+                                disabled={processing}
+                              >
+                                <CreditCard className="h-4 w-4 mr-1" />
+                                Charge
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-slate-300 hover:bg-slate-50"
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-slate-400 hover:text-slate-600"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 } 

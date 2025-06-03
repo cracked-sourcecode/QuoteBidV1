@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { processVoiceRecording } from "./lib/voice";
 import { increaseBidAmount } from "./lib/bidding";
 import { z } from "zod";
-import { insertBidSchema, insertOpportunitySchema, insertPitchSchema, insertPublicationSchema, insertSavedOpportunitySchema, User, PlacementWithRelations, users, pitches, opportunities, publications, notifications } from "@shared/schema";
+import { insertBidSchema, insertOpportunitySchema, insertPitchSchema, insertPublicationSchema, insertSavedOpportunitySchema, User, PlacementWithRelations, users, pitches, opportunities, publications, notifications, placements } from "@shared/schema";
 import { getDb } from "./db";
 import { eq, sql, desc, and, ne, asc, isNull, isNotNull, gte, lte, or, inArray } from "drizzle-orm";
 import { notificationService } from "./services/notification-service";
@@ -196,7 +196,7 @@ async function getArticleTitle(url: string): Promise<string> {
           return titleFromSlug;
         }
       }
-    } catch (urlError) {
+    } catch (urlError: any) {
       console.log(`❌ URL parsing failed: ${urlError}`);
     }
 
@@ -271,16 +271,21 @@ Article headline:`;
       if (finalTitle && finalTitle !== 'TITLE_NOT_FOUND' && !finalTitle.toLowerCase().includes('yahoo finance')) {
         return finalTitle;
       }
-    } catch (aiError) {
+    } catch (aiError: any) {
       console.error('🤖 OpenAI error:', aiError);
     }
 
     console.log('❌ All extraction methods failed');
     return 'TITLE_NOT_FOUND';
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 Error extracting article title:', error);
     return 'TITLE_NOT_FOUND';
   }
+}
+
+// Helper function to safely check if request is authenticated
+function isRequestAuthenticated(req: Request): boolean {
+  return typeof req.isAuthenticated === 'function' && req.isAuthenticated();
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -406,14 +411,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .where(sql`REPLACE(REPLACE(REPLACE(REPLACE(${users.phone_number}, '+', ''), '-', ''), ' ', ''), '()', '') LIKE ${'%' + normalizedValue + '%'}`)
             .limit(1);
         }
-      } catch (dbErr) {
+      } catch (dbErr: any) {
         console.error('► [check-unique] DB error:', dbErr);
         return res.status(500).json({ error: 'Database error' });
       }
 
       console.log('► [check-unique] Found:', existingUser?.length || 0);
       return res.json({ unique: !existingUser || existingUser.length === 0 });
-    } catch (error) {
+    } catch (error: any) {
       console.error('► [check-unique] General error:', error);
       return res.status(500).json({ error: 'Failed to check uniqueness' });
     }
@@ -432,7 +437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const messages = await storage.getPitchMessages(parseInt(pitchId));
       res.json(messages);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching pitch messages:', error);
       res.status(500).json({ error: 'Failed to fetch messages' });
     }
@@ -468,7 +473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.status(201).json(newMessage);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating pitch message:', error);
       res.status(500).json({ error: 'Failed to send message' });
     }
@@ -494,7 +499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.markPitchMessagesAsRead(parseInt(pitchId), adminId);
       
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error marking messages as read:', error);
       res.status(500).json({ error: 'Failed to update messages' });
     }
@@ -525,7 +530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai/extract-article-info", jwtAuth, async (req: Request, res: Response) => {
     try {
       // Check authentication manually since we're having middleware issues
-      if (!req.user || !req.user.id) {
+      if (!req.user || !req.user!.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
@@ -592,7 +597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             publicationName = mainDomain.charAt(0).toUpperCase() + mainDomain.slice(1);
           }
         }
-      } catch (urlError) {
+      } catch (urlError: any) {
         console.error('Error extracting publication from URL:', urlError);
         publicationName = 'Unknown Publication';
       }
@@ -604,7 +609,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         date: null // We're not extracting dates as requested
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('AI extraction error:', error);
       res.status(500).json({ error: 'Failed to extract article information: ' + (error instanceof Error ? error.message : String(error)) });
     }
@@ -668,7 +673,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mainDomain = parts[parts.length - 2];
       return mainDomain.charAt(0).toUpperCase() + mainDomain.slice(1);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error extracting publication from URL:', error);
       return 'Publication';
     }
@@ -711,11 +716,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notifications API - these need authentication
   app.get("/api/notifications", enforceOnboarding, async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: 'Not authenticated' });
       }
 
-      const userId = req.user.id;
+      const userId = req.user!.id;
       
       // Get notifications for the user, ordered by most recent first
       const userNotifications = await getDb().select()
@@ -724,7 +729,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .orderBy(desc(notifications.createdAt));
 
       return res.json(userNotifications);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching notifications:', error);
       return res.status(500).json({ message: 'Failed to fetch notifications' });
     }
@@ -733,11 +738,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Count unread notifications
   app.get("/api/notifications/unread-count", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: 'Not authenticated' });
       }
 
-      const userId = req.user.id;
+      const userId = req.user!.id;
       
       // Count unread notifications
       const unreadCount = await getDb().select({ count: sql<number>`count(*)` })
@@ -745,7 +750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
 
       return res.json({ count: Number(unreadCount[0]?.count || 0) });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error counting unread notifications:', error);
       return res.status(500).json({ message: 'Failed to count notifications' });
     }
@@ -754,12 +759,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mark a notification as read
   app.post("/api/notifications/:id/read", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: 'Not authenticated' });
       }
 
       const notificationId = parseInt(req.params.id);
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Check if notification belongs to user
       const notification = await getDb().select()
@@ -777,7 +782,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(notifications.id, notificationId));
 
       return res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error marking notification as read:', error);
       return res.status(500).json({ message: 'Failed to update notification' });
     }
@@ -786,11 +791,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mark all notifications as read
   app.post("/api/notifications/mark-all-read", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: 'Not authenticated' });
       }
 
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Update all unread notifications
       await getDb().update(notifications)
@@ -798,7 +803,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(notifications.userId, userId));
 
       return res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error marking all notifications as read:', error);
       return res.status(500).json({ message: 'Failed to update notifications' });
     }
@@ -829,7 +834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Cleared all notifications for user ${userId}`);
       return res.json({ success: true, message: 'All notifications cleared successfully' });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error clearing notifications:', error);
       return res.status(500).json({ message: 'Failed to clear notifications' });
     }
@@ -999,7 +1004,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             expiresAt: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000) : null,
             subscriptionId: subscription.id
           };
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error fetching subscription:", error);
           // We'll just use the data from our database
         }
@@ -1014,12 +1019,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cancel subscription
   app.post("/api/users/:userId/subscription/cancel", jwtAuth, async (req: Request, res: Response) => {
     try {
-      if (!req.user || !req.user.id) {
+      if (!req.user || !req.user!.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
       const userId = parseInt(req.params.userId);
-      if (isNaN(userId) || userId !== req.user.id) {
+      if (isNaN(userId) || userId !== req.user!.id) {
         return res.status(403).json({ error: 'Unauthorized' });
       }
       
@@ -1056,18 +1061,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/users/:userId/subscription/reactivate", jwtAuth, async (req: Request, res: Response) => {
     console.log("🔄 REACTIVATION ENDPOINT HIT");
     console.log("📝 Request params:", req.params);
-    console.log("👤 User from JWT:", req.user ? { id: req.user.id, email: req.user.email } : 'NO USER');
+    console.log("👤 User from JWT:", req.user ? { id: req.user!.id, email: req.user!.email } : 'NO USER');
     
     try {
-      if (!req.user || !req.user.id) {
+      if (!req.user || !req.user!.id) {
         console.log("❌ Authentication failed - no user");
         return res.status(401).json({ error: 'Authentication required' });
       }
       
       const userId = parseInt(req.params.userId);
-      console.log("🔢 Parsed userId:", userId, "JWT user ID:", req.user.id);
+      console.log("🔢 Parsed userId:", userId, "JWT user ID:", req.user!.id);
       
-      if (isNaN(userId) || userId !== req.user.id) {
+      if (isNaN(userId) || userId !== req.user!.id) {
         console.log("❌ Unauthorized - user ID mismatch");
         return res.status(403).json({ error: 'Unauthorized' });
       }
@@ -1124,12 +1129,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Change user password
   app.patch("/api/users/:userId/password", jwtAuth, async (req: Request, res: Response) => {
     try {
-      if (!req.user || !req.user.id) {
+      if (!req.user || !req.user!.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
       const userId = parseInt(req.params.userId);
-      if (isNaN(userId) || userId !== req.user.id) {
+      if (isNaN(userId) || userId !== req.user!.id) {
         return res.status(403).json({ error: 'Unauthorized' });
       }
       
@@ -1180,12 +1185,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Legacy cancel subscription endpoint (keep for backwards compatibility)
   app.post("/api/user/:userId/cancel-subscription", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: "Authentication required" });
       }
       
       const userId = parseInt(req.params.userId);
-      if (isNaN(userId) || userId !== req.user.id) {
+      if (isNaN(userId) || userId !== req.user!.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -1223,7 +1228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log("Verify subscription endpoint called with:", req.body);
     
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         console.log("User not authenticated");
         return res.status(401).json({ message: "Authentication required" });
       }
@@ -1405,7 +1410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Handle subscription creation or retrieval - Modernized for SaaS 
   app.post('/api/get-or-create-subscription', async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: "Authentication required" });
       }
 
@@ -1425,7 +1430,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               message: 'You already have an active subscription'
             });
           }
-        } catch (error) {
+        } catch (error: any) {
           console.log("Error retrieving subscription, creating new one:", error);
           // Continue to create a new subscription if there was an error
         }
@@ -1439,7 +1444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (customer.deleted) {
             throw new Error("Customer was deleted");
           }
-        } catch (error) {
+        } catch (error: any) {
           // Customer not found or deleted, create a new one
           customer = await stripe.customers.create({
             email: user.email,
@@ -1497,7 +1502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             price = prices.data[0];
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.log("Error finding product/price, will create new ones:", error);
       }
       
@@ -1574,7 +1579,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/opportunities", async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ 
           message: "Authentication required to view opportunities" 
         });
@@ -1595,7 +1600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/opportunities/:id", async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ 
           message: "Authentication required to view opportunities" 
         });
@@ -1638,7 +1643,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       res.json(opportunity);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching opportunity:", error);
       res.status(500).json({ message: "Failed to fetch opportunity" });
     }
@@ -1648,7 +1653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/opportunities/:id/bid-info", async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ 
           message: "Authentication required to view bid information" 
         });
@@ -1689,7 +1694,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       res.json(bidInfo);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching bid info:", error);
       res.status(500).json({ message: "Failed to fetch bid information" });
     }
@@ -1699,7 +1704,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/opportunities/:id/price-history", async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ 
           message: "Authentication required to view price history" 
         });
@@ -1762,7 +1767,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(priceHistory);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching price history:", error);
       res.status(500).json({ message: "Failed to fetch price history" });
     }
@@ -1772,7 +1777,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/opportunities/search/:query", async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ 
           message: "Authentication required to search opportunities" 
         });
@@ -1781,7 +1786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const query = req.params.query;
       const opportunities = await storage.searchOpportunities(query);
       res.json(opportunities);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to search opportunities" });
     }
   });
@@ -1793,7 +1798,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const publications = await storage.getPublications();
       res.json(publications);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to fetch publications" });
     }
   });
@@ -1856,7 +1861,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'File uploaded and resized successfully',
         fileUrl: fileUrl 
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to process publication logo:', error);
       res.status(500).json({ message: 'Failed to upload and resize file', error: error.message });
     }
@@ -1876,7 +1881,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(publication);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to fetch publication" });
     }
   });
@@ -1886,12 +1891,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Check if a user has already submitted a pitch for an opportunity
   app.get("/api/opportunities/:opportunityId/user-pitch-status", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: "Authentication required" });
       }
       
       const opportunityId = parseInt(req.params.opportunityId);
-      const userId = req.user.id;
+      const userId = req.user!.id;
       
       if (isNaN(opportunityId)) {
         return res.status(400).json({ message: "Invalid opportunity ID" });
@@ -1998,7 +2003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pitch: null,
         message: "No pitch has been submitted for this opportunity."
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error checking user pitch status:", error);
       return res.status(500).json({ message: "Error checking pitch status" });
     }
@@ -2014,7 +2019,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const bids = await storage.getBidsByOpportunityId(id);
       res.json(bids);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to fetch bids" });
     }
   });
@@ -2128,7 +2133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             paymentIntentId: paymentIntent.id,
             clientSecret: paymentIntent.client_secret
           });
-        } catch (stripeError) {
+        } catch (stripeError: any) {
           console.error('Error creating payment intent for bid:', stripeError);
           // Continue without payment intent if creation fails
         }
@@ -2136,7 +2141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Return the bid without payment information if no payment intent was created
       res.status(201).json(newBid);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to create bid" });
     }
   });
@@ -2153,7 +2158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const pitches = await storage.getPitchesByOpportunityId(id);
       res.json(pitches);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to fetch pitches" });
     }
   });
@@ -2176,7 +2181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(pitchesWithUsers);
-    } catch (error) {
+    } catch (error: any) {
       console.log(`[API DEBUG] Error fetching pitches:`, error);
       res.status(500).json({ message: "Failed to fetch pitches with user data" });
     }
@@ -2185,18 +2190,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new pitch
   app.post("/api/pitches", async (req: Request, res: Response) => {
     try {
-      console.log("Received request to create pitch:", req.body);
+      console.log("=== PITCH CREATION REQUEST ===");
+      console.log("Auth header present:", !!req.headers.authorization);
+      console.log("Is authenticated:", isRequestAuthenticated(req));
+      console.log("User from session:", req.user ? { id: req.user!.id, email: req.user!.email } : 'NO USER');
       
-      // Extract fields from request - accept both camelCase and snake_case formats
-      // If we can't find user or opportunity IDs, check session for auth data
-      let userId = req.body.userId || req.body.user_id;
-      
-      // If no userId provided but user is logged in, use session data
-      if (!userId && req.isAuthenticated() && req.user && req.user.id) {
-        userId = req.user.id;
-        console.log("Using authenticated user ID from session:", userId);
+      // First, ensure user is authenticated
+      if (!isRequestAuthenticated(req) || !req.user) {
+        console.error("❌ No authenticated user found for pitch creation");
+        return res.status(401).json({ 
+          message: "Authentication required", 
+          error: "You must be logged in to create a pitch" 
+        });
       }
       
+      // Get user ID from authenticated session (NOT from request body)
+      const userId = req.user!.id;
+      console.log("✓ Using authenticated user ID:", userId);
+      
+      // Extract fields from request - accept both camelCase and snake_case formats
       let opportunityId = req.body.opportunityId || req.body.opportunity_id;
       const content = req.body.content || "";
       const audioUrl = req.body.audioUrl || req.body.audio_url || "";
@@ -2204,7 +2216,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const status = req.body.status || 'pending';
       
       // Convert values to numbers if they're strings
-      if (userId && typeof userId === 'string') userId = parseInt(userId);
       if (opportunityId && typeof opportunityId === 'string') opportunityId = parseInt(opportunityId);
       const requestPaymentIntentId = req.body.paymentIntentId || req.body.payment_intent_id;
       const bidAmount = req.body.bidAmount || req.body.bid_amount;
@@ -2387,7 +2398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               clientSecret: paymentIntent.client_secret
             });
           }
-        } catch (stripeError) {
+        } catch (stripeError: any) {
           console.error('Error creating payment intent:', stripeError);
           // Continue without payment intent if creation fails
         }
@@ -2402,7 +2413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(201).json(newPitch);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating pitch:', error);
       res.status(500).json({ message: "Failed to create pitch" });
     }
@@ -2436,7 +2447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedPitch);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to update transcript" });
     }
   });
@@ -2445,14 +2456,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create or update a draft pitch
   app.post("/api/pitches/draft", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ error: 'You must be logged in to save a draft' });
       }
       
       console.log("Received request to save draft pitch:", req.body);
       
       // Extract fields from request - accept both camelCase and snake_case formats
-      let userId = req.body.userId || req.body.user_id || req.user.id;
+      let userId = req.body.userId || req.body.user_id || req.user!.id;
       let opportunityId = req.body.opportunityId || req.body.opportunity_id;
       const content = req.body.content || "";
       const audioUrl = req.body.audioUrl || req.body.audio_url || "";
@@ -2495,7 +2506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Return the created draft
       return res.status(201).json(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating draft pitch:', error);
       return res.status(500).json({ error: 'Failed to save draft', details: error.message });
     }
@@ -2504,7 +2515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update an existing draft pitch
   app.put("/api/pitches/:id/draft", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ error: 'You must be logged in to update a draft' });
       }
       
@@ -2521,7 +2532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Verify ownership
-      if (existingPitch.userId !== req.user.id) {
+      if (existingPitch.userId !== req.user!.id) {
         return res.status(403).json({ error: 'You do not own this draft' });
       }
       
@@ -2553,7 +2564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Draft pitch updated:", result);
       
       return res.status(200).json(result);
-    } catch (error) {
+    } catch (error: any) {
       const errMsg = error instanceof Error ? error.message : String(error);
       return res.status(500).json({ error: 'Failed to update draft', details: errMsg });
     }
@@ -2562,12 +2573,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get drafts for a user
   app.get("/api/users/:userId/drafts", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ error: 'You must be logged in to view drafts' });
       }
       
       const userId = parseInt(req.params.userId);
-      if (isNaN(userId) || userId !== req.user.id) {
+      if (isNaN(userId) || userId !== req.user!.id) {
         return res.status(403).json({ error: 'Unauthorized' });
       }
       
@@ -2579,7 +2590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const drafts = await storage.getUserDrafts(userId, opportunityId);
       
       return res.status(200).json(drafts);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching drafts:', error);
       return res.status(500).json({ error: 'Failed to fetch drafts', details: error.message });
     }
@@ -2588,11 +2599,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get drafts for the current authenticated user
   app.get("/api/users/current/drafts", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !req.user) {
+      if (!isRequestAuthenticated(req) || !req.user) {
         return res.status(401).json({ error: 'You must be logged in to view drafts' });
       }
       
-      const userId = req.user.id;
+      const userId = req.user!.id;
       if (!userId) {
         return res.status(400).json({ error: 'Invalid user ID' });
       }
@@ -2605,7 +2616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const drafts = await storage.getUserDrafts(userId, opportunityId);
       
       return res.status(200).json(drafts);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching drafts for current user:', error);
       return res.status(500).json({ error: 'Failed to fetch drafts', details: error.message });
     }
@@ -2621,7 +2632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await processVoiceRecording(audioData);
       
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to process voice recording" });
     }
   });
@@ -2638,7 +2649,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const saved = await storage.getSavedOpportunitiesByUserId(userId);
       res.json(saved);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to fetch saved opportunities" });
     }
   });
@@ -2665,7 +2676,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const saved = await storage.createSavedOpportunity(savedData);
       res.status(201).json(saved);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to save opportunity" });
     }
   });
@@ -2686,7 +2697,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(204).end();
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to unsave opportunity" });
     }
   });
@@ -2741,7 +2752,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             success: true, 
             message: 'Custom support email sent successfully!' 
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error sending custom email:', error);
           throw error;
         }
@@ -2820,7 +2831,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .then(rows => rows[0]);
       
       res.json(updatedUser);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to update user profile:", error);
       res.status(500).json({ message: "Failed to update user profile" });
     }
@@ -2855,7 +2866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fileUrl: relativePath, // Return the relative path
         user: updatedUser
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to upload avatar:", error);
       res.status(500).json({ message: 'Failed to upload avatar' });
     }
@@ -2869,12 +2880,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's existing agreement PDF URL
   app.get('/api/users/:userId/agreement-pdf', async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: "Authentication required" });
       }
       
       const userId = parseInt(req.params.userId);
-      if (isNaN(userId) || (userId !== req.user.id && !(req as any).adminUser)) {
+      if (isNaN(userId) || (userId !== req.user!.id && !(req as any).adminUser)) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -2905,12 +2916,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update user premium status
   app.post("/api/users/:userId/update-premium-status", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: "Authentication required" });
       }
       
       const userId = parseInt(req.params.userId);
-      if (isNaN(userId) || userId !== req.user.id) {
+      if (isNaN(userId) || userId !== req.user!.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -2967,7 +2978,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .then(rows => rows[0]);
       
       res.json(updatedUser);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to update industry preference" });
     }
   });
@@ -3039,7 +3050,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
                 
                 return enrichedPitch;
-              } catch (error) {
+              } catch (error: any) {
                 console.error(`Error getting relations for pitch ${pitch.id}:`, error);
                 return pitch; // Return the pitch without relations
               }
@@ -3051,7 +3062,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`No pitches found for user ${userId}`);
           return res.json([]);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching user pitches with relations:', error);
         
         // Fall back to basic pitch retrieval
@@ -3059,7 +3070,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Fallback: Found ${basicPitches.length} basic pitches for user ${userId}`);
         return res.json(basicPitches);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching user pitches:', error);
       res.status(500).json({ 
         message: "Error fetching user pitches",
@@ -3102,19 +3113,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============ ADMIN ENDPOINTS ============
   
   // Admin registration endpoint (hidden, requires a secret key)
-  app.post("/api/admin/register", registerAdmin);
-  
-  // Check if current user is admin
-  app.get("/api/admin/check", requireAdminAuth, (req: Request, res: Response) => {
-    res.json({ isAdmin: true });
-  });
   
   // Get all admin users (admin only)
   app.get("/api/admin/admins", requireAdminAuth, async (req: Request, res: Response) => {
     try {
       const admins = await storage.getAllAdminUsers();
       res.json(admins);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to fetch admin users" });
     }
   });
@@ -3124,7 +3129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to fetch users" });
     }
   });
@@ -3143,7 +3148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(user);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
@@ -3203,7 +3208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const publications = await storage.getPublications();
       res.json(publications);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching publications:', error);
       res.status(500).json({ message: 'Failed to fetch publications', error: error });
     }
@@ -3225,7 +3230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newPublication = await storage.createPublication(publicationData);
       
       res.status(201).json(newPublication);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to create publication" });
     }
   });
@@ -3258,7 +3263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedPublication = await storage.updatePublication(id, updatedData);
       
       res.json(updatedPublication);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating publication:', error);
       res.status(500).json({ message: "Failed to update publication" });
     }
@@ -3291,7 +3296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deletePublication(id);
       
       res.status(204).send();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting publication:', error);
       res.status(500).json({ message: "Failed to delete publication" });
     }
@@ -3303,7 +3308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const opportunities = await storage.getOpportunitiesWithPublications();
       res.json(opportunities);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching admin opportunities:', error);
       res.status(500).json({ message: 'Failed to fetch opportunities', error: error });
     }
@@ -3387,7 +3392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   iconColor: 'blue',
                 });
                 console.log(`Created opportunity notification for user ${user.id} (${user.fullName || user.username})`);
-              } catch (error) {
+              } catch (error: any) {
                 console.error(`Failed to create notification for user ${user.id}:`, error);
               }
             });
@@ -3405,7 +3410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const opportunityWithPublication = await storage.getOpportunityWithPublication(newOpportunity.id);
       
       res.status(201).json(opportunityWithPublication || newOpportunity);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create opportunity:", error);
       res.status(500).json({ message: "Failed to create opportunity" });
     }
@@ -3439,7 +3444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(updatedOpportunity);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ message: "Failed to update opportunity status" });
     }
   });
@@ -3458,7 +3463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(pitch);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching pitch details:", error);
       res.status(500).json({ message: "Failed to fetch pitch details" });
     }
@@ -3623,7 +3628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.json(standardizedDirectPitches);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching all pitches:", error);
       res.status(500).json({ message: "Failed to fetch pitches" });
     }
@@ -3655,7 +3660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.json({ message: "No pitches found", totalPitches: 0 });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in debug endpoint:", error);
       res.status(500).json({ message: "Error checking latest pitch" });
     }
@@ -3886,38 +3891,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // This endpoint is retained for admin testing purposes only
   // PDFs are automatically regenerated when needed
-  app.post("/api/admin/regenerate-agreements", requireAdminAuth, regenerateAgreementsPDF);
-  
-  // Add middleware to automatically check and regenerate PDFs when needed
-  app.use('/api/user/:userId/agreement-pdf', async (req, res, next) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      if (!isNaN(userId)) {
-        const user = await storage.getUser(userId);
-        // Regenerate PDF if user exists but has no PDF or an outdated format
-        if (user && (!user.agreementPdfUrl || !user.agreementPdfUrl.includes('_'))) {
-          // Use the professional PDF generator
-          const pdfContent = generateProfessionalPDF(user);
-          // Generate a new PDF file path
-          const pdfUrl = await createAgreementPDF(user.id, pdfContent);
-          // Update the user record with the new PDF URL
-          await getDb().update(users)
-            .set({
-              agreementPdfUrl: pdfUrl,
-              agreementSignedAt: user.agreementSignedAt || new Date()
-            })
-            .where(eq(users.id, user.id));
-            
-          console.log(`Automatically regenerated PDF for user ${userId}`);
-        }
-      }
-      next();
-    } catch (error) {
-      // Don't block the request if PDF regeneration fails
-      console.error('Error in automatic PDF regeneration:', error);
-      next();
-    }
-  });
   
   // Ensure user has a Stripe customer ID (admin only)
   app.post("/api/admin/users/:userId/ensure-stripe-customer", requireAdminAuth, async (req: Request, res: Response) => {
@@ -4146,17 +4119,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Placement ${id} has missing user reference. Fixing automatically...`);
         
         // Find a valid user with email
-        const validUsers = await getDb().execute<{id: number, email: string}[]>(
+        const validUsers = await getDb().execute(
           sql`SELECT id, email FROM users WHERE email IS NOT NULL AND email != '' ORDER BY id ASC LIMIT 1`
         );
-        
-        if (!validUsers.rows || validUsers.rows.length === 0) {
+        if (!validUsers || validUsers.length === 0) {
           return res.status(500).json({ 
             message: "No valid users with email found. Cannot perform billing without a valid user."
           });
         }
         
-        const validUserId = validUsers.rows[0].id;
+        const validUserId = (validUsers[0] as any).id;
         
         // Update the placement with a valid user ID
         await getDb().execute(
@@ -4225,7 +4197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Payment intent ${paymentIntent.id} is in ${paymentIntent.status} state, creating new payment`);
             // Continue with creating new payment below
           }
-        } catch (stripeError) {
+        } catch (stripeError: any) {
           console.error("Error retrieving/capturing payment intent:", stripeError);
           // Continue with creating new payment below
         }
@@ -4348,17 +4320,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Placement ${id} has missing user reference during retry. Fixing automatically...`);
         
         // Find a valid user with email
-        const validUsers = await getDb().execute<{id: number, email: string}[]>(
+        const validUsers = await getDb().execute(
           sql`SELECT id, email FROM users WHERE email IS NOT NULL AND email != '' ORDER BY id ASC LIMIT 1`
         );
-        
-        if (!validUsers.rows || validUsers.rows.length === 0) {
+        if (!validUsers || validUsers.length === 0) {
           return res.status(500).json({ 
             message: "No valid users with email found. Cannot perform billing without a valid user."
           });
         }
         
-        const validUserId = validUsers.rows[0].id;
+        const validUserId = (validUsers[0] as any).id;
         
         // Update the placement with a valid user ID
         await getDb().execute(
@@ -4480,28 +4451,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/fix-placement-users", requireAdminAuth, async (req: Request, res: Response) => {
     try {
       // Get all valid users first, prioritizing those with emails for Stripe integration
-      const allUsers = await getDb().execute<{id: number, email: string, username: string}[]>(
+      const allUsers = await getDb().execute(
         sql`SELECT id, email, username FROM users ORDER BY 
             CASE WHEN email IS NOT NULL AND email != '' THEN 0 ELSE 1 END, 
             id ASC`
       );
       
-      if (!allUsers.rows || allUsers.rows.length === 0) {
+      if (!allUsers || allUsers.length === 0) {
         return res.status(500).json({ 
           message: "Failed to fix placements - no valid users found in the system" 
         });
       }
       
       // Get the best user to use as default (one with email)
-      const defaultUser = allUsers.rows[0];
+      const defaultUser = allUsers[0];
       
       console.log(`Using default user ID ${defaultUser.id} for fixing placements`);
       
       // Find all placements with invalid user references - using snake_case column names
-      const invalidUserPlacements = await getDb().execute<{id: number, user_id: number}[]>(
-        sql`SELECT p.id, p.user_id 
+      const invalidUserPlacements = await getDb().execute(
+        sql`SELECT p.id, p."userId" 
             FROM placements p 
-            LEFT JOIN users u ON p.user_id = u.id 
+            LEFT JOIN users u ON p."userId" = u.id 
             WHERE u.id IS NULL`
       );
       
@@ -4509,24 +4480,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const needsStripeCustomerPlacements = { rows: [] };
       
       // Find all placements with valid users but missing emails - using snake_case column names
-      const needsEmailPlacements = await getDb().execute<{id: number, user_id: number, username: string}[]>(
-        sql`SELECT p.id, p.user_id, u.username
+      const needsEmailPlacements = await getDb().execute(
+        sql`SELECT p.id, p."userId", u.username
             FROM placements p 
-            JOIN users u ON p.user_id = u.id 
+            JOIN users u ON p."userId" = u.id 
             WHERE (u.email IS NULL OR u.email = '')`
       );
       
       const results = {
         invalidUsers: {
-          count: invalidUserPlacements.rows?.length || 0,
+          count: invalidUserPlacements?.length || 0,
           fixed: 0
         },
         missingEmails: {
-          count: needsEmailPlacements.rows?.length || 0, 
+          count: needsEmailPlacements?.length || 0, 
           fixed: 0
         },
         missingStripeCustomers: {
-          count: needsStripeCustomerPlacements.rows?.length || 0,
+          count: needsStripeCustomerPlacements?.length || 0,
           fixed: 0
         },
         errors: 0,
@@ -4534,8 +4505,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // Fix invalid user references
-      if (invalidUserPlacements.rows && invalidUserPlacements.rows.length > 0) {
-        for (const placement of invalidUserPlacements.rows) {
+      if (invalidUserPlacements && invalidUserPlacements.length > 0) {
+        for (const placement of invalidUserPlacements) {
           try {
             await getDb().execute(
               sql`UPDATE placements SET user_id = ${defaultUser.id} WHERE id = ${placement.id}`
@@ -4547,7 +4518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: 'invalid_user_fixed',
               message: `Updated user_id from ${placement.user_id} to ${defaultUser.id}`
             });
-          } catch (error) {
+          } catch (error: any) {
             results.errors++;
             results.details.push({
               id: placement.id,
@@ -4559,8 +4530,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Fix missing emails - make sure users have valid emails for Stripe
-      if (needsEmailPlacements.rows && needsEmailPlacements.rows.length > 0) {
-        for (const placement of needsEmailPlacements.rows) {
+      if (needsEmailPlacements && needsEmailPlacements.length > 0) {
+        for (const placement of needsEmailPlacements) {
           try {
             // Generate a fallback email using username
             await getDb().execute(
@@ -4574,7 +4545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: 'email_fixed',
               message: `Added fallback email for user ${placement.user_id}`
             });
-          } catch (error) {
+          } catch (error: any) {
             results.errors++;
             results.details.push({
               id: placement.id,
@@ -4586,8 +4557,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create Stripe customers for users who need them
-      if (needsStripeCustomerPlacements.rows && needsStripeCustomerPlacements.rows.length > 0) {
-        for (const placement of needsStripeCustomerPlacements.rows) {
+      if (needsStripeCustomerPlacements && needsStripeCustomerPlacements.length > 0) {
+        for (const placement of needsStripeCustomerPlacements) {
           try {
             // Create a Stripe customer
             const customer = await stripe.customers.create({
@@ -4609,7 +4580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: 'stripe_customer_created',
               message: `Created Stripe customer ${customer.id} for user ${placement.user_id}`
             });
-          } catch (error) {
+          } catch (error: any) {
             results.errors++;
             results.details.push({
               id: placement.id,
@@ -4651,7 +4622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all annotations for a document
   app.get("/api/annotations/:documentId", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: "Authentication required" });
       }
       
@@ -4668,7 +4639,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new annotation
   app.post("/api/annotations", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: "Authentication required" });
       }
       
@@ -4681,7 +4652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const annotation = await storage.createAnnotation({
         documentId,
         documentType,
-        userId: req.user.id,
+        userId: req.user!.id,
         content,
         position,
         color: color || "yellow"
@@ -4697,7 +4668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update an annotation
   app.patch("/api/annotations/:id", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: "Authentication required" });
       }
       
@@ -4712,7 +4683,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only the creator can update their annotation
-      if (annotation.userId !== req.user.id) {
+      if (annotation.userId !== req.user!.id) {
         return res.status(403).json({ message: "Unauthorized: You can only update your own annotations" });
       }
       
@@ -4727,7 +4698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mark annotation as resolved
   app.post("/api/annotations/:id/resolve", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: "Authentication required" });
       }
       
@@ -4747,7 +4718,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all comments for an annotation
   app.get("/api/annotations/:id/comments", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: "Authentication required" });
       }
       
@@ -4767,7 +4738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update a pitch (content only)
   app.patch("/api/pitches/:id", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: "Authentication required" });
       }
       
@@ -4782,7 +4753,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only the creator can update their pitch
-      if (pitch.userId !== req.user.id) {
+      if (pitch.userId !== req.user!.id) {
         return res.status(403).json({ message: "Unauthorized: You can only update your own pitches" });
       }
       
@@ -4798,7 +4769,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Pitch content cannot be empty" });
       }
       
-      console.log(`Updating pitch ${id} content for user ${req.user.id}. Current status: ${pitch.status}`);
+      console.log(`Updating pitch ${id} content for user ${req.user!.id}. Current status: ${pitch.status}`);
       console.log(`Content length: ${req.body.content.trim().length}`);
       
       // Only update the content field
@@ -4822,7 +4793,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Submit a pitch (change status from pending to sent)
   app.patch("/api/pitches/:id/submit", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: "Authentication required" });
       }
       
@@ -4837,7 +4808,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only the creator can submit their pitch
-      if (pitch.userId !== req.user.id) {
+      if (pitch.userId !== req.user!.id) {
         return res.status(403).json({ message: "Unauthorized: You can only submit your own pitches" });
       }
       
@@ -4863,13 +4834,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Helper function to check if a user is an admin
   function isAdmin(req: Request): boolean {
-    return req.isAuthenticated() && req.user && 'role' in req.user && req.user.role === 'admin';
+    return isRequestAuthenticated(req) && req.user && 'role' in req.user && req.user.role === 'admin';
   }
   
   // Get all pitches with payment information for admin billing
   app.get("/api/admin/billing/pitches", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !isAdmin(req)) {
+      if (!isRequestAuthenticated(req) || !isAdmin(req)) {
         return res.status(401).json({ message: "Admin authentication required" });
       }
       
@@ -4918,7 +4889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get payment intent details for a specific pitch
   app.get("/api/admin/billing/pitch/:id/payment", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !isAdmin(req)) {
+      if (!isRequestAuthenticated(req) || !isAdmin(req)) {
         return res.status(401).json({ message: "Admin authentication required" });
       }
       
@@ -4964,7 +4935,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Capture payment for a pitch (charge the customer)
   app.post("/api/admin/billing/pitch/:id/capture", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !isAdmin(req)) {
+      if (!isRequestAuthenticated(req) || !isAdmin(req)) {
         return res.status(401).json({ message: "Admin authentication required" });
       }
       
@@ -5009,7 +4980,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: paymentIntent.status
           }
         });
-      } catch (error) {
+      } catch (error: any) {
         // Record the error but don't fail the request
         const errorMessage = error instanceof Error ? error.message : 'Unknown error capturing payment';
         await storage.updatePitchBillingError(pitch.id, errorMessage);
@@ -5025,7 +4996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add comment to an annotation
   app.post("/api/annotations/:id/comments", async (req: Request, res: Response) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!isRequestAuthenticated(req)) {
         return res.status(401).json({ message: "Authentication required" });
       }
       
@@ -5041,7 +5012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const comment = await storage.createAnnotationComment({
         annotationId,
-        userId: req.user.id,
+        userId: req.user!.id,
         content
       });
       
@@ -5166,7 +5137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               placementId: existingPlacement.id
             });
           }
-        } catch (error) {
+        } catch (error: any) {
           results.errors++;
           results.details.push({
             pitchId: pitch.id,
@@ -5591,7 +5562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log("Placement sync completed");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error syncing placements:", error);
     }
   };
@@ -5663,7 +5634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`✅ Payment succeeded for user ${user.id}, subscription ${subscriptionId} activated`);
               }
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error(`Failed to process payment intent success:`, error);
           }
         }
@@ -5703,7 +5674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
             console.log(`✅ Updated user ${userId} with subscription ${subscriptionId}`);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Failed to update user after checkout completion:`, error);
         }
         break;
@@ -5737,7 +5708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
               console.log(`✅ User ${user.id} subscription renewed until ${currentPeriodEnd}`);
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error(`Failed to process invoice payment:`, error);
           }
         }
@@ -5767,7 +5738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
               console.log(`⚠️ User ${user.id} payment failed for subscription ${subscriptionId}`);
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error(`Failed to process payment failure:`, error);
           }
         }
@@ -5797,7 +5768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
               console.log(`❌ User ${user.id} subscription canceled`);
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error(`Failed to process subscription deletion:`, error);
           }
         }
@@ -5935,7 +5906,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             break;
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error handling WebSocket message:', error);
       }
     });
@@ -5994,29 +5965,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         missingUserDetails: pitchesWithMissingUsers,
         samplePitchAnalysis: pitchUserAnalysis.slice(0, 5) // Show first 5 for debugging
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in debug endpoint:", error);
       res.status(500).json({ message: "Error analyzing pitch users", error: error.message });
     }
   });
   
   // Admin API to get all opportunities with publications
-  app.get("/api/admin/opportunities", requireAdminAuth, async (req: Request, res: Response) => {
-    try {
-      const opportunities = await storage.getOpportunitiesWithPublications();
-      res.json(opportunities);
-    } catch (error) {
-      console.error('Error fetching admin opportunities:', error);
-      res.status(500).json({ message: 'Failed to fetch opportunities', error: error });
-    }
-  });
 
   // Admin API to get all opportunities with publications and pitches
   app.get("/api/admin/opportunities-with-pitches", requireAdminAuth, async (req: Request, res: Response) => {
     try {
       const opportunities = await storage.getOpportunitiesWithPitches();
       res.json(opportunities);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching admin opportunities with pitches:', error);
       res.status(500).json({ message: 'Failed to fetch opportunities with pitches', error: error });
     }
@@ -6063,7 +6025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           password: "admin123"
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating test admin:", error);
       res.status(500).json({ message: "Failed to create test admin", error: error.message });
     }
@@ -6073,24 +6035,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users/:userId/payment-methods", jwtAuth, async (req: Request, res: Response) => {
     console.log("💳 PAYMENT METHODS ENDPOINT HIT");
     console.log("📝 Request params:", req.params);
-    console.log("👤 User from JWT:", req.user ? { id: req.user.id, email: req.user.email } : 'NO USER');
+    console.log("👤 User from JWT:", req.user ? { id: req.user!.id, email: req.user!.email } : 'NO USER');
     
     try {
-      if (!req.user || !req.user.id) {
+      if (!req.user || !req.user!.id) {
         console.log("❌ Authentication failed - no user");
         return res.status(401).json({ error: 'Authentication required' });
       }
       
       const userId = parseInt(req.params.userId);
-      console.log("🔢 Parsed userId:", userId, "JWT user ID:", req.user.id);
+      console.log("🔢 Parsed userId:", userId, "JWT user ID:", req.user!.id);
       
-      if (isNaN(userId) || userId !== req.user.id) {
+      if (isNaN(userId) || userId !== req.user!.id) {
         console.log("❌ Unauthorized access attempt");
         return res.status(403).json({ error: 'Unauthorized' });
       }
 
       // Get user from database
-      const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      const user = await getDb().select().from(users).where(eq(users.id, userId)).limit(1);
       
       if (user.length === 0) {
         console.log("❌ User not found in database");
@@ -6259,7 +6221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sortedOpportunities.map(opp => `${opp.id}: "${opp.title}"`));
       
       res.json(sortedOpportunities);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching related opportunities:", error);
       res.status(500).json({ message: "Failed to fetch related opportunities" });
     }
@@ -6550,135 +6512,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============ END NEW BILLING MANAGER ENDPOINTS ============
   
   // Charge a user for a specific placement using a payment method
-  app.post("/api/admin/billing/charge", requireAdminAuth, async (req: Request, res: Response) => {
+  
+  // Update opportunity (admin only)
+  app.put("/api/admin/opportunities/:id", requireAdminAuth, async (req: Request, res: Response) => {
     try {
-      const { placementId, pitchId, paymentMethodId } = req.body;
-      
-      // Support both placementId and pitchId for backwards compatibility
-      if ((!placementId && !pitchId) || !paymentMethodId) {
-        return res.status(400).json({ message: "placementId (or pitchId) and paymentMethodId are required" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid opportunity ID" });
       }
       
-      // If pitchId is provided, try to find the corresponding placement
-      let targetPlacementId = placementId;
-      if (pitchId && !placementId) {
-        try {
-          const allPlacements = await getDb().select().from(placements);
-          const pitchPlacement = allPlacements.find(p => p.pitchId === parseInt(pitchId));
-          if (pitchPlacement) {
-            targetPlacementId = pitchPlacement.id;
-            console.log(`🔄 Converted pitchId ${pitchId} to placementId ${targetPlacementId}`);
-          } else {
-            return res.status(404).json({ message: "No placement found for the provided pitchId" });
-          }
-        } catch (conversionError) {
-          console.error("Error converting pitchId to placementId:", conversionError);
-          return res.status(500).json({ message: "Error processing pitch ID" });
+      const { status, ...updateData } = req.body;
+      
+      // If only status is being updated, use the specific method
+      if (Object.keys(req.body).length === 1 && status !== undefined) {
+        const updatedOpportunity = await storage.updateOpportunityStatus(id, status);
+        if (!updatedOpportunity) {
+          return res.status(404).json({ message: "Opportunity not found" });
         }
+        return res.json(updatedOpportunity);
       }
       
-      // Get the placement with relations
-      const placement = await storage.getPlacementWithRelations(parseInt(targetPlacementId));
-      if (!placement) {
-        return res.status(404).json({ message: "Placement not found" });
+      // Otherwise update the full opportunity
+      const updatedOpportunity = await storage.updateOpportunity(id, req.body);
+      if (!updatedOpportunity) {
+        return res.status(404).json({ message: "Opportunity not found" });
       }
       
-      // Check if already billed
-      if (placement.status === 'paid') {
-        return res.status(400).json({ message: "Placement has already been billed" });
-      }
-      
-      // Ensure placement is ready for billing
-      if (placement.status !== 'ready_for_billing') {
-        return res.status(400).json({ message: "Only ready_for_billing placements can be charged" });
-      }
-      
-      // Get the user
-      const user = await storage.getUser(placement.userId);
-      if (!user || !user.stripeCustomerId) {
-        return res.status(400).json({ message: "User has no Stripe customer ID" });
-      }
-      
-      try {
-        // Create and immediately capture a payment intent
-        const paymentIntent = await stripe.paymentIntents.create({
-          amount: Math.round(placement.amount * 100), // Convert to cents
-          currency: 'usd',
-          customer: user.stripeCustomerId,
-          payment_method: paymentMethodId,
-          description: `QuoteBid charge for "${placement.articleTitle || 'Unknown Article'}" in ${placement.publication?.name || 'Unknown Publication'}`,
-          metadata: {
-            placementId: placement.id.toString(),
-            pitchId: placement.pitchId?.toString() || '',
-            userId: user.id.toString(),
-            articleTitle: placement.articleTitle || '',
-            publicationName: placement.publication?.name || ''
-          },
-          confirm: true, // Confirm immediately
-          off_session: true, // Since this is admin-initiated, not user-initiated
-          return_url: `${req.protocol}://${req.get('host')}/admin/billing`
-        });
-        
-        // Update the placement status to paid
-        const updatedPlacement = await storage.updatePlacementStatus(placement.id, 'paid');
-        
-        console.log(`💳 Successfully charged user ${user.id} $${placement.amount} for placement ${placement.id}`);
-        
-        // Create notification for successful payment
-        try {
-          await notificationService.createNotification({
-            userId: user.id,
-            type: 'payment',
-            title: '💳 Payment Processed Successfully!',
-            message: `Your payment of $${placement.amount} for "${placement.articleTitle || 'your article placement'}" has been processed successfully.`,
-            linkUrl: '/account',
-            relatedId: placement.id,
-            relatedType: 'placement',
-            icon: 'credit-card',
-            iconColor: 'green',
-          });
-        } catch (notificationError) {
-          console.error('Error creating payment success notification:', notificationError);
-          // Don't fail the request if notification creation fails
-        }
-        
-        res.json({
-          success: true,
-          message: "Payment charged successfully",
-          placement: updatedPlacement,
-          paymentIntent: {
-            id: paymentIntent.id,
-            status: paymentIntent.status,
-            amount: paymentIntent.amount / 100
-          }
-        });
-      } catch (stripeError: any) {
-        console.error("Stripe charge error:", stripeError);
-        
-        // Return specific error messages based on Stripe error types
-        if (stripeError.code === 'card_declined') {
-          return res.status(400).json({ 
-            message: "Card was declined. Please try a different payment method or contact the customer." 
-          });
-        } else if (stripeError.code === 'insufficient_funds') {
-          return res.status(400).json({ 
-            message: "Insufficient funds. Please contact the customer." 
-          });
-        } else if (stripeError.code === 'payment_method_unactivated') {
-          return res.status(400).json({ 
-            message: "Payment method is not activated. Please contact the customer." 
-          });
-        } else {
-          return res.status(400).json({ 
-            message: `Payment failed: ${stripeError.message}` 
-          });
-        }
-      }
+      res.json(updatedOpportunity);
     } catch (error: any) {
-      console.error("Error processing charge:", error);
-      res.status(500).json({ message: "Failed to process charge: " + error.message });
+      console.error("Error updating opportunity:", error);
+      res.status(500).json({ message: "Failed to update opportunity" });
     }
   });
+  
+  // Update opportunity (admin only) - full update
   
   return httpServer;
 }

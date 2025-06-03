@@ -51,6 +51,7 @@ export interface IStorage {
   getOpportunitiesWithPitches(): Promise<OpportunityWithPublicationAndPitches[]>;
   createOpportunity(opportunity: InsertOpportunity): Promise<Opportunity>;
   updateOpportunityStatus(id: number, status: string): Promise<Opportunity | undefined>;
+  updateOpportunity(id: number, data: Partial<Opportunity>): Promise<Opportunity | undefined>;
   searchOpportunities(query: string): Promise<OpportunityWithPublication[]>;
   
   // Bids
@@ -416,12 +417,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateOpportunityStatus(id: number, status: string): Promise<Opportunity | undefined> {
-    const [opportunity] = await getDb()
+    const db = getDb();
+    const [updated] = await db
       .update(opportunities)
       .set({ status })
       .where(eq(opportunities.id, id))
       .returning();
-    return opportunity;
+    return updated;
+  }
+
+  async updateOpportunity(id: number, data: Partial<Opportunity>): Promise<Opportunity | undefined> {
+    const db = getDb();
+    const [updated] = await db
+      .update(opportunities)
+      .set(data)
+      .where(eq(opportunities.id, id))
+      .returning();
+    return updated;
   }
 
   async searchOpportunities(query: string): Promise<OpportunityWithPublication[]> {

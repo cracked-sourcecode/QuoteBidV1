@@ -11,6 +11,8 @@ import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Refe
 import LogoUniform from '@/components/ui/logo-uniform';
 import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
+import { getPublicationLogo } from '@/lib/responsive-utils';
+import { apiRequest } from '@/lib/queryClient';
 
 export default function OpportunityDetail() {
   const { toast } = useToast();
@@ -30,6 +32,7 @@ export default function OpportunityDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [logoFailed, setLogoFailed] = useState(false);
+  const [logoLoaded, setLogoLoaded] = useState(false);
   
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -53,6 +56,44 @@ export default function OpportunityDetail() {
   const [isCheckingPitchStatus, setIsCheckingPitchStatus] = useState(false);
   
   const recordingInterval = useRef<NodeJS.Timeout | null>(null);
+  
+  // Improved logo loading handler for retina displays
+  const handleLogoLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.target as HTMLImageElement;
+    // On retina displays, wait a bit to ensure proper loading
+    setTimeout(() => {
+      if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        setLogoLoaded(true);
+        setLogoFailed(false);
+        console.log(`✅ Detail logo loaded successfully for ${opportunity?.outlet}: ${img.naturalWidth}x${img.naturalHeight}`);
+      } else {
+        console.log(`❌ Detail logo failed dimension check for ${opportunity?.outlet}: ${img.naturalWidth}x${img.naturalHeight}`);
+        setLogoFailed(true);
+      }
+    }, 100);
+  };
+
+  const handleLogoError = () => {
+    console.log(`❌ Detail logo failed to load for ${opportunity?.outlet}: ${opportunity?.outletLogo}`);
+    setLogoFailed(true);
+    setLogoLoaded(false);
+  };
+
+  // Get the appropriate logo URL - original first, fallback if needed
+  const getLogoUrl = () => {
+    if (!opportunity) return '';
+    
+    if (logoFailed && opportunity.outletLogo) {
+      // If original logo failed, use our fallback system
+      console.log(`🔄 Using fallback logo for ${opportunity.outlet}`);
+      // Create a minimal publication object for the function
+      const pubObj = { name: opportunity.outlet, logo: opportunity.outletLogo } as any;
+      return getPublicationLogo(pubObj);
+    }
+    // Use original logo first
+    const pubObj = { name: opportunity.outlet, logo: opportunity.outletLogo } as any;
+    return getPublicationLogo(pubObj);
+  };
   
   // Check if user has already pitched for this opportunity
   const checkUserPitchStatus = async (opportunityId: number) => {
@@ -330,14 +371,7 @@ export default function OpportunityDetail() {
 
       console.log('Submitting pitch:', pitchData);
 
-      const response = await fetch('/api/pitches', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(pitchData)
-      });
+      const response = await apiRequest('POST', '/api/pitches', pitchData);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -599,26 +633,34 @@ export default function OpportunityDetail() {
         {/* White Container Wrapper */}
         <div className="bg-white rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden">
           <div className="px-6 pb-6">
-            {/* Publication Name */}
-            <div className="-mt-2">
+            {/* Publication Name with improved responsive spacing */}
+            <div className="mb-6 pt-6">
               {/* Show publication logo if available, otherwise show name */}
-              {opportunity.outletLogo && !logoFailed ? (
-                <img
-                  src={opportunity.outletLogo}
-                  alt={opportunity.outlet}
-                  className="h-32 w-auto object-contain"
-                  onError={() => setLogoFailed(true)}
-                />
+              {getLogoUrl() && !logoFailed ? (
+                <div className="flex items-center justify-start">
+                  <img
+                    src={getLogoUrl()}
+                    alt={opportunity.outlet}
+                    className="h-16 sm:h-20 md:h-24 lg:h-28 xl:h-32 2xl:h-36 w-auto object-contain max-w-full"
+                    onError={handleLogoError}
+                    onLoad={handleLogoLoad}
+                    style={{ 
+                      imageRendering: 'crisp-edges',
+                      WebkitImageRendering: 'crisp-edges'
+                    } as React.CSSProperties}
+                    loading="lazy"
+                  />
+                </div>
               ) : (
-                <h2 className="text-4xl font-semibold text-black tracking-tight">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-4xl 2xl:text-5xl font-semibold text-black tracking-tight leading-tight">
                   {opportunity.outlet}
                 </h2>
               )}
             </div>
 
-            {/* Opportunity Title */}
-            <div className="mb-6 -mt-4">
-              <h1 className="text-5xl font-medium text-black leading-tight tracking-tighter">
+            {/* Opportunity Title with improved responsive spacing */}
+            <div className="mb-8 lg:mb-10">
+              <h1 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl xl:text-5xl 2xl:text-6xl font-medium text-black leading-tight tracking-tighter">
                 {opportunity.title}
               </h1>
             </div>
