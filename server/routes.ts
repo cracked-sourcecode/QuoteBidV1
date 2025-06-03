@@ -6270,38 +6270,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get successful pitches ready for billing (new billing manager format)
   app.get("/api/admin/billing/ready", requireAdminAuth, async (req: Request, res: Response) => {
     try {
-      // Get all pitches with their relations
-      const pitches = await storage.getAllPitchesWithRelations();
+      console.log("🔍 Fetching placements for billing manager...");
       
-      // Filter and format for the new billing manager UI
-      const readyForBilling = pitches
-        .filter(pitch => pitch.status === 'successful' && !pitch.billedAt) // Successful but not yet billed
-        .map(pitch => ({
-          id: pitch.id.toString(),
-          userId: pitch.userId.toString(),
-          bidAmount: pitch.bidAmount || 0,
-          billed: !!pitch.billedAt,
-          createdAt: pitch.createdAt,
-          publication: pitch.publication ? {
-            id: pitch.publication.id,
-            name: pitch.publication.name
-          } : null,
-          title: pitch.opportunity?.title || 'Unknown Opportunity',
-          customerName: pitch.user?.fullName || pitch.user?.username,
-          user: {
-            id: pitch.user.id,
-            fullName: pitch.user.fullName,
-            email: pitch.user.email,
-            username: pitch.user.username,
-            company_name: pitch.user.companyName || null,
-            stripeCustomerId: pitch.user.stripeCustomerId
+      // Get all placements from database with basic query first
+      const allPlacements = await getDb().select().from(placements);
+      console.log(`📊 Found ${allPlacements.length} total placements in database`);
+      
+      if (allPlacements.length === 0) {
+        console.log("📭 No placements found in database");
+        return res.json([]);
+      }
+      
+      // Filter for placements that are ready for billing
+      const pendingPlacements = allPlacements.filter(placement => 
+        placement.status === 'ready_for_billing'
+      );
+      console.log(`💰 Found ${pendingPlacements.length} placements with 'ready_for_billing' status`);
+      
+      // Safely get relations for each placement
+      const readyForBilling = [];
+      
+      for (const placement of pendingPlacements) {
+        try {
+          console.log(`Processing placement ID: ${placement.id}`);
+          
+          // Get user safely
+          let user = null;
+          try {
+            if (placement.userId) {
+              const userResult = await getDb().select()
+                .from(users)
+                .where(eq(users.id, placement.userId))
+                .limit(1);
+              user = userResult[0] || null;
+            }
+          } catch (userError) {
+            console.log(`⚠️ Could not fetch user ${placement.userId} for placement ${placement.id}:`, userError.message);
           }
-        }));
+          
+          // Get publication safely
+          let publication = null;
+          try {
+            if (placement.publicationId) {
+              const pubResult = await getDb().select()
+                .from(publications)
+                .where(eq(publications.id, placement.publicationId))
+                .limit(1);
+              publication = pubResult[0] || null;
+            }
+          } catch (pubError) {
+            console.log(`⚠️ Could not fetch publication ${placement.publicationId} for placement ${placement.id}:`, pubError.message);
+          }
+          
+          // Get opportunity safely
+          let opportunity = null;
+          try {
+            if (placement.opportunityId) {
+              const oppResult = await getDb().select()
+                .from(opportunities)
+                .where(eq(opportunities.id, placement.opportunityId))
+                .limit(1);
+              opportunity = oppResult[0] || null;
+            }
+          } catch (oppError) {
+            console.log(`⚠️ Could not fetch opportunity ${placement.opportunityId} for placement ${placement.id}:`, oppError.message);
+          }
+          
+          // Build the billing record with safe defaults
+          const billingRecord = {
+            id: placement.id.toString(),
+            userId: placement.userId?.toString() || 'unknown',
+            bidAmount: placement.amount || 0,
+            billed: placement.status === 'paid',
+            createdAt: placement.createdAt || new Date().toISOString(),
+            publication: {
+              id: publication?.id || null,
+              name: publication?.name || 'Unknown Publication'
+            },
+            title: placement.articleTitle || opportunity?.title || 'Unknown Opportunity',
+            customerName: user?.fullName || user?.username || 'Unknown User',
+            user: {
+              id: user?.id || placement.userId || 0,
+              fullName: user?.fullName || 'Unknown User',
+              email: user?.email || '',
+              username: user?.username || '',
+              company_name: user?.company_name || null,
+              stripeCustomerId: user?.stripeCustomerId || null
+            }
+          };
+          
+          readyForBilling.push(billingRecord);
+          console.log(`✅ Successfully processed placement ${placement.id}`);
+          
+        } catch (placementError) {
+          console.error(`❌ Error processing placement ${placement.id}:`, placementError.message);
+          // Continue with next placement instead of failing completely
+          continue;
+        }
+      }
       
-      console.log(`📊 Found ${readyForBilling.length} pitches ready for billing`);
+      console.log(`📊 Successfully processed ${readyForBilling.length} placements ready for billing`);
       res.json(readyForBilling);
     } catch (error: any) {
-      console.error("Error fetching billing-ready pitches:", error);
+      console.error("❌ Error fetching billing-ready placements:", error);
       res.status(500).json({ message: "Failed to fetch billing data: " + error.message });
     }
   });
@@ -6477,6 +6548,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============ END NEW BILLING MANAGER ENDPOINTS ============
+  
+  // Charge a user for a specific placement using a payment method
+  app.post("/api/admin/billing/charge", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const { placementId, pitchId, paymentMethodId } = req.body;
+      
+      // Support both placementId and pitchId for backwards compatibility
+      if ((!placementId && !pitchId) || !paymentMethodId) {
+        return res.status(400).json({ message: "placementId (or pitchId) and paymentMethodId are required" });
+      }
+      
+      // If pitchId is provided, try to find the corresponding placement
+      let targetPlacementId = placementId;
+      if (pitchId && !placementId) {
+        try {
+          const allPlacements = await getDb().select().from(placements);
+          const pitchPlacement = allPlacements.find(p => p.pitchId === parseInt(pitchId));
+          if (pitchPlacement) {
+            targetPlacementId = pitchPlacement.id;
+            console.log(`🔄 Converted pitchId ${pitchId} to placementId ${targetPlacementId}`);
+          } else {
+            return res.status(404).json({ message: "No placement found for the provided pitchId" });
+          }
+        } catch (conversionError) {
+          console.error("Error converting pitchId to placementId:", conversionError);
+          return res.status(500).json({ message: "Error processing pitch ID" });
+        }
+      }
+      
+      // Get the placement with relations
+      const placement = await storage.getPlacementWithRelations(parseInt(targetPlacementId));
+      if (!placement) {
+        return res.status(404).json({ message: "Placement not found" });
+      }
+      
+      // Check if already billed
+      if (placement.status === 'paid') {
+        return res.status(400).json({ message: "Placement has already been billed" });
+      }
+      
+      // Ensure placement is ready for billing
+      if (placement.status !== 'ready_for_billing') {
+        return res.status(400).json({ message: "Only ready_for_billing placements can be charged" });
+      }
+      
+      // Get the user
+      const user = await storage.getUser(placement.userId);
+      if (!user || !user.stripeCustomerId) {
+        return res.status(400).json({ message: "User has no Stripe customer ID" });
+      }
+      
+      try {
+        // Create and immediately capture a payment intent
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(placement.amount * 100), // Convert to cents
+          currency: 'usd',
+          customer: user.stripeCustomerId,
+          payment_method: paymentMethodId,
+          description: `QuoteBid charge for "${placement.articleTitle || 'Unknown Article'}" in ${placement.publication?.name || 'Unknown Publication'}`,
+          metadata: {
+            placementId: placement.id.toString(),
+            pitchId: placement.pitchId?.toString() || '',
+            userId: user.id.toString(),
+            articleTitle: placement.articleTitle || '',
+            publicationName: placement.publication?.name || ''
+          },
+          confirm: true, // Confirm immediately
+          off_session: true, // Since this is admin-initiated, not user-initiated
+          return_url: `${req.protocol}://${req.get('host')}/admin/billing`
+        });
+        
+        // Update the placement status to paid
+        const updatedPlacement = await storage.updatePlacementStatus(placement.id, 'paid');
+        
+        console.log(`💳 Successfully charged user ${user.id} $${placement.amount} for placement ${placement.id}`);
+        
+        // Create notification for successful payment
+        try {
+          await notificationService.createNotification({
+            userId: user.id,
+            type: 'payment',
+            title: '💳 Payment Processed Successfully!',
+            message: `Your payment of $${placement.amount} for "${placement.articleTitle || 'your article placement'}" has been processed successfully.`,
+            linkUrl: '/account',
+            relatedId: placement.id,
+            relatedType: 'placement',
+            icon: 'credit-card',
+            iconColor: 'green',
+          });
+        } catch (notificationError) {
+          console.error('Error creating payment success notification:', notificationError);
+          // Don't fail the request if notification creation fails
+        }
+        
+        res.json({
+          success: true,
+          message: "Payment charged successfully",
+          placement: updatedPlacement,
+          paymentIntent: {
+            id: paymentIntent.id,
+            status: paymentIntent.status,
+            amount: paymentIntent.amount / 100
+          }
+        });
+      } catch (stripeError: any) {
+        console.error("Stripe charge error:", stripeError);
+        
+        // Return specific error messages based on Stripe error types
+        if (stripeError.code === 'card_declined') {
+          return res.status(400).json({ 
+            message: "Card was declined. Please try a different payment method or contact the customer." 
+          });
+        } else if (stripeError.code === 'insufficient_funds') {
+          return res.status(400).json({ 
+            message: "Insufficient funds. Please contact the customer." 
+          });
+        } else if (stripeError.code === 'payment_method_unactivated') {
+          return res.status(400).json({ 
+            message: "Payment method is not activated. Please contact the customer." 
+          });
+        } else {
+          return res.status(400).json({ 
+            message: `Payment failed: ${stripeError.message}` 
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error("Error processing charge:", error);
+      res.status(500).json({ message: "Failed to process charge: " + error.message });
+    }
+  });
   
   return httpServer;
 }

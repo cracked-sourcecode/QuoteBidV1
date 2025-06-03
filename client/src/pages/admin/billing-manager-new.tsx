@@ -124,32 +124,35 @@ export default function BillingManagerNew() {
 
   /** ---------------- Charge Mutation --------------- */
   const chargeMutation = useMutation({
-    mutationFn: async ({ pitchId, paymentMethodId }: { pitchId: string; paymentMethodId: string }) => {
-      const res = await apiRequest("POST", "/api/admin/billing/charge", {
-        pitchId,
-        paymentMethodId,
+    mutationFn: async ({ placementId, paymentMethodId }: { placementId: string; paymentMethodId: string }) => {
+      const response = await fetch("/api/admin/billing/charge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ placementId, paymentMethodId }),
       });
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || `Charge failed: ${res.status}`);
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error);
       }
-      return res.json();
+      
+      return response.json();
     },
-    onSuccess: (data, variables) => {
-      toast({
-        title: "💳 Charge Successful",
-        description: `${selectedPitch?.customerName} charged $${selectedPitch?.bidAmount} for "${selectedPitch?.title}"`,
-      });
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/billing/ready"] });
       setSelectedPitch(null);
-      setMethods([]);
       setSelectedMethod(null);
+      toast({
+        title: "✅ Payment Successful",
+        description: "Customer has been charged successfully!",
+      });
     },
     onError: (error: Error) => {
-      toast({ 
-        title: "❌ Charge Failed", 
-        description: error.message, 
-        variant: "destructive" 
+      toast({
+        title: "❌ Payment Failed", 
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
@@ -213,14 +216,15 @@ export default function BillingManagerNew() {
     }
   }
 
-  /** ---------------- Charge Handler ------------------ */
-  function handleCharge() {
+  /** ---------------- Handle Charge --------------- */
+  const handleCharge = () => {
     if (!selectedPitch || !selectedMethod) return;
+    
     chargeMutation.mutate({
-      pitchId: selectedPitch.id,
+      placementId: selectedPitch.id,
       paymentMethodId: selectedMethod,
     });
-  }
+  };
 
   /** ---------------- Loading State ------------------- */
   if (loading) {
