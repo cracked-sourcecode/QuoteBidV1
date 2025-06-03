@@ -285,7 +285,12 @@ Article headline:`;
 
 // Helper function to safely check if request is authenticated
 function isRequestAuthenticated(req: Request): boolean {
-  return typeof req.isAuthenticated === 'function' && req.isAuthenticated();
+  // Explicitly check for the passport isAuthenticated method
+  // to avoid any potential recursion issues
+  if (typeof req.isAuthenticated === 'function' && req.isAuthenticated !== isRequestAuthenticated) {
+    return req.isAuthenticated();
+  }
+  return false;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
