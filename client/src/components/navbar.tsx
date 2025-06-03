@@ -11,11 +11,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useContext } from "react";
-import { queryClient } from '@/lib/queryClient';
-import { cn } from '@/lib/utils';
-
-// Get the API URL from environment or default to relative path
-const API_URL = import.meta.env.VITE_API_URL || '';
 
 export default function Navbar() {
   const [location] = useLocation();
@@ -220,7 +215,7 @@ export default function Navbar() {
                     <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
                       {user?.avatar ? (
                         <img 
-                          src={user.avatar.startsWith('http') ? user.avatar : `${API_URL}${user.avatar}`}
+                          src={user.avatar.startsWith('http') ? user.avatar : `${window.location.origin}${user.avatar}`}
                           alt={user.fullName || 'Profile'}
                           className="h-full w-full object-cover rounded-full"
                           onError={(e) => {
@@ -275,9 +270,13 @@ export default function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+
+
           </div>
         </div>
       </div>
+
+
     </nav>
   );
 }

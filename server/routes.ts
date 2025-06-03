@@ -1585,8 +1585,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const opportunities = await storage.getOpportunitiesWithPublications();
-      res.json(opportunities);
+      const opportunitiesWithPubs = await storage.getOpportunitiesWithPublications();
+      
+      // Transform the data to match what the client expects
+      const transformedOpportunities = opportunitiesWithPubs.map(oppWithPub => ({
+        id: oppWithPub.id,
+        title: oppWithPub.title,
+        outlet: oppWithPub.publication?.name || null,
+        outletLogo: oppWithPub.publication?.logo || null,
+        tier: oppWithPub.tier ? parseInt(oppWithPub.tier.replace('Tier ', '')) as 1 | 2 | 3 : 1,
+        status: oppWithPub.status as 'open' | 'closed',
+        summary: oppWithPub.description || '',
+        topicTags: Array.isArray(oppWithPub.tags) ? oppWithPub.tags : [],
+        slotsTotal: 5, // Default value
+        slotsRemaining: 3, // Default value
+        basePrice: oppWithPub.minimumBid || 100,
+        currentPrice: oppWithPub.minimumBid || 100,
+        increment: 50, // Default value
+        floorPrice: oppWithPub.minimumBid || 100,
+        cutoffPrice: (oppWithPub.minimumBid || 100) + 500, // Default value
+        deadline: oppWithPub.deadline || new Date().toISOString(),
+        postedAt: oppWithPub.createdAt || new Date().toISOString(),
+        createdAt: oppWithPub.createdAt || new Date().toISOString(),
+        updatedAt: oppWithPub.createdAt || new Date().toISOString(),
+        publicationId: oppWithPub.publicationId,
+        industry: oppWithPub.industry || 'Business',
+        mediaType: oppWithPub.mediaType || 'Article',
+        // Keep the raw publication object too for components that need it
+        publication: oppWithPub.publication
+      }));
+      
+      res.json(transformedOpportunities);
     } catch (error: any) {
       console.error("Opportunities error:", error);
       res.status(500).json({ 

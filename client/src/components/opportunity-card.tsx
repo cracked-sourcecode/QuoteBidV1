@@ -12,7 +12,7 @@ import LogoUniform from '@/components/ui/logo-uniform';
 import { getPublicationLogo, getResponsiveImageClasses, getLogoContainerClasses, getDeviceOptimizedClasses } from '@/lib/responsive-utils';
 
 interface OpportunityCardProps {
-  opportunity: Opportunity & { publication?: any };
+  opportunity: Opportunity;
 }
 
 // Map tier to display label
@@ -40,8 +40,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     deadline,
     slotsRemaining,
     slotsTotal,
-    summary,
-    publication
+    summary
   } = opportunity;
 
   // Improved logo loading handler for retina displays
@@ -68,8 +67,12 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
 
   // Get logo URL using the new system
   const logoUrl = outletLogo && outletLogo.trim() && outletLogo !== 'null' && outletLogo !== 'undefined' 
-    ? outletLogo 
+    ? (outletLogo.startsWith('http') || outletLogo.startsWith('data:') 
+        ? outletLogo 
+        : `${window.location.origin}${outletLogo}`)
     : '';
+
+  console.log(`OpportunityCard - ${outlet}: logo URL = ${logoUrl}, original = ${outletLogo}`);
 
   // Calculate price changes and trends
   const priceIncrease = currentPrice > basePrice
@@ -132,7 +135,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
       />
       
       <div 
-        className="opportunity-card bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-1 group" 
+        className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-1 group" 
         onClick={handleCardClick}
       >
         {/* Header */}
@@ -140,28 +143,23 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
           <div className="flex justify-between items-start mb-3">
             {/* Publication Logo & Name */}
             <div className="flex items-center space-x-3 flex-1 min-w-0">
-              <div className="publication-logo-container w-12 h-12 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                {(publication?.logo || outletLogo) && (publication?.logo || outletLogo) !== 'null' && (publication?.logo || outletLogo) !== 'undefined' ? (
+              <div className={`${getLogoContainerClasses()} ${getDeviceOptimizedClasses()}`}>
+                {logoUrl && !logoFailed ? (
                   <img
-                    src={publication?.logo || outletLogo}
+                    src={logoUrl}
                     alt={`${outlet} logo`}
-                    className="publication-logo"
+                    className="w-full h-full object-contain"
                     loading="lazy"
-                    onError={(e) => {
-                      console.warn(`Failed to load logo for ${outlet}`);
-                      // Hide the broken image
-                      e.currentTarget.style.display = 'none';
-                      // Show publication name instead
-                      const container = e.currentTarget.parentElement;
-                      if (container) {
-                        container.innerHTML = `<span class="text-xs font-bold text-gray-600">${outlet.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}</span>`;
-                      }
-                    }}
+                    onLoad={handleLogoLoad}
+                    onError={handleLogoError}
                   />
                 ) : (
-                  <span className="text-xs font-bold text-gray-600">
-                    {outlet.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
-                  </span>
+                  // Text-based fallback when logo fails or is not available
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded">
+                    <span className="text-xs font-semibold text-gray-600 text-center px-1">
+                      {outlet?.split(' ').map((word: string) => word[0]).join('').slice(0, 2).toUpperCase() || 'NA'}
+                    </span>
+                  </div>
                 )}
               </div>
               

@@ -29,7 +29,30 @@ const app = express();
 
 // Add CORS middleware before any routes
 app.use(cors({
-  origin: 'http://localhost:5050',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost on any port for development
+    const allowedOrigins = [
+      'http://localhost:5050',
+      'http://localhost:5173', // Vite default port
+      'http://localhost:5174', // Vite alternative port
+      'http://localhost:3000', // Common React port
+      'http://localhost:3001', // Alternative React port
+    ];
+    
+    // Also allow any localhost origin in development
+    if (process.env.NODE_ENV === 'development' && origin.includes('localhost')) {
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 
