@@ -8,8 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useSubscription } from '@/hooks/use-subscription';
 import PaywallModal from '@/components/paywall-modal';
 import { useState } from 'react';
-import LogoUniform from '@/components/ui/logo-uniform';
-import { getPublicationLogo, getResponsiveImageClasses, getLogoContainerClasses, getDeviceOptimizedClasses } from '@/lib/responsive-utils';
+import { getLogoContainerClasses, getDeviceOptimizedClasses } from '@/lib/responsive-utils';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
