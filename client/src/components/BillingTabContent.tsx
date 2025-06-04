@@ -46,24 +46,12 @@ export function BillingTabContent({
     }).format(amount);
   };
 
-  const downloadInvoice = async (chargeId: string | number) => {
-    try {
-      // Open the invoice PDF in a new tab
-      const invoiceUrl = `/api/users/${user?.id}/billing/placement-charges/${chargeId}/invoice`;
-      
-      // Create a temporary link to test if the invoice exists
-      const response = await fetch(invoiceUrl, { method: 'HEAD' });
-      
-      if (response.ok) {
-        window.open(invoiceUrl, '_blank');
-      } else if (response.status === 404) {
-        alert('Invoice not available for this charge. Please contact support if you need a receipt.');
-      } else {
-        alert('Unable to download invoice. Please try again or contact support.');
-      }
-    } catch (error) {
-      console.error('Error downloading invoice:', error);
-      alert('Error downloading invoice. Please check your connection and try again.');
+  const downloadInvoice = (charge: any) => {
+    // Open the Stripe receipt URL directly - no async calls, no popup blockers!
+    if (charge.receiptUrl) {
+      window.open(charge.receiptUrl, '_blank');
+    } else {
+      console.error('No receipt URL available for this charge');
     }
   };
 
@@ -257,7 +245,7 @@ export function BillingTabContent({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => downloadInvoice(charge.invoiceId || charge.paymentId || charge.id)}
+                                onClick={() => downloadInvoice(charge)}
                                 className="text-xs h-7 px-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50"
                               >
                                 <Download className="h-3 w-3 mr-1" />

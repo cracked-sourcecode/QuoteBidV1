@@ -35,6 +35,12 @@ export async function jwtAuth(req: Request, _res: Response, next: NextFunction) 
     console.log('[jwtAuth] Token from cookie:', token ? 'found' : 'not found');
   }
 
+  // Check for token in query parameters as fallback (for invoice downloads)
+  if (!token && req.query.token && typeof req.query.token === 'string') {
+    token = req.query.token;
+    console.log('[jwtAuth] Token from query parameter found');
+  }
+
   if (!token) {
     console.log('[jwtAuth] No token found, continuing without auth');
     return next();

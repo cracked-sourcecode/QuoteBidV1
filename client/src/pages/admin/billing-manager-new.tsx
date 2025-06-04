@@ -31,16 +31,9 @@ export default function BillingManagerNew() {
 
   // Fetch accounts receivable data (successful placements ready to bill)
   const { data: arData, isLoading: arLoading, refetch: refetchAR } = useQuery({
-    queryKey: ["accounts-receivable", Math.floor(Date.now() / 5000)],
+    queryKey: ["accounts-receivable"],
     queryFn: async () => {
-      const timestamp = Date.now();
-      const response = await fetch(`/api/admin/pitches?t=${timestamp}`, {
-        cache: 'no-cache',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
+      const response = await fetch("/api/admin/pitches");
       if (!response.ok) throw new Error("Failed to fetch AR data");
       const pitches = await response.json();
       
@@ -57,39 +50,24 @@ export default function BillingManagerNew() {
       
       return successfulPitches;
     },
-    staleTime: 0,
-    gcTime: 0,
-    refetchInterval: 5000,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes  
+    gcTime: 5 * 60 * 1000, // Keep in memory for 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   // Fetch successful Stripe payments
-  const { data: paymentsData, isLoading: paymentsLoading, refetch: refetchPayments } = useQuery({
-    queryKey: ["successful-payments", Math.floor(Date.now() / 5000)],
+  const { data: paymentsData, isLoading: paymentsLoading } = useQuery({
+    queryKey: ["successful-payments"],
     queryFn: async () => {
-      const timestamp = Date.now();
-      const response = await fetch(`/api/admin/payments/successful?t=${timestamp}`, {
-        cache: 'no-cache',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
+      const response = await fetch("/api/admin/payments/successful?limit=50");
       if (!response.ok) throw new Error("Failed to fetch payments");
-      const data = await response.json();
-      console.log("💳 PAYMENTS DATA:", data);
-      console.log("💳 PAYMENTS COUNT:", data?.length || 0);
-      if (data?.length > 0) {
-        console.log("💳 FIRST PAYMENT:", data[0]);
-      }
-      return data;
+      return response.json();
     },
-    staleTime: 0,
-    gcTime: 0,
-    refetchInterval: 5000,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnMount: false, // Don't refetch on mount if data exists
   });
 
   // Fetch customers directory with Stripe data
@@ -449,39 +427,11 @@ export default function BillingManagerNew() {
                   Found {paymentsData?.length || 0} successful payments
                 </p>
               </div>
-              <div className="flex items-center gap-4">
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => refetchPayments()}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                >
-                  🔄 Refresh
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={async () => {
-                    try {
-                      const response = await fetch("/api/debug/stripe/cus_SKq2xyLkXy9Dpm");
-                      const data = await response.json();
-                      console.log("🔍 STRIPE DEBUG:", data);
-                      alert(`Found ${data.successfulCharges} successful charges in Stripe for customer cus_SKq2xyLkXy9Dpm`);
-                    } catch (error) {
-                      console.error("Debug error:", error);
-                      alert("Debug failed - check console");
-                    }
-                  }}
-                  className="border-red-300 text-red-700 hover:bg-red-50"
-                >
-                  🐛 Debug Stripe
-                </Button>
-                <div className="text-right">
-                  <p className="text-sm text-gray-600">Total revenue</p>
-                  <p className="text-xl font-semibold text-gray-900">
-                    ${paymentsData?.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0).toLocaleString() || '0'}
-                  </p>
-                </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Total revenue</p>
+                <p className="text-xl font-semibold text-gray-900">
+                  ${paymentsData?.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0).toLocaleString() || '0'}
+                </p>
               </div>
             </div>
 

@@ -6990,10 +6990,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get successful Stripe payments for all customers
+  // Get successful Stripe payments for all customers (optimized for performance)
   app.get("/api/admin/payments/successful", requireAdminAuth, async (req: Request, res: Response) => {
     try {
-      // Get all users with Stripe customer IDs directly from database
+      // Get limit from query params (default to 50 for performance)
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+      
+      // Get only active customers with recent activity to reduce load
       const usersWithStripe = await getDb()
         .select({
           id: users.id,
@@ -7003,48 +7006,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           stripeCustomerId: users.stripeCustomerId
         })
         .from(users)
-        .where(sql`${users.stripeCustomerId} IS NOT NULL`);
+        .where(sql`${users.stripeCustomerId} IS NOT NULL AND ${users.subscription_status} = 'active'`)
+        .limit(20); // Limit to active customers only for better performance
 
-      console.log(`Found ${usersWithStripe.length} users with Stripe customer IDs`);
-      
       const allSuccessfulPayments = [];
 
-      for (const user of usersWithStripe) {
+      // Use Promise.all for concurrent API calls instead of sequential
+      const paymentPromises = usersWithStripe.map(async (user) => {
         try {
-          console.log(`🔍 Fetching payments for user ${user.id} (${user.fullName}) with Stripe customer ID: ${user.stripeCustomerId}`);
-          
-          // Get ALL charges first to debug
-          const allCharges = await stripe.charges.list({
+          // Get only recent successful charges (last 3 months) for better performance
+          const charges = await stripe.charges.list({
             customer: user.stripeCustomerId,
-            limit: 100,
-          });
-          
-          console.log(`📊 Found ${allCharges.data.length} total charges for customer ${user.stripeCustomerId}`);
-          
-          // Log each charge status
-          allCharges.data.forEach((charge, index) => {
-            console.log(`   Charge ${index + 1}: ${charge.id} - $${charge.amount/100} - Status: ${charge.status} - Description: ${charge.description || 'No description'}`);
-          });
-          
-          // Get ALL charges from Stripe for this customer (status filter doesn't work reliably)
-          const allChargesForCustomer = await stripe.charges.list({
-            customer: user.stripeCustomerId,
-            limit: 100,
+            limit: 10, // Reduced limit for faster loading
+            created: {
+              gte: Math.floor(Date.now() / 1000) - (90 * 24 * 60 * 60) // Last 90 days
+            }
           });
 
-          // Filter to ONLY "succeeded" charges
-          const succeededChargesForCustomer = allChargesForCustomer.data.filter(charge => charge.status === 'succeeded');
-          
-          console.log(`✅ Found ${succeededChargesForCustomer.length} SUCCEEDED charges for customer ${user.stripeCustomerId} (filtered from ${allChargesForCustomer.data.length} total)`);
-          
-          if (succeededChargesForCustomer.length > 0) {
-            succeededChargesForCustomer.forEach((charge, index) => {
-              console.log(`   ✓ Success ${index + 1}: ${charge.id} - $${charge.amount/100} - ${charge.description || 'No description'}`);
-            });
-          }
+          // Filter to only truly successful charges
+          const succeededCharges = charges.data.filter(charge => 
+            charge.status === 'succeeded' &&
+            charge.captured === true &&
+            !charge.refunded &&
+            charge.amount_refunded === 0 &&
+            !charge.dispute &&
+            !charge.failure_code
+          );
 
           // Add user info to each charge
-          const paymentsWithUser = succeededChargesForCustomer.map(charge => ({
+          return succeededCharges.map(charge => ({
             id: charge.id,
             amount: charge.amount / 100, // Convert from cents
             currency: charge.currency,
@@ -7061,18 +7051,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
               stripeCustomerId: user.stripeCustomerId
             }
           }));
-
-          allSuccessfulPayments.push(...paymentsWithUser);
         } catch (stripeError: any) {
-          console.error(`❌ Failed to fetch Stripe payments for user ${user.id} (${user.stripeCustomerId}):`, stripeError.message);
+          console.error(`Failed to fetch payments for user ${user.id}:`, stripeError.message);
+          return [];
         }
-      }
+      });
 
-      // Sort by date (newest first)
+      // Wait for all requests to complete
+      const paymentResults = await Promise.all(paymentPromises);
+      
+      // Flatten and sort results
+      const flattenedPayments = paymentResults.flat();
+      allSuccessfulPayments.push(...flattenedPayments);
+
+      // Sort by date (newest first) and limit results
       allSuccessfulPayments.sort((a, b) => b.created.getTime() - a.created.getTime());
+      
+      // Apply final limit
+      const limitedPayments = allSuccessfulPayments.slice(0, limit);
 
-      console.log(`Found ${allSuccessfulPayments.length} total successful Stripe payments`);
-      res.json(allSuccessfulPayments);
+      res.json(limitedPayments);
     } catch (error: any) {
       console.error("Error fetching successful payments:", error);
       res.status(500).json({ message: "Failed to fetch payments: " + error.message });
@@ -7312,10 +7310,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]); // Return empty array if no Stripe customer
       }
 
-      console.log(`🔍 Fetching Stripe payments for user ${userId} with customer ID: ${user.stripeCustomerId}`);
-
       try {
-        // Get ALL charges from Stripe for this customer (status filter doesn't work reliably)
+        console.log(`🔍 Fetching Stripe payments for user ${userId} with customer ID: ${user.stripeCustomerId}`);
+        
+        // Get charges from Stripe for this customer
         const allCharges = await stripe.charges.list({
           customer: user.stripeCustomerId,
           limit: 100,
@@ -7323,50 +7321,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log(`📊 Found ${allCharges.data.length} total charges for user ${userId}`);
 
-        // Log EVERY charge with DETAILED status analysis
-        console.log(`🔍 DETAILED CHARGE ANALYSIS FOR USER ${userId}:`);
-        allCharges.data.forEach((charge, index) => {
-          console.log(`   💳 Charge ${index + 1}: ${charge.id}`);
-          console.log(`      Amount: $${charge.amount/100}`);
-          console.log(`      Status: "${charge.status}"`);
-          console.log(`      Captured: ${charge.captured}`);
-          console.log(`      Refunded: ${charge.refunded}`);
-          console.log(`      Amount Refunded: $${charge.amount_refunded/100}`);
-          console.log(`      Disputed: ${!!charge.dispute}`);
-          console.log(`      Failure Code: ${charge.failure_code || 'none'}`);
-          console.log(`      Outcome Type: ${charge.outcome?.type || 'none'}`);
-          console.log(`      Outcome Network Status: ${charge.outcome?.network_status || 'none'}`);
-          console.log(`      Outcome Reason: ${charge.outcome?.reason || 'none'}`);
-          console.log(`      Payment Intent Status: ${charge.payment_intent ? 'has_intent' : 'no_intent'}`);
-          console.log(`      Description: ${charge.description || 'No description'}`);
-          console.log(`      Created: ${new Date(charge.created * 1000).toISOString()}`);
-          console.log(`      ---------------`);
-        });
-
-        // Filter to ONLY truly successful charges with detailed logging
+        // Filter to ONLY truly successful charges with comprehensive filtering
         const succeededCharges = allCharges.data.filter(charge => {
           const isSucceeded = charge.status === 'succeeded';
           const isCaptured = charge.captured === true;
-          const isNotRefunded = !charge.refunded;
-          const hasNoRefundAmount = charge.amount_refunded === 0;
-          const hasNoDispute = !charge.dispute;
-          const hasNoFailure = !charge.failure_code;
+          const isNotRefunded = !charge.refunded && charge.amount_refunded === 0;
+          const hasNoDisputes = !charge.dispute;
+          const hasNoFailures = !charge.failure_code;
           
-          const isGood = isSucceeded && isCaptured && isNotRefunded && hasNoRefundAmount && hasNoDispute && hasNoFailure;
+          const passes = isSucceeded && isCaptured && isNotRefunded && hasNoDisputes && hasNoFailures;
           
-          console.log(`   ${isGood ? '✅ PASS' : '❌ FAIL'} ${charge.id}: succeeded=${isSucceeded}, captured=${isCaptured}, notRefunded=${isNotRefunded}, noRefundAmount=${hasNoRefundAmount}, noDispute=${hasNoDispute}, noFailure=${hasNoFailure}`);
+          if (passes) {
+            console.log(`   ✅ PASS ${charge.id}: succeeded=${isSucceeded}, captured=${isCaptured}, notRefunded=${isNotRefunded}, noRefundAmount=${charge.amount_refunded === 0}, noDispute=${hasNoDisputes}, noFailure=${hasNoFailures}`);
+          }
           
-          return isGood;
+          return passes;
         });
-        
+
         console.log(`✅ Found ${succeededCharges.length} TRULY GOOD charges for user ${userId} (filtered from ${allCharges.data.length} total)`);
 
-        // Convert Stripe charges to placement charge format
-        const placementCharges = succeededCharges.map(charge => {
+        // Convert Stripe charges to placement charge format with proper invoice IDs
+        const placementCharges = await Promise.all(succeededCharges.map(async (charge) => {
           // Special handling for subscription charges
           let description = charge.description || 'Media Coverage';
           if ((description === 'Subscription creation' || description.toLowerCase().includes('subscription')) && charge.amount === 9999) { // $99.99 in cents
             description = 'QuoteBid - Monthly Membership Fee';
+          }
+          
+          // Try to get the proper invoice ID for this charge
+          let invoiceId = charge.invoice;
+          
+          // If the charge doesn't have a direct invoice, try to find it through payment intent
+          if (!invoiceId && charge.payment_intent) {
+            try {
+              const paymentIntent = await stripe.paymentIntents.retrieve(charge.payment_intent);
+              if (paymentIntent.invoice) {
+                invoiceId = paymentIntent.invoice as string;
+              }
+            } catch (piError) {
+              // Ignore errors when trying to fetch payment intent
+            }
           }
           
           return {
@@ -7377,7 +7371,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             chargedAt: new Date(charge.created * 1000),
             createdAt: new Date(charge.created * 1000),
             paymentId: charge.id,
-            invoiceId: charge.invoice || null,
+            invoiceId: invoiceId, // Proper invoice ID or null
+            receiptUrl: charge.receipt_url, // Include Stripe receipt URL
             articleTitle: description,
             articleUrl: null,
             opportunity: {
@@ -7389,7 +7384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
           };
-        });
+        }));
 
         // Sort by date (newest first)
         placementCharges.sort((a, b) => b.chargedAt.getTime() - a.chargedAt.getTime());
@@ -7397,7 +7392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`📊 Returning ${placementCharges.length} Stripe charges for user ${userId}`);
         res.json(placementCharges);
       } catch (stripeError: any) {
-        console.error(`❌ Stripe error for user ${userId}:`, stripeError);
+        console.error(`Stripe error for user ${userId}:`, stripeError);
         return res.status(500).json({ message: "Failed to fetch payment data from Stripe" });
       }
     } catch (error) {
@@ -7406,8 +7401,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Download invoice for a specific placement charge
-  app.get("/api/users/:userId/billing/placement-charges/:chargeId/invoice", jwtAuth, async (req: Request, res: Response) => {
+  // Get receipt URL for a specific placement charge (opens external Stripe receipt)
+  app.get("/api/users/:userId/billing/placement-charges/:chargeId/receipt-url", jwtAuth, async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       const chargeId = req.params.chargeId;
@@ -7423,84 +7418,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found or no Stripe customer" });
       }
       
-                    try {
-         // Try multiple approaches to find the invoice
-         let invoice = null;
-         
-         // Approach 1: Try to retrieve as invoice ID directly
-         try {
-           invoice = await stripe.invoices.retrieve(chargeId);
-         } catch (invoiceError: any) {
-           // If not found as invoice, try as payment intent
-           console.log(`Charge ID ${chargeId} not found as invoice, trying as payment intent...`);
-         }
-         
-         // Approach 2: Try to retrieve as payment intent and get associated invoice
-         if (!invoice) {
-           try {
-             const paymentIntent = await stripe.paymentIntents.retrieve(chargeId);
-             if (paymentIntent.invoice) {
-               invoice = await stripe.invoices.retrieve(paymentIntent.invoice as string);
-             }
-           } catch (piError: any) {
-             console.log(`Charge ID ${chargeId} not found as payment intent either...`);
-           }
-         }
-         
-         // Approach 3: Search for invoices by customer and metadata/placement ID
-         if (!invoice) {
-           const invoices = await stripe.invoices.list({
-             customer: user.stripeCustomerId,
-             limit: 100
-           });
-           
-           // Look for invoice with matching payment intent, charge, or placement ID
-           invoice = invoices.data.find(inv => 
-             inv.payment_intent === chargeId || 
-             (inv.charge && inv.charge === chargeId) ||
-             (inv.metadata && inv.metadata.placementId === chargeId)
-           );
-         }
-         
-         // Approach 4: Look up by database placement ID if none of the above worked
-         if (!invoice && !isNaN(parseInt(chargeId))) {
-           // Get the placement from database to find the actual invoice ID
-           const placementResult = await getDb().select()
-             .from(placements)
-             .where(and(
-               eq(placements.id, parseInt(chargeId)),
-               eq(placements.userId, userId)
-             ))
-             .limit(1);
-             
-           if (placementResult.length > 0) {
-             const placement = placementResult[0];
-             if (placement.invoiceId) {
-               try {
-                 invoice = await stripe.invoices.retrieve(placement.invoiceId);
-               } catch (dbLookupError: any) {
-                 console.log(`Could not retrieve invoice ${placement.invoiceId} from placement ${chargeId}`);
-               }
-             }
-           }
-         }
-         
-         if (!invoice) {
-           return res.status(404).json({ message: "Invoice not found for this charge" });
-         }
-         
-         // Verify this invoice belongs to the user
-         if (invoice.customer !== user.stripeCustomerId) {
-           return res.status(403).json({ message: "Invoice does not belong to this user" });
-         }
-         
-         // Get the PDF URL
-         if (invoice.invoice_pdf) {
-           // Redirect to the Stripe PDF URL
-           return res.redirect(invoice.invoice_pdf);
-         } else {
-           return res.status(404).json({ message: "Invoice PDF not available" });
-         }
+      try {
+        // Get the charge directly from Stripe
+        const charge = await stripe.charges.retrieve(chargeId);
+        
+        // Verify this charge belongs to the user
+        if (charge.customer !== user.stripeCustomerId) {
+          return res.status(403).json({ message: "Charge does not belong to this user" });
+        }
+        
+        // Return the receipt URL - this is the external Stripe receipt page
+        if (charge.receipt_url) {
+          console.log(`Found receipt URL for charge ${chargeId}: ${charge.receipt_url}`);
+          return res.json({ receiptUrl: charge.receipt_url });
+        } else {
+          return res.status(404).json({ message: "Receipt URL not available for this charge" });
+        }
+        
+      } catch (stripeError: any) {
+        console.error("Stripe error retrieving charge:", stripeError);
+        
+        if (stripeError.type === 'StripeInvalidRequestError') {
+          return res.status(404).json({ message: "Charge not found" });
+        }
+        
+        return res.status(500).json({ message: "Error retrieving charge from Stripe" });
+      }
+      
+    } catch (error: any) {
+      console.error("Error getting receipt URL:", error);
+      res.status(500).json({ message: "Failed to get receipt URL: " + error.message });
+    }
+  });
+
+  // Download invoice for user (simple approach like admin)
+  app.get("/api/users/:userId/invoices/:invoiceId/download", jwtAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const invoiceId = req.params.invoiceId;
+      
+      // Verify user authentication
+      if (req.user?.id !== userId && !isAdmin(req)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Get user to verify they exist and have stripe customer ID
+      const user = await storage.getUser(userId);
+      if (!user || !user.stripeCustomerId) {
+        return res.status(404).json({ message: "User not found or no Stripe customer" });
+      }
+      
+      try {
+        // Retrieve the invoice from Stripe
+        const invoice = await stripe.invoices.retrieve(invoiceId);
+        
+        // Verify this invoice belongs to the user
+        if (invoice.customer !== user.stripeCustomerId) {
+          return res.status(403).json({ message: "Invoice does not belong to this user" });
+        }
+        
+        // Get the PDF URL
+        if (invoice.invoice_pdf) {
+          // Redirect to the Stripe PDF URL
+          return res.redirect(invoice.invoice_pdf);
+        } else {
+          return res.status(404).json({ message: "Invoice PDF not available" });
+        }
         
       } catch (stripeError: any) {
         console.error("Stripe error retrieving invoice:", stripeError);
