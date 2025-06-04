@@ -7362,26 +7362,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`✅ Found ${succeededCharges.length} TRULY GOOD charges for user ${userId} (filtered from ${allCharges.data.length} total)`);
 
         // Convert Stripe charges to placement charge format
-        const placementCharges = succeededCharges.map(charge => ({
-          id: charge.id,
-          amount: charge.amount / 100, // Convert from cents
-          bidAmount: charge.amount / 100,
-          status: 'paid',
-          chargedAt: new Date(charge.created * 1000),
-          createdAt: new Date(charge.created * 1000),
-          paymentId: charge.id,
-          invoiceId: charge.invoice || null,
-          articleTitle: charge.description || 'Media Coverage',
-          articleUrl: null,
-          opportunity: {
-            id: null,
-            title: charge.description || 'Media Coverage',
-            publication: {
-              id: null,
-              name: 'Publication' // We don't have publication info in Stripe
-            }
+        const placementCharges = succeededCharges.map(charge => {
+          // Special handling for subscription charges
+          let description = charge.description || 'Media Coverage';
+          if ((description === 'Subscription creation' || description.toLowerCase().includes('subscription')) && charge.amount === 9999) { // $99.99 in cents
+            description = 'QuoteBid - Monthly Membership Fee';
           }
-        }));
+          
+          return {
+            id: charge.id,
+            amount: charge.amount / 100, // Convert from cents
+            bidAmount: charge.amount / 100,
+            status: 'paid',
+            chargedAt: new Date(charge.created * 1000),
+            createdAt: new Date(charge.created * 1000),
+            paymentId: charge.id,
+            invoiceId: charge.invoice || null,
+            articleTitle: description,
+            articleUrl: null,
+            opportunity: {
+              id: null,
+              title: description,
+              publication: {
+                id: null,
+                name: 'Publication' // We don't have publication info in Stripe
+              }
+            }
+          };
+        });
 
         // Sort by date (newest first)
         placementCharges.sort((a, b) => b.chargedAt.getTime() - a.chargedAt.getTime());
