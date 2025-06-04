@@ -676,9 +676,9 @@ export default function OpportunityDetail() {
               </div>
             </div>
 
-            {/* Opportunity Title - Now more prominent */}
+            {/* Opportunity Title */}
             <div className="pt-6 mb-6">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-bold text-black leading-tight">
+              <h1 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl font-bold text-black leading-tight">
                 {opportunity.title}
               </h1>
             </div>

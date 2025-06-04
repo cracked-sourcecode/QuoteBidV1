@@ -124,6 +124,7 @@ export const pitches = pgTable("pitches", {
   pitchType: text("pitch_type").default("text"), // 'text' or 'voice' to track input type
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(), // Track last update time
+  successfulAt: timestamp("successful_at"), // Track when pitch was marked as successful
   paymentIntentId: text("payment_intent_id"),  // Store Stripe payment intent ID for bid processing
   bidAmount: integer("bid_amount"),   // Store the bid amount associated with this pitch
   authorizationExpiresAt: timestamp("authorization_expires_at"), // When the payment authorization expires
@@ -206,6 +207,12 @@ export const insertPitchSchema = createInsertSchema(pitches).omit({ id: true, cr
   .extend({
     paymentIntentId: z.string().optional(),
     authorizationExpiresAt: z.string().or(z.date()).optional().transform((val) => {
+      if (typeof val === 'string') {
+        return new Date(val);
+      }
+      return val;
+    }),
+    successfulAt: z.string().or(z.date()).optional().transform((val) => {
       if (typeof val === 'string') {
         return new Date(val);
       }

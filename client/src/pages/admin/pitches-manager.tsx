@@ -451,6 +451,22 @@ const PitchesManager = () => {
     if (filterStatus === 'all') return true;
     return pitch.status === filterStatus;
   });
+  
+  // Sort pitches - successful pitches should be sorted by successfulAt (most recent first),
+  // all other pitches sorted by createdAt (most recent first)
+  const sortedPitches = filteredPitches?.sort((a: any, b: any) => {
+    // If filtering for successful pitches specifically, sort by successfulAt
+    if (filterStatus === 'successful' || a.status === 'successful' && b.status === 'successful') {
+      const aTime = a.successfulAt ? new Date(a.successfulAt).getTime() : 0;
+      const bTime = b.successfulAt ? new Date(b.successfulAt).getTime() : 0;
+      return bTime - aTime; // Most recent successful first
+    }
+    
+    // For all other cases, sort by createdAt (original behavior)
+    const aTime = new Date(a.createdAt).getTime();
+    const bTime = new Date(b.createdAt).getTime();
+    return bTime - aTime; // Most recent created first
+  });
 
   // View pitch details handler
   const handleViewPitch = (pitch: any) => {
@@ -474,8 +490,9 @@ const PitchesManager = () => {
   const KanbanBoard = ({ pitches }: { pitches: any[] }) => {
     const { toast } = useToast();
     
-    // Group pitches by status
+    // Group pitches by status, maintaining the sort order passed from parent
     const pitchesByStatus = PITCH_STATUSES.reduce((acc: any, status) => {
+      // Use the already sorted pitches instead of filtering the raw pitches
       acc[status.value] = Array.isArray(pitches) ? pitches.filter((p: any) => p.status === status.value) : [];
       return acc;
     }, {});
@@ -538,7 +555,7 @@ const PitchesManager = () => {
                         {pitch.audioUrl ? 'Audio' : 'Text'}
                       </Badge>
                       <div className="text-xs text-gray-400">
-                        {formatDate(pitch.createdAt)}
+                        {pitch.status === 'successful' && pitch.successfulAt ? formatDate(pitch.successfulAt) : formatDate(pitch.createdAt)}
                       </div>
                     </div>
                   </div>
@@ -592,7 +609,7 @@ const PitchesManager = () => {
             <TableHead>Type</TableHead>
             <TableHead>Pitch Preview</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Date</TableHead>
+            <TableHead>Date {filterStatus === 'successful' ? '(Marked Successful)' : '(Created)'}</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -652,7 +669,7 @@ const PitchesManager = () => {
                     </Select>
                   </div>
                 </TableCell>
-                <TableCell>{formatDate(pitch.createdAt)}</TableCell>
+                <TableCell>{pitch.status === 'successful' && pitch.successfulAt ? formatDate(pitch.successfulAt) : formatDate(pitch.createdAt)}</TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="outline"
@@ -788,7 +805,7 @@ const PitchesManager = () => {
               </Button>
             </div>
             
-            <Link href="/admin/billing" className="inline-flex items-center px-4 py-2 rounded-md bg-amber-50 text-amber-800 hover:bg-amber-100 hover:text-amber-900">
+            <Link href="/admin/billing-manager" className="inline-flex items-center px-4 py-2 rounded-md bg-amber-50 text-amber-800 hover:bg-amber-100 hover:text-amber-900">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -808,7 +825,7 @@ const PitchesManager = () => {
                 <p className="text-center text-destructive">Failed to load pitches</p>
               </CardContent>
             </Card>
-          ) : filteredPitches?.length === 0 ? (
+          ) : sortedPitches?.length === 0 ? (
             <Card>
               <CardContent className="py-10">
                 <p className="text-center text-muted-foreground">No pitches found</p>
@@ -818,17 +835,15 @@ const PitchesManager = () => {
             viewMode === 'table' ? (
               <Card>
                 <CardContent className="p-0">
-                  <TableView pitches={filteredPitches} />
+                  <TableView pitches={sortedPitches} />
                 </CardContent>
               </Card>
             ) : (
-              <KanbanBoard pitches={filteredPitches} />
+              <KanbanBoard pitches={sortedPitches} />
             )
           )}
         </TabsContent>
 
-
-        
         {/* Status Tabs */}
         {PITCH_STATUSES.map((status) => (
           <TabsContent key={status.value} value={status.value} className="space-y-4">
@@ -837,15 +852,33 @@ const PitchesManager = () => {
                 <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
               </div>
             ) : (
-              viewMode === 'table' ? (
-                <Card>
-                  <CardContent className="p-0">
-                    <TableView pitches={pitches?.filter((p: any) => p.status === status.value) || []} />
-                  </CardContent>
-                </Card>
-              ) : (
-                <KanbanBoard pitches={pitches?.filter((p: any) => p.status === status.value) || []} />
-              )
+              (() => {
+                // Filter and sort pitches for this specific status
+                const statusPitches = pitches?.filter((p: any) => p.status === status.value) || [];
+                const sortedStatusPitches = statusPitches.sort((a: any, b: any) => {
+                  // If this is the successful status, sort by successfulAt
+                  if (status.value === 'successful') {
+                    const aTime = a.successfulAt ? new Date(a.successfulAt).getTime() : 0;
+                    const bTime = b.successfulAt ? new Date(b.successfulAt).getTime() : 0;
+                    return bTime - aTime; // Most recent successful first
+                  }
+                  
+                  // For all other statuses, sort by createdAt
+                  const aTime = new Date(a.createdAt).getTime();
+                  const bTime = new Date(b.createdAt).getTime();
+                  return bTime - aTime; // Most recent created first
+                });
+                
+                return viewMode === 'table' ? (
+                  <Card>
+                    <CardContent className="p-0">
+                      <TableView pitches={sortedStatusPitches} />
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <KanbanBoard pitches={sortedStatusPitches} />
+                );
+              })()
             )}
           </TabsContent>
         ))}
@@ -882,6 +915,16 @@ const PitchesManager = () => {
                 <Badge className={getBadgeColorForStatus(selectedPitch.status) + " text-sm py-1 px-2"}>
                   {PITCH_STATUSES.find(s => s.value === selectedPitch.status)?.label || selectedPitch.status}
                 </Badge>
+                {selectedPitch.status === 'successful' && selectedPitch.successfulAt && (
+                  <div className="text-sm text-gray-600 mt-2">
+                    <span className="font-medium">Marked successful:</span> {formatDate(selectedPitch.successfulAt)}
+                  </div>
+                )}
+                {selectedPitch.createdAt && (
+                  <div className="text-sm text-gray-500">
+                    <span className="font-medium">Pitch created:</span> {formatDate(selectedPitch.createdAt)}
+                  </div>
+                )}
               </div>
 
               {selectedPitch.content && (

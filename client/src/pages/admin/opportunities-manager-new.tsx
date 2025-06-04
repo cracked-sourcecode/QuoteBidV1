@@ -81,7 +81,7 @@ const opportunitySchema = z.object({
   title: z.string().min(50, "Title must be at least 50 characters").max(80, "Title must be 80 characters or less"),
   requestType: z.string().min(1, "Request type is required"),
   mediaType: z.string().min(1, "Media type is required"),
-  description: z.string().min(1, "Description is required").max(300, "Description must be 300 characters or less"),
+  description: z.string().min(1, "Description is required").max(500, "Description must be 500 characters or less"),
   tags: z.array(z.string()).min(1, "At least one industry tag is required"),
   industry: z.string().min(1, "Primary industry is required"),
   minimumBid: z.coerce.number().min(1, "Minimum bid must be at least $1"),
@@ -91,7 +91,7 @@ const opportunitySchema = z.object({
 // Schema specifically for editing (content only - no pricing/deadline changes)
 const editOpportunitySchema = z.object({
   title: z.string().min(50, "Title must be at least 50 characters").max(80, "Title must be 80 characters or less"),
-  description: z.string().min(1, "Description is required").max(300, "Description must be 300 characters or less"),
+  description: z.string().min(1, "Description is required").max(500, "Description must be 500 characters or less"),
   tags: z.array(z.string()).min(1, "At least one industry tag is required"),
 });
 
@@ -163,6 +163,12 @@ export default function OpportunitiesManager() {
       const res = await apiRequest("GET", "/api/admin/publications");
       return res.json();
     },
+    // Disable caching and refetch frequently to show new publications immediately
+    staleTime: 0,
+    gcTime: 0,
+    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
   });
 
   // Filter publications by selected tier
@@ -1477,7 +1483,7 @@ export default function OpportunitiesManager() {
                       <FormItem>
                         <FormLabel className="text-base font-medium">Detailed Description *</FormLabel>
                         <FormDescription className="text-sm text-gray-600">
-                          Provide a concise summary of the story and expertise needed (300 chars max)
+                          Provide a concise summary of the story and expertise needed (500 chars max)
                         </FormDescription>
                         <FormControl>
                           <div className="relative">
@@ -1486,15 +1492,15 @@ export default function OpportunitiesManager() {
                               placeholder="Briefly describe the story context, angle, and type of expert commentary you need..."
                               rows={5}
                               className="resize-none text-base pr-16"
-                              maxLength={300}
+                              maxLength={500}
                             />
                             <div className="absolute right-3 bottom-3 text-sm font-medium z-10">
                               <span className={`px-2 py-1 rounded-md ${
-                                field.value?.length > 280 
+                                field.value?.length > 480 
                                   ? "bg-orange-100 text-orange-700 border border-orange-300" 
                                   : "bg-gray-100 text-gray-700 border border-gray-300"
                               }`}>
-                                {field.value?.length || 0}/300
+                                {field.value?.length || 0}/500
                               </span>
                             </div>
                           </div>
@@ -1874,7 +1880,7 @@ export default function OpportunitiesManager() {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">Description * (300 chars max)</FormLabel>
+                        <FormLabel className="text-base font-medium">Description * (500 chars max)</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Textarea 
@@ -1882,15 +1888,15 @@ export default function OpportunitiesManager() {
                               placeholder="Briefly describe the story context, angle, and type of expert commentary you need..."
                               rows={4}
                               className="resize-none text-base pr-16"
-                              maxLength={300}
+                              maxLength={500}
                             />
                             <div className="absolute right-3 bottom-3 text-sm font-medium z-10">
                               <span className={`px-2 py-1 rounded-md ${
-                                field.value?.length > 280 
+                                field.value?.length > 480 
                                   ? "bg-orange-100 text-orange-700 border border-orange-300" 
                                   : "bg-gray-100 text-gray-700 border border-gray-300"
                               }`}>
-                                {field.value?.length || 0}/300
+                                {field.value?.length || 0}/500
                               </span>
                             </div>
                           </div>

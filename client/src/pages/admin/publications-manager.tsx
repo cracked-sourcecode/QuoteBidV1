@@ -222,6 +222,12 @@ export default function PublicationsManager() {
       }
       return response.json() as Promise<Publication[]>;
     },
+    // Disable caching and refetch frequently to show new publications immediately
+    staleTime: 0,
+    gcTime: 0,
+    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
   });
   
   // Query to fetch opportunities with pitches for analytics

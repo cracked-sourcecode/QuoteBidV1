@@ -914,7 +914,7 @@ export class DatabaseStorage implements IStorage {
       const allPitches = await getDb()
         .select()
         .from(pitches)
-        .orderBy(desc(pitches.createdAt));
+        .orderBy(desc(pitches.updatedAt));
       
       console.log(`Retrieved ${allPitches.length} pitches, now fetching relations...`);
       
@@ -1040,12 +1040,21 @@ export class DatabaseStorage implements IStorage {
     // When pitch status changes to anything other than draft, make sure isDraft is false
     const isDraft = status === 'draft';
     
+    // Set successfulAt timestamp when pitch status changes to successful
+    const updateData: any = {
+      status,
+      isDraft, // Explicitly set isDraft based on status
+      updatedAt: new Date() // Always update the timestamp when status changes
+    };
+    
+    // If the status is being set to successful, also set the successfulAt timestamp
+    if (status === 'successful' || status === 'Successful Coverage') {
+      updateData.successfulAt = new Date();
+    }
+    
     const [updatedPitch] = await getDb()
       .update(pitches)
-      .set({ 
-        status,
-        isDraft // Explicitly set isDraft based on status
-      })
+      .set(updateData)
       .where(eq(pitches.id, id))
       .returning();
     return updatedPitch;

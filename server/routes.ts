@@ -2832,6 +2832,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const schema = z.object({
         fullName: z.string().min(1).optional(),
+        email: z.string().email().optional(),
+        phone_number: z.string().optional(),
         bio: z.string().optional(),
         location: z.string().optional(),
         title: z.string().optional(),
@@ -3511,6 +3513,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/pitches", requireAdminAuth, async (req: Request, res: Response) => {
     try {
       console.log("Admin requesting all pitches");
+      
+      // Disable caching for this endpoint to ensure fresh data
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
       
       // Get admin info for logging
       const adminUser = (req as any).adminUser;
@@ -6584,6 +6591,504 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update opportunity (admin only) - full update
+  
+  // ============ NEW BILLING MANAGER ENDPOINTS ============
+  
+  // Get placements ready for billing with all relations
+  app.get("/api/admin/placements/billing", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      console.log("🔍 Fetching placements for billing...");
+      
+      // Get all placements with full relations
+      const placementsQuery = await getDb()
+        .select({
+          id: placements.id,
+          pitchId: placements.pitchId,
+          userId: placements.userId,
+          opportunityId: placements.opportunityId,
+          publicationId: placements.publicationId,
+          amount: placements.amount,
+          status: placements.status,
+          articleTitle: placements.articleTitle,
+          articleUrl: placements.articleUrl,
+          createdAt: placements.createdAt,
+          chargedAt: placements.chargedAt,
+          errorMessage: placements.errorMessage,
+          // User data
+          user: {
+            id: users.id,
+            fullName: users.fullName,
+            email: users.email,
+            company_name: users.company_name,
+            stripeCustomerId: users.stripeCustomerId,
+          },
+          // Opportunity data
+          opportunity: {
+            id: opportunities.id,
+            title: opportunities.title,
+          },
+          // Publication data
+          publication: {
+            id: publications.id,
+            name: publications.name,
+            logo: publications.logo,
+          },
+          // Pitch data
+          pitch: {
+            id: pitches.id,
+            content: pitches.content,
+            createdAt: pitches.createdAt,
+          }
+        })
+        .from(placements)
+        .leftJoin(users, eq(placements.userId, users.id))
+        .leftJoin(opportunities, eq(placements.opportunityId, opportunities.id))
+        .leftJoin(publications, eq(placements.publicationId, publications.id))
+        .leftJoin(pitches, eq(placements.pitchId, pitches.id))
+        .orderBy(desc(placements.createdAt));
+      
+      // Transform the data into the expected format
+      const formattedPlacements = placementsQuery.map(row => ({
+        id: row.id,
+        pitchId: row.pitchId,
+        userId: row.userId,
+        amount: row.amount,
+        status: row.status,
+        articleTitle: row.articleTitle,
+        articleUrl: row.articleUrl,
+        createdAt: row.createdAt,
+        chargedAt: row.chargedAt,
+        billingError: row.errorMessage,
+        pitch: {
+          content: row.pitch?.content || '',
+          createdAt: row.pitch?.createdAt || row.createdAt,
+        },
+        user: row.user || {
+          id: row.userId,
+          fullName: 'Unknown User',
+          email: '',
+          company_name: null,
+          stripeCustomerId: null,
+        },
+        opportunity: {
+          id: row.opportunity?.id || row.opportunityId,
+          title: row.opportunity?.title || 'Unknown Opportunity',
+          publication: {
+            name: row.publication?.name || 'Unknown Publication',
+            logo: row.publication?.logo || null,
+          }
+        }
+      }));
+      
+      console.log(`✅ Found ${formattedPlacements.length} placements`);
+      res.json(formattedPlacements);
+    } catch (error: any) {
+      console.error("❌ Error fetching placements:", error);
+      res.status(500).json({ message: "Failed to fetch placements: " + error.message });
+    }
+  });
+  
+  // Charge a placement using the subscription payment method
+  app.post("/api/admin/placements/charge", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const { placementId } = req.body;
+      
+      if (!placementId) {
+        return res.status(400).json({ message: "placementId is required" });
+      }
+      
+      console.log(`🔍 Processing charge for placement ${placementId}`);
+      
+      // Get the placement with all relations
+      const placementResult = await getDb().select()
+        .from(placements)
+        .where(eq(placements.id, parseInt(placementId)))
+        .limit(1);
+        
+      if (placementResult.length === 0) {
+        return res.status(404).json({ message: "Placement not found" });
+      }
+      
+      const placement = placementResult[0];
+      
+      // Check if already charged
+      if (placement.status === 'paid') {
+        return res.status(400).json({ message: "Placement has already been charged" });
+      }
+      
+      // Get the user
+      const userResult = await getDb().select()
+        .from(users)
+        .where(eq(users.id, placement.userId))
+        .limit(1);
+        
+      if (userResult.length === 0) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const user = userResult[0];
+      
+      if (!user.stripeCustomerId) {
+        return res.status(400).json({ message: "User has no payment method on file" });
+      }
+      
+      try {
+        // Get the customer's default payment method
+        const customer = await stripe.customers.retrieve(user.stripeCustomerId, {
+          expand: ['invoice_settings.default_payment_method']
+        });
+        
+        const defaultPaymentMethod = (customer as any).invoice_settings?.default_payment_method;
+        
+        if (!defaultPaymentMethod) {
+          // Try to get any payment method for the customer
+          const paymentMethods = await stripe.paymentMethods.list({
+            customer: user.stripeCustomerId,
+            type: 'card',
+          });
+          
+          if (paymentMethods.data.length === 0) {
+            return res.status(400).json({ message: "No payment methods found for customer" });
+          }
+          
+          // Use the first payment method
+          const paymentMethod = paymentMethods.data[0];
+          
+          // Create and confirm payment intent
+          const paymentIntent = await stripe.paymentIntents.create({
+            amount: placement.amount,
+            currency: 'usd',
+            customer: user.stripeCustomerId,
+            payment_method: paymentMethod.id,
+            description: `QuoteBid placement charge - ${placement.articleTitle || 'Article'}`,
+            metadata: {
+              placementId: placement.id.toString(),
+              userId: user.id.toString(),
+            },
+            confirm: true,
+            off_session: true,
+          });
+          
+          // Update placement status
+          await getDb().update(placements)
+            .set({
+              status: 'paid',
+              chargedAt: new Date(),
+              paymentId: paymentIntent.id,
+            })
+            .where(eq(placements.id, placement.id));
+          
+          console.log(`✅ Successfully charged placement ${placement.id}`);
+          
+          return res.json({
+            success: true,
+            amount: placement.amount,
+            paymentId: paymentIntent.id,
+          });
+        } else {
+          // Use the default payment method
+          const paymentIntent = await stripe.paymentIntents.create({
+            amount: placement.amount,
+            currency: 'usd',
+            customer: user.stripeCustomerId,
+            payment_method: defaultPaymentMethod.id,
+            description: `QuoteBid placement charge - ${placement.articleTitle || 'Article'}`,
+            metadata: {
+              placementId: placement.id.toString(),
+              userId: user.id.toString(),
+            },
+            confirm: true,
+            off_session: true,
+          });
+          
+          // Update placement status
+          await getDb().update(placements)
+            .set({
+              status: 'paid',
+              chargedAt: new Date(),
+              paymentId: paymentIntent.id,
+            })
+            .where(eq(placements.id, placement.id));
+          
+          console.log(`✅ Successfully charged placement ${placement.id}`);
+          
+          return res.json({
+            success: true,
+            amount: placement.amount,
+            paymentId: paymentIntent.id,
+          });
+        }
+      } catch (stripeError: any) {
+        console.error("❌ Stripe error:", stripeError);
+        
+        // Update placement with error
+        await getDb().update(placements)
+          .set({
+            status: 'failed',
+            errorMessage: stripeError.message,
+          })
+          .where(eq(placements.id, placement.id));
+        
+        // Return user-friendly error messages
+        if (stripeError.code === 'card_declined') {
+          return res.status(400).json({ 
+            message: "Card was declined. Please ask the customer to update their payment method." 
+          });
+        } else if (stripeError.code === 'insufficient_funds') {
+          return res.status(400).json({ 
+            message: "Insufficient funds. The customer needs to update their payment method." 
+          });
+        } else {
+          return res.status(400).json({ 
+            message: `Payment failed: ${stripeError.message}` 
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error("❌ Error processing charge:", error);
+      res.status(500).json({ message: "Failed to process charge: " + error.message });
+    }
+  });
+
+  // ============ END NEW BILLING MANAGER ENDPOINTS ============
+  
+  // ============ STRIPE CUSTOMER BILLING ENDPOINTS ============
+  
+  // Get customer's Stripe details and payment methods
+  app.get("/api/admin/customers/:userId/stripe-details", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Get user from database
+      const user = await storage.getUser(userId);
+      if (!user || !user.stripeCustomerId) {
+        return res.status(404).json({ message: "User not found or no Stripe customer ID" });
+      }
+      
+      // Get Stripe customer details
+      const customer = await stripe.customers.retrieve(user.stripeCustomerId);
+      
+      // Get customer's payment methods
+      const paymentMethods = await stripe.paymentMethods.list({
+        customer: user.stripeCustomerId,
+        type: 'card',
+      });
+      
+      // Get customer's subscriptions
+      const subscriptions = await stripe.subscriptions.list({
+        customer: user.stripeCustomerId,
+        status: 'active',
+      });
+      
+      // Get recent charges
+      const charges = await stripe.charges.list({
+        customer: user.stripeCustomerId,
+        limit: 10,
+      });
+      
+      res.json({
+        customer,
+        paymentMethods: paymentMethods.data,
+        subscriptions: subscriptions.data,
+        recentCharges: charges.data,
+        user: {
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          company_name: user.company_name,
+        }
+      });
+    } catch (error: any) {
+      console.error("Error fetching customer Stripe details:", error);
+      res.status(500).json({ message: "Failed to fetch customer details", error: error.message });
+    }
+  });
+  
+  // Create a charge for a successful placement
+  app.post("/api/admin/customers/:userId/charge-placement", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const { amount, description, paymentMethodId, placementId } = req.body;
+      
+      if (!amount || !description || !paymentMethodId) {
+        return res.status(400).json({ message: "Amount, description, and payment method are required" });
+      }
+      
+      // Get user from database
+      const user = await storage.getUser(userId);
+      if (!user || !user.stripeCustomerId) {
+        return res.status(404).json({ message: "User not found or no Stripe customer ID" });
+      }
+      
+      // Create payment intent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Convert to cents
+        currency: 'usd',
+        customer: user.stripeCustomerId,
+        payment_method: paymentMethodId,
+        description: description,
+        confirm: true,
+        return_url: `${process.env.VITE_APP_URL}/admin/billing`,
+        metadata: {
+          userId: userId.toString(),
+          placementId: placementId?.toString() || '',
+          type: 'placement_charge'
+        }
+      });
+      
+      // Update placement if provided
+      if (placementId) {
+        await storage.updatePlacementPayment(
+          placementId, 
+          paymentIntent.id, 
+          paymentIntent.id
+        );
+      }
+      
+      res.json({
+        success: true,
+        paymentIntent,
+        message: `Successfully charged $${amount} to ${user.fullName}`
+      });
+    } catch (error: any) {
+      console.error("Error charging customer:", error);
+      res.status(500).json({ 
+        message: "Failed to charge customer", 
+        error: error.message 
+      });
+    }
+  });
+  
+  // Get all customers with Stripe data for customer directory
+  app.get("/api/admin/customers-directory", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const users = await storage.getAllUsers();
+      const customersWithStripe = [];
+      
+      for (const user of users) {
+        if (user.stripeCustomerId) {
+          try {
+            // Get basic Stripe customer info
+            const customer = await stripe.customers.retrieve(user.stripeCustomerId);
+            
+            // Get subscription info
+            const subscriptions = await stripe.subscriptions.list({
+              customer: user.stripeCustomerId,
+              status: 'active',
+              limit: 1,
+            });
+            
+            // Get recent payment methods
+            const paymentMethods = await stripe.paymentMethods.list({
+              customer: user.stripeCustomerId,
+              type: 'card',
+              limit: 1,
+            });
+            
+            customersWithStripe.push({
+              id: user.id,
+              fullName: user.fullName,
+              email: user.email,
+              company_name: user.company_name,
+              stripeCustomerId: user.stripeCustomerId,
+              subscription: subscriptions.data[0] || null,
+              primaryPaymentMethod: paymentMethods.data[0] || null,
+              customer: customer
+            });
+          } catch (stripeError) {
+            console.warn(`Failed to fetch Stripe data for user ${user.id}:`, stripeError);
+            // Include user without Stripe data
+            customersWithStripe.push({
+              id: user.id,
+              fullName: user.fullName,
+              email: user.email,
+              company_name: user.company_name,
+              stripeCustomerId: user.stripeCustomerId,
+              subscription: null,
+              primaryPaymentMethod: null,
+              customer: null
+            });
+          }
+        }
+      }
+      
+      res.json(customersWithStripe);
+    } catch (error: any) {
+      console.error("Error fetching customers directory:", error);
+      res.status(500).json({ message: "Failed to fetch customers directory", error: error.message });
+    }
+  });
+
+  // ============ ADMIN CURRENT USER ENDPOINT ============
+  
+  // ============ USER BILLING ENDPOINTS ============
+  
+  // Get user's placement charges (successful pitches they've been billed for)
+  app.get("/api/users/:userId/billing/placement-charges", async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Check authentication
+      if (!req.user || !req.user!.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      // Verify user can only access their own billing data
+      if (req.user!.id !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Get successful pitches for this user that have been charged
+      const placementCharges = await getDb()
+        .select({
+          id: pitches.id,
+          amount: pitches.bidAmount,
+          bidAmount: pitches.bidAmount,
+          status: sql<string>`'paid'`,
+          chargedAt: pitches.successfulAt,
+          createdAt: pitches.createdAt,
+          description: opportunities.title,
+          opportunity: {
+            id: opportunities.id,
+            title: opportunities.title,
+            publication: {
+              id: publications.id,
+              name: publications.name
+            }
+          }
+        })
+        .from(pitches)
+        .leftJoin(opportunities, eq(pitches.opportunityId, opportunities.id))
+        .leftJoin(publications, eq(opportunities.publicationId, publications.id))
+        .where(and(
+          eq(pitches.userId, userId),
+          or(
+            eq(pitches.status, 'successful'),
+            eq(pitches.status, 'Successful Coverage'),
+            eq(pitches.status, 'completed'),
+            eq(pitches.status, 'placed')
+          )
+        ))
+        .orderBy(desc(pitches.successfulAt), desc(pitches.updatedAt));
+
+      res.json(placementCharges);
+    } catch (error) {
+      console.error('Error fetching placement charges:', error);
+      res.status(500).json({ message: "Failed to fetch placement charges" });
+    }
+  });
+
+  // ============ ADMIN CURRENT USER ENDPOINT ============
   
   return httpServer;
 }

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Redirect } from "wouter";
 import { Shield, Users, Newspaper, Briefcase, MessageSquare, DollarSign } from "lucide-react";
-import OpportunitiesManager from "./opportunities-manager";
+import OpportunitiesManager from "./opportunities-manager-new";
 import PitchesManager from "./pitches-manager";
 import PublicationsManager from "./publications-manager";
 import UsersManager from "./users-manager";
