@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { CheckCircle, CreditCard, Calendar, DollarSign, FileText, ExternalLink, Loader2 } from 'lucide-react';
+import { CheckCircle, CreditCard, Calendar, DollarSign, FileText, ExternalLink, Loader2, Download } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface BillingTabContentProps {
@@ -44,6 +44,27 @@ export function BillingTabContent({
       style: 'currency',
       currency: 'USD'
     }).format(amount);
+  };
+
+  const downloadInvoice = async (chargeId: string | number) => {
+    try {
+      // Open the invoice PDF in a new tab
+      const invoiceUrl = `/api/users/${user?.id}/billing/placement-charges/${chargeId}/invoice`;
+      
+      // Create a temporary link to test if the invoice exists
+      const response = await fetch(invoiceUrl, { method: 'HEAD' });
+      
+      if (response.ok) {
+        window.open(invoiceUrl, '_blank');
+      } else if (response.status === 404) {
+        alert('Invoice not available for this charge. Please contact support if you need a receipt.');
+      } else {
+        alert('Unable to download invoice. Please try again or contact support.');
+      }
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      alert('Error downloading invoice. Please check your connection and try again.');
+    }
   };
 
   return (
@@ -195,7 +216,7 @@ export function BillingTabContent({
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <h4 className="font-medium text-gray-900 text-sm leading-tight">
-                              {charge.opportunity?.title || charge.description || 'Media Coverage'}
+                              {charge.opportunity?.title || charge.articleTitle || charge.description || 'Media Coverage'}
                             </h4>
                             {charge.opportunity?.publication?.name && (
                               <p className="text-xs text-gray-600 mt-1 font-medium">
@@ -221,17 +242,28 @@ export function BillingTabContent({
                             <div className="text-base font-semibold text-gray-900 mb-1">
                               {formatCurrency(charge.amount || charge.bidAmount || 0)}
                             </div>
-                            {charge.articleUrl && (
-                              <a 
-                                href={charge.articleUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-xs text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 justify-end group-hover:text-blue-700 transition-colors"
+                            <div className="flex items-center gap-2 justify-end">
+                              {charge.articleUrl && (
+                                <a 
+                                  href={charge.articleUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 group-hover:text-blue-700 transition-colors"
+                                >
+                                  View article
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => downloadInvoice(charge.invoiceId || charge.paymentId || charge.id)}
+                                className="text-xs h-7 px-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50"
                               >
-                                View article
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            )}
+                                <Download className="h-3 w-3 mr-1" />
+                                Invoice
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>

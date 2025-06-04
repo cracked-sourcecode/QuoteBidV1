@@ -6754,19 +6754,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Use the first payment method
           const paymentMethod = paymentMethods.data[0];
           
-          // Create and confirm payment intent
-          const paymentIntent = await stripe.paymentIntents.create({
-            amount: placement.amount,
-            currency: 'usd',
+          // Create invoice first, then pay it
+          const invoice = await stripe.invoices.create({
             customer: user.stripeCustomerId,
-            payment_method: paymentMethod.id,
             description: `QuoteBid placement charge - ${placement.articleTitle || 'Article'}`,
             metadata: {
               placementId: placement.id.toString(),
               userId: user.id.toString(),
             },
-            confirm: true,
-            off_session: true,
+            auto_advance: false, // Don't auto-finalize
+          });
+          
+          // Add invoice item
+          await stripe.invoiceItems.create({
+            customer: user.stripeCustomerId,
+            invoice: invoice.id,
+            amount: placement.amount,
+            currency: 'usd',
+            description: `${placement.articleTitle || 'Media Coverage'}`,
+          });
+          
+          // Finalize and pay the invoice
+          const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id);
+          const paidInvoice = await stripe.invoices.pay(finalizedInvoice.id, {
+            payment_method: paymentMethod.id,
           });
           
           // Update placement status
@@ -6774,31 +6785,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .set({
               status: 'paid',
               chargedAt: new Date(),
-              paymentId: paymentIntent.id,
+              paymentId: paidInvoice.payment_intent,
+              invoiceId: paidInvoice.id,
             })
             .where(eq(placements.id, placement.id));
           
-          console.log(`✅ Successfully charged placement ${placement.id}`);
+          console.log(`✅ Successfully charged placement ${placement.id} with invoice ${paidInvoice.id}`);
           
           return res.json({
             success: true,
             amount: placement.amount,
-            paymentId: paymentIntent.id,
+            paymentId: paidInvoice.payment_intent,
+            invoiceId: paidInvoice.id,
           });
         } else {
-          // Use the default payment method
-          const paymentIntent = await stripe.paymentIntents.create({
-            amount: placement.amount,
-            currency: 'usd',
+          // Use the default payment method - create invoice first, then pay it
+          const invoice = await stripe.invoices.create({
             customer: user.stripeCustomerId,
-            payment_method: defaultPaymentMethod.id,
             description: `QuoteBid placement charge - ${placement.articleTitle || 'Article'}`,
             metadata: {
               placementId: placement.id.toString(),
               userId: user.id.toString(),
             },
-            confirm: true,
-            off_session: true,
+            auto_advance: false, // Don't auto-finalize
+          });
+          
+          // Add invoice item
+          await stripe.invoiceItems.create({
+            customer: user.stripeCustomerId,
+            invoice: invoice.id,
+            amount: placement.amount,
+            currency: 'usd',
+            description: `${placement.articleTitle || 'Media Coverage'}`,
+          });
+          
+          // Finalize and pay the invoice
+          const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id);
+          const paidInvoice = await stripe.invoices.pay(finalizedInvoice.id, {
+            payment_method: defaultPaymentMethod.id,
           });
           
           // Update placement status
@@ -6806,16 +6830,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .set({
               status: 'paid',
               chargedAt: new Date(),
-              paymentId: paymentIntent.id,
+              paymentId: paidInvoice.payment_intent,
+              invoiceId: paidInvoice.id,
             })
             .where(eq(placements.id, placement.id));
           
-          console.log(`✅ Successfully charged placement ${placement.id}`);
+          console.log(`✅ Successfully charged placement ${placement.id} with invoice ${paidInvoice.id}`);
           
           return res.json({
             success: true,
             amount: placement.amount,
-            paymentId: paymentIntent.id,
+            paymentId: paidInvoice.payment_intent,
+            invoiceId: paidInvoice.id,
           });
         }
       } catch (stripeError: any) {
@@ -6847,6 +6873,209 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("❌ Error processing charge:", error);
       res.status(500).json({ message: "Failed to process charge: " + error.message });
+    }
+  });
+
+  // Download invoice by invoice ID (admin)
+  app.get("/api/admin/invoices/:invoiceId/download", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const invoiceId = req.params.invoiceId;
+      
+      // Retrieve the invoice from Stripe
+      const invoice = await stripe.invoices.retrieve(invoiceId);
+      
+      // Get the PDF URL
+      if (invoice.invoice_pdf) {
+        // Redirect to the Stripe PDF URL
+        return res.redirect(invoice.invoice_pdf);
+      } else {
+        return res.status(404).json({ message: "Invoice PDF not available" });
+      }
+      
+    } catch (stripeError: any) {
+      console.error("Stripe error retrieving invoice:", stripeError);
+      
+      if (stripeError.type === 'StripeInvalidRequestError') {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      return res.status(500).json({ message: "Error retrieving invoice from Stripe" });
+    }
+  });
+
+  // Simple test endpoint without auth
+  app.get("/api/debug/stripe/:customerId", async (req: Request, res: Response) => {
+    try {
+      const customerId = req.params.customerId;
+      console.log(`🔍 SIMPLE DEBUG: Testing Stripe API for customer: ${customerId}`);
+      
+      const allCharges = await stripe.charges.list({
+        customer: customerId,
+        limit: 20,
+      });
+      
+      const successfulCharges = await stripe.charges.list({
+        customer: customerId,
+        status: 'succeeded',
+        limit: 20,
+      });
+      
+      res.json({
+        customerId,
+        totalCharges: allCharges.data.length,
+        successfulCharges: successfulCharges.data.length,
+        successful: successfulCharges.data.map(charge => ({
+          id: charge.id,
+          amount: charge.amount / 100,
+          status: charge.status,
+          description: charge.description,
+          created: new Date(charge.created * 1000)
+        }))
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // DEBUG: Test Stripe API directly with specific customer ID
+  app.get("/api/admin/payments/debug/:customerId", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const customerId = req.params.customerId;
+      console.log(`🔍 DEBUG: Testing Stripe API for customer: ${customerId}`);
+      
+      // Get ALL charges for this customer
+      const allCharges = await stripe.charges.list({
+        customer: customerId,
+        limit: 100,
+      });
+      
+      console.log(`📊 DEBUG: Found ${allCharges.data.length} total charges for ${customerId}`);
+      
+      const chargeDetails = allCharges.data.map((charge, index) => ({
+        index: index + 1,
+        id: charge.id,
+        amount: charge.amount / 100,
+        currency: charge.currency,
+        status: charge.status,
+        description: charge.description || 'No description',
+        created: new Date(charge.created * 1000).toISOString(),
+        invoice: charge.invoice || null
+      }));
+      
+      // Also get successful charges only
+      const successfulCharges = await stripe.charges.list({
+        customer: customerId,
+        status: 'succeeded',
+        limit: 100,
+      });
+      
+      console.log(`✅ DEBUG: Found ${successfulCharges.data.length} successful charges for ${customerId}`);
+      
+      res.json({
+        customerId,
+        totalCharges: allCharges.data.length,
+        successfulCharges: successfulCharges.data.length,
+        allCharges: chargeDetails,
+        successfulOnly: successfulCharges.data.map(charge => ({
+          id: charge.id,
+          amount: charge.amount / 100,
+          status: charge.status,
+          description: charge.description,
+          created: new Date(charge.created * 1000).toISOString()
+        }))
+      });
+    } catch (error: any) {
+      console.error("❌ DEBUG Stripe error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get successful Stripe payments for all customers
+  app.get("/api/admin/payments/successful", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      // Get all users with Stripe customer IDs directly from database
+      const usersWithStripe = await getDb()
+        .select({
+          id: users.id,
+          fullName: users.fullName,
+          email: users.email,
+          company_name: users.company_name,
+          stripeCustomerId: users.stripeCustomerId
+        })
+        .from(users)
+        .where(sql`${users.stripeCustomerId} IS NOT NULL`);
+
+      console.log(`Found ${usersWithStripe.length} users with Stripe customer IDs`);
+      
+      const allSuccessfulPayments = [];
+
+      for (const user of usersWithStripe) {
+        try {
+          console.log(`🔍 Fetching payments for user ${user.id} (${user.fullName}) with Stripe customer ID: ${user.stripeCustomerId}`);
+          
+          // Get ALL charges first to debug
+          const allCharges = await stripe.charges.list({
+            customer: user.stripeCustomerId,
+            limit: 100,
+          });
+          
+          console.log(`📊 Found ${allCharges.data.length} total charges for customer ${user.stripeCustomerId}`);
+          
+          // Log each charge status
+          allCharges.data.forEach((charge, index) => {
+            console.log(`   Charge ${index + 1}: ${charge.id} - $${charge.amount/100} - Status: ${charge.status} - Description: ${charge.description || 'No description'}`);
+          });
+          
+          // Get ALL charges from Stripe for this customer (status filter doesn't work reliably)
+          const allChargesForCustomer = await stripe.charges.list({
+            customer: user.stripeCustomerId,
+            limit: 100,
+          });
+
+          // Filter to ONLY "succeeded" charges
+          const succeededChargesForCustomer = allChargesForCustomer.data.filter(charge => charge.status === 'succeeded');
+          
+          console.log(`✅ Found ${succeededChargesForCustomer.length} SUCCEEDED charges for customer ${user.stripeCustomerId} (filtered from ${allChargesForCustomer.data.length} total)`);
+          
+          if (succeededChargesForCustomer.length > 0) {
+            succeededChargesForCustomer.forEach((charge, index) => {
+              console.log(`   ✓ Success ${index + 1}: ${charge.id} - $${charge.amount/100} - ${charge.description || 'No description'}`);
+            });
+          }
+
+          // Add user info to each charge
+          const paymentsWithUser = succeededChargesForCustomer.map(charge => ({
+            id: charge.id,
+            amount: charge.amount / 100, // Convert from cents
+            currency: charge.currency,
+            status: charge.status,
+            created: new Date(charge.created * 1000),
+            description: charge.description || 'Payment',
+            receiptUrl: charge.receipt_url,
+            invoiceId: charge.invoice || null,
+            user: {
+              id: user.id,
+              fullName: user.fullName,
+              email: user.email,
+              company_name: user.company_name,
+              stripeCustomerId: user.stripeCustomerId
+            }
+          }));
+
+          allSuccessfulPayments.push(...paymentsWithUser);
+        } catch (stripeError: any) {
+          console.error(`❌ Failed to fetch Stripe payments for user ${user.id} (${user.stripeCustomerId}):`, stripeError.message);
+        }
+      }
+
+      // Sort by date (newest first)
+      allSuccessfulPayments.sort((a, b) => b.created.getTime() - a.created.getTime());
+
+      console.log(`Found ${allSuccessfulPayments.length} total successful Stripe payments`);
+      res.json(allSuccessfulPayments);
+    } catch (error: any) {
+      console.error("Error fetching successful payments:", error);
+      res.status(500).json({ message: "Failed to fetch payments: " + error.message });
     }
   });
 
@@ -6915,7 +7144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid user ID" });
       }
       
-      const { amount, description, paymentMethodId, placementId } = req.body;
+      const { amount, description, paymentMethodId, placementId, invoiceData } = req.body;
       
       if (!amount || !description || !paymentMethodId) {
         return res.status(400).json({ message: "Amount, description, and payment method are required" });
@@ -6927,35 +7156,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found or no Stripe customer ID" });
       }
       
-      // Create payment intent
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Convert to cents
-        currency: 'usd',
+      // Create invoice with enhanced details
+      const invoice = await stripe.invoices.create({
         customer: user.stripeCustomerId,
-        payment_method: paymentMethodId,
         description: description,
-        confirm: true,
-        return_url: `${process.env.VITE_APP_URL}/admin/billing`,
         metadata: {
           userId: userId.toString(),
           placementId: placementId?.toString() || '',
-          type: 'placement_charge'
-        }
+          type: 'placement_charge',
+          invoiceNumber: invoiceData?.invoiceNumber || '',
+          servicePeriod: invoiceData?.servicePeriod || ''
+        },
+        footer: invoiceData?.invoiceNotes || '',
+        auto_advance: false,
+      });
+      
+      // Add main service line item following Stripe invoice template
+      await stripe.invoiceItems.create({
+        customer: user.stripeCustomerId,
+        invoice: invoice.id,
+        currency: 'usd',
+        description: description,
+        quantity: 1,
+        unit_amount: Math.round((invoiceData?.subtotal || amount) * 100),
+      });
+      
+      // Add tax line item if applicable (following Stripe template)
+      if (invoiceData?.tax && invoiceData.tax > 0) {
+        await stripe.invoiceItems.create({
+          customer: user.stripeCustomerId,
+          invoice: invoice.id,
+          currency: 'usd',
+          description: `Tax (${invoiceData.taxRate}%)`,
+          quantity: 1,
+          unit_amount: Math.round(invoiceData.tax * 100),
+        });
+      }
+      
+      // Finalize and pay the invoice
+      const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id);
+      const paidInvoice = await stripe.invoices.pay(finalizedInvoice.id, {
+        payment_method: paymentMethodId,
       });
       
       // Update placement if provided
       if (placementId) {
         await storage.updatePlacementPayment(
           placementId, 
-          paymentIntent.id, 
-          paymentIntent.id
+          paidInvoice.payment_intent, 
+          paidInvoice.id
         );
       }
       
       res.json({
         success: true,
-        paymentIntent,
-        message: `Successfully charged $${amount} to ${user.fullName}`
+        invoice: paidInvoice,
+        paymentIntent: paidInvoice.payment_intent,
+        message: `Successfully charged $${amount} to ${user.fullName} - Invoice: ${invoiceData?.invoiceNumber || paidInvoice.id}`
       });
     } catch (error: any) {
       console.error("Error charging customer:", error);
@@ -7030,8 +7287,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // ============ USER BILLING ENDPOINTS ============
   
-  // Get user's placement charges (successful pitches they've been billed for)
-  app.get("/api/users/:userId/billing/placement-charges", async (req: Request, res: Response) => {
+  // Get user's placement charges from Stripe (actual successful payments)
+  app.get("/api/users/:userId/billing/placement-charges", jwtAuth, async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
@@ -7048,43 +7305,208 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      // Get successful pitches for this user that have been charged
-      const placementCharges = await getDb()
-        .select({
-          id: pitches.id,
-          amount: pitches.bidAmount,
-          bidAmount: pitches.bidAmount,
-          status: sql<string>`'paid'`,
-          chargedAt: pitches.successfulAt,
-          createdAt: pitches.createdAt,
-          description: opportunities.title,
+      // Get user's Stripe customer ID
+      const user = await storage.getUser(userId);
+      if (!user || !user.stripeCustomerId) {
+        console.log(`User ${userId} has no Stripe customer ID`);
+        return res.json([]); // Return empty array if no Stripe customer
+      }
+
+      console.log(`🔍 Fetching Stripe payments for user ${userId} with customer ID: ${user.stripeCustomerId}`);
+
+      try {
+        // Get ALL charges from Stripe for this customer (status filter doesn't work reliably)
+        const allCharges = await stripe.charges.list({
+          customer: user.stripeCustomerId,
+          limit: 100,
+        });
+
+        console.log(`📊 Found ${allCharges.data.length} total charges for user ${userId}`);
+
+        // Log EVERY charge with DETAILED status analysis
+        console.log(`🔍 DETAILED CHARGE ANALYSIS FOR USER ${userId}:`);
+        allCharges.data.forEach((charge, index) => {
+          console.log(`   💳 Charge ${index + 1}: ${charge.id}`);
+          console.log(`      Amount: $${charge.amount/100}`);
+          console.log(`      Status: "${charge.status}"`);
+          console.log(`      Captured: ${charge.captured}`);
+          console.log(`      Refunded: ${charge.refunded}`);
+          console.log(`      Amount Refunded: $${charge.amount_refunded/100}`);
+          console.log(`      Disputed: ${!!charge.dispute}`);
+          console.log(`      Failure Code: ${charge.failure_code || 'none'}`);
+          console.log(`      Outcome Type: ${charge.outcome?.type || 'none'}`);
+          console.log(`      Outcome Network Status: ${charge.outcome?.network_status || 'none'}`);
+          console.log(`      Outcome Reason: ${charge.outcome?.reason || 'none'}`);
+          console.log(`      Payment Intent Status: ${charge.payment_intent ? 'has_intent' : 'no_intent'}`);
+          console.log(`      Description: ${charge.description || 'No description'}`);
+          console.log(`      Created: ${new Date(charge.created * 1000).toISOString()}`);
+          console.log(`      ---------------`);
+        });
+
+        // Filter to ONLY truly successful charges with detailed logging
+        const succeededCharges = allCharges.data.filter(charge => {
+          const isSucceeded = charge.status === 'succeeded';
+          const isCaptured = charge.captured === true;
+          const isNotRefunded = !charge.refunded;
+          const hasNoRefundAmount = charge.amount_refunded === 0;
+          const hasNoDispute = !charge.dispute;
+          const hasNoFailure = !charge.failure_code;
+          
+          const isGood = isSucceeded && isCaptured && isNotRefunded && hasNoRefundAmount && hasNoDispute && hasNoFailure;
+          
+          console.log(`   ${isGood ? '✅ PASS' : '❌ FAIL'} ${charge.id}: succeeded=${isSucceeded}, captured=${isCaptured}, notRefunded=${isNotRefunded}, noRefundAmount=${hasNoRefundAmount}, noDispute=${hasNoDispute}, noFailure=${hasNoFailure}`);
+          
+          return isGood;
+        });
+        
+        console.log(`✅ Found ${succeededCharges.length} TRULY GOOD charges for user ${userId} (filtered from ${allCharges.data.length} total)`);
+
+        // Convert Stripe charges to placement charge format
+        const placementCharges = succeededCharges.map(charge => ({
+          id: charge.id,
+          amount: charge.amount / 100, // Convert from cents
+          bidAmount: charge.amount / 100,
+          status: 'paid',
+          chargedAt: new Date(charge.created * 1000),
+          createdAt: new Date(charge.created * 1000),
+          paymentId: charge.id,
+          invoiceId: charge.invoice || null,
+          articleTitle: charge.description || 'Media Coverage',
+          articleUrl: null,
           opportunity: {
-            id: opportunities.id,
-            title: opportunities.title,
+            id: null,
+            title: charge.description || 'Media Coverage',
             publication: {
-              id: publications.id,
-              name: publications.name
+              id: null,
+              name: 'Publication' // We don't have publication info in Stripe
             }
           }
-        })
-        .from(pitches)
-        .leftJoin(opportunities, eq(pitches.opportunityId, opportunities.id))
-        .leftJoin(publications, eq(opportunities.publicationId, publications.id))
-        .where(and(
-          eq(pitches.userId, userId),
-          or(
-            eq(pitches.status, 'successful'),
-            eq(pitches.status, 'Successful Coverage'),
-            eq(pitches.status, 'completed'),
-            eq(pitches.status, 'placed')
-          )
-        ))
-        .orderBy(desc(pitches.successfulAt), desc(pitches.updatedAt));
+        }));
 
-      res.json(placementCharges);
+        // Sort by date (newest first)
+        placementCharges.sort((a, b) => b.chargedAt.getTime() - a.chargedAt.getTime());
+
+        console.log(`📊 Returning ${placementCharges.length} Stripe charges for user ${userId}`);
+        res.json(placementCharges);
+      } catch (stripeError: any) {
+        console.error(`❌ Stripe error for user ${userId}:`, stripeError);
+        return res.status(500).json({ message: "Failed to fetch payment data from Stripe" });
+      }
     } catch (error) {
       console.error('Error fetching placement charges:', error);
       res.status(500).json({ message: "Failed to fetch placement charges" });
+    }
+  });
+
+  // Download invoice for a specific placement charge
+  app.get("/api/users/:userId/billing/placement-charges/:chargeId/invoice", jwtAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const chargeId = req.params.chargeId;
+      
+      // Verify user authentication
+      if (req.user?.id !== userId && !isAdmin(req)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Get user to verify they exist and have stripe customer ID
+      const user = await storage.getUser(userId);
+      if (!user || !user.stripeCustomerId) {
+        return res.status(404).json({ message: "User not found or no Stripe customer" });
+      }
+      
+                    try {
+         // Try multiple approaches to find the invoice
+         let invoice = null;
+         
+         // Approach 1: Try to retrieve as invoice ID directly
+         try {
+           invoice = await stripe.invoices.retrieve(chargeId);
+         } catch (invoiceError: any) {
+           // If not found as invoice, try as payment intent
+           console.log(`Charge ID ${chargeId} not found as invoice, trying as payment intent...`);
+         }
+         
+         // Approach 2: Try to retrieve as payment intent and get associated invoice
+         if (!invoice) {
+           try {
+             const paymentIntent = await stripe.paymentIntents.retrieve(chargeId);
+             if (paymentIntent.invoice) {
+               invoice = await stripe.invoices.retrieve(paymentIntent.invoice as string);
+             }
+           } catch (piError: any) {
+             console.log(`Charge ID ${chargeId} not found as payment intent either...`);
+           }
+         }
+         
+         // Approach 3: Search for invoices by customer and metadata/placement ID
+         if (!invoice) {
+           const invoices = await stripe.invoices.list({
+             customer: user.stripeCustomerId,
+             limit: 100
+           });
+           
+           // Look for invoice with matching payment intent, charge, or placement ID
+           invoice = invoices.data.find(inv => 
+             inv.payment_intent === chargeId || 
+             (inv.charge && inv.charge === chargeId) ||
+             (inv.metadata && inv.metadata.placementId === chargeId)
+           );
+         }
+         
+         // Approach 4: Look up by database placement ID if none of the above worked
+         if (!invoice && !isNaN(parseInt(chargeId))) {
+           // Get the placement from database to find the actual invoice ID
+           const placementResult = await getDb().select()
+             .from(placements)
+             .where(and(
+               eq(placements.id, parseInt(chargeId)),
+               eq(placements.userId, userId)
+             ))
+             .limit(1);
+             
+           if (placementResult.length > 0) {
+             const placement = placementResult[0];
+             if (placement.invoiceId) {
+               try {
+                 invoice = await stripe.invoices.retrieve(placement.invoiceId);
+               } catch (dbLookupError: any) {
+                 console.log(`Could not retrieve invoice ${placement.invoiceId} from placement ${chargeId}`);
+               }
+             }
+           }
+         }
+         
+         if (!invoice) {
+           return res.status(404).json({ message: "Invoice not found for this charge" });
+         }
+         
+         // Verify this invoice belongs to the user
+         if (invoice.customer !== user.stripeCustomerId) {
+           return res.status(403).json({ message: "Invoice does not belong to this user" });
+         }
+         
+         // Get the PDF URL
+         if (invoice.invoice_pdf) {
+           // Redirect to the Stripe PDF URL
+           return res.redirect(invoice.invoice_pdf);
+         } else {
+           return res.status(404).json({ message: "Invoice PDF not available" });
+         }
+        
+      } catch (stripeError: any) {
+        console.error("Stripe error retrieving invoice:", stripeError);
+        
+        if (stripeError.type === 'StripeInvalidRequestError') {
+          return res.status(404).json({ message: "Invoice not found" });
+        }
+        
+        return res.status(500).json({ message: "Error retrieving invoice from Stripe" });
+      }
+      
+    } catch (error: any) {
+      console.error("Error downloading invoice:", error);
+      res.status(500).json({ message: "Failed to download invoice: " + error.message });
     }
   });
 
