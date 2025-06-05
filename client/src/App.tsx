@@ -28,7 +28,6 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import { AdminProtectedRoute } from "@/lib/admin-protected-route";
 import { useEffect, useState, useContext } from "react";
 import { usePushSubscribe } from "@/hooks/usePushSubscribe";
-import { usePriceUpdates } from "@/hooks/usePriceUpdates";
 import { PriceProvider } from "@/contexts/PriceContext";
 import AdminDashboard from "@/pages/admin/index";
 import OpportunitiesManager from "@/pages/admin/opportunities-manager-new";
@@ -105,8 +104,7 @@ function Router() {
   // Initialize push notifications for authenticated users
   usePushSubscribe();
   
-  // Initialize live price updates via WebSocket
-  usePriceUpdates();
+  // Note: Removed usePriceUpdates() since we're using PriceContext system now
   
   return (
     <>

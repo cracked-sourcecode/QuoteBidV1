@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 // Price metadata for each opportunity
@@ -62,10 +62,26 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Socket.io connection
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
 
   // Connect to Socket.io for real-time updates
   const connectWebSocket = useCallback(() => {
+    // Prevent multiple simultaneous connection attempts
+    if (isConnecting || (socketRef.current && socketRef.current.connected)) {
+      console.log('🔌 Already connecting or connected, skipping connection attempt');
+      return;
+    }
+    
     try {
+      setIsConnecting(true);
+      
+      // Disconnect existing socket first
+      if (socketRef.current) {
+        console.log('🔌 Disconnecting existing socket...');
+        socketRef.current.disconnect();
+      }
+      
       const socketUrl = `${window.location.protocol}//${window.location.hostname}:4000`;
       
       console.log('🔌 Connecting to price Socket.io:', socketUrl);
@@ -73,11 +89,16 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const newSocket = io(socketUrl, {
         transports: ['websocket', 'polling'],
         timeout: 20000,
-        forceNew: true
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        forceNew: false // Don't force new connection every time
       });
       
       newSocket.on('connect', () => {
-        console.log('🔌 Price Socket.io connected');
+        console.log('🔌 Price Socket.io connected successfully!');
+        setIsConnecting(false);
         setState(prev => ({ 
           ...prev, 
           isConnected: true,
@@ -114,10 +135,12 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       newSocket.on('disconnect', (reason) => {
         console.log('🔌 Price Socket.io disconnected:', reason);
+        setIsConnecting(false);
         setState(prev => ({ ...prev, isConnected: false }));
+        socketRef.current = null;
         
         // Reconnect after 3 seconds unless it was intentional
-        if (reason !== 'io client disconnect') {
+        if (reason !== 'io client disconnect' && reason !== 'io server disconnect') {
           setTimeout(() => {
             console.log('🔄 Attempting Socket.io reconnection...');
             connectWebSocket();
@@ -127,15 +150,18 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       newSocket.on('connect_error', (error) => {
         console.error('❌ Price Socket.io connection error:', error);
+        setIsConnecting(false);
         setState(prev => ({ ...prev, isConnected: false }));
       });
       
       setSocket(newSocket);
+      socketRef.current = newSocket;
       
     } catch (error) {
       console.error('❌ Failed to create Socket.io connection:', error);
+      setIsConnecting(false);
     }
-  }, []);
+  }, []); // Remove dependencies to prevent infinite recreation
 
   // Update price in state from WebSocket message
   const updatePrice = useCallback((update: PriceUpdateMessage) => {
@@ -245,11 +271,11 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     // Cleanup on unmount
     return () => {
-      if (socket) {
-        socket.disconnect();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
       }
     };
-  }, [connectWebSocket]);
+  }, []); // Remove connectWebSocket dependency to prevent infinite loop
 
   // Refresh prices periodically as fallback
   useEffect(() => {
@@ -280,14 +306,27 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 };
 
+// Hook to get connection status
+export const usePriceConnection = () => {
+  const { isConnected, connectionCount } = usePrices();
+  return { isConnected, connectionCount };
+};
+
 // Convenience hook for getting price of specific opportunity
 export const useOpportunityPrice = (opportunityId: number) => {
   const { getPrice, refreshPrice } = usePrices();
+  
+  // Don't try to get price data for invalid IDs
+  if (!opportunityId || opportunityId <= 0) {
+    return null;
+  }
+  
   const price = getPrice(opportunityId);
   
   // Auto-refresh if price is stale (older than 5 minutes)
   useEffect(() => {
-    if (!price || (Date.now() - price.lastUpdated > 300000)) {
+    if (opportunityId > 0 && (!price || (Date.now() - price.lastUpdated > 300000))) {
+      console.log(`🔄 Auto-refreshing price for opportunity ${opportunityId}`);
       refreshPrice(opportunityId);
     }
   }, [opportunityId, price, refreshPrice]);

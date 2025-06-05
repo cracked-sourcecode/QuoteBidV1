@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Clock, TrendingUp, TrendingDown, Minus, Award, Target, Trophy } from 'lucide-react';
 import { Opportunity } from '@shared/types/opportunity';
 import { calculateMarketHeat, getMarketPulseIndicators } from '@/lib/marketPulse';
-import { usePriceUpdates } from '@/hooks/usePriceUpdates';
+import { useOpportunityPrice } from '@/contexts/PriceContext';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -22,8 +22,13 @@ export default function OpportunityCard({
 }: OpportunityCardProps) {
   const [timeLeft, setTimeLeft] = useState('');
   
-  // Connect to live price updates
-  usePriceUpdates();
+  // Connect to real-time price updates from pricing engine
+  const priceData = useOpportunityPrice(opportunity.id);
+  
+  // Use real-time price data if available, fallback to opportunity data
+  const currentPrice = priceData?.currentPrice || opportunity.currentPrice;
+  const priceTrend = priceData?.trend || opportunity.trend || 'stable';
+  const percentChange = priceData?.percentChange || 0;
   
   // Calculate time until deadline
   useEffect(() => {
@@ -55,13 +60,13 @@ export default function OpportunityCard({
     return () => clearInterval(interval);
   }, [opportunity.deadline]);
   
-  // Calculate market heat and indicators
+  // Calculate market heat and indicators using real-time price
   const hoursActive = (Date.now() - new Date(opportunity.postedAt).getTime()) / (1000 * 60 * 60);
-  const marketHeat = calculateMarketHeat(opportunity.basePrice, opportunity.currentPrice, hoursActive);
+  const marketHeat = calculateMarketHeat(opportunity.basePrice, currentPrice, hoursActive);
   const pulseIndicators = getMarketPulseIndicators(marketHeat);
   
-  // Price change percentage
-  const priceChange = ((opportunity.currentPrice - opportunity.basePrice) / opportunity.basePrice) * 100;
+  // Price change percentage using real-time data
+  const realPriceChange = ((currentPrice - opportunity.basePrice) / opportunity.basePrice) * 100;
   
   // Tier styling
   const getTierStyling = (tier: number) => {
@@ -151,18 +156,24 @@ export default function OpportunityCard({
           )}
         </div>
         
-        {/* Price Section */}
+        {/* Price Section - Now using real-time pricing data */}
         <div className="bg-white rounded-lg p-3 mb-3 border border-gray-200">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-medium text-gray-600">Current Price</span>
             <div className="flex items-center space-x-1">
-              {(opportunity.trend === 'up' || priceDirection === 'up') && (
-                <TrendingUp className={`h-3 w-3 text-green-500 ${showPriceAnimation ? 'animate-bounce' : ''}`} />
+              {/* Dynamic pricing indicator */}
+              {priceData && (
+                <Badge variant="outline" className="text-xs px-1.5 py-0.5 text-red-600 border-red-200">
+                  ● Dynamic
+                </Badge>
               )}
-              {(opportunity.trend === 'down' || priceDirection === 'down') && (
-                <TrendingDown className={`h-3 w-3 text-red-500 ${showPriceAnimation ? 'animate-bounce' : ''}`} />
+              {(priceTrend === 'up' || priceDirection === 'up') && (
+                <TrendingUp className={`h-3 w-3 text-green-500 ${showPriceAnimation || priceData ? 'animate-bounce' : ''}`} />
               )}
-              {(opportunity.trend === 'neutral' || priceDirection === 'neutral') && !opportunity.trend && (
+              {(priceTrend === 'down' || priceDirection === 'down') && (
+                <TrendingDown className={`h-3 w-3 text-red-500 ${showPriceAnimation || priceData ? 'animate-bounce' : ''}`} />
+              )}
+              {priceTrend === 'stable' && (
                 <Minus className="h-3 w-3 text-gray-400" />
               )}
             </div>
@@ -171,16 +182,16 @@ export default function OpportunityCard({
           <div className="flex items-baseline justify-between">
             <div className="flex items-baseline space-x-2">
               <span className={`text-xl font-bold ${
-                (showPriceAnimation && priceDirection === 'up') || opportunity.trend === 'up' ? 'text-green-600 animate-pulse' :
-                (showPriceAnimation && priceDirection === 'down') || opportunity.trend === 'down' ? 'text-red-600 animate-pulse' :
-                'text-gray-900'
+                (showPriceAnimation && priceDirection === 'up') || priceTrend === 'up' ? 'text-green-600 animate-pulse' :
+                (showPriceAnimation && priceDirection === 'down') || priceTrend === 'down' ? 'text-red-600 animate-pulse' :
+                priceData ? 'text-blue-600' : 'text-gray-900'
               } transition-colors duration-300`}>
-                ${opportunity.currentPrice}
+                ${currentPrice}
               </span>
-              {opportunity.trend && (
+              {priceTrend !== 'stable' && (
                 <span className="text-xs text-green-500 ml-1">
-                  {opportunity.trend === 'up' && '↑'}
-                  {opportunity.trend === 'down' && '↓'}
+                  {priceTrend === 'up' && '↑'}
+                  {priceTrend === 'down' && '↓'}
                 </span>
               )}
               <span className="text-xs text-gray-500">
@@ -188,15 +199,35 @@ export default function OpportunityCard({
               </span>
             </div>
             
-            {priceChange > 0 && (
+            {/* Show percentage change with real-time data */}
+            {realPriceChange !== 0 && (
               <div className="flex items-center space-x-1">
+                {realPriceChange > 0 ? (
+                  <>
                 <TrendingUp className="h-2.5 w-2.5 text-green-500" />
                 <span className="text-xs font-medium text-green-600">
-                  +{priceChange.toFixed(0)}%
+                      +{realPriceChange.toFixed(0)}%
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <TrendingDown className="h-2.5 w-2.5 text-red-500" />
+                    <span className="text-xs font-medium text-red-600">
+                      {realPriceChange.toFixed(0)}%
                 </span>
+                  </>
+                )}
               </div>
             )}
           </div>
+          
+          {/* Real-time price metadata */}
+          {priceData?.lastPriceUpdate && (
+            <div className="mt-2 text-xs text-gray-500 flex items-center space-x-1">
+              <Clock className="h-3 w-3" />
+              <span>Updated {new Date(priceData.lastPriceUpdate).toLocaleTimeString()}</span>
+            </div>
+          )}
         </div>
         
         {/* Stats */}
@@ -214,7 +245,7 @@ export default function OpportunityCard({
           </div>
         </div>
         
-        {/* Action Button */}
+        {/* Action Button - using real-time price */}
         <Button 
           onClick={handleBidClick}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:scale-105"
@@ -224,7 +255,7 @@ export default function OpportunityCard({
             ? 'Closed' 
             : opportunity.slotsRemaining === 0 
             ? 'No Slots Available'
-            : 'Place Bid'
+            : `Place Bid at $${currentPrice}`
           }
         </Button>
       </CardContent>

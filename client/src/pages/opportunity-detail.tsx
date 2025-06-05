@@ -13,6 +13,7 @@ import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
 import { getPublicationLogo } from '@/lib/responsive-utils';
 import { apiRequest } from '@/lib/queryClient';
+import { useOpportunityPrice, usePriceConnection } from '@/contexts/PriceContext';
 
 export default function OpportunityDetail() {
   const { toast } = useToast();
@@ -22,6 +23,10 @@ export default function OpportunityDetail() {
   const [isBriefMinimized, setIsBriefMinimized] = useState(false);
   const [pitchContent, setPitchContent] = useState('');
   const [selectedTimeframe, setSelectedTimeframe] = useState<'Daily' | 'Weekly'>('Daily');
+  
+  // Connect to real-time price updates from pricing engine
+  const priceData = useOpportunityPrice(opportunityId);
+  const { isConnected, connectionCount } = usePriceConnection();
   
   // State for real data
   const [opportunity, setOpportunity] = useState<any>(null);
@@ -312,7 +317,9 @@ export default function OpportunityDetail() {
     );
   }
 
-  const currentPrice = bidInfo?.currentPrice || opportunity?.currentPrice || opportunity?.basePrice || 100;
+  // Use real-time price data if available, fallback to opportunity data
+  const currentPrice = priceData?.currentPrice || bidInfo?.currentPrice || opportunity?.currentPrice || opportunity?.basePrice || 100;
+  const priceTrend = priceData?.trend || 'stable';
   const priceIncrease = currentPrice - (opportunity?.basePrice || 100);
   const belowListPercentage = 17; // This could be calculated based on real data later
   const maxPitchLength = 2000;
@@ -322,7 +329,7 @@ export default function OpportunityDetail() {
   const isToday = opportunity?.deadline ? format(new Date(opportunity.deadline), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') : false;
 
   // Use real price data or fallback data
-  const priceData = priceHistory.length > 0 ? priceHistory : [
+  const priceDataForChart = priceHistory.length > 0 ? priceHistory : [
     { day: 1, price: currentPrice - 50, label: '1d' },
     { day: 2, price: currentPrice - 30, label: '2d' },
     { day: 3, price: currentPrice - 20, label: '3d' },
@@ -428,7 +435,7 @@ export default function OpportunityDetail() {
     if (active && payload && payload.length) {
       const currentPrice = payload[0].value;
       const dayIndex = payload[0].payload.day;
-      const prevPrice = dayIndex > 1 ? priceData[dayIndex - 2].price : priceData[0].price;
+      const prevPrice = dayIndex > 1 ? priceDataForChart[dayIndex - 2].price : priceDataForChart[0].price;
       const priceChange = currentPrice - prevPrice;
       const changeDirection = priceChange >= 0 ? '+' : '';
       
@@ -742,8 +749,10 @@ export default function OpportunityDetail() {
                   <DollarSign className="h-5 w-5 text-white" />
                 </div>
                 <div className="text-left">
+                  <div className="flex items-center space-x-2 mb-1">
                   <div className="text-xs font-semibold text-green-600 uppercase tracking-wide">Current Price</div>
-                  <div className="text-sm font-bold text-gray-900">
+                  </div>
+                  <div className={`text-sm font-bold ${priceData ? 'text-blue-600' : 'text-gray-900'} transition-colors duration-300`}>
                     ${currentPrice}
                   </div>
                 </div>
@@ -879,7 +888,7 @@ export default function OpportunityDetail() {
                     <div className="h-96 w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart 
-                          data={priceData} 
+                          data={priceDataForChart} 
                           margin={{ top: 5, right: 5, bottom: 5, left: 25 }}
                         >
                           <defs>
@@ -911,8 +920,8 @@ export default function OpportunityDetail() {
                           <YAxis 
                             type="number"
                             domain={[
-                              Math.floor(Math.min(...priceData.map(p => p.price)) * 0.95), 
-                              Math.ceil(Math.max(...priceData.map(p => p.price)) * 1.05)
+                              Math.floor(Math.min(...priceDataForChart.map(p => p.price)) * 0.95), 
+                              Math.ceil(Math.max(...priceDataForChart.map(p => p.price)) * 1.05)
                             ]}
                             axisLine={false}
                             tickLine={false}
@@ -939,7 +948,7 @@ export default function OpportunityDetail() {
                           />
                           
                           <ReferenceDot
-                            x={priceData.length}
+                            x={priceDataForChart.length}
                             y={currentPrice}
                             r={4}
                             fill="#3B82F6"
@@ -953,11 +962,11 @@ export default function OpportunityDetail() {
                     {/* Price range */}
                     <div className="flex justify-between items-center mt-6">
                       <div className="flex items-center space-x-2">
-                        <span className="text-green-600 font-bold text-lg">${Math.min(...priceData.map(p => p.price))}</span>
+                        <span className="text-green-600 font-bold text-lg">${Math.min(...priceDataForChart.map(p => p.price))}</span>
                         <span className="text-gray-500 text-sm">Low</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="text-red-500 font-bold text-lg">${Math.max(...priceData.map(p => p.price))}</span>
+                        <span className="text-red-500 font-bold text-lg">${Math.max(...priceDataForChart.map(p => p.price))}</span>
                         <span className="text-gray-500 text-sm">High</span>
                       </div>
                     </div>
@@ -976,7 +985,11 @@ export default function OpportunityDetail() {
                     </div>
 
                     <div className="flex items-baseline space-x-3 mb-4">
-                      <span className="text-4xl font-bold text-blue-600">${currentPrice}</span>
+                      <span className={`text-4xl font-bold ${
+                        priceTrend === 'up' ? 'text-green-600 animate-pulse' :
+                        priceTrend === 'down' ? 'text-red-600 animate-pulse' :
+                        priceData ? 'text-blue-600' : 'text-gray-900'
+                      } transition-colors duration-300`}>${currentPrice}</span>
                       {priceIncrease !== 0 && (
                         <div className={`flex items-center space-x-1 text-lg font-semibold ${priceIncrease >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           <TrendingUp className={`h-5 w-5 ${priceIncrease < 0 ? 'rotate-180' : ''}`} />
@@ -985,9 +998,19 @@ export default function OpportunityDetail() {
                       )}
                     </div>
 
-                    <div className="flex items-center space-x-2 mb-8">
-                      <span className="w-3 h-3 bg-red-500 rounded-full"></span>
-                      <span className="text-gray-600 font-medium">Dynamic pricing</span>
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center space-x-2">
+                        <span className={`w-3 h-3 rounded-full ${priceData ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`}></span>
+                        <span className="text-gray-600 font-medium">
+                          {priceData ? 'Dynamic pricing active' : 'Static pricing'}
+                        </span>
+                      </div>
+                      {priceData?.lastPriceUpdate && (
+                        <div className="text-xs text-gray-500 flex items-center space-x-1">
+                          <Clock className="h-3 w-3" />
+                          <span>Updated {new Date(priceData.lastPriceUpdate).toLocaleTimeString()}</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Pitch Input */}
@@ -1185,11 +1208,18 @@ export default function OpportunityDetail() {
                       <>
                         <Button
                           onClick={handleSecurePitch}
-                          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 mb-4"
+                          className={`w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 mb-4 ${
+                            priceData ? 'ring-2 ring-blue-300 ring-opacity-50' : ''
+                          }`}
                         >
                           <div className="flex items-center justify-center space-x-2">
                             <Lock className="h-5 w-5" />
                             <span>Secure Pitch at ${currentPrice}</span>
+                            {priceData && (
+                              <Badge className="bg-white/20 text-white text-xs px-2 py-0.5 ml-2">
+                                Live Price
+                              </Badge>
+                            )}
                           </div>
                         </Button>
 
