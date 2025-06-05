@@ -873,7 +873,7 @@ export class DatabaseStorage implements IStorage {
   async getAllPitches(): Promise<Pitch[]> {
     console.log("Fetching all pitches from database");
     try {
-      // Use a direct query for Pitch objects only
+      // Get ALL pitch fields including billing info
       const results = await getDb()
         .select({
           id: pitches.id,
@@ -883,9 +883,19 @@ export class DatabaseStorage implements IStorage {
           audioUrl: pitches.audioUrl,
           transcript: pitches.transcript,
           status: pitches.status,
+          isDraft: pitches.isDraft,
+          pitchType: pitches.pitchType,
           createdAt: pitches.createdAt,
+          updatedAt: pitches.updatedAt,
+          successfulAt: pitches.successfulAt,
           paymentIntentId: pitches.paymentIntentId,
-          bidAmount: pitches.bidAmount
+          bidAmount: pitches.bidAmount,
+          authorizationExpiresAt: pitches.authorizationExpiresAt,
+          billedAt: pitches.billedAt,
+          stripeChargeId: pitches.stripeChargeId,
+          billingError: pitches.billingError,
+          articleUrl: pitches.articleUrl,
+          articleTitle: pitches.articleTitle,
         })
         .from(pitches)
         .orderBy(desc(pitches.createdAt));
@@ -910,9 +920,30 @@ export class DatabaseStorage implements IStorage {
   async getAllPitchesWithRelations(): Promise<PitchWithRelations[]> {
     console.log("Fetching all pitches with relations from database");
     try {
-      // First get all pitches
+      // First get all pitches with ALL fields including billing info
       const allPitches = await getDb()
-        .select()
+        .select({
+          id: pitches.id,
+          opportunityId: pitches.opportunityId,
+          userId: pitches.userId,
+          content: pitches.content,
+          audioUrl: pitches.audioUrl,
+          transcript: pitches.transcript,
+          status: pitches.status,
+          isDraft: pitches.isDraft,
+          pitchType: pitches.pitchType,
+          createdAt: pitches.createdAt,
+          updatedAt: pitches.updatedAt,
+          successfulAt: pitches.successfulAt,
+          paymentIntentId: pitches.paymentIntentId,
+          bidAmount: pitches.bidAmount,
+          authorizationExpiresAt: pitches.authorizationExpiresAt,
+          billedAt: pitches.billedAt,
+          stripeChargeId: pitches.stripeChargeId,
+          billingError: pitches.billingError,
+          articleUrl: pitches.articleUrl,
+          articleTitle: pitches.articleTitle,
+        })
         .from(pitches)
         .orderBy(desc(pitches.updatedAt));
       
@@ -1042,9 +1073,9 @@ export class DatabaseStorage implements IStorage {
     
     // Set successfulAt timestamp when pitch status changes to successful
     const updateData: any = {
-      status,
-      isDraft, // Explicitly set isDraft based on status
-      updatedAt: new Date() // Always update the timestamp when status changes
+        status,
+        isDraft, // Explicitly set isDraft based on status
+        updatedAt: new Date() // Always update the timestamp when status changes
     };
     
     // If the status is being set to successful, also set the successfulAt timestamp
@@ -1073,6 +1104,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updatePitchBillingInfo(id: number, stripeChargeId: string, billedAt: Date): Promise<Pitch | undefined> {
+    console.log(`💰 Marking pitch ${id} as PAID in database`);
+    
+    // Update pitch with billing info - this moves it from AR to Successful
     const [updatedPitch] = await getDb()
       .update(pitches)
       .set({ 
@@ -1081,6 +1115,11 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(pitches.id, id))
       .returning();
+      
+    if (updatedPitch) {
+      console.log(`✅ Pitch ${id} now marked as PAID - billedAt: ${updatedPitch.billedAt}, chargeId: ${updatedPitch.stripeChargeId}`);
+    }
+    
     return updatedPitch;
   }
 

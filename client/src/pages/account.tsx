@@ -1671,7 +1671,7 @@ export default function AccountPage() {
                   </Button>
                 </div>
               </div>
-
+              
               {/* Tabs */}
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-6">
@@ -1687,278 +1687,278 @@ export default function AccountPage() {
 
                 {/* Profile Tab */}
                 <TabsContent value="info" className="space-y-6">
-                  {/* Bio Section */}
-                  <div className="mb-8">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">PROFESSIONAL BIO</h2>
-                    </div>
-                    <div className="rounded-lg border border-gray-200 p-4">
-                      <div className="text-gray-600">
-                        {user.bio ? (
-                          <p className="whitespace-pre-line">{user.bio}</p>
-                        ) : (
-                          <p className="text-gray-400 italic">No bio information added yet. Add a professional bio to help journalists understand your expertise.</p>
-                        )}
-                      </div>
-                    </div>
+              {/* Bio Section */}
+              <div className="mb-8">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">PROFESSIONAL BIO</h2>
+                </div>
+                <div className="rounded-lg border border-gray-200 p-4">
+                  <div className="text-gray-600">
+                    {user.bio ? (
+                      <p className="whitespace-pre-line">{user.bio}</p>
+                    ) : (
+                      <p className="text-gray-400 italic">No bio information added yet. Add a professional bio to help journalists understand your expertise.</p>
+                    )}
                   </div>
+                </div>
+              </div>
 
-                  {/* Contact Information Section */}
-                  <div className="mb-8">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">CONTACT INFORMATION</h2>
-                    </div>
-                    <div className="rounded-lg border border-gray-200 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500 mb-1">Location</h3>
-                        <p className="text-gray-700">{user.location || 'Not specified'}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500 mb-1">Email</h3>
-                        <p className="text-gray-700">{user.email}</p>
-                      </div>
+              {/* Contact Information Section */}
+              <div className="mb-8">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">CONTACT INFORMATION</h2>
+                </div>
+                <div className="rounded-lg border border-gray-200 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-1">Location</h3>
+                    <p className="text-gray-700">{user.location || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-1">Email</h3>
+                    <p className="text-gray-700">{user.email}</p>
+                  </div>
                       <div>
                         <h3 className="text-sm font-medium text-gray-500 mb-1">Phone</h3>
                         <p className="text-gray-700">{(user as any).phone_number || 'Not specified'}</p>
                       </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500 mb-1">Website</h3>
-                        {user.website ? (
-                          <a href={user.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                            {user.website.replace(/^https?:\/\//, '').replace(/^www\./, '')}
-                          </a>
-                        ) : (
-                          <p className="text-gray-400 italic">Not specified</p>
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500 mb-1">Industry</h3>
-                        <p className="text-gray-700">{user.industry || 'Not specified'}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500 mb-1">Do-Follow Link</h3>
-                        {user.doFollowLink && user.doFollowLink !== 'none' ? (
-                          <p className="text-gray-700">
-                            {user.doFollowLink === 'website' && user.website ? (
-                              <>Website (<a href={user.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{user.website.replace(/^https?:\/\//, '').replace(/^www\./, '')}</a>)</>
-                            ) : user.doFollowLink === 'linkedIn' && user.linkedIn ? (
-                              <>LinkedIn (<a href={user.linkedIn} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>
-                            ) : user.doFollowLink === 'twitter' && user.twitter ? (
-                              <>X (<a href={user.twitter} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>
-                            ) : user.doFollowLink === 'instagram' && user.instagram ? (
-                              <>Instagram (<a href={user.instagram} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>                  
-                            ) : user.doFollowLink === 'other' && user.otherProfileUrl ? (
-                              <>Website (<a href={user.otherProfileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>                  
-                            ) : user.doFollowLink.startsWith('http') ? (
-                              <>Custom URL (<a href={user.doFollowLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{user.doFollowLink.replace(/^https?:\/\//, '').replace(/^www\./, '')}</a>)</>
-                            ) : (
-                              'Not properly configured'
-                            )}
-                          </p>
-                        ) : (
-                          <p className="text-red-500 italic">Required - set a do-follow link for article quotes</p>
-                        )}
-                      </div>
-                    </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-1">Website</h3>
+                    {user.website ? (
+                      <a href={user.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {user.website.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                      </a>
+                    ) : (
+                      <p className="text-gray-400 italic">Not specified</p>
+                    )}
                   </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-1">Industry</h3>
+                    <p className="text-gray-700">{user.industry || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-1">Do-Follow Link</h3>
+                    {user.doFollowLink && user.doFollowLink !== 'none' ? (
+                      <p className="text-gray-700">
+                        {user.doFollowLink === 'website' && user.website ? (
+                          <>Website (<a href={user.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{user.website.replace(/^https?:\/\//, '').replace(/^www\./, '')}</a>)</>
+                        ) : user.doFollowLink === 'linkedIn' && user.linkedIn ? (
+                          <>LinkedIn (<a href={user.linkedIn} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>
+                        ) : user.doFollowLink === 'twitter' && user.twitter ? (
+                          <>X (<a href={user.twitter} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>
+                        ) : user.doFollowLink === 'instagram' && user.instagram ? (
+                          <>Instagram (<a href={user.instagram} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>                  
+                        ) : user.doFollowLink === 'other' && user.otherProfileUrl ? (
+                          <>Website (<a href={user.otherProfileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>                  
+                        ) : user.doFollowLink.startsWith('http') ? (
+                          <>Custom URL (<a href={user.doFollowLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{user.doFollowLink.replace(/^https?:\/\//, '').replace(/^www\./, '')}</a>)</>
+                        ) : (
+                          'Not properly configured'
+                        )}
+                      </p>
+                    ) : (
+                      <p className="text-red-500 italic">Required - set a do-follow link for article quotes</p>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-                  {/* Online Profiles & Web Presence */}
-                  <div className="mb-8">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">ONLINE PROFILES & WEB PRESENCE</h2>
-                    </div>
-                    <div className="rounded-lg border border-gray-200 p-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        {/* LinkedIn */}
-                        <div className="flex items-center">
-                          <div className="bg-gray-100 rounded-md p-2 mr-3">
-                            <svg className="h-5 w-5 text-blue-700" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                            </svg>
-                          </div>
-                          {user.linkedIn ? (
-                            <a href={user.linkedIn} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
-                              LinkedIn
-                            </a>
-                          ) : (
-                            <p className="text-gray-400 italic text-sm">No LinkedIn added</p>
-                          )}
-                        </div>
-                        
-                        {/* X (formerly Twitter) */}
-                        <div className="flex items-center">
-                          <div className="bg-black rounded-md p-2 mr-3">
-                            <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                            </svg>
-                          </div>
-                          {user.twitter ? (
-                            <a href={user.twitter || ''} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
-                              X
-                            </a>
-                          ) : (
-                            <p className="text-gray-400 italic text-sm">No X added</p>
-                          )}
-                        </div>
-                        
-                        {/* Instagram */}
-                        <div className="flex items-center">
-                          <div className="bg-gradient-to-br from-pink-500 via-purple-500 to-yellow-500 rounded-md p-2 mr-3">
-                            <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                            </svg>
-                          </div>
-                          {user.instagram ? (
-                            <a href={user.instagram} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
-                              Instagram
-                            </a>
-                          ) : (
-                            <p className="text-gray-400 italic text-sm">No Instagram added</p>
-                          )}
-                        </div>
-                        
-                        {/* Website */}
-                        {user.otherProfileUrl && (
-                          <div className="flex items-center">
-                            <div className="bg-purple-100 rounded-md p-2 mr-3">
-                              <svg className="h-5 w-5 text-purple-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <path d="M12 8v8"></path>
-                                <path d="M8 12h8"></path>
-                              </svg>
-                            </div>
-                            <a href={user.otherProfileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
-                              Website
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Media Coverage Section */}
-                  <div className="mb-8">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">MEDIA COVERAGE</h2>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => {
-                          setEditingMediaItem(null);
-                          setAddMediaModalOpen(true);
-                        }}
-                        className="flex items-center gap-1"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              {/* Online Profiles & Web Presence */}
+              <div className="mb-8">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">ONLINE PROFILES & WEB PRESENCE</h2>
+                </div>
+                <div className="rounded-lg border border-gray-200 p-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* LinkedIn */}
+                    <div className="flex items-center">
+                      <div className="bg-gray-100 rounded-md p-2 mr-3">
+                        <svg className="h-5 w-5 text-blue-700" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                         </svg>
-                        <span>Add Media</span>
-                      </Button>
+                      </div>
+                      {user.linkedIn ? (
+                        <a href={user.linkedIn} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
+                          LinkedIn
+                        </a>
+                      ) : (
+                        <p className="text-gray-400 italic text-sm">No LinkedIn added</p>
+                      )}
                     </div>
+                    
+                    {/* X (formerly Twitter) */}
+                    <div className="flex items-center">
+                      <div className="bg-black rounded-md p-2 mr-3">
+                        <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        </svg>
+                      </div>
+                      {user.twitter ? (
+                        <a href={user.twitter || ''} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
+                          X
+                        </a>
+                      ) : (
+                        <p className="text-gray-400 italic text-sm">No X added</p>
+                      )}
+                    </div>
+                    
+                    {/* Instagram */}
+                    <div className="flex items-center">
+                      <div className="bg-gradient-to-br from-pink-500 via-purple-500 to-yellow-500 rounded-md p-2 mr-3">
+                        <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                        </svg>
+                      </div>
+                      {user.instagram ? (
+                        <a href={user.instagram} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
+                          Instagram
+                        </a>
+                      ) : (
+                        <p className="text-gray-400 italic text-sm">No Instagram added</p>
+                      )}
+                    </div>
+                    
+                    {/* Website */}
+                    {user.otherProfileUrl && (
+                      <div className="flex items-center">
+                        <div className="bg-purple-100 rounded-md p-2 mr-3">
+                          <svg className="h-5 w-5 text-purple-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 8v8"></path>
+                            <path d="M8 12h8"></path>
+                          </svg>
+                        </div>
+                        <a href={user.otherProfileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
+                          Website
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Media Coverage Section */}
+              <div className="mb-8">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">MEDIA COVERAGE</h2>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      setEditingMediaItem(null);
+                      setAddMediaModalOpen(true);
+                    }}
+                    className="flex items-center gap-1"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>Add Media</span>
+                  </Button>
+                </div>
 
-                    <div className="rounded-lg border border-gray-200 p-4">
-                      {(successfulPlacements && successfulPlacements.length > 0) || customMediaItems.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-4">
-                          {/* Custom added media items */}
-                          {customMediaItems.map((item) => (
-                            <div key={item.id} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <h3 className="font-medium text-gray-900">{item.title}</h3>
-                                  <div className="flex items-center mt-1 text-sm text-gray-500">
-                                    {item.publication && <span className="font-medium text-gray-600">{item.publication}</span>}
-                                  </div>
-                                  <div className="mt-2">
-                                    {item.url && (
-                                      <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm font-medium flex items-center">
-                                        View article
-                                        <ExternalLink className="h-3 w-3 ml-1" />
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2 ml-4">
-                                  <span className="text-xs bg-gray-100 text-gray-700 rounded-full px-2 py-0.5 flex items-center">
-                                    <Newspaper className="h-3 w-3 mr-1" />
-                                    Added by you
-                                  </span>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditMediaItem(item)}
-                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1 h-auto"
-                                  >
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDeleteMediaItem(item.id)}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-auto"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                          
-                          {/* Placements from successful pitches */}
-                          {successfulPlacements && successfulPlacements.map((placement) => (
-                            <div key={placement.id} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
-                              <h3 className="font-medium text-gray-900">{placement.articleTitle || 'Untitled Article'}</h3>
+                <div className="rounded-lg border border-gray-200 p-4">
+                  {(successfulPlacements && successfulPlacements.length > 0) || customMediaItems.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-4">
+                      {/* Custom added media items */}
+                      {customMediaItems.map((item) => (
+                        <div key={item.id} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h3 className="font-medium text-gray-900">{item.title}</h3>
                               <div className="flex items-center mt-1 text-sm text-gray-500">
-                                <span className="font-medium text-gray-600">{placement.publication?.name || 'Publication'}</span>
+                                {item.publication && <span className="font-medium text-gray-600">{item.publication}</span>}
                               </div>
                               <div className="mt-2">
-                                {placement.articleUrl && (
-                                  <a href={placement.articleUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm font-medium flex items-center">
+                                {item.url && (
+                                  <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm font-medium flex items-center">
                                     View article
                                     <ExternalLink className="h-3 w-3 ml-1" />
                                   </a>
                                 )}
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 px-4">
-                          <p className="text-gray-500 mb-4">You don't have any media coverage yet. You can add your past coverage or get quoted through opportunities.</p>
-                          <div className="flex flex-wrap justify-center gap-3">
-                            <Button variant="outline" size="sm" onClick={() => {
-                              setEditingMediaItem(null);
-                              setAddMediaModalOpen(true);
-                            }}>
-                              Add Past Coverage
-                            </Button>
-                            <Button variant="outline" size="sm" asChild>
-                              <a href="/opportunities">Browse Opportunities</a>
-                            </Button>
+                            <div className="flex items-center gap-2 ml-4">
+                              <span className="text-xs bg-gray-100 text-gray-700 rounded-full px-2 py-0.5 flex items-center">
+                                <Newspaper className="h-3 w-3 mr-1" />
+                                Added by you
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditMediaItem(item)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1 h-auto"
+                              >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteMediaItem(item.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-auto"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      )}
+                      ))}
+                      
+                      {/* Placements from successful pitches */}
+                      {successfulPlacements && successfulPlacements.map((placement) => (
+                        <div key={placement.id} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
+                          <h3 className="font-medium text-gray-900">{placement.articleTitle || 'Untitled Article'}</h3>
+                          <div className="flex items-center mt-1 text-sm text-gray-500">
+                            <span className="font-medium text-gray-600">{placement.publication?.name || 'Publication'}</span>
+                          </div>
+                          <div className="mt-2">
+                            {placement.articleUrl && (
+                              <a href={placement.articleUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm font-medium flex items-center">
+                                View article
+                                <ExternalLink className="h-3 w-3 ml-1" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                  
-                  {/* Support Section */}
-                  <div className="mb-8 rounded-lg border border-gray-200 p-6 bg-gray-50 text-center">
-                    <h2 className="text-lg font-medium mb-2">Need help with your profile?</h2>
-                    <p className="text-gray-600 mb-4">Our team can help optimize your profile to increase your chances of getting quoted.</p>
-                    <div className="flex flex-wrap justify-center gap-3">
-                      <Button variant="default" size="sm" asChild>
-                        <a href="https://calendly.com/rubicon-pr-group/quotebid" target="_blank" rel="noopener noreferrer">
-                          Book a Call
-                        </a>
-                      </Button>
-                      <Button variant="outline" size="sm" asChild>
-                        <a href="mailto:support@quotebid.com">
-                          Email Support
-                        </a>
-                      </Button>
+                  ) : (
+                    <div className="text-center py-8 px-4">
+                      <p className="text-gray-500 mb-4">You don't have any media coverage yet. You can add your past coverage or get quoted through opportunities.</p>
+                      <div className="flex flex-wrap justify-center gap-3">
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setEditingMediaItem(null);
+                          setAddMediaModalOpen(true);
+                        }}>
+                          Add Past Coverage
+                        </Button>
+                        <Button variant="outline" size="sm" asChild>
+                          <a href="/opportunities">Browse Opportunities</a>
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Support Section */}
+              <div className="mb-8 rounded-lg border border-gray-200 p-6 bg-gray-50 text-center">
+                <h2 className="text-lg font-medium mb-2">Need help with your profile?</h2>
+                <p className="text-gray-600 mb-4">Our team can help optimize your profile to increase your chances of getting quoted.</p>
+                <div className="flex flex-wrap justify-center gap-3">
+                  <Button variant="default" size="sm" asChild>
+                    <a href="https://calendly.com/rubicon-pr-group/quotebid" target="_blank" rel="noopener noreferrer">
+                      Book a Call
+                    </a>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href="mailto:support@quotebid.com">
+                      Email Support
+                    </a>
+                  </Button>
+                </div>
+              </div>
                 </TabsContent>
 
                 {/* Billing Tab */}

@@ -451,7 +451,7 @@ const PitchesManager = () => {
     if (filterStatus === 'all') return true;
     return pitch.status === filterStatus;
   });
-  
+
   // Sort pitches - successful pitches should be sorted by successfulAt (most recent first),
   // all other pitches sorted by createdAt (most recent first)
   const sortedPitches = filteredPitches?.sort((a: any, b: any) => {
@@ -843,7 +843,7 @@ const PitchesManager = () => {
             )
           )}
         </TabsContent>
-
+        
         {/* Status Tabs */}
         {PITCH_STATUSES.map((status) => (
           <TabsContent key={status.value} value={status.value} className="space-y-4">
@@ -870,12 +870,12 @@ const PitchesManager = () => {
                 });
                 
                 return viewMode === 'table' ? (
-                  <Card>
-                    <CardContent className="p-0">
+                <Card>
+                  <CardContent className="p-0">
                       <TableView pitches={sortedStatusPitches} />
-                    </CardContent>
-                  </Card>
-                ) : (
+                  </CardContent>
+                </Card>
+              ) : (
                   <KanbanBoard pitches={sortedStatusPitches} />
                 );
               })()
