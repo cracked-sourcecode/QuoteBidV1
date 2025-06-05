@@ -27,7 +27,7 @@ import {
   type PricingConfig 
 } from "../../lib/pricing/pricingEngine";
 import { shouldSkipGPT } from "./gatekeeper";
-import { queueForGPT } from "./gptQueueStub";
+import { queueForGPT } from "./gptPricingAgent";
 
 // Load environment variables
 config();
