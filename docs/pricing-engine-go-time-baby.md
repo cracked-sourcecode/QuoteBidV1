@@ -166,4 +166,29 @@ pnpm tsx apps/worker/pricingWorker.ts
 - Socket.io realtime push (≤100ms latency)
 - Slack / SMS channels in notifications
 - Back-testing harness comparing price curve vs. actual wins
-- Admin UI for variable weight tuning & A/B tests 
+- Admin UI for variable weight tuning & A/B tests
+
+---
+
+## 🔄 Progress Log
+
+| Date (UTC) | Milestone | Notes |
+|------------|-----------|-------|
+| 2025-06-06 | **Step 1** – DB migration & seed complete | `variable_registry`, `pricing_config`, `price_snapshots` live in Neon. |
+| 2025-06-06 | **Step 2** – `pricingEngine.ts` + tests | 23 Vitest cases green; deterministic math locked. |
+| 2025-06-06 | **Step 3** – Worker + Gatekeeper | Cron runs every 60 s, gate keeps ≈90 % of GPT calls, logs snapshots. |
+| 2025-06-06 | **Step 4** – GPT-4o integration & price API | Live AI pricing decisions; Resend email hook operational. |
+| 2025-06-06 | **Step 5** – WebSocket real-time UI | Socket.io server on :4000, React price badges flash in <1 s. |
+
+### 🔜 NEXT STEP (6)
+
+1. **Admin Dashboard**  
+   * Route: `/admin/pricing` (guarded)  
+   * Editable table for `variable_registry` weights  
+   * Sliders for `priceStep` and `tickIntervalMs`  
+   * Realtime GPT-latency sparkline (pull `/api/admin/metrics`)
+
+2. **Then Web-Push notifications** (browser only, no native iOS).
+
+*Cursor prompt for Step 6 lives in the main spec above.*  
+_Add new progress rows as each milestone ships._ 
