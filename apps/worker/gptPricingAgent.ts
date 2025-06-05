@@ -13,7 +13,7 @@ import { sendNotification } from "./sendNotification.js";
 // Environment configuration
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const GPT_BATCH_SIZE = parseInt(process.env.GPT_BATCH_SIZE || "50");
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:5050";
 
 // Initialize OpenAI client (optional for testing)
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
