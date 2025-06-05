@@ -211,6 +211,15 @@ export const price_snapshots = pgTable("price_snapshots", {
   tick_time: timestamp("tick_time").defaultNow(),
 });
 
+// Push notifications subscriptions
+export const push_subscriptions = pgTable("push_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  user_id: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  endpoint: text("endpoint").unique().notNull(),
+  subscription: jsonb("subscription").notNull(),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true })
@@ -277,6 +286,7 @@ export const insertPitchMessageSchema = createInsertSchema(pitchMessages).omit({
 export const insertVariableRegistrySchema = createInsertSchema(variable_registry).omit({ updated_at: true });
 export const insertPricingConfigSchema = createInsertSchema(pricing_config).omit({ updated_at: true });
 export const insertPriceSnapshotSchema = createInsertSchema(price_snapshots).omit({ id: true, tick_time: true });
+export const insertPushSubscriptionSchema = createInsertSchema(push_subscriptions).omit({ id: true, created_at: true });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -320,6 +330,9 @@ export type InsertPricingConfig = z.infer<typeof insertPricingConfigSchema>;
 
 export type PriceSnapshot = typeof price_snapshots.$inferSelect;
 export type InsertPriceSnapshot = z.infer<typeof insertPriceSnapshotSchema>;
+
+export type PushSubscription = typeof push_subscriptions.$inferSelect;
+export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema>;
 
 // Define relationships between tables
 export const usersRelations = relations(users, ({ many, one }) => ({

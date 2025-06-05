@@ -20,6 +20,7 @@ import { Opportunity } from '@shared/types/opportunity';
 import { useAuth } from '@/hooks/use-auth';
 import { apiRequest } from '@/lib/queryClient';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
+import { PushNotificationBanner } from '@/components/PushNotificationBanner';
 
 export default function OpportunitiesPage() {
   const [, setLocation] = useLocation();
@@ -214,6 +215,11 @@ export default function OpportunitiesPage() {
             Browse open opportunities from top publications and lock in your bid before prices increase. Our marketplace connects you with premium media outlets to showcase your expertise.
           </p>
         </div>
+      </div>
+      
+      {/* Push Notification Banner */}
+      <div className="px-4 sm:px-6 lg:px-8 py-4 bg-white">
+        <PushNotificationBanner />
       </div>
       
       {/* Search and filters */}

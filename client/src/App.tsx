@@ -27,6 +27,7 @@ import { AdminAuthProvider, useAdminAuth } from "@/hooks/use-admin-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { AdminProtectedRoute } from "@/lib/admin-protected-route";
 import { useEffect, useState, useContext } from "react";
+import { usePushSubscribe } from "@/hooks/usePushSubscribe";
 import AdminDashboard from "@/pages/admin/index";
 import OpportunitiesManager from "@/pages/admin/opportunities-manager-new";
 import UsersManager from "@/pages/admin/users-manager";
@@ -99,6 +100,9 @@ function AdminLogoutHandler() {
 }
 
 function Router() {
+  // Initialize push notifications for authenticated users
+  usePushSubscribe();
+  
   return (
     <>
       <Switch>

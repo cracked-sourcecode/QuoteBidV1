@@ -22,6 +22,13 @@
       "when": 1749099104247,
       "tag": "0002_condemned_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1749102714374,
+      "tag": "0003_acoustic_star_brand",
+      "breakpoints": true
     }
   ]
 }

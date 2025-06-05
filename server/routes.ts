@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { processVoiceRecording } from "./lib/voice";
 import { increaseBidAmount } from "./lib/bidding";
 import { z } from "zod";
-import { insertBidSchema, insertOpportunitySchema, insertPitchSchema, insertPublicationSchema, insertSavedOpportunitySchema, User, PlacementWithRelations, users, pitches, opportunities, publications, notifications, placements, price_snapshots } from "@shared/schema";
+import { insertBidSchema, insertOpportunitySchema, insertPitchSchema, insertPublicationSchema, insertSavedOpportunitySchema, User, PlacementWithRelations, users, pitches, opportunities, publications, notifications, placements, price_snapshots, variable_registry, pricing_config, push_subscriptions, insertPushSubscriptionSchema } from "@shared/schema";
 import { getDb } from "./db";
 import { eq, sql, desc, and, ne, asc, isNull, isNotNull, gte, lte, or, inArray } from "drizzle-orm";
 import { notificationService } from "./services/notification-service";
@@ -21,6 +21,7 @@ import { setupAdminAuth, requireAdminAuth } from "./admin-auth-middleware";
 import { enforceOnboarding } from "./middleware/enforceOnboarding";
 import { jwtAuth } from "./middleware/jwtAuth";
 import { ensureAuth } from "./middleware/ensureAuth";
+import { getVapidPublicKey } from "../lib/sendWebPush";
 import upload from './middleware/upload';
 import pdfUpload from './middleware/pdfUpload';
 import path from 'path';
@@ -7779,6 +7780,256 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: "Internal server error",
         message: error instanceof Error ? error.message : "Unknown error"
       });
+    }
+  });
+
+  // ============ ADMIN PRICING CONTROL ENDPOINTS ============
+  
+  // GET /api/admin/variables - returns all rows from variable_registry
+  app.get("/api/admin/variables", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const variables = await getDb()
+        .select()
+        .from(variable_registry)
+        .orderBy(variable_registry.var_name);
+      
+      res.json(variables);
+    } catch (error: any) {
+      console.error("Error fetching pricing variables:", error);
+      res.status(500).json({ message: "Failed to fetch pricing variables" });
+    }
+  });
+  
+  // PATCH /api/admin/variable/:name - updates weight and nonlinear_fn with zod validation
+  app.patch("/api/admin/variable/:name", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const { name } = req.params;
+      
+      // Validate request body
+      const updateSchema = z.object({
+        weight: z.number().min(-10).max(10).optional(),
+        nonlinear_fn: z.string().optional()
+      });
+      
+      const validationResult = updateSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid variable data", 
+          errors: validationResult.error.errors 
+        });
+      }
+      
+      const { weight, nonlinear_fn } = validationResult.data;
+      
+      // Check if variable exists
+      const existingVariable = await getDb()
+        .select()
+        .from(variable_registry)
+        .where(eq(variable_registry.var_name, name))
+        .limit(1);
+      
+      if (existingVariable.length === 0) {
+        return res.status(404).json({ message: "Variable not found" });
+      }
+      
+      // Update the variable
+      const updatedVariable = await getDb()
+        .update(variable_registry)
+        .set({
+          ...(weight !== undefined && { weight: weight.toString() }),
+          ...(nonlinear_fn !== undefined && { nonlinear_fn }),
+          updated_at: new Date()
+        })
+        .where(eq(variable_registry.var_name, name))
+        .returning();
+      
+      console.log(`🔧 Admin updated pricing variable ${name}:`, { weight, nonlinear_fn });
+      
+      res.json(updatedVariable[0]);
+    } catch (error: any) {
+      console.error("Error updating pricing variable:", error);
+      res.status(500).json({ message: "Failed to update pricing variable" });
+    }
+  });
+  
+  // GET /api/admin/config - returns priceStep and tickIntervalMs from pricing_config
+  app.get("/api/admin/config", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const config = await getDb()
+        .select()
+        .from(pricing_config);
+      
+      // Convert to key-value format
+      const configObj: any = {};
+      config.forEach(item => {
+        configObj[item.key] = item.value;
+      });
+      
+      res.json(configObj);
+    } catch (error: any) {
+      console.error("Error fetching pricing config:", error);
+      res.status(500).json({ message: "Failed to fetch pricing config" });
+    }
+  });
+  
+  // PATCH /api/admin/config/:key - updates value
+  app.patch("/api/admin/config/:key", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const { key } = req.params;
+      const { value } = req.body;
+      
+      // Validate based on key
+      let validatedValue: any;
+      if (key === 'priceStep') {
+        if (typeof value !== 'number' || value < 1 || value > 20) {
+          return res.status(400).json({ message: "priceStep must be between 1 and 20" });
+        }
+        validatedValue = value;
+      } else if (key === 'tickIntervalMs') {
+        if (typeof value !== 'number' || value < 30000 || value > 300000) {
+          return res.status(400).json({ message: "tickIntervalMs must be between 30000 and 300000" });
+        }
+        validatedValue = value;
+      } else {
+        return res.status(400).json({ message: "Invalid config key" });
+      }
+      
+      // Update or insert the config value
+      const updatedConfig = await getDb()
+        .insert(pricing_config)
+        .values({
+          key,
+          value: validatedValue,
+          updated_at: new Date()
+        })
+        .onConflictDoUpdate({
+          target: pricing_config.key,
+          set: {
+            value: validatedValue,
+            updated_at: new Date()
+          }
+        })
+        .returning();
+      
+      console.log(`🔧 Admin updated pricing config ${key}:`, validatedValue);
+      
+      res.json(updatedConfig[0]);
+    } catch (error: any) {
+      console.error("Error updating pricing config:", error);
+      res.status(500).json({ message: "Failed to update pricing config" });
+    }
+  });
+  
+  // GET /api/admin/metrics - last 60 minutes of gpt_metrics (for now return mock data)
+  app.get("/api/admin/metrics", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      // For now, return mock data since we don't have gpt_metrics table yet
+      // In the future, this would query actual GPT metrics from the last 60 minutes
+      const now = Date.now();
+      const mockMetrics = {
+        labels: Array.from({ length: 12 }, (_, i) => {
+          const time = new Date(now - (11 - i) * 5 * 60 * 1000); // 5 minute intervals
+          return time.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+        }),
+        latencyMs: Array.from({ length: 12 }, () => Math.floor(Math.random() * 1000) + 500), // 500-1500ms
+        tokens: Array.from({ length: 12 }, () => Math.floor(Math.random() * 200) + 50) // 50-250 tokens
+      };
+      
+      res.json(mockMetrics);
+    } catch (error: any) {
+      console.error("Error fetching GPT metrics:", error);
+      res.status(500).json({ message: "Failed to fetch GPT metrics" });
+    }
+  });
+
+  // ============ PUSH NOTIFICATION ENDPOINTS ============
+  
+  // GET /api/push/vapid-public - Get VAPID public key for client subscription
+  app.get("/api/push/vapid-public", async (req: Request, res: Response) => {
+    try {
+      const publicKey = await getVapidPublicKey();
+      res.json({ key: publicKey });
+    } catch (error: any) {
+      console.error("Error fetching VAPID public key:", error);
+      res.status(500).json({ message: "Failed to fetch VAPID public key" });
+    }
+  });
+  
+  // POST /api/push/subscribe - Subscribe user to push notifications
+  app.post("/api/push/subscribe", jwtAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const { subscription } = req.body;
+      if (!subscription || !subscription.endpoint) {
+        return res.status(400).json({ message: "Invalid subscription data" });
+      }
+      
+      // Validate subscription with Zod
+      const validationResult = insertPushSubscriptionSchema.safeParse({
+        user_id: req.user.id,
+        endpoint: subscription.endpoint,
+        subscription,
+      });
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid subscription format", 
+          errors: validationResult.error.errors 
+        });
+      }
+      
+      // Upsert subscription (update if endpoint exists, insert if new)
+      await getDb()
+        .insert(push_subscriptions)
+        .values(validationResult.data)
+        .onConflictDoUpdate({
+          target: push_subscriptions.endpoint,
+          set: {
+            subscription: validationResult.data.subscription,
+            user_id: validationResult.data.user_id,
+            created_at: new Date(),
+          },
+        });
+      
+      console.log(`📱 Push subscription registered for user ${req.user.id}`);
+      res.status(200).json({ ok: true, message: "Push subscription registered" });
+      
+    } catch (error: any) {
+      console.error("Error registering push subscription:", error);
+      res.status(500).json({ message: "Failed to register push subscription" });
+    }
+  });
+  
+  // DELETE /api/push/unsubscribe - Unsubscribe user from push notifications
+  app.delete("/api/push/unsubscribe", jwtAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const { endpoint } = req.body;
+      if (!endpoint) {
+        return res.status(400).json({ message: "Endpoint is required" });
+      }
+      
+      await getDb()
+        .delete(push_subscriptions)
+        .where(
+          and(
+            eq(push_subscriptions.user_id, req.user.id),
+            eq(push_subscriptions.endpoint, endpoint)
+          )
+        );
+      
+      console.log(`📱 Push subscription removed for user ${req.user.id}, endpoint: ${endpoint}`);
+      res.status(200).json({ ok: true, message: "Push subscription removed" });
+      
+    } catch (error: any) {
+      console.error("Error removing push subscription:", error);
+      res.status(500).json({ message: "Failed to remove push subscription" });
     }
   });
 

@@ -1,7 +1,7 @@
 /**
- * Email Notification Helper
+ * Notification Helper
  * 
- * Sends price drop and last call notifications via Resend
+ * Sends price drop and last call notifications via Resend email and web push
  */
 
 import { Resend } from "resend";
@@ -10,6 +10,7 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { eq, sql } from "drizzle-orm";
 import { config } from "dotenv";
 import { opportunities } from "../../shared/schema";
+import { sendWebPush } from "../../lib/sendWebPush";
 
 // Load environment variables
 config();
@@ -22,15 +23,15 @@ const neonSql = neon(process.env.DATABASE_URL!);
 const db = drizzle(neonSql);
 
 /**
- * Get user emails who have saved or drafted pitches for an opportunity
+ * Get users who have saved or drafted pitches for an opportunity
  */
-async function getUserEmailsForOpportunity(opportunityId: string): Promise<string[]> {
+async function getUsersForOpportunity(opportunityId: string): Promise<{ id: number; email: string }[]> {
   try {
     // For now, we'll implement a basic query to get users who have pitched on this opportunity
     // In the future, this could be expanded to include users who saved/bookmarked the opportunity
     
     const result = await neonSql`
-      SELECT DISTINCT u.email 
+      SELECT DISTINCT u.id, u.email 
       FROM users u
       JOIN pitches p ON u.id = p.user_id 
       WHERE p.opportunity_id = ${opportunityId}
@@ -38,13 +39,17 @@ async function getUserEmailsForOpportunity(opportunityId: string): Promise<strin
       AND u.email != ''
     `;
     
-    const emails = result.map((row: any) => row.email).filter(Boolean);
-    console.log(`📧 Found ${emails.length} user emails for opportunity ${opportunityId}`);
+    const users = result.map((row: any) => ({ 
+      id: row.id, 
+      email: row.email 
+    })).filter(user => user.email);
     
-    return emails;
+    console.log(`👥 Found ${users.length} users for opportunity ${opportunityId}`);
+    
+    return users;
     
   } catch (error) {
-    console.error(`❌ Failed to get user emails for opportunity ${opportunityId}:`, error);
+    console.error(`❌ Failed to get users for opportunity ${opportunityId}:`, error);
     return [];
   }
 }
@@ -76,13 +81,16 @@ export async function sendNotification(
 ): Promise<void> {
   console.log(`📨 Sending ${template} notification for opportunity ${opportunityId}...`);
 
-  // Get user emails who should receive this notification
-  const emails = await getUserEmailsForOpportunity(opportunityId);
+  // Get users who should receive this notification
+  const users = await getUsersForOpportunity(opportunityId);
   
-  if (emails.length === 0) {
+  if (users.length === 0) {
     console.log(`📭 No users to notify for opportunity ${opportunityId}`);
     return;
   }
+
+  const emails = users.map(user => user.email);
+  const userIds = users.map(user => user.id);
 
   // Get opportunity details for context
   const opportunity = await getOpportunityDetails(opportunityId);
@@ -153,9 +161,32 @@ export async function sendNotification(
 
   const { subject, html } = emailConfig[template];
 
-  // Check if Resend is configured
+  // Configure web push notification content
+  const pushPayload = {
+    PRICE_DROP: {
+      title: "🔥 Price dropped!",
+      body: `${opportunityTitle} now $${currentPrice}`,
+      url: `/opportunity/${opportunityId}`,
+    },
+    LAST_CALL: {
+      title: "⏰ Last call!",
+      body: `${opportunityTitle} closes soon - $${currentPrice}`,
+      url: `/opportunity/${opportunityId}`,
+    },
+  };
+
+  // Send web push notifications (always attempt, doesn't require configuration)
+  try {
+    await sendWebPush(userIds, pushPayload[template]);
+    console.log(`📱 Sent ${template} push notification to ${userIds.length} users for opportunity ${opportunityId}`);
+  } catch (pushError) {
+    console.warn(`⚠️ Failed to send web push notifications:`, pushError);
+    // Don't fail the entire notification process if push fails
+  }
+
+  // Send email notifications if Resend is configured
   if (!resend) {
-    console.log(`📭 Resend not configured, skipping ${template} notification for opportunity ${opportunityId}`);
+    console.log(`📭 Resend not configured, skipping email for ${template} notification for opportunity ${opportunityId}`);
     return;
   }
 
@@ -168,10 +199,10 @@ export async function sendNotification(
       html,
     });
 
-    console.log(`✅ Sent ${template} notification to ${emails.length} users for opportunity ${opportunityId}`);
+    console.log(`✅ Sent ${template} email notification to ${emails.length} users for opportunity ${opportunityId}`);
 
   } catch (error) {
-    console.error(`❌ Failed to send ${template} notification:`, error);
+    console.error(`❌ Failed to send ${template} email notification:`, error);
     throw error;
   }
 } 

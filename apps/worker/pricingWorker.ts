@@ -44,6 +44,8 @@ const db = drizzle(neonSql);
 // Global state
 let cachedWeights: Record<string, number> = {};
 let cachedConfig: any = {};
+let cachedConfigTime: Date = new Date(0);
+let lastReload: number = 0;
 let isRunning = false;
 
 /**
@@ -72,8 +74,33 @@ async function loadPricingConfig(): Promise<any> {
     rows.map(r => [r.key, r.value])
   );
   
+  // Update cached config time
+  if (rows.length > 0) {
+    const latestUpdate = rows.reduce((latest, row) => {
+      const rowTime = new Date(row.updated_at!);
+      return rowTime > latest ? rowTime : latest;
+    }, new Date(0));
+    cachedConfigTime = latestUpdate;
+  }
+  
   console.log("✅ Loaded config:", config);
   return config;
+}
+
+/**
+ * Reload weights and config from database (hot-reload)
+ */
+async function reloadWeightsAndConfig(): Promise<void> {
+  console.log("🔄 Hot-reloading pricing configuration...");
+  
+  try {
+    cachedWeights = await loadWeights();
+    cachedConfig = await loadPricingConfig();
+    console.log("✅ Hot-reload completed successfully");
+  } catch (error) {
+    console.error("❌ Hot-reload failed:", error);
+    throw error;
+  }
 }
 
 /**
@@ -323,6 +350,21 @@ async function startWorker(): Promise<void> {
     // Start the main loop
     const interval = setInterval(async () => {
       try {
+        // Hot-reload check every 5 minutes
+        if (Date.now() - lastReload > 300_000) { // 5 min
+          const latestResult = await db
+            .select({ ts: sql<Date>`MAX(updated_at)` })
+            .from(pricing_config);
+          
+          const latest = latestResult[0]?.ts;
+          if (latest && latest > cachedConfigTime) {
+            await reloadWeightsAndConfig();
+            lastReload = Date.now();
+          } else {
+            lastReload = Date.now(); // Update check time even if no reload needed
+          }
+        }
+        
         await processPricingTick();
       } catch (error) {
         console.error("💥 Fatal error in pricing tick:", error);
