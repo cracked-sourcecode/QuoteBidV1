@@ -28,6 +28,7 @@ import {
 } from "../../lib/pricing/pricingEngine";
 import { shouldSkipGPT } from "./gatekeeper";
 import { queueForGPT } from "./gptPricingAgent";
+import { priceUpdates, systemEvents } from "../wsServer";
 
 // Load environment variables
 config();
@@ -184,8 +185,12 @@ function buildPricingSnapshot(
 async function updateOpportunityPrice(
   opportunityId: number,
   newPrice: number,
-  snapshot: PricingSnapshot
+  snapshot: PricingSnapshot,
+  source: "worker" | "gpt" = "worker"
 ): Promise<void> {
+  const oldPrice = snapshot.current_price;
+  const trend = Math.sign(newPrice - oldPrice);
+  
   // Update the opportunity's current price and variable snapshot
   await db
     .update(opportunities)
@@ -203,6 +208,21 @@ async function updateOpportunityPrice(
       suggested_price: newPrice.toString(),
       snapshot_payload: snapshot as any,
     });
+  
+  // Emit real-time price update
+  try {
+    priceUpdates.priceChanged({
+      id: opportunityId,
+      oldPrice,
+      newPrice,
+      trend,
+      timestamp: new Date().toISOString(),
+      source
+    });
+  } catch (wsError) {
+    console.warn("⚠️ WebSocket emission failed:", wsError);
+    // Don't fail the price update if WebSocket fails
+  }
 }
 
 /**
@@ -229,7 +249,7 @@ async function processPricingTick(): Promise<void> {
         // Check gatekeeper rule
         if (shouldSkipGPT(priceDelta, snapshot.hoursRemaining, pricingConfig.priceStep)) {
           // Apply price change directly
-          await updateOpportunityPrice(opp.id, newPrice, snapshot);
+          await updateOpportunityPrice(opp.id, newPrice, snapshot, "worker");
           updatedCount++;
           
           const direction = priceDelta > 0 ? "▲" : "▼";

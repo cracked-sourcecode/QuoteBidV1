@@ -9,6 +9,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 import type { PricingSnapshot } from "../../lib/pricing/pricingEngine";
 import { sendNotification } from "./sendNotification.js";
+import { priceUpdates } from "../wsServer";
 
 // Environment configuration
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
@@ -210,6 +211,24 @@ async function executePriceAction(action: PriceAction, snapshot?: PricingSnapsho
     }
 
     console.log(`💰 Updated OPP ${action.opportunityId}: ${action.action} → $${finalPrice}`);
+    
+    // Emit real-time price update for GPT changes
+    try {
+      const oldPrice = snapshot?.current_price || finalPrice;
+      const trend = Math.sign(finalPrice - oldPrice);
+      
+      priceUpdates.priceChanged({
+        id: parseInt(action.opportunityId),
+        oldPrice,
+        newPrice: finalPrice,
+        trend,
+        timestamp: new Date().toISOString(),
+        source: "gpt"
+      });
+    } catch (wsError) {
+      console.warn("⚠️ WebSocket emission failed for GPT update:", wsError);
+      // Don't fail the price update if WebSocket fails
+    }
 
   } catch (error) {
     console.error(`❌ Failed to update opportunity ${action.opportunityId}:`, error);
