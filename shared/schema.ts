@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, primaryKey, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, primaryKey, pgEnum, numeric, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -83,6 +83,9 @@ export const publications = pgTable("publications", {
   description: text("description"),
   category: text("category"),
   tier: text("tier"), // Tier 1, Tier 2, or Tier 3 for publication classification
+  // Pricing engine additions
+  outlet_avg_price: numeric("outlet_avg_price", { precision: 10, scale: 2 }),
+  success_rate_outlet: numeric("success_rate_outlet", { precision: 5, scale: 4 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -99,6 +102,11 @@ export const opportunities = pgTable("opportunities", {
   tags: text("tags").array(),
   deadline: timestamp("deadline"),
   minimumBid: integer("minimum_bid"),
+  // Pricing engine additions
+  current_price: numeric("current_price", { precision: 10, scale: 2 }),
+  inventory_level: integer("inventory_level").notNull().default(0),
+  category: text("category"),
+  variable_snapshot: jsonb("variable_snapshot"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -177,6 +185,32 @@ export const placements = pgTable("placements", {
   errorMessage: text("error_message"),   // Store error messages from payment processing
 });
 
+// ── Pricing Engine Tables ──────────────────────────────────────────
+
+// Variable weights (hot-pluggable)
+export const variable_registry = pgTable("variable_registry", {
+  var_name: text("var_name").primaryKey(),
+  weight: numeric("weight"),
+  nonlinear_fn: text("nonlinear_fn"),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Global price knobs
+export const pricing_config = pgTable("pricing_config", {
+  key: text("key").primaryKey(),
+  value: jsonb("value"),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Tick audit log
+export const price_snapshots = pgTable("price_snapshots", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  opportunity_id: integer("opportunity_id").notNull().references(() => opportunities.id, { onDelete: 'cascade' }),
+  suggested_price: numeric("suggested_price", { precision: 10, scale: 2 }),
+  snapshot_payload: jsonb("snapshot_payload"),
+  tick_time: timestamp("tick_time").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true })
@@ -239,6 +273,11 @@ export const insertPlacementSchema = createInsertSchema(placements)
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 export const insertPitchMessageSchema = createInsertSchema(pitchMessages).omit({ id: true, createdAt: true });
 
+// Pricing engine schemas
+export const insertVariableRegistrySchema = createInsertSchema(variable_registry).omit({ updated_at: true });
+export const insertPricingConfigSchema = createInsertSchema(pricing_config).omit({ updated_at: true });
+export const insertPriceSnapshotSchema = createInsertSchema(price_snapshots).omit({ id: true, tick_time: true });
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -271,6 +310,16 @@ export type InsertPlacement = z.infer<typeof insertPlacementSchema>;
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// Pricing engine types
+export type VariableRegistry = typeof variable_registry.$inferSelect;
+export type InsertVariableRegistry = z.infer<typeof insertVariableRegistrySchema>;
+
+export type PricingConfig = typeof pricing_config.$inferSelect;
+export type InsertPricingConfig = z.infer<typeof insertPricingConfigSchema>;
+
+export type PriceSnapshot = typeof price_snapshots.$inferSelect;
+export type InsertPriceSnapshot = z.infer<typeof insertPriceSnapshotSchema>;
 
 // Define relationships between tables
 export const usersRelations = relations(users, ({ many, one }) => ({
@@ -309,6 +358,7 @@ export const opportunitiesRelations = relations(opportunities, ({ one, many }) =
   pitches: many(pitches),
   savedOpportunities: many(savedOpportunities),
   placements: many(placements),
+  priceSnapshots: many(price_snapshots),
 }));
 
 export const bidsRelations = relations(bids, ({ one }) => ({
@@ -472,5 +522,13 @@ export const annotationCommentsRelations = relations(annotationComments, ({ one 
   user: one(users, {
     fields: [annotationComments.userId],
     references: [users.id],
+  }),
+}));
+
+// Pricing engine relations
+export const priceSnapshotsRelations = relations(price_snapshots, ({ one }) => ({
+  opportunity: one(opportunities, {
+    fields: [price_snapshots.opportunity_id],
+    references: [opportunities.id],
   }),
 }));

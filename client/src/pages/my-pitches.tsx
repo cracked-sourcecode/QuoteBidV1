@@ -443,7 +443,7 @@ export default function MyPitches() {
                     )}
 
                     {/* Published Article */}
-                    {pitch.article && ['successful', 'successful_coverage'].includes(pitch.status) && (
+                    {pitch.article?.url && ['successful', 'successful_coverage'].includes(pitch.status) && (
                       <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-green-100/50 rounded-xl border border-green-200/50">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
@@ -459,7 +459,7 @@ export default function MyPitches() {
                             Read Article <ExternalLink className="h-3 w-3 ml-1" />
                           </a>
                         </div>
-                        {pitch.article.title && (
+                        {pitch.article?.title && (
                           <p className="text-sm text-green-700 mt-2 font-medium leading-relaxed">{pitch.article.title}</p>
                         )}
                       </div>

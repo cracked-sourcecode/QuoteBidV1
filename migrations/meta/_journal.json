@@ -15,6 +15,13 @@
       "when": 1748888052304,
       "tag": "0001_youthful_firebird",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1749099104247,
+      "tag": "0002_condemned_swordsman",
+      "breakpoints": true
     }
   ]
 }
