@@ -132,8 +132,10 @@ export const healthStats = {
 };
 
 // Start server if this file is run directly
-if (import.meta.url === `file://${process.argv[1]}` || 
-    import.meta.url === encodeURI(`file://${process.argv[1]}`)) {
+const isMainModule = import.meta.url === `file://${process.argv[1]}` || 
+                     import.meta.url === encodeURI(`file://${process.argv[1]}`);
+
+if (isMainModule) {
   const WS_PORT = process.env.WS_PORT || 4000;
   
   httpServer.listen(WS_PORT, () => {

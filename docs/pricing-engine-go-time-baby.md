@@ -181,6 +181,7 @@ pnpm tsx apps/worker/pricingWorker.ts
 | 2025-06-06 | **Step 5** – WebSocket real-time UI | Socket.io server on :4000, React price badges flash in <1 s. |
 | 2025-06-06 | **Step 6.1** – Admin Dashboard "Pricing Control" | `/admin/pricing` tab live; variable weights table + config sliders + GPT metrics sparkline; 5-min worker hot-reload. |
 | 2025-06-06 | **Step 6.2** – Browser Push Notifications | Web-Push API complete; service worker ready; VAPID keys seeded; push subscriptions auto-managed; email + push unified. |
+| 2025-06-07 | **Runtime blockers** – port clash + price_snapshots import | API must move off :5050, worker throwing "price_snapshots not defined."  Fix and regenerate types before next feature. |
 
 ### ✅ MILESTONE COMPLETE: Dynamic Pricing Engine MVP
 

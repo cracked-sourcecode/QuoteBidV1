@@ -30,6 +30,8 @@ export interface Opportunity {
   createdAt: string;
   updatedAt: string;
   publicationId: number;
+  trend?: 'up' | 'down' | 'neutral';
+  lastPriceUpdate?: number;
 }
 
 // Price tick for price history chart

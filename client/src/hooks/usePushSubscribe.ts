@@ -101,6 +101,12 @@ export function usePushSubscribe() {
       return;
     }
 
+    // Prevent multiple concurrent subscription attempts
+    if (state.isLoading || state.isSubscribed) {
+      console.log('📱 Subscription already in progress or active, skipping');
+      return;
+    }
+
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
@@ -125,12 +131,19 @@ export function usePushSubscribe() {
       await navigator.serviceWorker.ready;
       console.log('🔧 Service worker registered');
 
-      // Subscribe to push manager
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(key)
-      });
-      console.log('📱 Push subscription created');
+      // Check if already subscribed first
+      let subscription = await registration.pushManager.getSubscription();
+      
+      if (!subscription) {
+        // Subscribe to push manager
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(key)
+        });
+        console.log('📱 Push subscription created');
+      } else {
+        console.log('📱 Existing push subscription found');
+      }
 
       // Send subscription to server
       const subscribeResponse = await fetch('/api/push/subscribe', {
@@ -223,12 +236,28 @@ export function usePushSubscribe() {
     }
   };
 
-  // Auto-subscribe for logged-in users with permission
+  // Auto-subscribe for logged-in users with permission  
   useEffect(() => {
-    if (user?.id && Notification.permission === 'granted' && !state.isSubscribed && !state.isLoading) {
-      console.log('📱 Auto-subscribing user with granted permission');
-      subscribe();
+    // Prevent infinite loops with additional checks
+    if (!user?.id || state.permission !== 'granted' || state.isSubscribed || state.isLoading) {
+      return;
     }
+
+    // Additional safety check - don't auto-subscribe if permission was just granted
+    // to avoid double subscription attempts
+    let isActive = true;
+    
+    const timeoutId = setTimeout(() => {
+      if (isActive && user?.id && state.permission === 'granted' && !state.isSubscribed && !state.isLoading) {
+        console.log('📱 Auto-subscribing user with granted permission');
+        subscribe();
+      }
+    }, 500); // Increased delay to prevent rapid-fire attempts
+
+    return () => {
+      isActive = false;
+      clearTimeout(timeoutId);
+    };
   }, [user?.id, state.permission, state.isSubscribed, state.isLoading]);
 
   // Check existing subscription on mount

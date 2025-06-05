@@ -137,7 +137,7 @@ export const getOptimizedImageUrl = (url: string, size: 'sm' | 'md' | 'lg' = 'md
   
   // For local URLs, ensure they're properly formatted
   if (url.startsWith('/')) {
-    return `${import.meta.env.VITE_API_URL || 'http://localhost:5050'}${url}`;
+    return `${import.meta.env.VITE_API_URL || 'http://localhost:5100'}${url}`;
   }
   
   return url;

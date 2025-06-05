@@ -193,7 +193,7 @@ export async function sendNotification(
   try {
     // Send email to all interested users
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || "QuoteBid <noreply@quotebid.com>",
+      from: process.env.EMAIL_FROM || "QuoteBid <onboarding@resend.dev>",
       to: emails,
       subject,
       html,
@@ -203,6 +203,8 @@ export async function sendNotification(
 
   } catch (error) {
     console.error(`❌ Failed to send ${template} email notification:`, error);
+    // TODO: send Slack DM via webhook so you know instantly
+    // Example: await fetch(process.env.SLACK_WEBHOOK_URL, { method: 'POST', body: JSON.stringify({ text: `QuoteBid email failed: ${error}` }) });
     throw error;
   }
 } 

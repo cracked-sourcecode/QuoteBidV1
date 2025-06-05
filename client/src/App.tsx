@@ -28,6 +28,8 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import { AdminProtectedRoute } from "@/lib/admin-protected-route";
 import { useEffect, useState, useContext } from "react";
 import { usePushSubscribe } from "@/hooks/usePushSubscribe";
+import { usePriceUpdates } from "@/hooks/usePriceUpdates";
+import { PriceProvider } from "@/contexts/PriceContext";
 import AdminDashboard from "@/pages/admin/index";
 import OpportunitiesManager from "@/pages/admin/opportunities-manager-new";
 import UsersManager from "@/pages/admin/users-manager";
@@ -102,6 +104,9 @@ function AdminLogoutHandler() {
 function Router() {
   // Initialize push notifications for authenticated users
   usePushSubscribe();
+  
+  // Initialize live price updates via WebSocket
+  usePriceUpdates();
   
   return (
     <>
@@ -672,10 +677,12 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AdminAuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
+          <PriceProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </PriceProvider>
         </AdminAuthProvider>
       </AuthProvider>
     </QueryClientProvider>

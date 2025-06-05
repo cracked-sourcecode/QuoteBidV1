@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Clock, TrendingUp, TrendingDown, Minus, Award, Target, Trophy } from 'lucide-react';
 import { Opportunity } from '@shared/types/opportunity';
 import { calculateMarketHeat, getMarketPulseIndicators } from '@/lib/marketPulse';
+import { usePriceUpdates } from '@/hooks/usePriceUpdates';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -20,6 +21,9 @@ export default function OpportunityCard({
   priceDirection = 'neutral'
 }: OpportunityCardProps) {
   const [timeLeft, setTimeLeft] = useState('');
+  
+  // Connect to live price updates
+  usePriceUpdates();
   
   // Calculate time until deadline
   useEffect(() => {
@@ -152,13 +156,13 @@ export default function OpportunityCard({
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-medium text-gray-600">Current Price</span>
             <div className="flex items-center space-x-1">
-              {priceDirection === 'up' && (
+              {(opportunity.trend === 'up' || priceDirection === 'up') && (
                 <TrendingUp className={`h-3 w-3 text-green-500 ${showPriceAnimation ? 'animate-bounce' : ''}`} />
               )}
-              {priceDirection === 'down' && (
+              {(opportunity.trend === 'down' || priceDirection === 'down') && (
                 <TrendingDown className={`h-3 w-3 text-red-500 ${showPriceAnimation ? 'animate-bounce' : ''}`} />
               )}
-              {priceDirection === 'neutral' && (
+              {(opportunity.trend === 'neutral' || priceDirection === 'neutral') && !opportunity.trend && (
                 <Minus className="h-3 w-3 text-gray-400" />
               )}
             </div>
@@ -167,12 +171,18 @@ export default function OpportunityCard({
           <div className="flex items-baseline justify-between">
             <div className="flex items-baseline space-x-2">
               <span className={`text-xl font-bold ${
-                showPriceAnimation && priceDirection === 'up' ? 'text-green-600 animate-pulse' :
-                showPriceAnimation && priceDirection === 'down' ? 'text-red-600 animate-pulse' :
+                (showPriceAnimation && priceDirection === 'up') || opportunity.trend === 'up' ? 'text-green-600 animate-pulse' :
+                (showPriceAnimation && priceDirection === 'down') || opportunity.trend === 'down' ? 'text-red-600 animate-pulse' :
                 'text-gray-900'
               } transition-colors duration-300`}>
                 ${opportunity.currentPrice}
               </span>
+              {opportunity.trend && (
+                <span className="text-xs text-green-500 ml-1">
+                  {opportunity.trend === 'up' && '↑'}
+                  {opportunity.trend === 'down' && '↓'}
+                </span>
+              )}
               <span className="text-xs text-gray-500">
                 from ${opportunity.basePrice}
               </span>

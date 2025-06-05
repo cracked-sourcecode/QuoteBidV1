@@ -7,13 +7,16 @@ import { increaseBidAmount } from "./lib/bidding";
 import { z } from "zod";
 import { insertBidSchema, insertOpportunitySchema, insertPitchSchema, insertPublicationSchema, insertSavedOpportunitySchema, User, PlacementWithRelations, users, pitches, opportunities, publications, notifications, placements, price_snapshots, variable_registry, pricing_config, push_subscriptions, insertPushSubscriptionSchema } from "@shared/schema";
 import { getDb } from "./db";
-import { eq, sql, desc, and, ne, asc, isNull, isNotNull, gte, lte, or, inArray } from "drizzle-orm";
+import { eq, sql, desc, and, ne, asc, isNull, isNotNull, gte, lte, or, inArray, gt } from "drizzle-orm";
 import { notificationService } from "./services/notification-service";
 import { createSampleNotifications } from "./data/sample-notifications";
 import Stripe from "stripe";
 import { setupAuth } from "./auth";
-import sgMail from '@sendgrid/mail';
+import { Resend } from 'resend';
 import { sendOpportunityNotification, sendPasswordResetEmail } from './lib/email';
+
+// Initialize Resend if API key is available
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 import { randomBytes } from 'crypto';
 import { requireAdmin } from "./middleware/admin";
 import { registerAdmin, deleteAdminUser, createDefaultAdmin } from "./admin-auth";
@@ -1581,7 +1584,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   // ============ OPPORTUNITIES ENDPOINTS ============
   
-  // Get all opportunities with publications
+  // Get all opportunities with publications and real-time pricing
   app.get("/api/opportunities", async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated
@@ -1591,39 +1594,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const opportunitiesWithPubs = await storage.getOpportunitiesWithPublications();
-      
-      // Transform the data to match what the client expects
-      const transformedOpportunities = opportunitiesWithPubs.map(oppWithPub => ({
-        id: oppWithPub.id,
-        title: oppWithPub.title,
-        outlet: oppWithPub.publication?.name || null,
-        outletLogo: oppWithPub.publication?.logo ? 
-          // Convert absolute URLs to relative URLs
-          oppWithPub.publication.logo.replace(/^https?:\/\/[^\/]+/, '') : null,
-        tier: oppWithPub.tier ? parseInt(oppWithPub.tier.replace('Tier ', '')) as 1 | 2 | 3 : 1,
-        status: oppWithPub.status as 'open' | 'closed',
-        summary: oppWithPub.description || '',
-        topicTags: Array.isArray(oppWithPub.tags) ? oppWithPub.tags : [],
-        slotsTotal: 5, // Default value
-        slotsRemaining: 3, // Default value
-        basePrice: oppWithPub.minimumBid || 100,
-        currentPrice: oppWithPub.minimumBid || 100,
-        increment: 50, // Default value
-        floorPrice: oppWithPub.minimumBid || 100,
-        cutoffPrice: (oppWithPub.minimumBid || 100) + 500, // Default value
-        deadline: oppWithPub.deadline || new Date().toISOString(),
-        postedAt: oppWithPub.createdAt || new Date().toISOString(),
-        createdAt: oppWithPub.createdAt || new Date().toISOString(),
-        updatedAt: oppWithPub.createdAt || new Date().toISOString(),
-        publicationId: oppWithPub.publicationId,
-        industry: oppWithPub.industry || 'Business',
-        mediaType: oppWithPub.mediaType || 'Article',
-        // Keep the raw publication object too for components that need it
-        publication: oppWithPub.publication
+      // Get opportunities with pitch counts and current pricing
+      const oppsWithData = await getDb()
+        .select({
+          id: opportunities.id,
+          title: opportunities.title,
+          description: opportunities.description,
+          status: opportunities.status,
+          tier: opportunities.tier,
+          industry: opportunities.industry,
+          tags: opportunities.tags,
+          deadline: opportunities.deadline,
+          current_price: opportunities.current_price,
+          minimumBid: opportunities.minimumBid,
+          createdAt: opportunities.createdAt,
+          publicationId: opportunities.publicationId,
+          publication: {
+            name: publications.name,
+            logo: publications.logo,
+          },
+          pitchCount: sql<number>`count(${pitches.id})`
+        })
+        .from(opportunities)
+        .leftJoin(publications, eq(opportunities.publicationId, publications.id))
+        .leftJoin(pitches, and(
+          eq(pitches.opportunityId, opportunities.id),
+          eq(pitches.isDraft, false)
+        ))
+        .where(eq(opportunities.status, "open"))
+        .groupBy(opportunities.id, publications.id)
+        .orderBy(sql`${opportunities.createdAt} DESC`);
+
+      // Calculate deltas from price history for each opportunity
+      const enhancedOpps = await Promise.all(oppsWithData.map(async (opp) => {
+        // Get price history from last hour for delta calculation
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        const recentPrices = await getDb()
+          .select({
+            price: price_snapshots.suggested_price,
+            timestamp: price_snapshots.tick_time
+          })
+          .from(price_snapshots)
+          .where(and(
+            eq(price_snapshots.opportunity_id, opp.id),
+            gt(price_snapshots.tick_time, oneHourAgo)
+          ))
+          .orderBy(sql`${price_snapshots.tick_time} ASC`);
+
+        // Calculate pricing metrics
+        const currentPrice = Number(opp.current_price) || Number(opp.minimumBid) || 100;
+        let deltaPastHour = 0;
+        
+        if (recentPrices.length > 0) {
+          const oldestPrice = Number(recentPrices[0].price) || currentPrice;
+          deltaPastHour = currentPrice - oldestPrice;
+        }
+
+        // Calculate percentage change for display
+        const percentChange = deltaPastHour !== 0 && currentPrice > 0 
+          ? ((deltaPastHour / currentPrice) * 100) 
+          : 0;
+
+        return {
+          id: opp.id,
+          title: opp.title,
+          outlet: opp.publication?.name || null,
+          outletLogo: opp.publication?.logo ? 
+            opp.publication.logo.replace(/^https?:\/\/[^\/]+/, '') : null,
+          tier: opp.tier ? parseInt(opp.tier.replace('Tier ', '')) as 1 | 2 | 3 : 1,
+          status: opp.status as 'open' | 'closed',
+          summary: opp.description || '',
+          topicTags: Array.isArray(opp.tags) ? opp.tags : [],
+          slotsTotal: 5, // Default value
+          slotsRemaining: Math.max(0, 5 - Number(opp.pitchCount)), // Calculate based on pitches
+          basePrice: Number(opp.minimumBid) || 100,
+          currentPrice,
+          deltaPastHour,
+          percentChange: Math.round(percentChange),
+          trend: deltaPastHour > 0 ? 'up' : deltaPastHour < 0 ? 'down' : 'stable',
+          increment: 5, // Dynamic pricing step
+          floorPrice: Number(opp.minimumBid) || 100,
+          cutoffPrice: currentPrice + 200, // Dynamic based on current price
+          deadline: opp.deadline || new Date().toISOString(),
+          postedAt: opp.createdAt || new Date().toISOString(),
+          createdAt: opp.createdAt || new Date().toISOString(),
+          updatedAt: opp.createdAt || new Date().toISOString(),
+          publicationId: opp.publicationId,
+          industry: opp.industry || 'Business',
+          mediaType: 'Article', // Default value
+          lastPriceUpdate: recentPrices.length > 0 
+            ? recentPrices[recentPrices.length - 1].timestamp 
+            : null,
+          // Keep publication object for backward compatibility
+          publication: opp.publication
+        };
       }));
       
-      res.json(transformedOpportunities);
+      res.json(enhancedOpps);
     } catch (error: any) {
       console.error("Opportunities error:", error);
       res.status(500).json({ 
@@ -2745,10 +2812,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/test-email", async (req: Request, res: Response) => {
     try {
-      if (!process.env.SENDGRID_API_KEY) {
+      if (!resend) {
         return res.status(500).json({ 
           success: false, 
-          message: 'SendGrid API key not configured'
+          message: 'Resend API key not configured'
         });
       }
 
@@ -2763,11 +2830,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If subject and message are provided, it's a custom support email
       if (subject && message) {
         try {
-          const msg = {
-            to: email,
-            from: 'admin@quotebid.com', // This should be your verified sender email
+          if (!resend) {
+            return res.status(500).json({ 
+              success: false, 
+              message: 'Resend API key not configured'
+            });
+          }
+          
+          await resend.emails.send({
+            from: process.env.EMAIL_FROM || 'QuoteBid <noreply@quotebid.com>',
+            to: [email],
             subject: subject,
-            text: message,
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
@@ -2783,9 +2856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 </div>
               </div>
             `
-          };
-          
-          await sgMail.send(msg);
+          });
           
           return res.json({ 
             success: true, 
@@ -5462,18 +5533,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Only paid placements can send notifications" });
       }
       
-      // Send email notification with SendGrid
-      if (!process.env.SENDGRID_API_KEY) {
-        return res.status(500).json({ message: "SendGrid API key not configured" });
+      // Send email notification with Resend
+      if (!resend) {
+        return res.status(500).json({ message: "Resend API key not configured" });
       }
       
       try {
-        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-        
-        // Prepare the email
-        const msg = {
-          to: placement.user.email,
-          from: 'admin@quotebid.com',
+        // Send the email
+        await resend.emails.send({
+          from: process.env.EMAIL_FROM || 'QuoteBid <noreply@quotebid.com>',
+          to: [placement.user.email],
           subject: `🎉 Your Expertise Was Featured in ${placement.publication.name}!`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -5499,10 +5568,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               </div>
             </div>
           `
-        };
-        
-        // Send the email
-        await sgMail.send(msg);
+        });
         
         // Update the placement notification status
         const updatedPlacement = await storage.updatePlacementNotification(id, true);
@@ -7713,7 +7779,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ============ PRICING ENGINE API ENDPOINT ============
+  // ============ PRICING ENGINE API ENDPOINTS ============
   
   // POST /api/opportunity/:id/price - Update opportunity price with audit trail
   app.post("/api/opportunity/:id/price", async (req: Request, res: Response) => {
@@ -7780,6 +7846,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: "Internal server error",
         message: error instanceof Error ? error.message : "Unknown error"
       });
+    }
+  });
+
+  // GET /api/opportunities/:id/price-trend - Chart data with time window  
+  app.get("/api/opportunities/:id/price-trend", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { window = '7d' } = req.query;
+      const opportunityId = parseInt(id);
+
+      if (isNaN(opportunityId)) {
+        return res.status(400).json({ error: "Invalid opportunity ID" });
+      }
+
+      // Parse time window
+      let hoursBack = 168; // 7 days default
+      if (typeof window === 'string') {
+        const match = window.match(/^(\d+)([hdw])$/);
+        if (match) {
+          const num = parseInt(match[1]);
+          const unit = match[2];
+          switch (unit) {
+            case 'h': hoursBack = num; break;
+            case 'd': hoursBack = num * 24; break;
+            case 'w': hoursBack = num * 24 * 7; break;
+          }
+        }
+      }
+
+      const timeBack = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
+
+      // Get price history
+      const priceHistory = await getDb()
+        .select({
+          timestamp: price_snapshots.tick_time,
+          price: price_snapshots.suggested_price
+        })
+        .from(price_snapshots)
+        .where(and(
+          eq(price_snapshots.opportunity_id, opportunityId),
+          gt(price_snapshots.tick_time, timeBack)
+        ))
+        .orderBy(sql`${price_snapshots.tick_time} ASC`);
+
+      // Format for chart consumption
+      const chartData = priceHistory.map(point => ({
+        t: point.timestamp?.toISOString(),
+        p: Number(point.price) || 0
+      }));
+
+      // If no history, get current price as single point
+      if (chartData.length === 0) {
+        const currentOpp = await getDb()
+          .select({ current_price: opportunities.current_price })
+          .from(opportunities)
+          .where(eq(opportunities.id, opportunityId))
+          .limit(1);
+
+        if (currentOpp.length > 0) {
+          chartData.push({
+            t: new Date().toISOString(),
+            p: Number(currentOpp[0].current_price) || 0
+          });
+        }
+      }
+
+      res.json(chartData);
+    } catch (error) {
+      console.error("Error fetching price trend:", error);
+      res.status(500).json({ error: "Failed to fetch price trend" });
     }
   });
 

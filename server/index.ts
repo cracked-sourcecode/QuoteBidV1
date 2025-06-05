@@ -7,7 +7,7 @@ console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
 console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
 console.log('STRIPE_SECRET_KEY exists:', !!process.env.STRIPE_SECRET_KEY);
-console.log('SENDGRID_API_KEY exists:', !!process.env.SENDGRID_API_KEY);
+console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
 
 // Add more detailed logging
 console.log('All environment variables:', Object.keys(process.env));
@@ -44,7 +44,7 @@ app.use(cors({
     
     // In production, use specific allowed origins
     const allowedOrigins = [
-      'http://localhost:5050',
+      'http://localhost:5100', // New default API port
       'http://localhost:5173', // Vite default port
       'http://localhost:5174', // Vite alternative port
       'http://localhost:3000', // Common React port
@@ -78,6 +78,25 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
       res.setHeader('Content-Type', 'image/gif');
     } else if (path.endsWith('.svg')) {
       res.setHeader('Content-Type', 'image/svg+xml');
+    }
+  }
+}));
+
+// Serve static files from the public directory (including push-sw.js)
+app.use(express.static(path.join(process.cwd(), 'public'), {
+  setHeaders: (res, filePath) => {
+    // Add CORS headers for static files
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // Set proper content type for service workers
+    if (filePath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+      // Service workers require specific headers
+      if (filePath.includes('sw.js') || filePath.includes('service-worker')) {
+        res.setHeader('Service-Worker-Allowed', '/');
+      }
     }
   }
 }));
@@ -151,9 +170,9 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Use environment variable for port, default to 5050
-  const port = process.env.WS_PORT ? Number(process.env.WS_PORT) : 5050;
-  server.listen(port, '0.0.0.0', () => {
-    log(`serving on http://192.168.1.21:${port}`);
+  // Use environment variable for port, default to 5100
+  const PORT = Number(process.env.PORT) || 5100;
+  server.listen(PORT, '0.0.0.0', () => {
+    log(`API listening on :${PORT}`);
   });
 })();
