@@ -12,7 +12,9 @@
     "cleanup:signups": "tsx server/scripts/cleanupIncompleteSignups.ts",
     "test": "jest",
     "test:pricing": "vitest run lib/pricing/__tests__/",
-    "debug-pitches": "NODE_ENV=development tsx server/debug-pitches.ts"
+    "debug-pitches": "NODE_ENV=development tsx server/debug-pitches.ts",
+    "worker:once": "npx tsx apps/worker/pricingWorker.ts --once",
+    "worker:dev": "npx tsx apps/worker/pricingWorker.ts"
   },
   "dependencies": {
     "@chengsokdara/use-whisper": "^0.2.0",
