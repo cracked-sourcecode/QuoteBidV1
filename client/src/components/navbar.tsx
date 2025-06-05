@@ -73,7 +73,7 @@ export default function Navbar() {
             {/* Notifications Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-2 rounded-full hover:bg-gray-100 relative">
+                <button className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 relative">
                   <svg 
                     xmlns="http://www.w3.org/2000/svg" 
                     className="h-6 w-6 text-gray-500" 
@@ -174,7 +174,27 @@ export default function Navbar() {
                             </div>
                             <div className="ml-3 flex-1">
                               <p className="text-sm font-medium text-gray-900">{notification.title}</p>
-                              <p className="text-xs text-gray-500 mt-1">{notification.message}</p>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {notification.linkUrl && notification.message.includes('Click here') ? (
+                                  <span>
+                                    {notification.message.split('Click here')[0]}
+                                    <a 
+                                      href={notification.linkUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:text-blue-800 underline font-medium"
+                                      onClick={(e) => {
+                                        e.stopPropagation(); // Prevent the notification click handler
+                                      }}
+                                    >
+                                      click here
+                                    </a>
+                                    {notification.message.split('Click here')[1]}
+                                  </span>
+                                ) : (
+                                  <span>{notification.message}</span>
+                                )}
+                              </div>
                               <p className="text-xs text-gray-400 mt-1">
                                 {notification.createdAt && formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                               </p>

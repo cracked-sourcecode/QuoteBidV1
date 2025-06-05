@@ -3064,14 +3064,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   publication = pub;
                 }
                 
-                // Return the pitch with its relations
+                // Return the pitch with its relations and transform article fields
                 const enrichedPitch = {
                   ...pitch,
                   opportunity: opportunity ? {
                     ...opportunity,
                     publication: publication || undefined
                   } : undefined,
+                  // Transform articleUrl and articleTitle into article object for frontend compatibility
+                  article: pitch.articleUrl ? {
+                    url: pitch.articleUrl,
+                    title: pitch.articleTitle || pitch.articleUrl
+                  } : undefined,
                 };
+                
+                // Debug logging for article data
+                if (pitch.articleUrl) {
+                  console.log(`🔗 USER PITCHES: Pitch ${pitch.id} has article URL: ${pitch.articleUrl}`);
+                }
                 
                 // Debug logging for first pitch
                 if (pitch.id === pitchesWithRelations[0].id) {
@@ -7077,6 +7087,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Simple revenue chart - just like Stripe UI
+  app.get("/api/admin/revenue-chart", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      console.log("📊 Simple revenue chart API called");
+      
+      // Create simple 7-day revenue data
+      const chartData = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        chartData.push({
+          date: date.toISOString().split('T')[0],
+          revenue: Math.floor(Math.random() * 1000) + 200 // Random revenue $200-$1200
+        });
+      }
+      
+      console.log("📊 Sending simple chart data:", chartData);
+      res.json(chartData);
+    } catch (error: any) {
+      console.error("❌ Error in simple revenue chart:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ============ END NEW BILLING MANAGER ENDPOINTS ============
   
   // ============ STRIPE CUSTOMER BILLING ENDPOINTS ============
@@ -7134,15 +7168,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Create a charge for a successful placement
-  app.post("/api/admin/customers/:userId/charge-placement", requireAdminAuth, async (req: Request, res: Response) => {
+  // Get customer's complete payment history separated by type
+  app.get("/api/admin/customers/:userId/payment-history", requireAdminAuth, async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
       
+      // Get user from database
+      const user = await storage.getUser(userId);
+      if (!user || !user.stripeCustomerId) {
+        return res.status(404).json({ message: "User not found or no Stripe customer ID" });
+      }
+      
+      // Get all charges for this customer
+      const allCharges = await stripe.charges.list({
+        customer: user.stripeCustomerId,
+        limit: 100, // Get comprehensive history
+      });
+      
+      // Filter to only successful charges
+      const successfulCharges = allCharges.data.filter(charge => 
+        charge.status === 'succeeded' &&
+        charge.captured === true &&
+        !charge.refunded &&
+        charge.amount_refunded === 0 &&
+        !charge.dispute &&
+        !charge.failure_code
+      );
+      
+      // Separate subscription payments from one-time payments
+      const subscriptionPayments = [];
+      const oneTimePayments = [];
+      
+      for (const charge of successfulCharges) {
+        const chargeData = {
+          id: charge.id,
+          amount: charge.amount / 100,
+          currency: charge.currency,
+          status: charge.status,
+          created: new Date(charge.created * 1000),
+          description: charge.description || 'Payment',
+          receiptUrl: charge.receipt_url,
+          invoiceId: charge.invoice || null,
+          metadata: charge.metadata,
+        };
+        
+        // Determine if this is a subscription payment
+        const isSubscription = (
+          charge.description?.toLowerCase().includes('subscription') ||
+          charge.description?.toLowerCase().includes('membership') ||
+          charge.description?.toLowerCase().includes('monthly') ||
+          charge.amount === 9999 || // $99.99 monthly fee
+          charge.metadata?.type === 'subscription'
+        );
+        
+        if (isSubscription) {
+          subscriptionPayments.push({
+            ...chargeData,
+            description: chargeData.description || 'QuoteBid Monthly Subscription'
+          });
+        } else {
+          oneTimePayments.push(chargeData);
+        }
+      }
+      
+      // Sort both arrays by date (newest first)
+      subscriptionPayments.sort((a, b) => b.created.getTime() - a.created.getTime());
+      oneTimePayments.sort((a, b) => b.created.getTime() - a.created.getTime());
+      
+      // Calculate totals
+      const totalAmount = successfulCharges.reduce((sum, charge) => sum + (charge.amount / 100), 0);
+      const subscriptionTotal = subscriptionPayments.reduce((sum, payment) => sum + payment.amount, 0);
+      const oneTimeTotal = oneTimePayments.reduce((sum, payment) => sum + payment.amount, 0);
+      
+      res.json({
+        subscriptionPayments,
+        oneTimePayments,
+        totalAmount,
+        totalCount: successfulCharges.length,
+        subscriptionTotal,
+        oneTimeTotal,
+        subscriptionCount: subscriptionPayments.length,
+        oneTimeCount: oneTimePayments.length,
+      });
+    } catch (error: any) {
+      console.error("Error fetching customer payment history:", error);
+      res.status(500).json({ message: "Failed to fetch payment history", error: error.message });
+    }
+  });
+  
+  // Create a charge for a successful placement
+  app.post("/api/admin/customers/:userId/charge-placement", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      console.log("🎯 CHARGE ENDPOINT HIT!");
+      console.log("📋 Request data:", {
+        userId: req.params.userId,
+        body: req.body
+      });
+      
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
       const { amount, description, paymentMethodId, placementId, invoiceData } = req.body;
+      
+      console.log("📋 Extracted data:", {
+        userId,
+        amount,
+        placementId,
+        paymentMethodId: paymentMethodId ? "***" : "MISSING",
+        hasInvoiceData: !!invoiceData
+      });
       
       if (!amount || !description || !paymentMethodId) {
         return res.status(400).json({ message: "Amount, description, and payment method are required" });
@@ -7163,31 +7302,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           placementId: placementId?.toString() || '',
           type: 'placement_charge',
           invoiceNumber: invoiceData?.invoiceNumber || '',
-          servicePeriod: invoiceData?.servicePeriod || ''
+          servicePeriod: invoiceData?.servicePeriod || '',
+          publicationLink: invoiceData?.publicationLink || ''
         },
         footer: invoiceData?.invoiceNotes || '',
         auto_advance: false,
       });
       
-      // Add main service line item following Stripe invoice template
+      // Add main service line item with correct Stripe API parameters
       await stripe.invoiceItems.create({
         customer: user.stripeCustomerId,
         invoice: invoice.id,
         currency: 'usd',
         description: description,
-        quantity: 1,
-        unit_amount: Math.round((invoiceData?.subtotal || amount) * 100),
+        amount: Math.round((invoiceData?.subtotal || amount) * 100), // Use 'amount' instead of 'unit_amount'
       });
       
-      // Add tax line item if applicable (following Stripe template)
+      // Add tax line item if applicable
       if (invoiceData?.tax && invoiceData.tax > 0) {
         await stripe.invoiceItems.create({
           customer: user.stripeCustomerId,
           invoice: invoice.id,
           currency: 'usd',
           description: `Tax (${invoiceData.taxRate}%)`,
-          quantity: 1,
-          unit_amount: Math.round(invoiceData.tax * 100),
+          amount: Math.round(invoiceData.tax * 100), // Use 'amount' instead of 'unit_amount'
         });
       }
       
@@ -7197,13 +7335,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
         payment_method: paymentMethodId,
       });
       
-      // Update placement if provided
+      // CRITICAL: Update pitch to mark as billed so it moves from AR to Successful
       if (placementId) {
-        await storage.updatePlacementPayment(
-          placementId, 
-          paidInvoice.payment_intent, 
-          paidInvoice.id
+        console.log(`💰 STRIPE PAYMENT SUCCESS! Now updating pitch ${placementId}...`);
+        
+        // Mark pitch as billed with Stripe info
+        const updatedPitch = await storage.updatePitchBillingInfo(
+          placementId, // This is the pitch ID
+          paidInvoice.payment_intent as string || paidInvoice.id, // Use payment intent or invoice ID
+          new Date()
         );
+        
+        if (!updatedPitch) {
+          console.error(`❌ CRITICAL: Failed to update pitch ${placementId} billing status!`);
+          throw new Error(`Failed to mark pitch ${placementId} as billed`);
+        }
+        
+        // IMPORTANT: Also update the pitch with the publication link if provided
+        if (invoiceData?.publicationLink) {
+          console.log(`📰 BILLING: Saving publication link to pitch ${placementId}: ${invoiceData.publicationLink}`);
+          
+          // Use storage method to update pitch article information
+          try {
+            const updatedPitchWithArticle = await storage.updatePitchArticle(placementId, {
+              url: invoiceData.publicationLink,
+              title: `Published Article - ${description}`
+            });
+            
+            if (updatedPitchWithArticle) {
+              console.log(`✅ BILLING SUCCESS: Updated pitch ${placementId} with publication link and marked as delivered!`);
+              console.log(`🔍 BILLING DEBUG: Pitch ${placementId} now has articleUrl: ${updatedPitchWithArticle.articleUrl}, articleTitle: ${updatedPitchWithArticle.articleTitle}`);
+            } else {
+              console.error(`❌ BILLING ERROR: Failed to update pitch ${placementId} with article info`);
+            }
+          } catch (error) {
+            console.error(`❌ BILLING ERROR: Exception updating pitch ${placementId}:`, error);
+          }
+        }
+        
+        // CRITICAL: Update pitch status to "successful" so it shows the article link in the modal
+        try {
+          const updatedPitchStatus = await storage.updatePitchStatus(placementId, 'successful');
+          if (updatedPitchStatus) {
+            console.log(`✅ BILLING SUCCESS: Updated pitch ${placementId} status to 'successful'`);
+          } else {
+            console.error(`❌ BILLING ERROR: Failed to update pitch ${placementId} status to successful`);
+          }
+        } catch (error) {
+          console.error(`❌ BILLING ERROR: Exception updating pitch ${placementId} status:`, error);
+        }
+        
+        console.log(`✅ PITCH ${placementId} IS NOW MARKED AS PAID! It should move to Successful tab.`);
+      } else {
+        console.error(`❌ NO PLACEMENT ID PROVIDED - CANNOT UPDATE PITCH!`);
+      }
+      
+      // Create notification for the customer about the successful billing with deliverable link
+      try {
+        let notificationMessage = `Your payment of $${amount} has been processed successfully.`;
+        
+        // If publication link is provided, include it in the notification
+        if (invoiceData?.publicationLink) {
+          notificationMessage += ` Click here to view your published article.`;
+        }
+        
+        await notificationService.createNotification({
+          userId: userId,
+          type: 'payment',
+          title: '💳 Payment Processed - Content Delivered!',
+          message: notificationMessage,
+          linkUrl: invoiceData?.publicationLink || '/account',
+          relatedId: placementId || null,
+          relatedType: 'payment',
+          icon: 'credit-card',
+          iconColor: 'green',
+        });
+        
+        console.log(`✅ Created billing notification for user ${userId} with publication link: ${invoiceData?.publicationLink || 'none'}`);
+      } catch (notificationError) {
+        console.error('❌ Error creating billing notification:', notificationError);
+        // Don't fail the request if notification creation fails
       }
       
       res.json({

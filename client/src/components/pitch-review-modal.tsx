@@ -84,7 +84,19 @@ const getStatusDisplay = (status: string) => {
 export default function PitchReviewModal({ isOpen, onClose, pitch }: PitchReviewModalProps) {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'status' | 'content'>('status');
+  const [activeTab, setActiveTab] = useState<'status' | 'content' | 'deliverable'>('status');
+
+  // DEBUG: Log pitch data to see what we're getting
+  if (isOpen) {
+    console.log("🔍 MODAL DEBUG: Pitch data received:", {
+      id: pitch.id,
+      status: pitch.status,
+      hasArticle: !!pitch.article,
+      articleUrl: pitch.article?.url,
+      articleTitle: pitch.article?.title,
+      fullPitchObject: pitch
+    });
+  }
 
   const stage = getStage(pitch);
   
@@ -147,7 +159,7 @@ export default function PitchReviewModal({ isOpen, onClose, pitch }: PitchReview
               </div>
             </div>
             
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 mr-8">
               <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-center">
                 <div className="text-xs font-medium text-green-700 uppercase mb-1">
                   Bid Amount
@@ -159,7 +171,7 @@ export default function PitchReviewModal({ isOpen, onClose, pitch }: PitchReview
             </div>
           </div>
           
-          {isSuccessful && pitch.article && (
+          {isSuccessful && pitch.article?.url && (
             <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="flex items-center justify-between bg-green-50 rounded-lg px-4 py-3 border border-green-200">
                 <div className="flex items-center text-green-700">
@@ -207,6 +219,21 @@ export default function PitchReviewModal({ isOpen, onClose, pitch }: PitchReview
               Pitch Content
             </div>
           </button>
+          {pitch.article?.url && (
+            <button 
+              onClick={() => setActiveTab('deliverable')}
+              className={`px-6 py-3 text-sm font-medium transition-colors ${
+                activeTab === 'deliverable' 
+                  ? 'border-b-2 border-blue-500 text-blue-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <ExternalLink className="h-4 w-4" />
+                Deliverable
+              </div>
+            </button>
+          )}
         </div>
         
         <div className="flex-1 overflow-y-auto p-6">
@@ -310,25 +337,6 @@ export default function PitchReviewModal({ isOpen, onClose, pitch }: PitchReview
                       <h3 className="font-semibold text-green-900 text-lg mb-2">Congratulations! Your pitch was published!</h3>
                       <p className="text-green-700 mb-4">Your expertise is now live and your payment has been processed!</p>
                       
-                      {pitch.article && (
-                        <div className="bg-white border border-green-200 rounded-lg p-4 mb-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-gray-900 mb-1">Published Article</h4>
-                              {pitch.article.title && (
-                                <p className="text-gray-600 text-sm">{pitch.article.title}</p>
-                              )}
-                            </div>
-                            <Button asChild className="bg-green-600 hover:bg-green-700 text-white">
-                              <a href={pitch.article.url} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-4 w-4 mr-2" />
-                                Read Article
-                              </a>
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                      
                       <div className="flex items-center bg-white rounded-lg p-4 border border-green-200">
                         <CheckCircle2 className="h-5 w-5 text-green-500 mr-3" />
                         <div>
@@ -369,7 +377,7 @@ export default function PitchReviewModal({ isOpen, onClose, pitch }: PitchReview
                 </div>
               )}
             </div>
-          ) : (
+          ) : activeTab === 'content' ? (
             <div>
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
@@ -396,6 +404,59 @@ export default function PitchReviewModal({ isOpen, onClose, pitch }: PitchReview
                     <span className="font-semibold text-green-700">${pitch.bidAmount.toFixed(2)}</span>
                   </div>
                 </div>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                  <ExternalLink className="h-5 w-5 mr-2 text-green-600" />
+                  Published Article
+                </h3>
+                
+                {pitch.article?.url ? (
+                  <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+                    <div className="flex items-start space-x-4">
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                          <Award className="h-6 w-6 text-white" />
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-green-900 text-lg mb-2">Your Article is Live! 🎉</h4>
+                        <p className="text-green-700 mb-4">Congratulations! Your expertise has been published and is now available online.</p>
+                        
+                        <div className="bg-white border border-green-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <h5 className="font-semibold text-gray-900 mb-1">Article Details</h5>
+                              {pitch.article.title && (
+                                <p className="text-gray-600 text-sm mb-2">{pitch.article.title}</p>
+                              )}
+                              <p className="text-gray-500 text-xs break-all">{pitch.article.url}</p>
+                            </div>
+                            <Button asChild className="bg-green-600 hover:bg-green-700 text-white ml-4 flex-shrink-0">
+                              <a href={pitch.article.url} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                Read Article
+                              </a>
+                            </Button>
+                          </div>
+                        </div>
+                        
+
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 text-center">
+                    <div className="w-12 h-12 bg-gray-300 rounded-lg flex items-center justify-center mx-auto mb-4">
+                      <ExternalLink className="h-6 w-6 text-gray-500" />
+                    </div>
+                    <h4 className="font-semibold text-gray-700 mb-2">No Article Link Available</h4>
+                    <p className="text-gray-500 text-sm">The published article link will appear here once it's available.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -1,5 +1,10 @@
-import React, { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+/* ──────────────────────────────────────────────────────────
+   BillingManager – v2
+   All ui components are shadcn/ui. Tailwind config unchanged.
+   ────────────────────────────────────────────────────────── */
+
+import React, { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -8,11 +13,35 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { DollarSign, Clock, Users, CreditCard, Check, AlertCircle, MoreHorizontal, Search, Plus, ArrowUpRight, FileText, ExternalLink } from "lucide-react";
+import { DollarSign, Clock, Users, CreditCard, AlertCircle, MoreHorizontal, Search, ArrowUpRight, FileText, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+
+// Helper function for subscription status badges
+function subscriptionStatusBadge(status: string | undefined) {
+  if (!status) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+        <span className="text-sm text-gray-500">None</span>
+      </div>
+    );
+  }
+
+  const badges = {
+    active: "bg-green-600 text-white",
+    past_due: "bg-orange-500 text-white", 
+    canceled: "bg-gray-400 text-white"
+  };
+
+  return (
+    <Badge className={badges[status as keyof typeof badges] || "bg-gray-400 text-white"}>
+      {status.replace('_', ' ')}
+    </Badge>
+  );
+}
+
 export default function BillingManagerNew() {
-  const [activeTab, setActiveTab] = useState("customers");
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
@@ -26,10 +55,15 @@ export default function BillingManagerNew() {
   const [servicePeriod, setServicePeriod] = useState("");
   const [invoiceNotes, setInvoiceNotes] = useState("");
   const [taxRate, setTaxRate] = useState("0");
+  const [publicationLink, setPublicationLink] = useState("");
+  
+  // Success state
+  const [paymentSuccess, setPaymentSuccess] = useState<any>(null);
   
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Fetch accounts receivable data (successful placements ready to bill)
+  // Fetch accounts receivable data (successful pitches ready to bill)
   const { data: arData, isLoading: arLoading, refetch: refetchAR } = useQuery({
     queryKey: ["accounts-receivable"],
     queryFn: async () => {
@@ -37,15 +71,15 @@ export default function BillingManagerNew() {
       if (!response.ok) throw new Error("Failed to fetch AR data");
       const pitches = await response.json();
       
+      // Filter successful pitches that haven't been billed yet
       const successfulPitches = pitches.filter((pitch: any) => 
-        (pitch.status === "accepted" || 
-         pitch.status === "successful" || 
+        (pitch.status === "successful" || 
          pitch.status === "completed" || 
          pitch.status === "placed" ||
-         pitch.status === "delivered" ||
-         pitch.status === "successfully delivered" ||
-         pitch.status === "success") && 
-        !pitch.billingStatus
+         pitch.status === "delivered") && 
+        !pitch.billedAt && // Not yet billed
+        !pitch.stripeChargeId && // No charge ID means not billed
+        pitch.bidAmount > 0 // Has an amount to bill
       );
       
       return successfulPitches;
@@ -56,22 +90,38 @@ export default function BillingManagerNew() {
     refetchOnMount: false,
   });
 
-  // Fetch successful Stripe payments
-  const { data: paymentsData, isLoading: paymentsLoading } = useQuery({
-    queryKey: ["successful-payments"],
+  // Fetch successful placements (already billed)
+  const { data: successfulData, isLoading: successfulLoading } = useQuery({
+    queryKey: ["successful-placements"],
     queryFn: async () => {
-      const response = await fetch("/api/admin/payments/successful?limit=50");
-      if (!response.ok) throw new Error("Failed to fetch payments");
-      return response.json();
+      const response = await fetch("/api/admin/pitches");
+      if (!response.ok) throw new Error("Failed to fetch successful placements");
+      const pitches = await response.json();
+      
+      // Filter successfully billed pitches
+      const billedPitches = pitches.filter((pitch: any) => 
+        (pitch.status === "successful" || 
+         pitch.status === "completed" || 
+         pitch.status === "placed" ||
+         pitch.status === "delivered") && 
+        pitch.billedAt && // Has been billed
+        pitch.stripeChargeId && // Has charge ID
+        pitch.bidAmount > 0 // Has an amount
+      );
+      
+      // Sort by billing date (newest first)
+      return billedPitches.sort((a: any, b: any) => 
+        new Date(b.billedAt).getTime() - new Date(a.billedAt).getTime()
+      );
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchOnMount: false, // Don't refetch on mount if data exists
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
-  // Fetch customers directory with Stripe data
-  const { data: customersData, isLoading: customersLoading } = useQuery({
+  // Fetch customers directory with Stripe data (for billing purposes)
+  const { data: customersData } = useQuery({
     queryKey: ["customers-directory"],
     queryFn: async () => {
       const response = await fetch("/api/admin/customers-directory");
@@ -79,6 +129,8 @@ export default function BillingManagerNew() {
       return response.json();
     },
   });
+
+
 
 
 
@@ -93,6 +145,15 @@ export default function BillingManagerNew() {
     },
     enabled: !!selectedCustomer?.id,
   });
+
+  // Auto-select first payment method when customer details load
+  useEffect(() => {
+    if (customerDetails?.paymentMethods?.length > 0 && !selectedPaymentMethod) {
+      setSelectedPaymentMethod(customerDetails.paymentMethods[0].id);
+    }
+  }, [customerDetails, selectedPaymentMethod]);
+
+
 
   // Charge customer mutation
   const chargeMutation = useMutation({
@@ -113,12 +174,35 @@ export default function BillingManagerNew() {
       return response.json();
     },
     onSuccess: (data) => {
+      console.log("✅ PAYMENT SUCCESS! Backend response:", data);
+      console.log("🔄 About to refresh queries...");
+      
       toast({
         title: "Payment Successful!",
         description: data.message,
       });
-      setShowPaymentModal(false);
-      refetchAR();
+      
+      // Immediately refresh data - pitch should now be marked as paid in database
+      queryClient.invalidateQueries({ queryKey: ["accounts-receivable"] });
+      queryClient.invalidateQueries({ queryKey: ["successful-placements"] });
+      
+      // Add a small delay to ensure database write is complete, then invalidate user queries
+      setTimeout(() => {
+        if (selectedCustomer?.id) {
+          console.log(`🔄 Invalidating user ${selectedCustomer.id} pitch data...`);
+          queryClient.invalidateQueries({ queryKey: [`/api/users/${selectedCustomer.id}/pitches`] });
+          queryClient.invalidateQueries({ queryKey: [`/api/users/${selectedCustomer.id}/billing/placement-charges`] });
+          console.log("🔄 User pitch queries invalidated - data should refresh now");
+        }
+      }, 1000); // 1 second delay
+      
+      console.log("🔄 Admin queries invalidated - user queries will refresh in 1 second");
+      
+      // Set success state instead of closing immediately
+      setPaymentSuccess({
+        amount: parseFloat(paymentAmount),
+        receiptUrl: data.invoice?.invoice_pdf || data.receiptUrl
+      });
     },
     onError: (error: any) => {
       toast({
@@ -129,31 +213,30 @@ export default function BillingManagerNew() {
     },
   });
 
-  const handleChargeCustomer = (customer: any, placement?: any) => {
+
+
+  const handleChargeCustomer = (customer: any, pitch?: any) => {
     setSelectedCustomer(customer);
-    setSelectedPlacement(placement);
-    setPaymentAmount(placement?.bidAmount?.toString() || "");
-    setPaymentDescription(placement ? 
-      `${placement.opportunity?.title || 'Article Coverage'}` : 
-      "QuoteBid Service Charge"
-    );
+    setSelectedPlacement(pitch);
+    setPaymentAmount(pitch?.bidAmount?.toString() || "");
     
-    // Auto-generate invoice number
-    const now = new Date();
-    const invoiceNum = `INV-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    setInvoiceNumber(invoiceNum);
+    // Set product description: QuoteBid - Publication Name - Opportunity Title
+    // Try multiple ways to get the publication name
+    const publicationName = pitch?.opportunity?.publication?.name || 
+                           pitch?.publication?.name || 
+                           'Media Outlet';
+    const productDescription = `QuoteBid - ${publicationName} - ${pitch?.opportunity?.title || 'Article Coverage'}`;
+    setPaymentDescription(productDescription);
     
-    // Set service period to current month
-    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    setServicePeriod(`${monthNames[now.getMonth()]} ${now.getFullYear()}`);
+    // Set default invoice notes
+    setInvoiceNotes(`Thank you for using QuoteBid.
+We connect vetted experts with journalists—bringing transparency to pricing and clarity to the pitch process. You see the value before you commit.
+
+Note: QuoteBid is an independent platform. We are not affiliated with any media outlet, and we do not pay reporters or influence editorial decisions. All coverage is earned at the sole discretion of the journalist.`);
     
-    // Set default notes based on placement
-    if (placement) {
-      setInvoiceNotes(`Media placement services for "${placement.opportunity?.title || 'article'}" published in ${placement.opportunity?.publication?.name || 'publication'}.`);
-    } else {
-      setInvoiceNotes("QuoteBid platform services and media placement facilitation.");
-    }
-    
+    setPaymentSuccess(null); // Reset success state
+    setSelectedPaymentMethod(""); // Reset payment method selection
+    setPublicationLink(""); // Reset publication link
     setShowPaymentModal(true);
   };
 
@@ -167,86 +250,187 @@ export default function BillingManagerNew() {
       return;
     }
 
-    // Calculate total with tax
-    const subtotal = parseFloat(paymentAmount);
-    const tax = subtotal * parseFloat(taxRate) / 100;
-    const total = subtotal + tax;
+    const amount = parseFloat(paymentAmount);
 
     const invoiceData = {
-      invoiceNumber,
-      servicePeriod,
+      amount,
+      description: paymentDescription,
       invoiceNotes,
-      taxRate: parseFloat(taxRate),
-      subtotal,
-      tax,
-      total
+      publicationLink
     };
+
+    console.log("🚀 BILLING ATTEMPT - Data being sent:", {
+      userId: selectedCustomer.id,
+      amount: amount,
+      placementId: selectedPlacement?.id,
+      paymentMethodId: selectedPaymentMethod,
+      hasInvoiceData: !!invoiceData
+    });
 
     chargeMutation.mutate({
       userId: selectedCustomer.id,
-      amount: total, // Use total amount including tax
+      amount: amount,
       description: paymentDescription,
       paymentMethodId: selectedPaymentMethod,
-      placementId: selectedPlacement?.id,
+      placementId: selectedPlacement?.id, // This is actually a pitch ID
       invoiceData,
     });
   };
 
-  const filteredCustomers = customersData?.filter((customer: any) => 
-    customer.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  const closeModal = () => {
+    setShowPaymentModal(false);
+    setPaymentSuccess(null);
+    setPublicationLink("");
+  };
+
+
+
+
+
+  const filteredAR = arData?.filter((pitch: any) => 
+    pitch.user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    pitch.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    pitch.opportunity?.title?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
-  const filteredAR = arData?.filter((item: any) => 
-    item.user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.opportunity?.title?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredSuccessful = successfulData?.filter((pitch: any) => 
+    pitch.user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    pitch.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    pitch.opportunity?.title?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
-  const filteredPayments = paymentsData?.filter((payment: any) => 
-    payment.user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    payment.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    payment.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  // Calculate past-due subscriptions count
+  const pastDueCount = customersData?.filter((c: any) => c.subscription?.status === 'past_due').length || 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header matching admin portal style */}
-      <div className="border-b border-gray-200 bg-white">
+      {/* Dashboard Section - Always Visible */}
+      <div className="bg-gray-50 border-b border-gray-200">
+        <div className="px-6 py-6">
+          {/* Revenue Analytics Header */}
+          <div className="mb-6">
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900">Revenue Analytics</h2>
+              <p className="text-sm text-gray-600">Track your revenue performance and key metrics</p>
+            </div>
+          </div>
+
+          {/* MRR, A/R and Revenue Cards */}
+          <div className="grid grid-cols-3 gap-6 mb-6">
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-100 text-sm font-medium">Monthly Recurring Revenue</p>
+                  <p className="text-3xl font-bold mt-1">
+                    ${customersData?.filter((c: any) => c.subscription?.status === 'active')
+                      .reduce((sum: number, sub: any) => 
+                        sum + ((sub.subscription?.items?.data[0]?.price?.unit_amount / 100) || 99), 0)
+                      .toLocaleString() || '0'}
+                  </p>
+                  <p className="text-purple-200 text-xs mt-1">
+                    from {customersData?.filter((c: any) => c.subscription?.status === 'active').length || 0} active subscriptions
+                  </p>
+                </div>
+                <DollarSign className="w-12 h-12 text-purple-200" />
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-6 text-white shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-orange-100 text-sm font-medium">Accounts Receivable</p>
+                  <p className="text-3xl font-bold mt-1">
+                    ${arData?.reduce((sum: number, pitch: any) => sum + (pitch.bidAmount || 0), 0).toLocaleString() || '0'}
+                  </p>
+                  <p className="text-orange-200 text-xs mt-1">
+                    {arData?.length || 0} pitches ready to bill
+                  </p>
+                </div>
+                <Clock className="w-12 h-12 text-orange-200" />
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-green-100 text-sm font-medium">Total Revenue Generated</p>
+                  <p className="text-3xl font-bold mt-1">
+                    ${successfulData?.reduce((sum: number, pitch: any) => sum + (pitch.bidAmount || 0), 0).toLocaleString() || '0'}
+                  </p>
+                  <p className="text-green-200 text-xs mt-1">
+                    from {successfulData?.length || 0} successful placements
+                  </p>
+                </div>
+                <CheckCircle className="w-12 h-12 text-green-200" />
+              </div>
+            </div>
+          </div>
+
+
+
+          {/* Additional KPIs */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Key Metrics</h3>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Total Customers</p>
+                    <p className="text-2xl font-semibold text-gray-900">{customersData?.length || 0}</p>
+                  </div>
+                  <Users className="w-8 h-8 text-blue-500" />
+                </div>
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Active Subscriptions</p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {customersData?.filter((c: any) => c.subscription?.status === 'active').length || 0}
+                    </p>
+                  </div>
+                  <CreditCard className="w-8 h-8 text-green-500" />
+                </div>
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Past-due Subscriptions</p>
+                    <p className="text-2xl font-semibold text-gray-900">{pastDueCount}</p>
+                  </div>
+                  <AlertCircle className="w-8 h-8 text-orange-500" />
+                </div>
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Avg. A/R per Item</p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      ${arData?.length ? 
+                        Math.round((arData.reduce((sum: number, pitch: any) => sum + (pitch.bidAmount || 0), 0) || 0) / arData.length)
+                        .toLocaleString() : '0'}
+                    </p>
+                  </div>
+                  <ArrowUpRight className="w-8 h-8 text-purple-500" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <h1 className="text-xl font-semibold text-gray-900">Customers</h1>
-              <nav className="flex items-center gap-6">
-                <button 
-                  onClick={() => setActiveTab("customers")}
-                  className={`text-sm font-medium transition-colors ${
-                    activeTab === "customers" 
-                      ? "text-blue-600 border-b-2 border-blue-600 pb-2" 
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  Customers
-                </button>
-                <button 
-                  onClick={() => setActiveTab("payments")}
-                  className={`text-sm font-medium transition-colors ${
-                    activeTab === "payments" 
-                      ? "text-blue-600 border-b-2 border-blue-600 pb-2" 
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  Payments
-                </button>
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">Billing Manager</h1>
+              <p className="text-sm text-gray-600">Manage billing for successful placements and track revenue</p>
+            </div>
 
-              </nav>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                <Plus className="w-4 h-4 mr-2" />
-                Create payment
-              </Button>
-            </div>
           </div>
         </div>
       </div>
@@ -266,246 +450,103 @@ export default function BillingManagerNew() {
           </div>
         </div>
 
-        {/* Customers Tab */}
-        {activeTab === "customers" && (
-          <div className="space-y-6">
-            {/* Stats Row */}
-            <div className="grid grid-cols-4 gap-4">
-              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Total customers</p>
-                    <p className="text-2xl font-semibold text-gray-900">{customersData?.length || 0}</p>
-                  </div>
-                  <Users className="w-8 h-8 text-blue-500" />
-                </div>
-              </div>
-              
-              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Active subscriptions</p>
-                    <p className="text-2xl font-semibold text-gray-900">
-                      {customersData?.filter((c: any) => c.subscription).length || 0}
-                    </p>
-                  </div>
-                  <CreditCard className="w-8 h-8 text-green-500" />
-                </div>
-              </div>
-              
-              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Total revenue</p>
-                    <p className="text-2xl font-semibold text-gray-900">
-                      ${paymentsData?.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0).toLocaleString() || '0'}
-                    </p>
-                  </div>
-                  <DollarSign className="w-8 h-8 text-purple-500" />
-                </div>
-              </div>
-              
-              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Pending charges</p>
-                    <p className="text-2xl font-semibold text-gray-900">{arData?.length || 0}</p>
-                  </div>
-                  <Clock className="w-8 h-8 text-orange-500" />
-                </div>
-              </div>
-            </div>
+        {/* Billing Management Tabs */}
+        <Tabs defaultValue="ready-to-bill" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="ready-to-bill" className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Ready to Bill ({arData?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="successful" className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" />
+              Successful Placements ({successfulData?.length || 0})
+            </TabsTrigger>
+          </TabsList>
 
-            {/* Customer Cards */}
-            <div className="space-y-3">
-              {customersLoading ? (
-                <div className="text-center py-12 text-gray-500">
-                  <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p>Loading customers...</p>
-                </div>
-              ) : filteredCustomers.length > 0 ? (
-                filteredCustomers.map((customer: any) => (
-                  <div key={customer.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        {/* Avatar */}
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                          {customer.fullName?.charAt(0) || 'U'}
-                        </div>
-                        
-                        {/* Customer Info */}
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{customer.fullName}</h3>
-                          <p className="text-sm text-gray-600">{customer.email}</p>
-                          {customer.company_name && (
-                            <p className="text-xs text-gray-500">{customer.company_name}</p>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Customer Stats */}
-                      <div className="flex items-center gap-8">
-                        {/* Subscription */}
-                        <div className="text-right">
-                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">SUBSCRIPTION</p>
-                          {customer.subscription ? (
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              <span className="text-sm text-gray-900 font-medium">Active</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                              <span className="text-sm text-gray-500">None</span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Payment Method */}
-                        <div className="text-right">
-                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">PAYMENT METHOD</p>
-                          {customer.primaryPaymentMethod ? (
-                            <div className="flex items-center gap-1 text-sm text-gray-900">
-                              <CreditCard className="w-3 h-3" />
-                              <span>{customer.primaryPaymentMethod.card.brand.toUpperCase()}</span>
-                              <span className="text-gray-500">••••{customer.primaryPaymentMethod.card.last4}</span>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-gray-500">None</span>
-                          )}
-                        </div>
-                        
-                        {/* Total Spent */}
-                        <div className="text-right">
-                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">TOTAL SPENT</p>
-                          <p className="text-sm text-gray-900 font-medium">
-                            ${customer.subscription ? 
-                              ((customer.subscription.items.data[0]?.price?.unit_amount / 100) || 99).toFixed(2) : 
-                              '0.00'
-                            }
-                          </p>
-                        </div>
-                        
-                        {/* Actions */}
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                            onClick={() => handleChargeCustomer(customer)}
-                          >
-                            Create charge
-                          </Button>
-                          <Button size="sm" variant="ghost" className="text-gray-400 hover:text-gray-600 hover:bg-gray-50">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-12 text-gray-500">
-                  <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No customers found</p>
-                  <p className="text-sm">Customers will appear here when they sign up</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Payments Tab - Successful Stripe Payments */}
-        {activeTab === "payments" && (
-          <div className="space-y-6">
-            {/* Successful Payments Header */}
+          {/* Ready to Bill Tab */}
+          <TabsContent value="ready-to-bill" className="space-y-6">
+            {/* AR Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Successful payments</h2>
-                <p className="text-sm text-gray-600">All completed and paid transactions from Stripe</p>
+                <h2 className="text-lg font-semibold text-gray-900">Ready to Bill</h2>
+                <p className="text-sm text-gray-600">Successful pitches ready to be billed</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Found {paymentsData?.length || 0} successful payments
+                  Found {arData?.length || 0} pitches ready for billing
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-600">Total revenue</p>
+                <p className="text-sm text-gray-600">Total amount to bill</p>
                 <p className="text-xl font-semibold text-gray-900">
-                  ${paymentsData?.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0).toLocaleString() || '0'}
+                  ${arData?.reduce((sum: number, pitch: any) => sum + (pitch.bidAmount || 0), 0).toLocaleString() || '0'}
                 </p>
               </div>
             </div>
 
-            {/* Payment Cards */}
+            {/* AR Cards */}
             <div className="space-y-3">
-              {paymentsLoading ? (
+              {arLoading ? (
                 <div className="text-center py-12 text-gray-500">
                   <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p>Loading payment data...</p>
+                  <p>Loading accounts receivable...</p>
                 </div>
-              ) : filteredPayments.length > 0 ? (
-                filteredPayments.map((payment: any) => (
-                  <div key={payment.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors shadow-sm">
+              ) : filteredAR.length > 0 ? (
+                filteredAR.map((pitch: any) => (
+                  <div key={pitch.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors shadow-sm">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        {/* Success Icon */}
-                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center text-white">
-                          <Check className="w-5 h-5" />
+                        {/* Status Icon */}
+                        <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center text-white">
+                          <Clock className="w-5 h-5" />
                         </div>
                         
-                        {/* Payment Info */}
+                        {/* Pitch Info */}
                         <div>
-                          <h3 className="font-semibold text-gray-900">{payment.description}</h3>
+                          <h3 className="font-semibold text-gray-900">{pitch.opportunity?.title || 'Article Coverage'}</h3>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-sm text-gray-600">{payment.user?.fullName}</span>
+                            <span className="text-sm text-gray-600">{pitch.user?.fullName}</span>
                             <span className="text-gray-400">•</span>
-                            <span className="text-sm text-gray-600">{payment.user?.email}</span>
-                            {payment.user?.company_name && (
+                            <span className="text-sm text-gray-600">{pitch.user?.email}</span>
+                            {pitch.user?.company_name && (
                               <>
                                 <span className="text-gray-400">•</span>
-                                <span className="text-sm text-gray-600">{payment.user.company_name}</span>
+                                <span className="text-sm text-gray-600">{pitch.user.company_name}</span>
                               </>
                             )}
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Paid on {new Date(payment.created).toLocaleDateString()} at {new Date(payment.created).toLocaleTimeString()}
-                          </p>
+                          {pitch.opportunity?.publication?.name && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Published in {pitch.opportunity.publication.name}
+                            </p>
+                          )}
+                          <div className="text-xs text-gray-500 mt-1">
+                            <Badge variant="default" className="text-xs bg-green-100 text-green-700 border-green-200">
+                              {pitch.status} ✓
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                       
                       {/* Amount & Actions */}
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">AMOUNT PAID</p>
-                          <p className="text-lg font-semibold text-green-600">
-                            ${payment.amount?.toLocaleString()} {payment.currency?.toUpperCase()}
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">AMOUNT TO BILL</p>
+                          <p className="text-lg font-semibold text-orange-600">
+                            ${pitch.bidAmount?.toLocaleString() || '0'}
                           </p>
-                          <Badge variant="default" className="text-xs bg-green-100 text-green-700 border-green-200 mt-1">
-                            {payment.status} ✓
+                          <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700 border-orange-200 mt-1">
+                            Ready to bill
                           </Badge>
                         </div>
                         
-                        <div className="flex items-center gap-2">
-                          {payment.receiptUrl && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                              onClick={() => window.open(payment.receiptUrl, '_blank')}
-                            >
-                              <ExternalLink className="w-4 h-4 mr-1" />
-                              Receipt
-                            </Button>
-                          )}
-                          {payment.invoiceId && (
-                            <Button 
-                              size="sm"
-                              className="bg-blue-600 hover:bg-blue-700 text-white"
-                              onClick={() => window.open(`/api/admin/invoices/${payment.invoiceId}/download`, '_blank')}
-                            >
-                              <FileText className="w-4 h-4 mr-1" />
-                              Invoice
-                            </Button>
-                          )}
+                        <div className="flex items-center">
+                          <Button 
+                            size="sm" 
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            onClick={() => handleChargeCustomer(pitch.user, pitch)}
+                          >
+                            <DollarSign className="w-4 h-4 mr-1" />
+                            Bill Customer
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -513,209 +554,276 @@ export default function BillingManagerNew() {
                 ))
               ) : (
                 <div className="text-center py-12 text-gray-500">
-                  <CreditCard className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No successful payments found</p>
-                  <p className="text-sm">Completed payments will appear here when customers are charged</p>
+                  <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No successful pitches ready to bill</p>
+                  <p className="text-sm">Successful pitches will appear here when ready for billing</p>
                 </div>
               )}
             </div>
-          </div>
-        )}
+          </TabsContent>
 
-        
+          {/* Successful Placements Tab */}
+          <TabsContent value="successful" className="space-y-6">
+            {/* Successful Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Successful Placements</h2>
+                <p className="text-sm text-gray-600">Pitches that have been successfully billed</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Found {successfulData?.length || 0} successful placements
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Total revenue generated</p>
+                <p className="text-xl font-semibold text-green-600">
+                  ${successfulData?.reduce((sum: number, pitch: any) => sum + (pitch.bidAmount || 0), 0).toLocaleString() || '0'}
+                </p>
+              </div>
+            </div>
+
+            {/* Successful Placement Cards */}
+            <div className="space-y-3">
+              {successfulLoading ? (
+                <div className="text-center py-12 text-gray-500">
+                  <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p>Loading successful placements...</p>
+                </div>
+              ) : filteredSuccessful.length > 0 ? (
+                filteredSuccessful.map((pitch: any) => (
+                  <div key={pitch.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        {/* Status Icon */}
+                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center text-white">
+                          <CheckCircle className="w-5 h-5" />
+                        </div>
+                        
+                        {/* Pitch Info */}
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{pitch.opportunity?.title || 'Article Coverage'}</h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-sm text-gray-600">{pitch.user?.fullName}</span>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-sm text-gray-600">{pitch.user?.email}</span>
+                            {pitch.user?.company_name && (
+                              <>
+                                <span className="text-gray-400">•</span>
+                                <span className="text-sm text-gray-600">{pitch.user.company_name}</span>
+                              </>
+                            )}
+                          </div>
+                          {pitch.opportunity?.publication?.name && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Published in {pitch.opportunity.publication.name}
+                            </p>
+                          )}
+                          <div className="text-xs text-gray-500 mt-1">
+                            <Badge variant="default" className="text-xs bg-green-100 text-green-700 border-green-200">
+                              Billed on {new Date(pitch.billedAt).toLocaleDateString()}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                      
+                                            {/* Amount */}
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">AMOUNT BILLED</p>
+                        <p className="text-lg font-semibold text-green-600">
+                          ${pitch.bidAmount?.toLocaleString() || '0'}
+                        </p>
+                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-200 mt-1">
+                          Paid
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <CheckCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No successful placements yet</p>
+                  <p className="text-sm">Billed placements will appear here after payment is processed</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+                  
       </div>
 
-      {/* Stripe-style Payment Modal */}
-      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
-        <DialogContent className="max-w-lg bg-white">
-          <DialogHeader className="border-b pb-4">
-            <DialogTitle className="text-lg font-semibold">Create Invoice & Process Payment</DialogTitle>
-            <p className="text-sm text-gray-600">Generate a professional invoice and charge the customer</p>
+      {/* Enhanced Invoice Modal */}
+      <Dialog open={showPaymentModal} onOpenChange={closeModal}>
+        <DialogContent className="max-w-2xl bg-white">
+          <DialogHeader className="border-b pb-2 bg-blue-50 px-4 py-2">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold text-gray-900">Process Payment</DialogTitle>
+                <p className="text-xs text-gray-600">Charge customer for completed work</p>
+              </div>
+            </div>
           </DialogHeader>
           
-          <div className="space-y-4 py-4 max-h-96 overflow-y-auto">
-            {/* Customer Info */}
-            {selectedCustomer && (
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                  {selectedCustomer.fullName?.charAt(0) || 'U'}
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{selectedCustomer.fullName}</p>
-                  <p className="text-sm text-gray-500">{selectedCustomer.email}</p>
-                  {selectedCustomer.company_name && (
-                    <p className="text-xs text-gray-500">{selectedCustomer.company_name}</p>
-                  )}
+          {/* Success State */}
+          {paymentSuccess ? (
+            <div className="text-center space-y-6 py-8 px-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle className="w-10 h-10 text-green-600"/>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Payment Successful!</h3>
+                <p className="text-base text-gray-600">
+                  Charged <span className="font-semibold text-green-600">${paymentSuccess.amount.toFixed(2)}</span>
+                </p>
+              </div>
+              <div className="flex gap-3 justify-center">
+                {paymentSuccess.receiptUrl && (
+                  <Button 
+                    onClick={() => window.open(paymentSuccess.receiptUrl, '_blank')} 
+                    variant="outline"
+                    className="h-11"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    View Receipt
+                  </Button>
+                )}
+                <Button 
+                  onClick={closeModal} 
+                  className="h-11 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3 px-4 py-3">
+              {/* Customer & Amount - Combined */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Customer Info */}
+                {selectedCustomer && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                        {selectedCustomer.fullName?.charAt(0) || 'U'}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 text-xs">{selectedCustomer.fullName}</p>
+                        <p className="text-blue-600 text-xs">{selectedCustomer.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Payment Amount */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-center">
+                  <p className="text-lg font-bold text-green-800">${paymentAmount}</p>
+                  <p className="text-green-600 text-xs">Final Amount</p>
                 </div>
               </div>
-            )}
-            
-            {/* Invoice Details Section */}
-            <div className="border rounded-lg p-4 bg-blue-50">
-              <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                Invoice Details
-              </h4>
               
-              <div className="grid grid-cols-2 gap-4">
-                {/* Invoice Number */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Number</label>
-                  <Input 
-                    value={invoiceNumber}
-                    onChange={(e) => setInvoiceNumber(e.target.value)}
-                    className="text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    placeholder="INV-2024-001"
+                              {/* Service & Payment Method - Combined */}
+              <div className="bg-white border border-gray-200 rounded-lg p-3">
+                {/* Service */}
+                <div className="mb-3">
+                  <h4 className="font-medium text-gray-900 mb-1 text-xs">Service</h4>
+                  <Textarea 
+                    value={paymentDescription}
+                    onChange={(e) => setPaymentDescription(e.target.value)}
+                    className="resize-none text-xs"
+                    rows={2}
                   />
                 </div>
                 
-                {/* Service Period */}
+                {/* Payment Method */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Service Period</label>
-                  <Input 
-                    value={servicePeriod}
-                    onChange={(e) => setServicePeriod(e.target.value)}
-                    className="text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    placeholder="December 2024"
-                  />
-                </div>
-              </div>
-            </div>
-            
-            {/* Amount & Tax Section */}
-            <div className="grid grid-cols-3 gap-4">
-              {/* Amount */}
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Subtotal Amount</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 sm:text-sm">$</span>
-                  </div>
-                  <Input 
-                    type="number" 
-                    step="0.01"
-                    className="pl-7 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)}
-                    placeholder="250.00"
-                  />
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 sm:text-sm">USD</span>
-                  </div>
+                  <h4 className="font-medium text-gray-900 mb-1 text-xs">Payment Method</h4>
+                  {customerDetailsLoading ? (
+                    <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">Loading...</div>
+                  ) : customerDetails?.paymentMethods?.length > 0 ? (
+                    <Select value={selectedPaymentMethod} onValueChange={setSelectedPaymentMethod}>
+                      <SelectTrigger className="h-8">
+                        <SelectValue placeholder="Select payment method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customerDetails.paymentMethods.map((pm: any) => (
+                          <SelectItem key={pm.id} value={pm.id}>
+                            <div className="flex items-center gap-2">
+                              <CreditCard className="w-3 h-3 text-blue-600" />
+                              <span className="font-medium text-xs">{pm.card.brand.toUpperCase()}</span>
+                              <span className="text-gray-500 text-xs">••••{pm.card.last4}</span>
+                              <span className="text-xs text-gray-400">{pm.card.exp_month}/{pm.card.exp_year}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="text-xs text-red-600 p-2 bg-red-50 rounded">❌ No payment methods found</div>
+                  )}
                 </div>
               </div>
               
-              {/* Tax Rate */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tax %</label>
+              {/* Publication Link (Deliverable) */}
+              <div className="bg-white border border-gray-200 rounded-lg p-3">
+                <h4 className="font-medium text-gray-900 mb-1 text-xs">Publication Link (Deliverable)</h4>
                 <Input 
-                  type="number" 
-                  step="0.1"
-                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  value={taxRate}
-                  onChange={(e) => setTaxRate(e.target.value)}
-                  placeholder="0"
+                  value={publicationLink}
+                  onChange={(e) => setPublicationLink(e.target.value)}
+                  placeholder="https://example.com/article-link"
+                  className="text-xs h-7"
+                />
+                <p className="text-xs text-gray-500 mt-1">Link to the published article or content deliverable</p>
+              </div>
+              
+              {/* Invoice Notes */}
+              <div className="bg-white border border-gray-200 rounded-lg p-3">
+                <h4 className="font-medium text-gray-900 mb-1 text-xs">Invoice Footer</h4>
+                <Textarea 
+                  value={invoiceNotes}
+                  onChange={(e) => setInvoiceNotes(e.target.value)}
+                  className="resize-none text-xs"
+                  rows={2}
+                  placeholder="Invoice terms and conditions..."
                 />
               </div>
             </div>
-            
-            {/* Total Display */}
-            {paymentAmount && (
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <div className="flex justify-between items-center text-sm">
-                  <span>Subtotal:</span>
-                  <span>${parseFloat(paymentAmount || "0").toFixed(2)}</span>
-                </div>
-                {parseFloat(taxRate) > 0 && (
-                  <div className="flex justify-between items-center text-sm text-gray-600">
-                    <span>Tax ({taxRate}%):</span>
-                    <span>${(parseFloat(paymentAmount || "0") * parseFloat(taxRate) / 100).toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center font-semibold text-base border-t pt-2 mt-2">
-                  <span>Total:</span>
-                  <span>${(parseFloat(paymentAmount || "0") * (1 + parseFloat(taxRate) / 100)).toFixed(2)}</span>
-                </div>
-              </div>
-            )}
-            
-            {/* Payment Method */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-              {customerDetailsLoading ? (
-                <div className="text-sm text-gray-500 p-3 bg-gray-50 rounded">Loading payment methods...</div>
-              ) : customerDetails?.paymentMethods?.length > 0 ? (
-                <Select value={selectedPaymentMethod} onValueChange={setSelectedPaymentMethod}>
-                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                    <SelectValue placeholder="Select payment method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customerDetails.paymentMethods.map((pm: any) => (
-                      <SelectItem key={pm.id} value={pm.id}>
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="w-4 h-4" />
-                          <span className="font-medium">{pm.card.brand.toUpperCase()}</span>
-                          <span className="text-gray-500">••••{pm.card.last4}</span>
-                          <span className="text-sm text-gray-400">{pm.card.exp_month}/{pm.card.exp_year}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="text-sm text-red-600 p-3 bg-red-50 rounded">No payment methods found for this customer</div>
-              )}
-            </div>
-            
-            {/* Service Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Service Description</label>
-              <Textarea 
-                value={paymentDescription}
-                onChange={(e) => setPaymentDescription(e.target.value)}
-                placeholder="Yahoo Finance Article Coverage"
-                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                rows={2}
-              />
-            </div>
-            
-            {/* Invoice Notes */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Invoice Notes</label>
-              <Textarea 
-                value={invoiceNotes}
-                onChange={(e) => setInvoiceNotes(e.target.value)}
-                placeholder="Additional notes or terms for this invoice..."
-                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                rows={2}
-              />
-            </div>
-          </div>
+          )}
           
-          <DialogFooter className="border-t pt-4">
-            <Button variant="outline" onClick={() => setShowPaymentModal(false)} className="border-gray-300">
-              Cancel
-            </Button>
-            <Button 
-              onClick={processPayment}
-              disabled={chargeMutation.isPending || !selectedPaymentMethod}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              {chargeMutation.isPending ? (
-                <>
-                  <AlertCircle className="w-4 h-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Create Invoice & Charge
-                </>
-              )}
-            </Button>
-          </DialogFooter>
+          {!paymentSuccess && (
+            <DialogFooter className="border-t pt-2 bg-gray-50 px-4 py-2">
+              <div className="flex gap-2 w-full">
+                <Button 
+                  variant="outline" 
+                  onClick={closeModal} 
+                  className="flex-1 h-8 text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={processPayment}
+                  disabled={chargeMutation.isPending || !selectedPaymentMethod}
+                  className="flex-1 h-8 bg-green-600 hover:bg-green-700 text-white text-xs"
+                >
+                  {chargeMutation.isPending ? (
+                    <>
+                      <AlertCircle className="w-3 h-3 mr-1 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <DollarSign className="w-3 h-3 mr-1" />
+                      Charge ${paymentAmount}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
+
     </div>
   );
 } 
