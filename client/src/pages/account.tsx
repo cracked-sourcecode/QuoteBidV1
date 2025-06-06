@@ -184,6 +184,32 @@ export default function AccountPage() {
       }
     }
   }, [user?.id]);
+
+  // Handle URL parameters for notification clicks
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const notificationType = urlParams.get('notification');
+    const refresh = urlParams.get('refresh');
+    
+    // If coming from a media coverage notification, switch to profile tab and refresh data
+    if (notificationType === 'media_coverage' || refresh === 'media') {
+      setActiveTab('info');
+      // Force refresh the media coverage data
+      queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/media-coverage`] });
+      
+      // Clean up URL parameters
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      
+      // Show a toast to confirm the update
+      if (notificationType === 'media_coverage') {
+        toast({
+          title: "Media Coverage Updated",
+          description: "Your published article has been added to your portfolio",
+        });
+      }
+    }
+  }, [user?.id, queryClient, toast]);
   
   // Media coverage form schema - publication is optional, no date required
   const mediaCoverageSchema = z.object({
@@ -212,21 +238,31 @@ export default function AccountPage() {
     enabled: !!user?.id,
   });
 
-  // Fetch user's pitches for communication and media coverage
+  // Fetch user's pitches for communication
   const { data: userPitches, isLoading: isLoadingPitches } = useQuery<any[]>({
     queryKey: [`/api/pitches/user/${user?.id}`],
     enabled: !!user?.id,
+    refetchOnWindowFocus: true, // Auto-refresh when window gains focus
+    staleTime: 30000, // Refetch after 30 seconds to catch new data
   });
 
-  // Filter successful pitches with article URLs for media coverage
-  const successfulPitchesWithArticles = userPitches?.filter(pitch => 
-    pitch.articleUrl && pitch.articleUrl !== '' && pitch.articleUrl !== '#'
-  ) || [];
+  // Fetch user's media coverage from database
+  const { data: mediaCoverage, isLoading: isLoadingMediaCoverage, refetch: refetchMediaCoverage } = useQuery<any[]>({
+    queryKey: [`/api/users/${user?.id}/media-coverage`],
+    enabled: !!user?.id,
+    refetchOnWindowFocus: true,
+    staleTime: 30000,
+  });
+
+  // Fetch all publications to get logos by name
+  const { data: allPublications } = useQuery<any[]>({
+    queryKey: ['/api/publications'],
+    staleTime: 300000, // Cache for 5 minutes
+  });
 
   // Debug logging
-  console.log('🔍 DEBUG: userPitches:', userPitches);
-  console.log('🔍 DEBUG: successfulPitchesWithArticles:', successfulPitchesWithArticles);
-  console.log('🔍 DEBUG: Pitches with articleUrl:', userPitches?.filter(p => p.articleUrl));
+  console.log('🔍 DEBUG: mediaCoverage:', mediaCoverage);
+  console.log('🔍 DEBUG: mediaCoverage length:', mediaCoverage?.length || 0);
 
   // Initialize the form with the user's data as default values
   const form = useForm<z.infer<typeof profileFormSchema>>({
@@ -1787,69 +1823,178 @@ export default function AccountPage() {
                 </div>
               </div>
               
-              {/* Media Coverage Section */}
+              {/* Media Coverage Section - Enhanced Premium Design */}
               <div className="mb-8">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-6">
                   <div>
                     <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">MEDIA COVERAGE</h2>
                     <p className="text-xs text-gray-500 mt-1">Powered by QuoteBid</p>
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-gray-200 p-4">
-                  {successfulPitchesWithArticles.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-4">
-                      {/* Successful pitches with article URLs */}
-                      {successfulPitchesWithArticles.map((pitch) => (
-                        <div key={`pitch-${pitch.id}`} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <h3 className="font-medium text-gray-900 text-lg">{pitch.opportunity?.title || 'Published Article'}</h3>
-                              <div className="flex items-center mt-2 text-sm text-gray-500">
-                                <span className="font-medium text-gray-600">{pitch.opportunity?.publication?.name || 'Publication'}</span>
-                                {pitch.createdAt && (
-                                  <span className="ml-2 text-xs text-gray-400">
-                                    • {new Date(pitch.createdAt).toLocaleDateString()}
+                <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                  {(mediaCoverage && mediaCoverage.length > 0) ? (
+                    <div className="p-6">
+                      <div className="grid grid-cols-1 gap-6">
+                        {/* Media coverage from database */}
+                        {mediaCoverage.map((coverage: any, index: number) => {
+                          // Get logo URL with fallback system
+                          const getLogoUrl = () => {
+                            const logo = coverage.publicationLogo;
+                            
+                            console.log(`MediaCoverage DEBUG - ${coverage.publication}:`, {
+                              publicationLogo: coverage.publicationLogo,
+                              publication: coverage.publication,
+                              placementId: coverage.placementId,
+                              source: coverage.source
+                            });
+                            
+                            // First try the database logo
+                            if (logo && logo.trim() && logo !== 'null' && logo !== 'undefined') {
+                              const logoUrl = logo.startsWith('http') || logo.startsWith('data:') 
+                                ? logo 
+                                : `${window.location.origin}${logo}`;
+                              console.log(`Using database logo: ${logoUrl}`);
+                              return logoUrl;
+                            }
+                            
+                            // Fallback: try to find logo from publications database
+                            if (coverage.publication && allPublications) {
+                              // Find publication by name (case insensitive)
+                              const publication = allPublications.find(pub => 
+                                pub.name.toLowerCase() === coverage.publication.toLowerCase()
+                              );
+                              
+                              if (publication && publication.logo) {
+                                const dbLogo = publication.logo;
+                                const logoUrl = dbLogo.startsWith('http') || dbLogo.startsWith('data:') 
+                                  ? dbLogo 
+                                  : `${window.location.origin}${dbLogo}`;
+                                console.log(`Found database logo for ${coverage.publication}: ${logoUrl.substring(0, 50)}...`);
+                                return logoUrl;
+                              }
+                              
+                              console.log(`No database logo found for ${coverage.publication}`);
+                            }
+                            
+                            console.log(`No logo found for ${coverage.publication}`);
+                            return '';
+                          };
+
+                          const logoUrl = getLogoUrl();
+                          
+                          return (
+                          <div key={`coverage-${coverage.id}`} className="group relative bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 p-6 hover:border-blue-200 transform hover:-translate-y-1">
+                            {/* Gradient accent line - blue to purple theme */}
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-t-xl"></div>
+                            
+                            {/* Publication logo */}
+                            <div className="flex items-start gap-4">
+                              <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform bg-white border border-gray-200 overflow-hidden">
+                                {logoUrl ? (
+                                  <img
+                                    src={logoUrl}
+                                    alt={`${coverage.publication || 'Publication'} logo`}
+                                    className="w-full h-full object-contain"
+                                    loading="lazy"
+                                    onError={(e) => {
+                                      // Hide the image and show fallback
+                                      e.currentTarget.style.display = 'none';
+                                      const fallback = e.currentTarget.nextElementSibling;
+                                      if (fallback && fallback instanceof HTMLElement) {
+                                        fallback.style.display = 'flex';
+                                      }
+                                    }}
+                                  />
+                                ) : null}
+                                {/* Text-based fallback when logo fails or is not available */}
+                                <div 
+                                  className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl"
+                                  style={{ display: logoUrl ? 'none' : 'flex' }}
+                                >
+                                  <span className="text-xs font-semibold text-white text-center px-1">
+                                    {coverage.publication?.split(' ').map((word: string) => word[0]).join('').slice(0, 2).toUpperCase() || 'NA'}
                                   </span>
-                                )}
+                                </div>
                               </div>
-                              <div className="flex items-center gap-3 mt-3">
-                                <span className="text-xs bg-green-100 text-green-700 rounded-full px-3 py-1 flex items-center font-medium">
-                                  <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                  </svg>
-                                  Earned Placement
-                                </span>
-                                {pitch.articleUrl && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    asChild
-                                    className="text-blue-600 border-blue-600 hover:bg-blue-50"
-                                  >
-                                    <a href={pitch.articleUrl} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                                      <ExternalLink className="h-4 w-4 mr-1" />
-                                      View Article
-                                    </a>
-                                  </Button>
-                                )}
+                              
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-gray-900 text-lg leading-tight mb-2 group-hover:text-blue-700 transition-colors">{coverage.title}</h3>
+                                
+                                <div className="flex items-center mb-4">
+                                  <div className="flex items-center text-sm text-gray-600">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                                    <span className="font-medium">{coverage.publication || 'Publication'}</span>
+                                    {coverage.articleDate && (
+                                      <>
+                                        <span className="mx-2 text-gray-400">•</span>
+                                        <span className="text-gray-500">
+                                          {new Date(coverage.articleDate).toLocaleDateString()}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 border border-blue-200 shadow-sm">
+                                      <svg className="h-3.5 w-3.5 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                      </svg>
+                                      {coverage.source === 'billing_manager' || coverage.source === 'pitch_success' ? 'Earned Placement' : 'Media Coverage'}
+                                    </span>
+                                    
+                                    {/* Success metrics indicator */}
+                                    <div className="hidden sm:flex items-center text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-md">
+                                      <svg className="h-3 w-3 mr-1 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                      </svg>
+                                      Featured
+                                    </div>
+                                  </div>
+                                  
+                                  {coverage.url && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      asChild
+                                      className="text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                                    >
+                                      <a href={coverage.url} target="_blank" rel="noopener noreferrer" className="flex items-center font-medium">
+                                        <ExternalLink className="h-4 w-4 mr-1.5" />
+                                        View Article
+                                      </a>
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                          );
+                        })}
+                      </div>
+                      
 
                     </div>
                   ) : (
-                    <div className="text-center py-8 px-4">
-                      <div className="flex flex-col items-center">
-                        <svg className="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <p className="text-gray-500 mb-4">No published articles yet</p>
-                        <p className="text-sm text-gray-400 mb-4">When you get quoted through QuoteBid opportunities, your published articles will appear here.</p>
-                        <Button variant="outline" size="sm" asChild>
-                          <a href="/opportunities">Browse Opportunities</a>
+                    <div className="text-center py-16 px-6">
+                      <div className="flex flex-col items-center max-w-md mx-auto">
+                        {/* Enhanced empty state with gradient background */}
+                        <div className="w-20 h-20 bg-gradient-to-br from-blue-100 via-purple-100 to-blue-200 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+                          <svg className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No published articles yet</h3>
+                        <p className="text-sm text-gray-500 mb-6 leading-relaxed">When you get quoted through QuoteBid opportunities, your published articles will appear here as beautiful portfolio pieces.</p>
+                        <Button variant="default" size="sm" asChild className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-md hover:shadow-lg transition-all duration-200">
+                          <a href="/opportunities" className="flex items-center">
+                            <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            Browse Opportunities
+                          </a>
                         </Button>
                       </div>
                     </div>
