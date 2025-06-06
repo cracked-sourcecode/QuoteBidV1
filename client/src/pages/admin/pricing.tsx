@@ -61,9 +61,17 @@ export default function AdminPricing() {
   // Update slider values when config loads
   useEffect(() => {
     if (config) {
+      // Safely extract values, handling case where they might be objects
+      const extractValue = (value: any, defaultVal: number) => {
+        if (typeof value === 'number') return value;
+        if (typeof value === 'object' && value?.dollars) return value.dollars;
+        if (typeof value === 'string') return parseFloat(value) || defaultVal;
+        return defaultVal;
+      };
+      
       setSliderValues({
-        priceStep: config.priceStep || 5,
-        tickIntervalMs: config.tickIntervalMs || 60000,
+        priceStep: extractValue(config.priceStep, 5),
+        tickIntervalMs: extractValue(config.tickIntervalMs, 60000),
       });
     }
   }, [config]);
@@ -169,7 +177,15 @@ export default function AdminPricing() {
         </div>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-red-600">Error loading pricing data. Please check your admin permissions.</p>
+            <div className="space-y-4">
+              <p className="text-red-600">Error loading pricing data:</p>
+              {variablesError && <p className="text-sm text-gray-600">Variables: {variablesError.message}</p>}
+              {configError && <p className="text-sm text-gray-600">Config: {configError.message}</p>}
+              {metricsError && <p className="text-sm text-gray-600">Metrics: {metricsError.message}</p>}
+              <p className="text-sm text-gray-500 mt-4">
+                This could be due to missing API endpoints or insufficient admin permissions.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -216,39 +232,56 @@ export default function AdminPricing() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {variables.map((variable: any) => (
-                  <TableRow key={variable.var_name}>
-                    <TableCell className="font-medium">{variable.var_name}</TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        min="-10"
-                        max="10"
-                        value={editingValues[variable.var_name]?.weight ?? (parseFloat(variable.weight) || 0)}
-                        onChange={(e) => handleWeightChange(variable.var_name, parseFloat(e.target.value) || 0)}
-                        className="w-20"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={editingValues[variable.var_name]?.nonlinear_fn ?? (variable.nonlinear_fn || 'none')}
-                        onValueChange={(value) => handleNonlinearFnChange(variable.var_name, value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">none</SelectItem>
-                          <SelectItem value="decay24h">decay24h</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-500">
-                      {variable.updated_at ? new Date(variable.updated_at).toLocaleString() : 'Never'}
+                {Array.isArray(variables) ? variables.map((variable: any) => {
+                  // Safely extract weight value
+                  const getWeight = () => {
+                    const weight = variable.weight;
+                    if (typeof weight === 'number') return weight;
+                    if (typeof weight === 'string') return parseFloat(weight) || 0;
+                    if (typeof weight === 'object' && weight?.dollars) return weight.dollars;
+                    return 0;
+                  };
+                  
+                  return (
+                    <TableRow key={variable.var_name || `var-${Math.random()}`}>
+                      <TableCell className="font-medium">{variable.var_name || 'Unknown'}</TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="-10"
+                          max="10"
+                          value={editingValues[variable.var_name]?.weight ?? getWeight()}
+                          onChange={(e) => handleWeightChange(variable.var_name, parseFloat(e.target.value) || 0)}
+                          className="w-20"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={editingValues[variable.var_name]?.nonlinear_fn ?? (variable.nonlinear_fn || 'none')}
+                          onValueChange={(value) => handleNonlinearFnChange(variable.var_name, value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">none</SelectItem>
+                            <SelectItem value="decay24h">decay24h</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-500">
+                        {variable.updated_at ? new Date(variable.updated_at).toLocaleString() : 'Never'}
+                      </TableCell>
+                    </TableRow>
+                  );
+                }) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-gray-500">
+                      No variables data available
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           )}
@@ -273,11 +306,11 @@ export default function AdminPricing() {
               <>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">$1</span>
-                  <span className="text-lg font-bold">${sliderValues.priceStep}</span>
+                  <span className="text-lg font-bold">${Number(sliderValues.priceStep) || 5}</span>
                   <span className="text-sm text-gray-600">$20</span>
                 </div>
                 <Slider
-                  value={[sliderValues.priceStep]}
+                  value={[Number(sliderValues.priceStep) || 5]}
                   onValueChange={(value) => handleSliderChange('priceStep', value)}
                   min={1}
                   max={20}
@@ -305,11 +338,11 @@ export default function AdminPricing() {
               <>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">30s</span>
-                  <span className="text-lg font-bold">{Math.round(sliderValues.tickIntervalMs / 1000)}s</span>
+                  <span className="text-lg font-bold">{Math.round((Number(sliderValues.tickIntervalMs) || 60000) / 1000)}s</span>
                   <span className="text-sm text-gray-600">5m</span>
                 </div>
                 <Slider
-                  value={[sliderValues.tickIntervalMs]}
+                  value={[Number(sliderValues.tickIntervalMs) || 60000]}
                   onValueChange={(value) => handleSliderChange('tickIntervalMs', value)}
                   min={30000}
                   max={300000}

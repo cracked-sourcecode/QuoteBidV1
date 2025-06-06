@@ -10,6 +10,7 @@ import {
   CreditCard,
   BarChart3,
   BookOpen,
+  Settings,
   LogOut,
   Menu,
   X
@@ -53,6 +54,11 @@ const navItems = [
     href: '/admin/analytics',
     label: 'Analytics',
     icon: BarChart3
+  },
+  {
+    href: '/admin/pricing',
+    label: 'Pricing',
+    icon: Settings
   },
   {
     href: '/admin/support',
