@@ -3242,6 +3242,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch user placements", error: error.message });
     }
   });
+
+  // ============ MEDIA COVERAGE ENDPOINTS ============
+  
+  // Get user's media coverage
+  app.get("/api/users/:userId/media-coverage", ensureAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Check if user is accessing their own data or is admin
+      const requestingUser = (req as any).user;
+      if (requestingUser.id !== userId && !requestingUser.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const mediaCoverage = await storage.getUserMediaCoverage(userId);
+      res.json(mediaCoverage);
+    } catch (error: any) {
+      console.error("Failed to fetch media coverage:", error);
+      res.status(500).json({ message: "Failed to fetch media coverage", error: error.message });
+    }
+  });
+
+  // Create new media coverage entry
+  app.post("/api/users/:userId/media-coverage", ensureAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Check if user is accessing their own data or is admin
+      const requestingUser = (req as any).user;
+      if (requestingUser.id !== userId && !requestingUser.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      // Validate the request body
+      const { insertMediaCoverageSchema } = await import("@shared/schema");
+      const validationResult = insertMediaCoverageSchema.safeParse({
+        ...req.body,
+        userId,
+        source: 'manual'
+      });
+
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: "Invalid media coverage data",
+          errors: validationResult.error.errors
+        });
+      }
+
+      const mediaCoverageData = validationResult.data;
+      const newMediaCoverage = await storage.createMediaCoverage(mediaCoverageData);
+      
+      res.status(201).json(newMediaCoverage);
+    } catch (error: any) {
+      console.error("Failed to create media coverage:", error);
+      res.status(500).json({ message: "Failed to create media coverage", error: error.message });
+    }
+  });
+
+  // Update media coverage entry
+  app.patch("/api/users/:userId/media-coverage/:id", ensureAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const mediaCoverageId = parseInt(req.params.id);
+      
+      if (isNaN(userId) || isNaN(mediaCoverageId)) {
+        return res.status(400).json({ message: "Invalid user ID or media coverage ID" });
+      }
+
+      // Check if user is accessing their own data or is admin
+      const requestingUser = (req as any).user;
+      if (requestingUser.id !== userId && !requestingUser.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      // Validate the request body
+      const { insertMediaCoverageSchema } = await import("@shared/schema");
+      const validationResult = insertMediaCoverageSchema.partial().safeParse(req.body);
+
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: "Invalid media coverage data",
+          errors: validationResult.error.errors
+        });
+      }
+
+      const updateData = validationResult.data;
+      const updatedMediaCoverage = await storage.updateMediaCoverage(mediaCoverageId, updateData);
+      
+      if (!updatedMediaCoverage) {
+        return res.status(404).json({ message: "Media coverage not found" });
+      }
+
+      res.json(updatedMediaCoverage);
+    } catch (error: any) {
+      console.error("Failed to update media coverage:", error);
+      res.status(500).json({ message: "Failed to update media coverage", error: error.message });
+    }
+  });
+
+  // Delete media coverage entry
+  app.delete("/api/users/:userId/media-coverage/:id", ensureAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const mediaCoverageId = parseInt(req.params.id);
+      
+      if (isNaN(userId) || isNaN(mediaCoverageId)) {
+        return res.status(400).json({ message: "Invalid user ID or media coverage ID" });
+      }
+
+      // Check if user is accessing their own data or is admin
+      const requestingUser = (req as any).user;
+      if (requestingUser.id !== userId && !requestingUser.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const deleted = await storage.deleteMediaCoverage(mediaCoverageId, userId);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Media coverage not found" });
+      }
+
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Failed to delete media coverage:", error);
+      res.status(500).json({ message: "Failed to delete media coverage", error: error.message });
+    }
+  });
   
   // ============ ADMIN ENDPOINTS ============
   
@@ -3956,6 +4089,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Transfer payment intent ID from the pitch to the placement (if exists)
             paymentIntentId: pitch.paymentIntentId ? pitch.paymentIntentId.toString() : undefined
           });
+          
+          // If we have article information, also update the pitch directly
+          if (articleTitle || articleUrl) {
+            const pitchWithArticle = await storage.updatePitchArticle(id, {
+              url: articleUrl || '#',
+              title: articleTitle || opportunity.title || 'Published Article'
+            });
+            
+            if (pitchWithArticle) {
+              console.log(`Updated pitch ${id} with article information: URL=${articleUrl}, Title=${articleTitle}`);
+              
+              // Create a notification about the new media coverage
+              try {
+                await notificationService.createNotification({
+                  userId: pitch.userId,
+                  type: 'media_coverage',
+                  title: '📰 New Media Coverage Added!',
+                  message: `Your article "${articleTitle || opportunity.title || 'Published Article'}" has been added to your Media Coverage portfolio.`,
+                  linkUrl: articleUrl || '/account?notification=media_coverage&refresh=media',
+                  relatedId: id,
+                  relatedType: 'pitch',
+                  icon: 'newspaper',
+                  iconColor: 'blue',
+                });
+                
+                console.log(`Created media coverage notification for user ${pitch.userId} for pitch ${id}`);
+              } catch (notificationError) {
+                console.error('Error creating media coverage notification:', notificationError);
+              }
+            }
+          }
         } catch (placementError) {
           console.error("Error creating placement:", placementError);
           // Still return the updated pitch even if placement creation fails
@@ -4006,6 +4170,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!updatedPitch) {
         return res.status(500).json({ message: "Failed to update pitch coverage" });
+      }
+      
+      // Create a notification about the new media coverage
+      try {
+        await notificationService.createNotification({
+          userId: pitch.userId,
+          type: 'media_coverage',
+          title: '📰 New Media Coverage Added!',
+          message: `Your article "${title || 'Published Article'}" has been added to your Media Coverage portfolio.`,
+          linkUrl: url,
+          relatedId: id,
+          relatedType: 'pitch',
+          icon: 'newspaper',
+          iconColor: 'blue',
+        });
+        
+        console.log(`Created media coverage notification for user ${pitch.userId} for pitch ${id} coverage update`);
+      } catch (notificationError) {
+        console.error('Error creating media coverage notification for coverage update:', notificationError);
       }
       
       res.json(updatedPitch);
@@ -5470,7 +5653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: 'payment',
               title: '💳 Payment Processed Successfully!',
               message: `Your payment of $${amount} for "${opportunityTitle}" has been processed successfully.`,
-              linkUrl: '/account',
+              linkUrl: '/account?refresh=media',
               relatedId: placementId,
               relatedType: 'placement',
               icon: 'credit-card',
@@ -7468,32 +7651,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error(`❌ NO PLACEMENT ID PROVIDED - CANNOT UPDATE PITCH!`);
       }
       
-      // Create notification for the customer about the successful billing with deliverable link
-      try {
-        let notificationMessage = `Your payment of $${amount} has been processed successfully.`;
-        
-        // If publication link is provided, include it in the notification
+              // Create notification for the customer about the successful billing with deliverable link
+        try {
+          let notificationMessage = `Your payment of $${amount} has been processed successfully.`;
+          
+          // If publication link is provided, include it in the notification
+          if (invoiceData?.publicationLink) {
+            notificationMessage += ` Click here to view your published article.`;
+          }
+          
+          // Create the notification
+          await notificationService.createNotification({
+            userId: userId,
+            type: 'payment',
+            title: '💳 Payment Processed - Content Delivered!',
+            message: notificationMessage,
+            linkUrl: invoiceData?.publicationLink || '/account',
+            relatedId: placementId || null,
+            relatedType: 'payment',
+            icon: 'credit-card',
+            iconColor: 'green',
+          });
+          
+                  // Also create a media coverage notification specifically for the account page
         if (invoiceData?.publicationLink) {
-          notificationMessage += ` Click here to view your published article.`;
+          // Create the media coverage entry automatically
+          try {
+            await storage.createMediaCoverage({
+              userId: userId,
+              title: invoiceData.articleTitle || `Published Article - ${placementData?.opportunity?.title || 'Unknown'}`,
+              publication: placementData?.publication?.name || 'Unknown Publication',
+              url: invoiceData.publicationLink,
+              source: 'billing_manager',
+              placementId: placementId,
+              pitchId: placementData?.pitchId || null,
+              isVerified: true, // Mark as verified since it's from billing manager
+            });
+            
+            console.log(`✅ Created media coverage entry for user ${userId}`);
+          } catch (error) {
+            console.error(`❌ Failed to create media coverage entry:`, error);
+          }
+
+          await notificationService.createNotification({
+            userId: userId,
+            type: 'media_coverage',
+            title: '📰 New Media Coverage Added!',
+            message: `Your published article has been added to your Media Coverage portfolio.`,
+            linkUrl: '/account?notification=media_coverage&refresh=media',
+            relatedId: placementId || null,
+            relatedType: 'placement',
+            icon: 'newspaper',
+            iconColor: 'blue',
+          });
         }
-        
-        await notificationService.createNotification({
-          userId: userId,
-          type: 'payment',
-          title: '💳 Payment Processed - Content Delivered!',
-          message: notificationMessage,
-          linkUrl: invoiceData?.publicationLink || '/account',
-          relatedId: placementId || null,
-          relatedType: 'payment',
-          icon: 'credit-card',
-          iconColor: 'green',
-        });
-        
-        console.log(`✅ Created billing notification for user ${userId} with publication link: ${invoiceData?.publicationLink || 'none'}`);
-      } catch (notificationError) {
-        console.error('❌ Error creating billing notification:', notificationError);
-        // Don't fail the request if notification creation fails
-      }
+          
+          console.log(`✅ Created billing notification for user ${userId} with publication link: ${invoiceData?.publicationLink || 'none'}`);
+        } catch (notificationError) {
+          console.error('❌ Error creating billing notification:', notificationError);
+          // Don't fail the request if notification creation fails
+        }
       
       res.json({
         success: true,

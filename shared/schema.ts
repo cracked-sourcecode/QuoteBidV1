@@ -220,6 +220,24 @@ export const push_subscriptions = pgTable("push_subscriptions", {
   created_at: timestamp("created_at").defaultNow(),
 });
 
+// Media coverage table for storing user's published articles and media mentions
+export const mediaCoverage = pgTable("media_coverage", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text("title").notNull(),
+  publication: text("publication"),
+  url: text("url").notNull(),
+  articleDate: timestamp("article_date"),
+  source: text("source").default("manual"), // "manual", "pitch_success", "billing_manager", "notification"
+  pitchId: integer("pitch_id").references(() => pitches.id, { onDelete: 'set null' }), // Link to original pitch if from QuoteBid
+  placementId: integer("placement_id").references(() => placements.id, { onDelete: 'set null' }), // Link to placement if from billing
+  isVerified: boolean("is_verified").default(false), // Whether article has been verified to exist
+  screenshot: text("screenshot"), // URL to screenshot of the article
+  metrics: jsonb("metrics").default({}), // Store metrics like views, shares, etc.
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true })
@@ -287,6 +305,18 @@ export const insertVariableRegistrySchema = createInsertSchema(variable_registry
 export const insertPricingConfigSchema = createInsertSchema(pricing_config).omit({ updated_at: true });
 export const insertPriceSnapshotSchema = createInsertSchema(price_snapshots).omit({ id: true, tick_time: true });
 export const insertPushSubscriptionSchema = createInsertSchema(push_subscriptions).omit({ id: true, created_at: true });
+export const insertMediaCoverageSchema = createInsertSchema(mediaCoverage)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    articleDate: z.string().or(z.date()).optional().transform((val) => {
+      if (typeof val === 'string') {
+        return new Date(val);
+      }
+      return val;
+    }),
+    pitchId: z.number().optional(),
+    placementId: z.number().optional(),
+  });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -334,6 +364,9 @@ export type InsertPriceSnapshot = z.infer<typeof insertPriceSnapshotSchema>;
 export type PushSubscription = typeof push_subscriptions.$inferSelect;
 export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema>;
 
+export type MediaCoverage = typeof mediaCoverage.$inferSelect;
+export type InsertMediaCoverage = z.infer<typeof insertMediaCoverageSchema>;
+
 // Define relationships between tables
 export const usersRelations = relations(users, ({ many, one }) => ({
   bids: many(bids),
@@ -341,6 +374,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   savedOpportunities: many(savedOpportunities),
   placements: many(placements),
   notifications: many(notifications),
+  mediaCoverage: many(mediaCoverage),
   signupState: one(signupState),
 }));
 
@@ -396,6 +430,7 @@ export const pitchesRelations = relations(pitches, ({ one, many }) => ({
   }),
   placements: many(placements),
   messages: many(pitchMessages),
+  mediaCoverage: many(mediaCoverage),
 }));
 
 export const pitchMessagesRelations = relations(pitchMessages, ({ one }) => ({
@@ -416,7 +451,7 @@ export const savedOpportunitiesRelations = relations(savedOpportunities, ({ one 
   }),
 }));
 
-export const placementsRelations = relations(placements, ({ one }) => ({
+export const placementsRelations = relations(placements, ({ one, many }) => ({
   pitch: one(pitches, {
     fields: [placements.pitchId],
     references: [pitches.id],
@@ -432,6 +467,22 @@ export const placementsRelations = relations(placements, ({ one }) => ({
   publication: one(publications, {
     fields: [placements.publicationId],
     references: [publications.id],
+  }),
+  mediaCoverage: many(mediaCoverage),
+}));
+
+export const mediaCoverageRelations = relations(mediaCoverage, ({ one }) => ({
+  user: one(users, {
+    fields: [mediaCoverage.userId],
+    references: [users.id],
+  }),
+  pitch: one(pitches, {
+    fields: [mediaCoverage.pitchId],
+    references: [pitches.id],
+  }),
+  placement: one(placements, {
+    fields: [mediaCoverage.placementId],
+    references: [placements.id],
   }),
 }));
 

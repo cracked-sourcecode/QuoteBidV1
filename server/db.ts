@@ -14,11 +14,62 @@ let db: ReturnType<typeof drizzle> | null = null;
 
 // Database seeding function
 async function seedDatabase() {
-  if (!db) {
+  if (!db || !pool) {
     throw new Error("Database not initialized");
   }
   
   try {
+    // First, ensure media_coverage table exists
+    try {
+      console.log('🛠️ Ensuring media_coverage table exists...');
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS "media_coverage" (
+          "id" serial PRIMARY KEY NOT NULL,
+          "user_id" integer NOT NULL,
+          "title" text NOT NULL,
+          "publication" text,
+          "url" text NOT NULL,
+          "article_date" timestamp,
+          "source" text DEFAULT 'manual',
+          "pitch_id" integer,
+          "placement_id" integer,
+          "is_verified" boolean DEFAULT false,
+          "screenshot" text,
+          "metrics" jsonb DEFAULT '{}'::jsonb,
+          "created_at" timestamp DEFAULT now(),
+          "updated_at" timestamp DEFAULT now()
+        );
+      `);
+      
+      // Add foreign key constraints if they don't exist
+      await pool.query(`
+        DO $$ 
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints 
+                        WHERE constraint_name = 'media_coverage_user_id_users_id_fk') THEN
+            ALTER TABLE "media_coverage" ADD CONSTRAINT "media_coverage_user_id_users_id_fk" 
+            FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+          END IF;
+          
+          IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints 
+                        WHERE constraint_name = 'media_coverage_pitch_id_pitches_id_fk') THEN
+            ALTER TABLE "media_coverage" ADD CONSTRAINT "media_coverage_pitch_id_pitches_id_fk" 
+            FOREIGN KEY ("pitch_id") REFERENCES "pitches"("id") ON DELETE SET NULL;
+          END IF;
+          
+          IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints 
+                        WHERE constraint_name = 'media_coverage_placement_id_placements_id_fk') THEN
+            ALTER TABLE "media_coverage" ADD CONSTRAINT "media_coverage_placement_id_placements_id_fk" 
+            FOREIGN KEY ("placement_id") REFERENCES "placements"("id") ON DELETE SET NULL;
+          END IF;
+        END $$;
+      `);
+      
+      console.log('✅ media_coverage table verified/created successfully');
+    } catch (tableError) {
+      console.error('❌ Error creating media_coverage table:', tableError);
+    }
+    
     // Check if publications table is empty
     const existingPublications = await db.select().from(publications);
     

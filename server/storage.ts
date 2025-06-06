@@ -7,6 +7,7 @@ import {
   pitches, type Pitch, type InsertPitch,
   savedOpportunities, type SavedOpportunity, type InsertSavedOpportunity,
   placements, type Placement, type InsertPlacement,
+  mediaCoverage, type MediaCoverage, type InsertMediaCoverage,
   annotations, type Annotation, type InsertAnnotation,
   annotationComments, type AnnotationComment, type InsertAnnotationComment,
   pitchMessages, type PitchMessage, type InsertPitchMessage,
@@ -119,6 +120,12 @@ export interface IStorage {
   // Annotation Comments
   getAnnotationComments(annotationId: number): Promise<AnnotationComment[]>;
   createAnnotationComment(comment: InsertAnnotationComment): Promise<AnnotationComment>;
+  
+  // Media Coverage
+  getUserMediaCoverage(userId: number): Promise<any[]>;
+  createMediaCoverage(mediaCoverage: InsertMediaCoverage): Promise<MediaCoverage>;
+  updateMediaCoverage(id: number, data: Partial<MediaCoverage>): Promise<MediaCoverage | undefined>;
+  deleteMediaCoverage(id: number, userId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1613,6 +1620,91 @@ export class DatabaseStorage implements IStorage {
       );
       
     return Number(result?.count || 0);
+  }
+
+  // ========================
+  // Media Coverage Methods
+  // ========================
+  
+  async getUserMediaCoverage(userId: number): Promise<any[]> {
+    try {
+      // Get media coverage with publication logos when available
+      const coverage = await getDb()
+        .select({
+          id: mediaCoverage.id,
+          userId: mediaCoverage.userId,
+          title: mediaCoverage.title,
+          publication: mediaCoverage.publication,
+          url: mediaCoverage.url,
+          articleDate: mediaCoverage.articleDate,
+          source: mediaCoverage.source,
+          pitchId: mediaCoverage.pitchId,
+          placementId: mediaCoverage.placementId,
+          isVerified: mediaCoverage.isVerified,
+          screenshot: mediaCoverage.screenshot,
+          metrics: mediaCoverage.metrics,
+          createdAt: mediaCoverage.createdAt,
+          updatedAt: mediaCoverage.updatedAt,
+          publicationLogo: publications.logo,
+        })
+        .from(mediaCoverage)
+        .leftJoin(placements, eq(mediaCoverage.placementId, placements.id))
+        .leftJoin(publications, eq(placements.publicationId, publications.id))
+        .where(eq(mediaCoverage.userId, userId))
+        .orderBy(desc(mediaCoverage.createdAt));
+
+      return coverage;
+    } catch (error) {
+      console.error("Error fetching media coverage with publication data:", error);
+      // Fallback to basic query if join fails
+      const basicCoverage = await getDb()
+        .select()
+        .from(mediaCoverage)
+        .where(eq(mediaCoverage.userId, userId))
+        .orderBy(desc(mediaCoverage.createdAt));
+      
+      return basicCoverage.map(item => ({ ...item, publicationLogo: null }));
+    }
+  }
+
+  async createMediaCoverage(insertMediaCoverage: InsertMediaCoverage): Promise<MediaCoverage> {
+    const [coverage] = await getDb()
+      .insert(mediaCoverage)
+      .values(insertMediaCoverage)
+      .returning();
+    return coverage;
+  }
+
+  async updateMediaCoverage(id: number, data: Partial<MediaCoverage>): Promise<MediaCoverage | undefined> {
+    try {
+      const [coverage] = await getDb()
+        .update(mediaCoverage)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(mediaCoverage.id, id))
+        .returning();
+      return coverage;
+    } catch (error) {
+      console.error("Error updating media coverage:", error);
+      return undefined;
+    }
+  }
+
+  async deleteMediaCoverage(id: number, userId: number): Promise<boolean> {
+    try {
+      const result = await getDb()
+        .delete(mediaCoverage)
+        .where(
+          and(
+            eq(mediaCoverage.id, id),
+            eq(mediaCoverage.userId, userId)
+          )
+        );
+      
+      return (result.rowCount || 0) > 0;
+    } catch (error) {
+      console.error("Error deleting media coverage:", error);
+      return false;
+    }
   }
 }
 
