@@ -277,16 +277,16 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, []); // Remove connectWebSocket dependency to prevent infinite loop
 
-  // Refresh prices periodically as fallback
+  // Refresh prices periodically as fallback (balanced approach)
   useEffect(() => {
     const interval = setInterval(() => {
       // Only refresh if we haven't had recent Socket.io activity
       const timeSinceActivity = Date.now() - state.lastActivity;
-      if (timeSinceActivity > 30000) { // 30 seconds
+      if (timeSinceActivity > 60000) { // 1 minute
         console.log('🔄 Refreshing prices due to stale Socket.io data');
         refreshAllPrices();
       }
-    }, 60000); // Check every minute
+    }, 120000); // Check every 2 minutes
 
     return () => clearInterval(interval);
   }, [state.lastActivity, refreshAllPrices]);
@@ -323,11 +323,18 @@ export const useOpportunityPrice = (opportunityId: number) => {
   
   const price = getPrice(opportunityId);
   
-  // Auto-refresh if price is stale (older than 5 minutes)
+  // Load prices immediately on mount, then refresh if stale
   useEffect(() => {
-    if (opportunityId > 0 && (!price || (Date.now() - price.lastUpdated > 300000))) {
-      console.log(`🔄 Auto-refreshing price for opportunity ${opportunityId}`);
-      refreshPrice(opportunityId);
+    if (opportunityId > 0) {
+      if (!price) {
+        // Load immediately if no price data
+        console.log(`💰 Loading price immediately for opportunity ${opportunityId}`);
+        refreshPrice(opportunityId);
+      } else if (Date.now() - price.lastUpdated > 120000) {
+        // Refresh if stale (older than 2 minutes)
+        console.log(`🔄 Refreshing stale price for opportunity ${opportunityId}`);
+        refreshPrice(opportunityId);
+      }
     }
   }, [opportunityId, price, refreshPrice]);
   

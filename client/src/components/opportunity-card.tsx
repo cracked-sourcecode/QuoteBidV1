@@ -334,7 +334,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
                 </div>
               )}
             </div>
-            <div className="text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-3xl font-black text-gray-900">${currentPrice}</div>
+            <div className="text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-3xl font-black text-gray-900">${currentPrice % 1 === 0 ? Math.floor(currentPrice) : currentPrice}</div>
           </div>
           
           {/* Smart Status Badges */}
@@ -378,14 +378,14 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
           {/* Deadline info */}
           <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
             <div className="flex items-center">
-              <Clock className="h-3.5 w-3.5 mr-1.5 text-gray-500" />
-              <span className="font-semibold">
-                {hoursRemaining <= 0 ? 'Closed' :
-                 hoursRemaining <= 6 ? `${hoursRemaining}h left` :
-                 hoursRemaining <= 24 ? 'Closes today' : 
-                 daysRemaining === 1 ? 'Closes tomorrow' :
-                 `${daysRemaining} days left`}
-              </span>
+            <Clock className="h-3.5 w-3.5 mr-1.5 text-gray-500" />
+            <span className="font-semibold">
+              {hoursRemaining <= 0 ? 'Closed' :
+               hoursRemaining <= 6 ? `${hoursRemaining}h left` :
+               hoursRemaining <= 24 ? 'Closes today' : 
+               daysRemaining === 1 ? 'Closes tomorrow' :
+               `${daysRemaining} days left`}
+            </span>
             </div>
             
             {/* Save Button */}

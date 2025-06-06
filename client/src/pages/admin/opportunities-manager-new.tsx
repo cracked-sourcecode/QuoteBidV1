@@ -88,7 +88,7 @@ const opportunitySchema = z.object({
   deadline: z.string().min(1, "Deadline is required"),
 });
 
-// Schema specifically for editing (content only - no pricing/deadline changes)
+// Schema specifically for editing (content only - no pricing/deadline changes to protect pricing engine)
 const editOpportunitySchema = z.object({
   title: z.string().min(50, "Title must be at least 50 characters").max(80, "Title must be 80 characters or less"),
   description: z.string().min(1, "Description is required").max(500, "Description must be 500 characters or less"),
@@ -97,6 +97,22 @@ const editOpportunitySchema = z.object({
 
 type OpportunityFormValues = z.infer<typeof opportunitySchema>;
 type EditOpportunityFormValues = z.infer<typeof editOpportunitySchema>;
+
+// Function to determine actual opportunity status based on deadline
+const getOpportunityStatus = (opportunity: any) => {
+  if (!opportunity.deadline) return opportunity.status || 'open';
+  
+  const now = new Date();
+  const deadline = new Date(opportunity.deadline);
+  
+  // If deadline has passed, it should be closed regardless of stored status
+  if (deadline < now) {
+    return 'closed';
+  }
+  
+  // If deadline hasn't passed, it should be open (unless manually closed)
+  return opportunity.status === 'closed' ? 'closed' : 'open';
+};
 
 export default function OpportunitiesManager() {
   const { toast } = useToast();
@@ -302,19 +318,22 @@ export default function OpportunitiesManager() {
   
   const updateOpportunityMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      // Ensure publicationId is a number
-      if (typeof data.publicationId === 'string') {
-        data.publicationId = Number(data.publicationId);
-      }
-      console.log('Updating opportunity with data:', JSON.stringify(data));
+      console.log('Updating opportunity with data:', JSON.stringify(data, null, 2));
       
       const res = await apiRequest("PUT", `/api/admin/opportunities/${id}`, data);
       
       // Check if the response is OK
       if (!res.ok) {
-        const errorText = await res.text();
+        let errorText;
+        try {
+          const errorData = await res.json();
+          errorText = errorData.message || errorData.error || JSON.stringify(errorData);
+        } catch {
+          errorText = await res.text();
+        }
         console.error('Update failed with status:', res.status, 'Error:', errorText);
-        throw new Error(errorText || `Update failed with status ${res.status}`);
+        console.error('Data that failed:', JSON.stringify(data, null, 2));
+        throw new Error(`Failed to update: ${errorText}` || `Update failed with status ${res.status}`);
       }
       
       const responseData = await res.json();
@@ -392,8 +411,9 @@ export default function OpportunitiesManager() {
           opp.mediaType?.toLowerCase().includes(filter.toLowerCase()) ||
           opp.tags?.some((tag: string) => tag.toLowerCase().includes(filter.toLowerCase()));
         
-        // Status filter
-        const matchesStatus = selectedStatus === 'all' || opp.status === selectedStatus;
+        // Status filter - use calculated status
+        const actualStatus = getOpportunityStatus(opp);
+        const matchesStatus = selectedStatus === 'all' || actualStatus === selectedStatus;
         
         // Tier filter
         const matchesTier = selectedTier === 'all' || opp.tier === selectedTier;
@@ -408,11 +428,11 @@ export default function OpportunitiesManager() {
         // Request Type filter
         const matchesRequestType = selectedRequestType === 'all' || opp.requestType === selectedRequestType;
         
-        // Tab filter (keeping the existing tab functionality)
+        // Tab filter (keeping the existing tab functionality) - use calculated status
         const matchesTab =
           activeTab === "all" ||
-          (activeTab === "open" && opp.status === "open") ||
-          (activeTab === "closed" && opp.status === "closed");
+          (activeTab === "open" && actualStatus === "open") ||
+          (activeTab === "closed" && actualStatus === "closed");
         
         return matchesSearch && matchesStatus && matchesTier && matchesPublication && 
                matchesIndustry && matchesRequestType && matchesTab;
@@ -461,34 +481,33 @@ export default function OpportunitiesManager() {
       return;
     }
     
-    // Preserve all existing data and only update the content fields we allow editing
+    // Ensure deadline is in correct format (YYYY-MM-DD)
+    let formattedDeadline = editingOpportunity.deadline;
+    if (formattedDeadline) {
+      const deadlineDate = new Date(formattedDeadline);
+      formattedDeadline = deadlineDate.toISOString().split('T')[0];
+    }
+    
+    // ONLY send the fields that are actually being edited
     const submissionData = {
-      // Keep all existing opportunity data
-      publicationId: editingOpportunity.publication?.id || editingOpportunity.publicationId,
-      requestType: editingOpportunity.requestType,
-      mediaType: editingOpportunity.mediaType,
-      industry: editingOpportunity.industry,
-      deadline: editingOpportunity.deadline,
-      minimumBid: editingOpportunity.minimumBid || 225,
-      tier: editingOpportunity.tier,
-      // Override with edited content fields
-      title: data.title,
-      description: data.description,
-      tags: data.tags,
+      title: data.title.trim(),
+      description: data.description.trim(),
+      tags: Array.isArray(data.tags) ? data.tags : [],
     };
 
-    console.log("Updating opportunity with preserved data:", submissionData);
+    console.log("Updating opportunity with preserved data:", JSON.stringify(submissionData, null, 2));
     updateOpportunityMutation.mutate({ id: editingOpportunity.id, data: submissionData });
   };
 
   const handleEditOpportunity = (opportunity: any) => {
+    console.log("Setting up edit for opportunity:", opportunity);
     setEditingOpportunity(opportunity);
     
     // Pre-populate the edit form with only the editable fields
     editForm.reset({
       title: opportunity.title || "",
       description: opportunity.description || "",
-      tags: opportunity.tags || [],
+      tags: Array.isArray(opportunity.tags) ? opportunity.tags : [],
     });
     
     setIsEditDialogOpen(true);
@@ -525,14 +544,14 @@ export default function OpportunitiesManager() {
   return (
     <div className="space-y-6">
       {/* Header Section with Gradient Background */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-8 text-white shadow-xl">
+      <div className="bg-white rounded-lg p-8 border border-gray-200 shadow-sm">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h2 className="text-4xl font-bold tracking-tight flex items-center">
-              <Newspaper className="h-10 w-10 mr-3" />
+            <h2 className="text-3xl font-bold text-gray-900 flex items-center">
+              <Newspaper className="h-8 w-8 mr-3 text-gray-600" />
               Opportunity Manager
             </h2>
-            <p className="text-blue-100 mt-2 text-lg">
+            <p className="text-gray-600 mt-2 text-lg">
               Create and manage PR opportunities to connect journalists with industry experts
             </p>
           </div>
@@ -540,7 +559,7 @@ export default function OpportunitiesManager() {
           <div className="flex flex-col sm:flex-row gap-3">
             <Button 
               onClick={() => setIsCreateDialogOpen(true)} 
-              className="bg-white text-blue-600 hover:bg-gray-100 shadow-lg font-semibold"
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold"
             >
               <Plus className="mr-2 h-5 w-5" />
               Create Opportunity
@@ -550,21 +569,21 @@ export default function OpportunitiesManager() {
       </div>
       
       {/* Enhanced Search and Filter Section */}
-      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-          <Filter className="h-5 w-5 mr-2 text-blue-600" />
+          <Filter className="h-5 w-5 mr-2 text-gray-600" />
           Search & Filter Opportunities
         </h3>
         
         {/* Search Bar */}
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-500 h-5 w-5" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <Input
               placeholder="Search by title, description, publication, industry, tier, or tags..."
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="pl-12 h-12 text-base border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl shadow-sm bg-gray-50 hover:bg-white transition-colors"
+              className="pl-12 h-12 text-base border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg bg-white"
             />
           </div>
         </div>
@@ -573,9 +592,9 @@ export default function OpportunitiesManager() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {/* Status Filter */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 mb-2 block">Status</label>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Status</label>
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="h-10 bg-white border-2 hover:border-blue-300 focus:border-blue-500">
+              <SelectTrigger className="h-10 bg-white border border-gray-300 hover:border-gray-400 focus:border-blue-500">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
@@ -598,9 +617,9 @@ export default function OpportunitiesManager() {
 
           {/* Tier Filter */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 mb-2 block">Tier</label>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Tier</label>
             <Select value={selectedTier} onValueChange={setSelectedTier}>
-              <SelectTrigger className="h-10 bg-white border-2 hover:border-blue-300 focus:border-blue-500">
+              <SelectTrigger className="h-10 bg-white border border-gray-300 hover:border-gray-400 focus:border-blue-500">
                 <SelectValue placeholder="All Tiers" />
               </SelectTrigger>
               <SelectContent>
@@ -616,9 +635,9 @@ export default function OpportunitiesManager() {
 
           {/* Publication Filter */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 mb-2 block">Publication</label>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Publication</label>
             <Select value={selectedPublication} onValueChange={setSelectedPublication}>
-              <SelectTrigger className="h-10 bg-white border-2 hover:border-blue-300 focus:border-blue-500">
+              <SelectTrigger className="h-10 bg-white border border-gray-300 hover:border-gray-400 focus:border-blue-500">
                 <SelectValue placeholder="All Publications" />
               </SelectTrigger>
               <SelectContent>
@@ -632,7 +651,7 @@ export default function OpportunitiesManager() {
                     {publications.map((pub: any) => (
                       <SelectItem key={pub.id} value={pub.id.toString()}>
                         <div className="flex items-center py-1">
-                          <Building2 className="mr-3 h-4 w-4 text-blue-500" />
+                          <Building2 className="mr-3 h-4 w-4 text-gray-500" />
                           <div>
                             <p className="font-medium">{pub.name}</p>
                           </div>
@@ -647,9 +666,9 @@ export default function OpportunitiesManager() {
 
           {/* Industry Filter */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 mb-2 block">Industry</label>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Industry</label>
             <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
-              <SelectTrigger className="h-10 bg-white border-2 hover:border-blue-300 focus:border-blue-500">
+              <SelectTrigger className="h-10 bg-white border border-gray-300 hover:border-gray-400 focus:border-blue-500">
                 <SelectValue placeholder="All Industries" />
               </SelectTrigger>
               <SelectContent>
@@ -665,9 +684,9 @@ export default function OpportunitiesManager() {
 
           {/* Request Type Filter */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 mb-2 block">Request Type</label>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Request Type</label>
             <Select value={selectedRequestType} onValueChange={setSelectedRequestType}>
-              <SelectTrigger className="h-10 bg-white border-2 hover:border-blue-300 focus:border-blue-500">
+              <SelectTrigger className="h-10 bg-white border border-gray-300 hover:border-gray-400 focus:border-blue-500">
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
@@ -693,7 +712,7 @@ export default function OpportunitiesManager() {
                 setSelectedIndustry('all');
                 setSelectedRequestType('all');
               }}
-              className="h-10 w-full border-2 border-gray-300 hover:border-red-300 hover:bg-red-50 hover:text-red-700 transition-colors"
+              className="h-10 w-full border border-gray-300 hover:border-gray-400 hover:bg-gray-50 text-gray-700"
             >
               <X className="h-4 w-4 mr-2" />
               Clear All
@@ -703,17 +722,17 @@ export default function OpportunitiesManager() {
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-6 bg-gray-100 p-1 rounded-lg shadow-inner">
-          <TabsTrigger value="all" className="data-[state=active]:bg-white data-[state=active]:shadow-md rounded-md px-6">
+        <TabsList className="mb-6 bg-gray-100 p-1 rounded-lg">
+          <TabsTrigger value="all" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md px-6">
             All Opportunities
           </TabsTrigger>
-          <TabsTrigger value="open" className="data-[state=active]:bg-white data-[state=active]:shadow-md rounded-md px-6">
+          <TabsTrigger value="open" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md px-6">
             <div className="flex items-center">
               <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
               Open
             </div>
           </TabsTrigger>
-          <TabsTrigger value="closed" className="data-[state=active]:bg-white data-[state=active]:shadow-md rounded-md px-6">
+          <TabsTrigger value="closed" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md px-6">
             <div className="flex items-center">
               <div className="w-2 h-2 bg-gray-500 rounded-full mr-2"></div>
               Closed
@@ -725,14 +744,14 @@ export default function OpportunitiesManager() {
       {finalLoading ? (
         <div className="flex justify-center py-16">
           <div className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-              <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Loader2 className="h-8 w-8 text-gray-600 animate-spin" />
             </div>
             <p className="text-gray-600 font-medium">Loading opportunities...</p>
           </div>
         </div>
       ) : opportunitiesError ? (
-        <Card className="bg-gradient-to-br from-red-50 to-pink-50 border-2 border-red-200">
+        <Card className="bg-red-50 border border-red-200">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
               <X className="h-8 w-8 text-red-600" />
@@ -747,7 +766,7 @@ export default function OpportunitiesManager() {
                 queryClient.invalidateQueries({queryKey: ["/api/admin/opportunities"]});
               }}
               variant="outline"
-              className="border-2 border-red-300 text-red-700 hover:bg-red-50"
+              className="border border-red-300 text-red-700 hover:bg-red-50"
             >
               <Loader2 className="mr-2 h-4 w-4" />
               Try Again
@@ -757,22 +776,22 @@ export default function OpportunitiesManager() {
       ) : filteredOpportunities?.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 lg:gap-6 xl:gap-8">
           {filteredOpportunities.map((opportunity: any) => (
-            <Card key={opportunity.id} className="group relative bg-gradient-to-br from-white to-gray-50 border border-gray-200 hover:border-blue-300 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col overflow-hidden">
+            <Card key={opportunity.id} className="group relative bg-white border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-lg flex flex-col overflow-hidden">
               {/* Status ribbon */}
-              <div className={`absolute top-0 right-0 px-4 py-1 text-xs font-bold uppercase tracking-wider ${
-                opportunity.status === 'open' 
-                  ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white' 
-                  : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white'
+              <div className={`absolute top-0 right-0 px-3 py-1 text-xs font-medium uppercase tracking-wider ${
+                getOpportunityStatus(opportunity) === 'open' 
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-gray-400 text-white'
               }`}>
-                {opportunity.status}
+                {getOpportunityStatus(opportunity)}
               </div>
               
-              <CardHeader className="pb-3 pt-4 flex-shrink-0 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
+              <CardHeader className="pb-3 pt-4 flex-shrink-0">
                 {/* Publication Info with Logo */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-2">
-                    <div className="w-10 h-10 bg-white rounded-lg shadow-sm border border-gray-200 flex items-center justify-center">
-                      <Building2 className="h-5 w-5 text-blue-600" />
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                      <Building2 className="h-5 w-5 text-gray-600" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-gray-800">
@@ -797,7 +816,7 @@ export default function OpportunitiesManager() {
                       {opportunity.tags.map((tag: string, index: number) => (
                         <span
                           key={index}
-                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200"
+                          className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200"
                         >
                           <Tag className="h-3 w-3 mr-1" />
                           {tag}
@@ -811,36 +830,54 @@ export default function OpportunitiesManager() {
               <CardContent className="flex-1 flex flex-col pt-4 pb-4">
                 {/* Key Metrics */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-3 border border-green-200">
+                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                     <div className="flex items-center justify-between">
-                      <DollarSign className="h-4 w-4 text-green-600" />
-                      <span className="text-lg font-bold text-green-700">
+                      <DollarSign className="h-4 w-4 text-gray-600" />
+                      <span className="text-lg font-bold text-gray-900">
                         ${opportunity.currentPrice || opportunity.minimumBid}
                       </span>
                     </div>
-                    <p className="text-xs text-green-600 mt-1">Current Bid</p>
+                    <p className="text-xs text-gray-600 mt-1">Current Price</p>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-200">
+                  <div className={`bg-gray-50 rounded-lg p-3 border ${
+                    new Date(opportunity.deadline) < new Date() 
+                      ? 'border-red-200 bg-red-50' 
+                      : 'border-gray-200'
+                  }`}>
                     <div className="flex items-center justify-between">
-                      <Calendar className="h-4 w-4 text-blue-600" />
-                      <span className="text-sm font-bold text-blue-700">
+                      <Calendar className={`h-4 w-4 ${
+                        new Date(opportunity.deadline) < new Date() 
+                          ? 'text-red-600' 
+                          : 'text-gray-600'
+                      }`} />
+                      <span className={`text-sm font-bold ${
+                        new Date(opportunity.deadline) < new Date() 
+                          ? 'text-red-600' 
+                          : 'text-gray-900'
+                      }`}>
                         {new Date(opportunity.deadline).toLocaleDateString('en-US', { 
                           month: 'short', 
                           day: 'numeric' 
                         })}
                       </span>
                     </div>
-                    <p className="text-xs text-blue-600 mt-1">Deadline</p>
+                    <p className={`text-xs mt-1 ${
+                      new Date(opportunity.deadline) < new Date() 
+                        ? 'text-red-500 font-medium' 
+                        : 'text-gray-600'
+                    }`}>
+                      {new Date(opportunity.deadline) < new Date() ? 'EXPIRED' : 'Deadline'}
+                    </p>
                   </div>
                 </div>
                 
                 {/* Pitch Statistics */}
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 mb-4 border border-purple-200">
+                <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
-                        <MessageSquare className="h-5 w-5 text-purple-600" />
+                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-200">
+                        <MessageSquare className="h-5 w-5 text-gray-600" />
                       </div>
                       <div className="ml-3">
                         <p className="text-lg font-bold text-gray-800">
@@ -850,10 +887,10 @@ export default function OpportunitiesManager() {
                       </div>
                     </div>
                     <div className="text-right min-w-[60px]">
-                      <p className={`text-sm font-semibold text-purple-700 ${opportunity.highestBid > 0 ? '' : 'opacity-0'}`}>
+                      <p className={`text-sm font-semibold text-gray-900 ${opportunity.highestBid > 0 ? '' : 'opacity-0'}`}>
                         ${opportunity.highestBid || 0}
                       </p>
-                      <p className={`text-xs text-purple-600 ${opportunity.highestBid > 0 ? '' : 'opacity-0'}`}>
+                      <p className={`text-xs text-gray-600 ${opportunity.highestBid > 0 ? '' : 'opacity-0'}`}>
                         Highest
                       </p>
                     </div>
@@ -874,7 +911,7 @@ export default function OpportunitiesManager() {
                         e.stopPropagation();
                         setShowPitches(opportunity.id);
                       }}
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       <Eye className="h-4 w-4 mr-1.5" />
                       View Pitches
@@ -888,7 +925,7 @@ export default function OpportunitiesManager() {
                         setManagingOpportunity(opportunity);
                         setIsManageModalOpen(true);
                       }}
-                      className="flex-1 border-2 hover:bg-gray-50"
+                      className="flex-1 border border-gray-300 hover:bg-gray-50"
                     >
                       <MoreHorizontal className="h-4 w-4 mr-1.5" />
                       Manage
@@ -899,12 +936,12 @@ export default function OpportunitiesManager() {
                   <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                     <div className="flex items-center gap-2">
                       {opportunity.requestType && (
-                        <span className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded-full font-medium">
+                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
                           {opportunity.requestType}
                         </span>
                       )}
                       {opportunity.mediaType && (
-                        <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full font-medium">
+                        <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
                           {opportunity.mediaType}
                         </span>
                       )}
@@ -919,10 +956,10 @@ export default function OpportunitiesManager() {
           ))}
         </div>
       ) : (
-        <Card className="bg-gradient-to-br from-gray-50 to-white border-2 border-dashed border-gray-300">
+        <Card className="bg-gray-50 border border-gray-200">
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-6">
-              <Newspaper className="h-10 w-10 text-blue-600" />
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+              <Newspaper className="h-10 w-10 text-gray-600" />
             </div>
             <p className="text-2xl font-bold text-gray-800 mb-2">No Opportunities Yet</p>
             <p className="text-gray-600 mb-6 text-center max-w-md">
@@ -930,7 +967,7 @@ export default function OpportunitiesManager() {
             </p>
             <Button 
               onClick={() => setIsCreateDialogOpen(true)} 
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Plus className="mr-2 h-4 w-4" />
               Create Your First Opportunity
@@ -1208,12 +1245,12 @@ export default function OpportunitiesManager() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
           {/* Header */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 p-8 z-10">
-            <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center">
-              <Plus className="h-6 w-6 mr-3 text-blue-600" />
+          <div className="sticky top-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b border-blue-200 p-8 z-10">
+            <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent flex items-center">
+              <Plus className="h-8 w-8 mr-3 text-blue-600" />
               Create New PR Opportunity
             </DialogTitle>
-            <DialogDescription className="text-gray-600 mt-2 text-base">
+            <DialogDescription className="text-gray-700 mt-3 text-lg font-medium">
               Fill out the form below to create a new opportunity for experts to bid on.
             </DialogDescription>
           </div>
@@ -1226,7 +1263,7 @@ export default function OpportunitiesManager() {
                 {/* Publication */}
                 <div className="space-y-8">
                   <div className="text-center">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Publication & Outlet Selection</h3>
+                    <h3 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4">Publication & Outlet Selection</h3>
                     <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
                       Choose the tier first to filter publications, then select your target outlet
                     </p>
@@ -1267,21 +1304,22 @@ export default function OpportunitiesManager() {
                             setSelectedPublicationTier(tierOption.tier);
                             form.setValue("publicationId", 0);
                           }}
-                          className={`relative cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${
+                          className={`relative cursor-pointer rounded-xl p-6 border-2 transition-all duration-200 hover:shadow-xl transform hover:scale-105 ${
                             selectedPublicationTier === tierOption.tier
-                              ? tierOption.tier === "Tier 1" 
-                                ? 'border-emerald-500 bg-emerald-50 shadow-lg ring-4 ring-emerald-100'
-                                : tierOption.tier === "Tier 2"
-                                ? 'border-blue-500 bg-blue-50 shadow-lg ring-4 ring-blue-100'
-                                : 'border-orange-500 bg-orange-50 shadow-lg ring-4 ring-orange-100'
-                              : 'border-gray-200 bg-white hover:border-gray-300'
+                              ? tierOption.color === 'emerald' 
+                                ? 'border-emerald-400 bg-gradient-to-br from-emerald-50 to-green-100 shadow-lg'
+                                : tierOption.color === 'blue'
+                                ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-indigo-100 shadow-lg'
+                                : 'border-orange-400 bg-gradient-to-br from-orange-50 to-yellow-100 shadow-lg'
+                              : 'border-gray-200 bg-gradient-to-br from-white to-gray-50 hover:border-gray-300 hover:from-gray-50 hover:to-gray-100'
                           }`}
                         >
                           {/* Selection indicator */}
                           {selectedPublicationTier === tierOption.tier && (
-                            <div className={`absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
-                              tierOption.tier === "Tier 1" ? 'bg-emerald-500' :
-                              tierOption.tier === "Tier 2" ? 'bg-blue-500' : 'bg-orange-500'
+                            <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
+                              tierOption.color === 'emerald' ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
+                              tierOption.color === 'blue' ? 'bg-gradient-to-r from-blue-500 to-indigo-500' :
+                              'bg-gradient-to-r from-orange-500 to-yellow-500'
                             }`}>
                               <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -1290,10 +1328,10 @@ export default function OpportunitiesManager() {
                           )}
                           
                           {/* Tier badge */}
-                          <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mb-4 ${
-                            tierOption.tier === "Tier 1" ? "bg-emerald-100 text-emerald-800" :
-                            tierOption.tier === "Tier 2" ? "bg-blue-100 text-blue-800" :
-                            "bg-orange-100 text-orange-800"
+                          <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-bold mb-4 shadow-sm ${
+                            tierOption.color === 'emerald' ? 'bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border border-emerald-200' :
+                            tierOption.color === 'blue' ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200' :
+                            'bg-gradient-to-r from-orange-100 to-yellow-100 text-orange-800 border border-orange-200'
                           }`}>
                             {tierOption.tier}
                           </div>
@@ -1307,16 +1345,36 @@ export default function OpportunitiesManager() {
                             
                             {/* Price */}
                             <div className="flex items-center justify-between">
-                              <span className="text-2xl font-bold text-gray-900">{tierOption.price}</span>
-                              <span className="text-sm text-gray-500">min bid</span>
+                              <span className={`text-3xl font-bold ${
+                                tierOption.color === 'emerald' ? 'text-emerald-700' :
+                                tierOption.color === 'blue' ? 'text-blue-700' :
+                                'text-orange-700'
+                              }`}>{tierOption.price}</span>
+                              <span className={`text-sm font-medium ${
+                                tierOption.color === 'emerald' ? 'text-emerald-600' :
+                                tierOption.color === 'blue' ? 'text-blue-600' :
+                                'text-orange-600'
+                              }`}>min bid</span>
                             </div>
                             
                             {/* Examples */}
-                            <div className="pt-3 border-t border-gray-100">
-                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Examples</p>
+                            <div className={`pt-3 border-t ${
+                              tierOption.color === 'emerald' ? 'border-emerald-200' :
+                              tierOption.color === 'blue' ? 'border-blue-200' :
+                              'border-orange-200'
+                            }`}>
+                              <p className={`text-xs font-medium uppercase tracking-wide mb-2 ${
+                                tierOption.color === 'emerald' ? 'text-emerald-600' :
+                                tierOption.color === 'blue' ? 'text-blue-600' :
+                                'text-orange-600'
+                              }`}>Examples</p>
                               <div className="flex flex-wrap gap-1">
                                 {tierOption.examples.map((example) => (
-                                  <span key={example} className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-md">
+                                  <span key={example} className={`text-xs px-2 py-1 rounded-md font-medium ${
+                                    tierOption.color === 'emerald' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                    tierOption.color === 'blue' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                                    'bg-orange-50 text-orange-700 border border-orange-200'
+                                  }`}>
                                     {example}
                                   </span>
                                 ))}
@@ -1330,7 +1388,7 @@ export default function OpportunitiesManager() {
 
                   {/* Publication Selection */}
                   {selectedPublicationTier && (
-                    <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+                    <div className="bg-white rounded-lg p-8 border border-gray-200">
                       <div className="text-center mb-8">
                         <h4 className="text-xl font-semibold text-gray-900 mb-2">
                           Step 2: Choose Your {selectedPublicationTier} Publication
@@ -1356,7 +1414,7 @@ export default function OpportunitiesManager() {
                               }}
                             >
                               <FormControl>
-                                <SelectTrigger className="h-16 text-base bg-white border-2 border-gray-300 hover:border-blue-400 focus:border-blue-500 transition-colors shadow-sm rounded-xl">
+                                <SelectTrigger className="h-16 text-base bg-white border border-gray-300 hover:border-blue-400 focus:border-blue-500 transition-colors rounded-lg">
                                   <SelectValue placeholder={`Choose a ${selectedPublicationTier} publication...`} />
                                   <style dangerouslySetInnerHTML={{
                                     __html: `
@@ -1425,8 +1483,8 @@ export default function OpportunitiesManager() {
                   {/* Instruction when no tier selected */}
                   {!selectedPublicationTier && (
                     <div className="text-center py-16">
-                      <div className="w-20 h-20 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Building2 className="h-10 w-10 text-blue-600" />
+                      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Building2 className="h-10 w-10 text-gray-600" />
                       </div>
                       <h4 className="text-xl font-semibold text-gray-800 mb-3">Select a Publication Tier Above</h4>
                       <p className="text-gray-600 leading-relaxed max-w-md mx-auto">
@@ -1438,7 +1496,7 @@ export default function OpportunitiesManager() {
 
                 {/* Basic Details */}
                 <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-3">Opportunity Details</h3>
+                  <h3 className="text-xl font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent border-b border-purple-200 pb-3">Opportunity Details</h3>
                   
                   <FormField
                     control={form.control}
@@ -1569,7 +1627,7 @@ export default function OpportunitiesManager() {
 
                 {/* Targeting */}
                 <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-3">Expert Targeting</h3>
+                  <h3 className="text-xl font-semibold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent border-b border-orange-200 pb-3">Expert Targeting</h3>
                   
                   <div className="grid grid-cols-2 gap-6">
                     <FormField
@@ -1665,7 +1723,7 @@ export default function OpportunitiesManager() {
                 {/* Dynamic Pricing & Timeline */}
                 <div className="space-y-8">
                   <div className="text-center">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Dynamic Pricing & Timeline</h3>
+                    <h3 className="text-3xl font-bold bg-gradient-to-r from-green-600 via-teal-600 to-blue-600 bg-clip-text text-transparent mb-4">Dynamic Pricing & Timeline</h3>
                     <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
                       Automatic pricing based on publication tier and deadline selection
                     </p>
@@ -1681,15 +1739,15 @@ export default function OpportunitiesManager() {
                         </p>
                       </div>
                       
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border border-green-200 shadow-sm flex-1">
+                      <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-xl p-8 border border-green-200 flex-1 shadow-lg">
                         <div className="text-center space-y-4 h-full flex flex-col justify-center">
-                          <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                          <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
                             <DollarSign className="h-8 w-8 text-white" />
                           </div>
                           
                           <div className="space-y-2">
                             <p className="text-sm font-medium text-green-700 uppercase tracking-wide">Minimum Bid Amount</p>
-                            <div className="text-4xl font-bold text-green-800">
+                            <div className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                               ${form.watch("minimumBid") || 225}
                             </div>
                           </div>
@@ -1697,7 +1755,7 @@ export default function OpportunitiesManager() {
                           {/* Status indicators */}
                           <div className="space-y-3 pt-4 border-t border-green-200">
                             {!watchedPublicationId ? (
-                              <div className="flex items-center justify-center text-amber-600">
+                              <div className="flex items-center justify-center text-green-600">
                                 <Clock className="h-4 w-4 mr-2" />
                                 <span className="text-sm font-medium">Select a publication above</span>
                               </div>
@@ -1705,8 +1763,8 @@ export default function OpportunitiesManager() {
                               watchedPublicationId && publications && (() => {
                                 const selectedPub = publications.find(pub => pub.id === watchedPublicationId);
                                 return selectedPub?.tier && (
-                                  <div className="flex items-center justify-center text-green-600">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                  <div className="flex items-center justify-center text-green-700">
+                                    <div className="w-2 h-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full mr-2"></div>
                                     <span className="text-sm font-medium">
                                       {selectedPub.name} • {selectedPub.tier}
                                     </span>
@@ -1737,9 +1795,9 @@ export default function OpportunitiesManager() {
                         render={({ field }) => (
                           <FormItem className="flex-1">
                             <FormControl>
-                              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-200 shadow-sm h-full">
+                              <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-xl p-8 border border-blue-200 h-full shadow-lg">
                                 <div className="text-center space-y-6 h-full flex flex-col justify-center">
-                                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                                  <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
                                     <CalendarIcon className="h-8 w-8 text-white" />
                                   </div>
                                   
@@ -1752,11 +1810,11 @@ export default function OpportunitiesManager() {
                                         value={field.value || ''}
                                         onChange={(e) => field.onChange(e.target.value)}
                                         min={new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0]}
-                                        className="w-full h-14 px-4 text-lg font-medium text-center bg-white border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                                        className="w-full h-14 px-4 text-lg font-medium text-center bg-white border border-blue-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all shadow-sm"
                                       />
                                       {field.value && (
-                                        <div className="bg-white rounded-lg p-3 text-center">
-                                          <p className="text-xs text-blue-600 font-medium">
+                                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 text-center border border-blue-200 shadow-sm">
+                                          <p className="text-sm text-blue-700 font-medium">
                                             {format(new Date(field.value), "EEEE, MMMM do, yyyy")}
                                           </p>
                                         </div>
@@ -1778,7 +1836,7 @@ export default function OpportunitiesManager() {
           </div>
 
           {/* Footer */}
-          <div className="sticky bottom-0 bg-white border-t border-gray-200 p-8 z-10">
+          <div className="sticky bottom-0 bg-gradient-to-r from-gray-50 via-blue-50 to-indigo-50 border-t border-blue-200 p-8 z-10">
             <div className="flex gap-4">
               <Button
                 type="button"
@@ -1787,7 +1845,7 @@ export default function OpportunitiesManager() {
                   setIsCreateDialogOpen(false);
                   form.reset();
                 }}
-                className="flex-1 h-12"
+                className="flex-1 h-12 border-gray-300 hover:bg-gray-50"
                 disabled={createOpportunityMutation.isPending}
               >
                 Cancel
@@ -1795,7 +1853,7 @@ export default function OpportunitiesManager() {
               <Button
                 type="submit"
                 onClick={form.handleSubmit(onSubmit)}
-                className="flex-1 h-12"
+                className="flex-1 h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
                 disabled={createOpportunityMutation.isPending}
               >
                 {createOpportunityMutation.isPending ? (
@@ -2027,8 +2085,8 @@ export default function OpportunitiesManager() {
                 <h3 className="font-semibold text-lg mb-2">{managingOpportunity.title}</h3>
                 <p className="text-sm text-gray-600 mb-3">{managingOpportunity.description}</p>
                 <div className="flex items-center gap-4 text-sm">
-                  <Badge variant={managingOpportunity.status === 'open' ? 'default' : 'secondary'}>
-                    {managingOpportunity.status.toUpperCase()}
+                  <Badge variant={getOpportunityStatus(managingOpportunity) === 'open' ? 'default' : 'secondary'}>
+                    {getOpportunityStatus(managingOpportunity).toUpperCase()}
                   </Badge>
                   <span className="text-gray-500">
                     {managingOpportunity.publication?.name} • {managingOpportunity.tier}
@@ -2054,7 +2112,7 @@ export default function OpportunitiesManager() {
                 </Button>
                 
                 {/* Close Opportunity Button - Only shown if open */}
-                {managingOpportunity.status === 'open' && (
+                {getOpportunityStatus(managingOpportunity) === 'open' && (
                   <Button
                     variant="destructive"
                     className="w-full justify-start"
@@ -2073,11 +2131,16 @@ export default function OpportunitiesManager() {
                 )}
                 
                 {/* Notice for closed opportunities */}
-                {managingOpportunity.status === 'closed' && (
+                {getOpportunityStatus(managingOpportunity) === 'closed' && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <p className="text-sm text-yellow-800">
-                      <strong>Note:</strong> This opportunity is closed and cannot be reopened. Closed opportunities no longer accept new pitches.
+                      <strong>Note:</strong> This opportunity is closed. Opportunities are automatically closed when their deadline passes, or can be manually closed. Closed opportunities no longer accept new pitches.
                     </p>
+                    {new Date(managingOpportunity.deadline) < new Date() && (
+                      <p className="text-xs text-red-600 mt-2 font-medium">
+                        ⏰ This opportunity was auto-closed because the deadline ({new Date(managingOpportunity.deadline).toLocaleDateString()}) has passed.
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

@@ -12,6 +12,22 @@ import LogoUniform from '@/components/ui/logo-uniform';
 import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
 import { getPublicationLogo } from '@/lib/responsive-utils';
+
+// Function to determine actual opportunity status based on deadline
+const getOpportunityStatus = (opportunity: any) => {
+  if (!opportunity.deadline) return opportunity.status || 'open';
+  
+  const now = new Date();
+  const deadline = new Date(opportunity.deadline);
+  
+  // If deadline has passed, it should be closed regardless of stored status
+  if (deadline < now) {
+    return 'closed';
+  }
+  
+  // If deadline hasn't passed, it should be open (unless manually closed)
+  return opportunity.status === 'closed' ? 'closed' : 'open';
+};
 import { apiRequest } from '@/lib/queryClient';
 import { useOpportunityPrice, usePriceConnection } from '@/contexts/PriceContext';
 
@@ -20,6 +36,14 @@ export default function OpportunityDetail() {
   const { user } = useAuth();
   const [, params] = useRoute('/opportunities/:id');
   const opportunityId = params ? parseInt(params.id) : 0;
+  
+  // Stable reference to opportunity ID to prevent unnecessary re-renders
+  const stableOpportunityId = useRef(opportunityId);
+  useEffect(() => {
+    if (opportunityId && opportunityId !== stableOpportunityId.current) {
+      stableOpportunityId.current = opportunityId;
+    }
+  }, [opportunityId]);
   const [isBriefMinimized, setIsBriefMinimized] = useState(false);
   const [pitchContent, setPitchContent] = useState('');
   const [selectedTimeframe, setSelectedTimeframe] = useState<'Daily' | 'Weekly'>('Daily');
@@ -49,6 +73,24 @@ export default function OpportunityDetail() {
   const [transcript, setTranscript] = useState<string>("");
   const [recorderError, setRecorderError] = useState<string | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [transcriptionSuccess, setTranscriptionSuccess] = useState(false);
+  
+  // Prevent any accidental navigation during transcription
+  useEffect(() => {
+    if (isTranscribing) {
+      console.log('[Transcription] Transcription in progress, preventing navigation...');
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        e.preventDefault();
+        e.returnValue = '';
+      };
+      
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      };
+    }
+  }, [isTranscribing]);
   
   // User pitch status state - prevent duplicate pitches
   const [userPitchStatus, setUserPitchStatus] = useState<{
@@ -61,6 +103,7 @@ export default function OpportunityDetail() {
   const [isCheckingPitchStatus, setIsCheckingPitchStatus] = useState(false);
   
   const recordingInterval = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
   
   // Improved logo loading handler for retina displays
   const handleLogoLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -70,37 +113,35 @@ export default function OpportunityDetail() {
       if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
         setLogoLoaded(true);
         setLogoFailed(false);
-        console.log(`✅ Detail logo loaded successfully for ${opportunity?.outlet}: ${img.naturalWidth}x${img.naturalHeight}`);
+        console.log(`✅ Detail logo loaded successfully: ${img.naturalWidth}x${img.naturalHeight}`);
       } else {
-        console.log(`❌ Detail logo failed dimension check for ${opportunity?.outlet}: ${img.naturalWidth}x${img.naturalHeight}`);
+        console.log(`❌ Detail logo failed dimension check: ${img.naturalWidth}x${img.naturalHeight}`);
         setLogoFailed(true);
       }
     }, 100);
   };
 
   const handleLogoError = () => {
-    console.log(`❌ Detail logo failed to load for ${opportunity?.outlet}: ${opportunity?.outletLogo}`);
-    setLogoFailed(true);
-    setLogoLoaded(false);
-  };
+            console.log(`❌ Detail logo failed to load`);
+        setLogoFailed(true);
+        setLogoLoaded(false);
+      };
 
-  // Get the appropriate logo URL - same approach as opportunity card
-  const getLogoUrl = () => {
-    if (!opportunity) return '';
-    
-    const logo = opportunity.outletLogo;
-    
-    // Same logic as opportunity card
-    const logoUrl = logo && logo.trim() && logo !== 'null' && logo !== 'undefined' 
-      ? (logo.startsWith('http') || logo.startsWith('data:') 
-          ? logo 
-          : `${window.location.origin}${logo}`)
-      : '';
-    
-    console.log(`OpportunityDetail - ${opportunity.outlet}: logo URL = ${logoUrl}, original = ${logo}`);
-    
-    return logoUrl;
-  };
+      // Get the appropriate logo URL - same approach as opportunity card
+      const getLogoUrl = () => {
+        if (!opportunity) return '';
+        
+        const logo = opportunity.outletLogo;
+        
+        // Same logic as opportunity card
+        const logoUrl = logo && logo.trim() && logo !== 'null' && logo !== 'undefined' 
+          ? (logo.startsWith('http') || logo.startsWith('data:') 
+              ? logo 
+              : `${window.location.origin}${logo}`)
+          : '';
+        
+        return logoUrl;
+      };
   
   // Check if user has already pitched for this opportunity
   const checkUserPitchStatus = async (opportunityId: number) => {
@@ -142,6 +183,23 @@ export default function OpportunityDetail() {
     }
   };
   
+  // Component mount/unmount tracking
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      console.log('[Component] OpportunityDetail unmounting...');
+      isMountedRef.current = false;
+      
+      // Clean up media resources
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      if (recordingInterval.current) {
+        clearInterval(recordingInterval.current);
+      }
+    };
+  }, []);
+
   // Fetch opportunity data
   useEffect(() => {
     const fetchOpportunityData = async () => {
@@ -317,8 +375,8 @@ export default function OpportunityDetail() {
     );
   }
 
-  // Use real-time price data if available, fallback to opportunity data
-  const currentPrice = priceData?.currentPrice || bidInfo?.currentPrice || opportunity?.currentPrice || opportunity?.basePrice || 100;
+  // Use exact same price logic as OpportunityCard for consistency
+  const currentPrice = priceData?.currentPrice || opportunity?.currentPrice || opportunity?.basePrice || 100;
   const priceTrend = priceData?.trend || 'stable';
   const priceIncrease = currentPrice - (opportunity?.basePrice || 100);
   const belowListPercentage = 17; // This could be calculated based on real data later
@@ -512,8 +570,14 @@ export default function OpportunityDetail() {
         
         console.log('[Voice Recording] Recording complete, blob size:', blob.size);
         
-        // Automatically transcribe the audio
-        await transcribeAudio(blob);
+        // Use setTimeout to prevent any synchronous issues
+        setTimeout(async () => {
+          try {
+            await transcribeAudio(blob);
+          } catch (error) {
+            console.error('[Voice Recording] Error in transcription:', error);
+          }
+        }, 250);
       };
       
       recorder.onerror = (event) => {
@@ -554,15 +618,19 @@ export default function OpportunityDetail() {
     }
     if (recordingInterval.current) {
       clearInterval(recordingInterval.current);
+      recordingInterval.current = null;
+    }
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
     }
   };
 
   const transcribeAudio = async (audioBlob: Blob) => {
     try {
+      console.log('[Transcription] Starting transcription...');
       setIsTranscribing(true);
       setRecorderError(null);
-      
-      console.log('[Transcription] Starting transcription...');
       
       // Convert blob to base64
       const reader = new FileReader();
@@ -577,6 +645,8 @@ export default function OpportunityDetail() {
       reader.readAsDataURL(audioBlob);
       const base64Audio = await base64Promise;
       
+      console.log('[Transcription] About to send API request...');
+      
       // Send to transcription API
       const response = await apiFetch('/api/pitches/voice', {
         method: 'POST',
@@ -589,33 +659,60 @@ export default function OpportunityDetail() {
         })
       });
       
+      console.log('[Transcription] API response received, status:', response.status);
+      
       if (!response.ok) {
         throw new Error('Transcription failed');
       }
       
       const result = await response.json();
+      console.log('[Transcription] Success, result:', result);
       
-      console.log('[Transcription] Success:', result);
-      
-      // Add transcribed text to the pitch content
+      // Check if component is still mounted before updating state
+      if (!isMountedRef.current) {
+        console.log('[Transcription] Component unmounted, skipping state updates');
+        return;
+      }
+
+      // Batch all state updates to prevent multiple re-renders
       if (result.text) {
         const transcribedText = result.text.trim();
+        console.log('[Transcription] Adding text to pitch:', transcribedText.length, 'characters');
+        
+        // Update pitch content immediately
         setPitchContent(prev => {
-          // If there's existing content, add a line break before the new text
           const separator = prev.trim() ? '\n\n' : '';
-          return prev + separator + transcribedText;
+          const newContent = prev + separator + transcribedText;
+          console.log('[Transcription] New pitch content length:', newContent.length);
+          return newContent;
         });
         
-        toast({
-          title: "Voice Transcribed",
-          description: `Added ${transcribedText.length} characters to your pitch`,
-        });
+        console.log('[Transcription] Pitch content updated, cleaning up...');
+        
+        // Clean up recording state
+        setRecordingBlob(null);
+        setAudioURL(null);
+        setRecordingTime(0);
+        
+        // Show success feedback without global toast
+        console.log('[Transcription] Voice transcription completed successfully!');
+        console.log(`[Transcription] Added ${transcribedText.length} characters to pitch content`);
+        
+        // Set transcription success state for UI feedback
+        setTranscriptionSuccess(true);
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            setTranscriptionSuccess(false);
+          }
+        }, 3000);
+      } else {
+        console.log('[Transcription] No text in result, cleaning up...');
+        setRecordingBlob(null);
+        setAudioURL(null);
+        setRecordingTime(0);
       }
       
-      // Clean up
-      setRecordingBlob(null);
-      setAudioURL(null);
-      setRecordingTime(0);
+      console.log('[Transcription] Transcription process complete');
       
     } catch (error) {
       console.error('[Transcription] Error:', error);
@@ -625,7 +722,10 @@ export default function OpportunityDetail() {
       const url = URL.createObjectURL(audioBlob);
       setAudioURL(url);
     } finally {
-      setIsTranscribing(false);
+      console.log('[Transcription] Setting isTranscribing to false...');
+      if (isMountedRef.current) {
+        setIsTranscribing(false);
+      }
     }
   };
 
@@ -808,11 +908,11 @@ export default function OpportunityDetail() {
                   <div className="flex items-center space-x-3">
                     <span className="text-sm font-medium text-blue-700">Classification:</span>
                     <Badge className={`border-0 px-4 py-2 font-semibold shadow-sm ${
-                      opportunity.status === 'open' 
+                      getOpportunityStatus(opportunity) === 'open' 
                         ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
                         : 'bg-gradient-to-r from-red-400 to-pink-500 text-white'
                     }`}>
-                      {opportunity.status ? opportunity.status.charAt(0).toUpperCase() + opportunity.status.slice(1) : 'Open'}
+                      {getOpportunityStatus(opportunity).charAt(0).toUpperCase() + getOpportunityStatus(opportunity).slice(1)}
                     </Badge>
                   </div>
                 </div>
@@ -1119,37 +1219,60 @@ export default function OpportunityDetail() {
 
                     {/* Record Pitch Button - Only show if not submitted and not loading */}
                     {!isCheckingPitchStatus && !userPitchStatus?.hasSubmitted && (
-                      <div className="flex items-center justify-between mb-6">
-                        <Button
-                          variant="outline"
-                          className={`flex items-center space-x-2 border-red-200 hover:bg-red-50 ${
-                            isRecording ? 'bg-red-50 text-red-700 border-red-300' : 
-                            isTranscribing ? 'bg-blue-50 text-blue-700 border-blue-300' :
-                            'text-red-500'
-                          }`}
-                          onClick={isRecording ? stopRecording : startRecording}
-                          disabled={isTranscribing}
-                        >
-                          {isRecording ? (
-                            <>
-                              <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
-                              <span className="font-medium">Recording {formatTime(recordingTime)}</span>
-                            </>
-                          ) : isTranscribing ? (
-                            <>
-                              <div className="w-3 h-3 bg-blue-600 rounded-full animate-pulse"></div>
-                              <span className="font-medium">Transcribing...</span>
-                            </>
-                          ) : (
-                            <>
-                              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                              <span className="font-medium">Record Pitch</span>
-                            </>
-                          )}
-                        </Button>
-                        <span className="text-blue-600 text-sm font-medium">
-                          Powered by QuoteBid AI
-                        </span>
+                      <div className="mb-6">
+                        <div className="flex items-center justify-between mb-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className={`flex items-center space-x-2 border-red-200 hover:bg-red-50 ${
+                              isRecording ? 'bg-red-50 text-red-700 border-red-300' : 
+                              isTranscribing ? 'bg-blue-50 text-blue-700 border-blue-300' :
+                              'text-red-500'
+                            }`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (isRecording) {
+                                stopRecording();
+                              } else {
+                                startRecording();
+                              }
+                            }}
+                            disabled={isTranscribing}
+                          >
+                            {isRecording ? (
+                              <>
+                                <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
+                                <span className="font-medium">Recording {formatTime(recordingTime)}</span>
+                              </>
+                            ) : isTranscribing ? (
+                              <>
+                                <div className="w-3 h-3 bg-blue-600 rounded-full animate-pulse"></div>
+                                <span className="font-medium">Transcribing...</span>
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                <span className="font-medium">Record Pitch</span>
+                              </>
+                            )}
+                          </Button>
+                          <span className="text-blue-600 text-sm font-medium">
+                            Powered by QuoteBid AI
+                          </span>
+                        </div>
+                        
+                        {/* Success indicator */}
+                        {transcriptionSuccess && (
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center space-x-2">
+                            <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <span className="text-green-700 font-medium text-sm">Voice transcribed and added to your pitch!</span>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1207,7 +1330,12 @@ export default function OpportunityDetail() {
                     {!isCheckingPitchStatus && !userPitchStatus?.hasSubmitted && (
                       <>
                         <Button
-                          onClick={handleSecurePitch}
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleSecurePitch();
+                          }}
                           className={`w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 mb-4 ${
                             priceData ? 'ring-2 ring-blue-300 ring-opacity-50' : ''
                           }`}

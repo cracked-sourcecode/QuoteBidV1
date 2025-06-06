@@ -1721,6 +1721,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Transform the data to match what the client expects
+      // Get real-time pricing from pricing engine (same logic as list API)
+      const basePrice = Number(oppWithPub.minimumBid) || 100;
+      const currentPrice = Number(oppWithPub.current_price) || basePrice;
+      
       const opportunity = {
         id: oppWithPub.id,
         title: oppWithPub.title,
@@ -1734,11 +1738,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         topicTags: Array.isArray(oppWithPub.tags) ? oppWithPub.tags : [],
         slotsTotal: 5, // Default value
         slotsRemaining: 3, // Default value
-        basePrice: oppWithPub.minimumBid || 100,
-        currentPrice: oppWithPub.minimumBid || 100,
+        basePrice,
+        currentPrice, // ✅ Now uses real-time pricing from pricing engine!
         increment: 50, // Default value
-        floorPrice: oppWithPub.minimumBid || 100,
-        cutoffPrice: (oppWithPub.minimumBid || 100) + 500, // Default value
+        floorPrice: basePrice,
+        cutoffPrice: currentPrice + 500, // Dynamic based on current price
         deadline: oppWithPub.deadline || new Date().toISOString(),
         postedAt: oppWithPub.createdAt || new Date().toISOString(),
         createdAt: oppWithPub.createdAt || new Date().toISOString(),

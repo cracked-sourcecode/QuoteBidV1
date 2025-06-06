@@ -143,13 +143,13 @@ export default function OpportunityCard({
             >
               <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
             </button>
-            
-            {/* Market Heat Indicator */}
-            <div className={`flex items-center space-x-1 px-2 py-1 rounded-full ${pulseIndicators.bgColor} ${pulseIndicators.borderColor} border`}>
-              <span className="text-xs">{pulseIndicators.icon}</span>
-              <span className={`text-xs font-medium ${pulseIndicators.color}`}>
-                {pulseIndicators.label}
-              </span>
+          
+          {/* Market Heat Indicator */}
+          <div className={`flex items-center space-x-1 px-2 py-1 rounded-full ${pulseIndicators.bgColor} ${pulseIndicators.borderColor} border`}>
+            <span className="text-xs">{pulseIndicators.icon}</span>
+            <span className={`text-xs font-medium ${pulseIndicators.color}`}>
+              {pulseIndicators.label}
+            </span>
             </div>
           </div>
         </div>

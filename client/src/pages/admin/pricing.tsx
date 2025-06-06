@@ -245,35 +245,35 @@ export default function AdminPricing() {
                   return (
                     <TableRow key={variable.var_name || `var-${Math.random()}`}>
                       <TableCell className="font-medium">{variable.var_name || 'Unknown'}</TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="-10"
-                          max="10"
+                    <TableCell>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="-10"
+                        max="10"
                           value={editingValues[variable.var_name]?.weight ?? getWeight()}
-                          onChange={(e) => handleWeightChange(variable.var_name, parseFloat(e.target.value) || 0)}
-                          className="w-20"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={editingValues[variable.var_name]?.nonlinear_fn ?? (variable.nonlinear_fn || 'none')}
-                          onValueChange={(value) => handleNonlinearFnChange(variable.var_name, value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">none</SelectItem>
-                            <SelectItem value="decay24h">decay24h</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-500">
-                        {variable.updated_at ? new Date(variable.updated_at).toLocaleString() : 'Never'}
-                      </TableCell>
-                    </TableRow>
+                        onChange={(e) => handleWeightChange(variable.var_name, parseFloat(e.target.value) || 0)}
+                        className="w-20"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={editingValues[variable.var_name]?.nonlinear_fn ?? (variable.nonlinear_fn || 'none')}
+                        onValueChange={(value) => handleNonlinearFnChange(variable.var_name, value)}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">none</SelectItem>
+                          <SelectItem value="decay24h">decay24h</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-500">
+                      {variable.updated_at ? new Date(variable.updated_at).toLocaleString() : 'Never'}
+                    </TableCell>
+                  </TableRow>
                   );
                 }) : (
                   <TableRow>
