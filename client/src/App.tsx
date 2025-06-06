@@ -37,6 +37,7 @@ import AdminPitchesPage from "@/pages/admin/pitches";
 import BillingManagerNew from "@/pages/admin/billing-manager-new";
 import CoverageManager from "@/pages/admin/coverage-manager";
 import AdminAnalytics from "@/pages/admin/analytics";
+import AdminPricing from "@/pages/admin/pricing";
 import PublicationsManager from "@/pages/admin/publications-manager";
 import LoginPage from "@/pages/login-page";
 import TermsOfService from "@/pages/TermsOfService";
@@ -243,6 +244,14 @@ function Router() {
         <AdminProtectedRoute path="/admin/analytics" component={() => (
           <AdminLayout>
             <AdminAnalytics />
+          </AdminLayout>
+        )} />
+        
+        <AdminProtectedRoute path="/admin/pricing" component={() => (
+          <AdminLayout>
+            <div className="container mx-auto py-8 px-4">
+              <AdminPricing />
+            </div>
           </AdminLayout>
         )} />
         
