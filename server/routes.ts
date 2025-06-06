@@ -2935,9 +2935,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
+      // Prepare update data
+      const updateData = { ...validationResult.data, profileCompleted: true };
+      
+      // Don't overwrite avatar with empty value - preserve existing avatar
+      if (!updateData.avatar && user.avatar) {
+        console.log('Preserving existing avatar:', user.avatar);
+        updateData.avatar = user.avatar;
+      }
+      
+      console.log('Profile update data:', updateData);
+      
       // Update the user's profile
       const updatedUser = await getDb().update(users)
-        .set({ ...validationResult.data, profileCompleted: true })
+        .set(updateData)
         .where(eq(users.id, userId))
         .returning()
         .then(rows => rows[0]);

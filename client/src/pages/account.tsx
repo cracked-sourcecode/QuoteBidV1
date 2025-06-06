@@ -13,7 +13,7 @@ import { INDUSTRY_OPTIONS } from '@/lib/constants';
 import { format } from 'date-fns';
 import { Link } from 'wouter';
 import { Loader2, CreditCard, CheckCircle, CalendarIcon, ExternalLink, Newspaper, Upload, Trash2, Brain } from 'lucide-react';
-import imageCompression from 'browser-image-compression';
+
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Logo } from '@/components/common/Logo';
@@ -104,13 +104,13 @@ const profileFormSchema = z.object({
   bio: z.string().min(10, { message: "Please provide a short bio (at least 10 characters)" }),
   location: z.string().min(2, { message: "Location is required" }),
   industry: z.string().min(1, { message: "Please select your industry" }),
-  linkedIn: z.string().url({ message: "Please enter a valid LinkedIn URL" }).optional().or(z.literal("")),
-  instagram: z.string().url({ message: "Please enter a valid Instagram URL" }).optional().or(z.literal("")),
-  twitter: z.string().url({ message: "Please enter a valid X.com URL" }).optional().or(z.literal("")),
-  website: z.string().url({ message: "Please enter a valid website URL" }).optional().or(z.literal("")),
+  linkedIn: z.string().optional().or(z.literal("")),
+  instagram: z.string().optional().or(z.literal("")),
+  twitter: z.string().optional().or(z.literal("")),
+  website: z.string().optional().or(z.literal("")),
   doFollowLink: z.string().optional().or(z.literal("")),
   avatar: z.string().optional(),
-  otherProfileUrl: z.string().url({ message: "Please enter a valid URL" }).optional().or(z.literal("")),
+  otherProfileUrl: z.string().optional().or(z.literal("")),
 });
 
 // Password change form schema (same requirements as signup)
@@ -212,11 +212,21 @@ export default function AccountPage() {
     enabled: !!user?.id,
   });
 
-  // Fetch user's pitches for communication
+  // Fetch user's pitches for communication and media coverage
   const { data: userPitches, isLoading: isLoadingPitches } = useQuery<any[]>({
     queryKey: [`/api/pitches/user/${user?.id}`],
     enabled: !!user?.id,
   });
+
+  // Filter successful pitches with article URLs for media coverage
+  const successfulPitchesWithArticles = userPitches?.filter(pitch => 
+    pitch.articleUrl && pitch.articleUrl !== '' && pitch.articleUrl !== '#'
+  ) || [];
+
+  // Debug logging
+  console.log('🔍 DEBUG: userPitches:', userPitches);
+  console.log('🔍 DEBUG: successfulPitchesWithArticles:', successfulPitchesWithArticles);
+  console.log('🔍 DEBUG: Pitches with articleUrl:', userPitches?.filter(p => p.articleUrl));
 
   // Initialize the form with the user's data as default values
   const form = useForm<z.infer<typeof profileFormSchema>>({
@@ -274,8 +284,8 @@ export default function AccountPage() {
     }
   };
 
-// Handle avatar file selection with compression
-  const handleAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
+// Handle avatar file selection - SIMPLE VERSION
+  const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
@@ -289,53 +299,17 @@ export default function AccountPage() {
         return;
       }
       
-      // Show compression toast for large files
-      if (file.size > 1 * 1024 * 1024) {
-        toast({
-          title: "Optimizing image",
-          description: "Large image detected, optimizing for upload..."
-        });
-      }
+      // Set the file directly - no compression, no bullshit
+      setAvatarFile(file);
       
-      try {
-        // Compression options
-        const options = {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 800,
-          useWebWorker: true,
-          onProgress: undefined,
-        };
-        
-        // Compress the image file
-        const compressedFile = await imageCompression(file, options);
-        
-        // If compression was successful, use the compressed file
-        setAvatarFile(compressedFile);
-        
-        // Create a preview
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (typeof reader.result === "string") {
-            setAvatarPreview(reader.result);
-          }
-        };
-        reader.readAsDataURL(compressedFile);
-        
-      } catch (error) {
-        console.error('Error compressing image:', error);
-        
-        // Fallback to original file if compression fails
-        setAvatarFile(file);
-        
-        // Still create a preview with original file
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (typeof reader.result === "string") {
-            setAvatarPreview(reader.result);
-          }
-        };
-        reader.readAsDataURL(file);
-      }
+      // Create a preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === "string") {
+          setAvatarPreview(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -351,35 +325,21 @@ export default function AccountPage() {
     mutationFn: async (data: z.infer<typeof profileFormSchema>) => {
       // First upload avatar if changed
       if (avatarFile && user) {
-        try {
-          console.log('Uploading avatar file:', avatarFile.name, avatarFile.type, avatarFile.size);
-          
-          const formData = new FormData();
-          formData.append('avatar', avatarFile);
-          
-          console.log('Sending avatar upload request to:', `/api/users/${user.id}/avatar`);
-          const response = await apiFetch(`/api/users/${user.id}/avatar`, {
-            method: 'POST',
-            body: formData,
-          });
-          
-          console.log('Avatar upload response status:', response.status);
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Avatar upload failed:', errorText);
-            throw new Error(`Failed to upload avatar: ${errorText}`);
-          }
-          
-          const result = await response.json();
-          console.log('Avatar upload success, result:', result);
-          
-          // Support both response formats (fileUrl and avatar)
-          data = { ...data, avatar: result.fileUrl || result.avatar };
-        } catch (error) {
-          console.error('Avatar upload error:', error);
-          throw error;
+        const formData = new FormData();
+        formData.append('avatar', avatarFile);
+        
+        const response = await apiFetch(`/api/users/${user.id}/avatar`, {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to upload avatar`);
         }
+        
+        const result = await response.json();
+        const avatarUrl = result.fileUrl || result.avatar;
+        data = { ...data, avatar: avatarUrl };
       }
       
       if (!user) throw new Error("User not found");
@@ -981,7 +941,6 @@ export default function AccountPage() {
   }
 
   const onSubmit = (data: z.infer<typeof profileFormSchema>) => {
-    console.log("Form submitted with data:", data);
     profileUpdateMutation.mutate(data);
   };
   
@@ -1000,14 +959,6 @@ export default function AccountPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50 relative overflow-hidden">
-      {/* Hidden file input for avatar upload */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        className="hidden"
-        accept="image/*"
-        onChange={handleAvatarChange}
-      />
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div 
@@ -1839,100 +1790,64 @@ export default function AccountPage() {
               {/* Media Coverage Section */}
               <div className="mb-8">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">MEDIA COVERAGE</h2>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => {
-                      setEditingMediaItem(null);
-                      setAddMediaModalOpen(true);
-                    }}
-                    className="flex items-center gap-1"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span>Add Media</span>
-                  </Button>
+                  <div>
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">MEDIA COVERAGE</h2>
+                    <p className="text-xs text-gray-500 mt-1">Powered by QuoteBid</p>
+                  </div>
                 </div>
 
                 <div className="rounded-lg border border-gray-200 p-4">
-                  {(successfulPlacements && successfulPlacements.length > 0) || customMediaItems.length > 0 ? (
+                  {successfulPitchesWithArticles.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">
-                      {/* Custom added media items */}
-                      {customMediaItems.map((item) => (
-                        <div key={item.id} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
+                      {/* Successful pitches with article URLs */}
+                      {successfulPitchesWithArticles.map((pitch) => (
+                        <div key={`pitch-${pitch.id}`} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
-                              <h3 className="font-medium text-gray-900">{item.title}</h3>
-                              <div className="flex items-center mt-1 text-sm text-gray-500">
-                                {item.publication && <span className="font-medium text-gray-600">{item.publication}</span>}
+                              <h3 className="font-medium text-gray-900 text-lg">{pitch.opportunity?.title || 'Published Article'}</h3>
+                              <div className="flex items-center mt-2 text-sm text-gray-500">
+                                <span className="font-medium text-gray-600">{pitch.opportunity?.publication?.name || 'Publication'}</span>
+                                {pitch.createdAt && (
+                                  <span className="ml-2 text-xs text-gray-400">
+                                    • {new Date(pitch.createdAt).toLocaleDateString()}
+                                  </span>
+                                )}
                               </div>
-                              <div className="mt-2">
-                                {item.url && (
-                                  <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm font-medium flex items-center">
-                                    View article
-                                    <ExternalLink className="h-3 w-3 ml-1" />
-                                  </a>
+                              <div className="flex items-center gap-3 mt-3">
+                                <span className="text-xs bg-green-100 text-green-700 rounded-full px-3 py-1 flex items-center font-medium">
+                                  <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                  Earned Placement
+                                </span>
+                                {pitch.articleUrl && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    asChild
+                                    className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                                  >
+                                    <a href={pitch.articleUrl} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                                      <ExternalLink className="h-4 w-4 mr-1" />
+                                      View Article
+                                    </a>
+                                  </Button>
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 ml-4">
-                              <span className="text-xs bg-gray-100 text-gray-700 rounded-full px-2 py-0.5 flex items-center">
-                                <Newspaper className="h-3 w-3 mr-1" />
-                                Added by you
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditMediaItem(item)}
-                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1 h-auto"
-                              >
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteMediaItem(item.id)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-auto"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
                           </div>
                         </div>
                       ))}
-                      
-                      {/* Placements from successful pitches */}
-                      {successfulPlacements && successfulPlacements.map((placement) => (
-                        <div key={placement.id} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
-                          <h3 className="font-medium text-gray-900">{placement.articleTitle || 'Untitled Article'}</h3>
-                          <div className="flex items-center mt-1 text-sm text-gray-500">
-                            <span className="font-medium text-gray-600">{placement.publication?.name || 'Publication'}</span>
-                          </div>
-                          <div className="mt-2">
-                            {placement.articleUrl && (
-                              <a href={placement.articleUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm font-medium flex items-center">
-                                View article
-                                <ExternalLink className="h-3 w-3 ml-1" />
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+
                     </div>
                   ) : (
                     <div className="text-center py-8 px-4">
-                      <p className="text-gray-500 mb-4">You don't have any media coverage yet. You can add your past coverage or get quoted through opportunities.</p>
-                      <div className="flex flex-wrap justify-center gap-3">
-                        <Button variant="outline" size="sm" onClick={() => {
-                          setEditingMediaItem(null);
-                          setAddMediaModalOpen(true);
-                        }}>
-                          Add Past Coverage
-                        </Button>
+                      <div className="flex flex-col items-center">
+                        <svg className="h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p className="text-gray-500 mb-4">No published articles yet</p>
+                        <p className="text-sm text-gray-400 mb-4">When you get quoted through QuoteBid opportunities, your published articles will appear here.</p>
                         <Button variant="outline" size="sm" asChild>
                           <a href="/opportunities">Browse Opportunities</a>
                         </Button>

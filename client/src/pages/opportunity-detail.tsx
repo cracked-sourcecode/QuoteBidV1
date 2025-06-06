@@ -1302,7 +1302,7 @@ export default function OpportunityDetail() {
                             <div key={pitch.id} className={`flex items-center justify-center w-10 h-10 rounded-full shadow-md border-2 border-white ${index > 0 ? '-ml-2' : ''}`}>
                               {pitch.user?.avatar ? (
                                 <img 
-                                  src={`http://localhost:5050${pitch.user.avatar}`}
+                                  src={pitch.user.avatar.startsWith('http') ? pitch.user.avatar : `${window.location.origin}${pitch.user.avatar}`}
                                   alt={pitch.user.fullName || 'Expert'}
                                   className="w-full h-full rounded-full object-cover"
                                 />

@@ -44,7 +44,7 @@ app.use(cors({
     
     // In production, use specific allowed origins
     const allowedOrigins = [
-      'http://localhost:5100', // New default API port
+      'http://localhost:5050', // Default API port
       'http://localhost:5173', // Vite default port
       'http://localhost:5174', // Vite alternative port
       'http://localhost:3000', // Common React port
@@ -170,8 +170,8 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Use environment variable for port, default to 5100
-  const PORT = Number(process.env.PORT) || 5100;
+  // Use environment variable for port, default to 5050
+  const PORT = Number(process.env.PORT) || 5050;
   server.listen(PORT, '0.0.0.0', () => {
     log(`API listening on :${PORT}`);
   });
