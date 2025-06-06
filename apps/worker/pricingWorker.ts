@@ -19,6 +19,7 @@ import {
   variable_registry, 
   pricing_config,
   pitches,
+  savedOpportunities,
   type Opportunity
 } from "../../shared/schema";
 import { 
@@ -160,13 +161,21 @@ async function fetchLiveOpportunities(): Promise<Array<Opportunity & {
       
       const pitchCount = Number(pitchCountResult[0]?.count || 0);
       
+      // Count saves for this opportunity
+      const saveCountResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(savedOpportunities)
+        .where(eq(savedOpportunities.opportunityId, opp.id));
+      
+      const saveCount = Number(saveCountResult[0]?.count || 0);
+      
       // For now, set other metrics to 0 - these can be implemented later
       // when we have click/save/draft tracking in place
       return {
         ...opp,
         pitchCount,
         clickCount: 0, // TODO: Implement click tracking
-        saveCount: 0,  // TODO: Implement save tracking  
+        saveCount,     // ✅ Now tracking actual saves!
         draftCount: 0, // TODO: Implement draft tracking
       };
     })

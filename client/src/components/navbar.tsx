@@ -28,6 +28,7 @@ export default function Navbar() {
 
   const navItems = [
     { name: "OPPORTUNITIES", path: "/opportunities" },
+    { name: "SAVED", path: "/saved" },
     { name: "MY PITCHES", path: "/my-pitches" },
   ];
   

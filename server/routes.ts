@@ -2745,27 +2745,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // ============ SAVED OPPORTUNITIES ENDPOINTS ============
   
-  // Get saved opportunities for a user
-  app.get("/api/users/:userId/saved", async (req: Request, res: Response) => {
+  // Get saved opportunities for a user with full opportunity details
+  app.get("/api/users/:userId/saved", jwtAuth, ensureAuth, async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
       
-      const saved = await storage.getSavedOpportunitiesByUserId(userId);
-      res.json(saved);
+      // Ensure the user can only access their own saved opportunities
+      if (req.user!.id !== userId) {
+        return res.status(403).json({ message: "Unauthorized: Can only access your own saved opportunities" });
+      }
+      
+      console.log(`🔍 Fetching saved opportunities for user ${userId}`);
+      
+      // Get saved opportunity records
+      const savedRecords = await storage.getSavedOpportunitiesByUserId(userId);
+      console.log(`📋 Found ${savedRecords.length} saved records for user ${userId}:`, savedRecords.map(r => ({ id: r.id, opportunityId: r.opportunityId, createdAt: r.createdAt })));
+      
+      if (savedRecords.length === 0) {
+        console.log(`📭 No saved opportunities found for user ${userId}`);
+        return res.json([]);
+      }
+      
+      // For each saved record, get the full opportunity with publication details
+      const savedOpportunitiesWithDetails = await Promise.all(
+        savedRecords.map(async (saved) => {
+          console.log(`🔍 Getting details for saved opportunity ${saved.opportunityId}`);
+          try {
+            const opportunityWithPublication = await storage.getOpportunityWithPublication(saved.opportunityId);
+            console.log(`📰 Opportunity ${saved.opportunityId} details:`, opportunityWithPublication ? {
+              id: opportunityWithPublication.id,
+              title: opportunityWithPublication.title,
+              publication: opportunityWithPublication.publication?.name
+            } : 'NOT FOUND');
+            return {
+              ...saved,
+              opportunity: opportunityWithPublication
+            };
+          } catch (error) {
+            console.error(`💥 Error getting details for opportunity ${saved.opportunityId}:`, error);
+            return {
+              ...saved,
+              opportunity: null
+            };
+          }
+        })
+      );
+      
+      // Filter out any saved opportunities where the opportunity no longer exists
+      const validSavedOpportunities = savedOpportunitiesWithDetails.filter(
+        (saved) => saved.opportunity !== null && saved.opportunity !== undefined
+      );
+      
+      console.log(`✅ Returning ${validSavedOpportunities.length} valid saved opportunities out of ${savedOpportunitiesWithDetails.length} total for user ${userId}`);
+      res.json(validSavedOpportunities);
     } catch (error: any) {
+      console.error('Error fetching saved opportunities:', error);
       res.status(500).json({ message: "Failed to fetch saved opportunities" });
     }
   });
   
   // Save an opportunity
-  app.post("/api/saved", async (req: Request, res: Response) => {
+  app.post("/api/saved", jwtAuth, ensureAuth, async (req: Request, res: Response) => {
     try {
       const validationResult = insertSavedOpportunitySchema.safeParse(req.body);
       
       if (!validationResult.success) {
+        console.error('Save opportunity validation failed:', validationResult.error.errors);
         return res.status(400).json({ 
           message: "Invalid data", 
           errors: validationResult.error.errors 
@@ -2774,21 +2822,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const savedData = validationResult.data;
       
+      // Ensure the user can only save for themselves
+      if (req.user!.id !== savedData.userId) {
+        return res.status(403).json({ message: "Unauthorized: Can only save opportunities for yourself" });
+      }
+      
+      console.log(`User ${savedData.userId} attempting to save opportunity ${savedData.opportunityId}`);
+      
       // Check if already saved
       const existing = await storage.getSavedOpportunity(savedData.userId, savedData.opportunityId);
       if (existing) {
+        console.log(`Opportunity ${savedData.opportunityId} already saved by user ${savedData.userId}`);
         return res.status(400).json({ message: "Opportunity already saved" });
       }
       
       const saved = await storage.createSavedOpportunity(savedData);
+      console.log(`Successfully saved opportunity ${savedData.opportunityId} for user ${savedData.userId}:`, saved);
       res.status(201).json(saved);
     } catch (error: any) {
-      res.status(500).json({ message: "Failed to save opportunity" });
+      console.error('Error saving opportunity:', error);
+      res.status(500).json({ message: "Failed to save opportunity", error: error.message });
     }
   });
   
   // Unsave an opportunity
-  app.delete("/api/users/:userId/saved/:opportunityId", async (req: Request, res: Response) => {
+  app.delete("/api/users/:userId/saved/:opportunityId", jwtAuth, ensureAuth, async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       const opportunityId = parseInt(req.params.opportunityId);
@@ -2797,14 +2855,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid IDs" });
       }
       
+      // Ensure the user can only unsave their own opportunities
+      if (req.user!.id !== userId) {
+        return res.status(403).json({ message: "Unauthorized: Can only unsave your own opportunities" });
+      }
+      
+      console.log(`User ${userId} attempting to unsave opportunity ${opportunityId}`);
+      
       const success = await storage.deleteSavedOpportunity(userId, opportunityId);
       if (!success) {
+        console.log(`Saved opportunity not found: user ${userId}, opportunity ${opportunityId}`);
         return res.status(404).json({ message: "Saved opportunity not found" });
       }
       
+      console.log(`Successfully unsaved opportunity ${opportunityId} for user ${userId}`);
       res.status(204).end();
     } catch (error: any) {
-      res.status(500).json({ message: "Failed to unsave opportunity" });
+      console.error('Error unsaving opportunity:', error);
+      res.status(500).json({ message: "Failed to unsave opportunity", error: error.message });
+    }
+  });
+  
+  // Check if an opportunity is saved by a user
+  app.get("/api/users/:userId/saved/:opportunityId/status", jwtAuth, ensureAuth, async (req: Request, res: Response) => {
+    try {
+      console.log(`📊 Checking saved status for user ${req.params.userId}, opportunity ${req.params.opportunityId}`);
+      
+      const userId = parseInt(req.params.userId);
+      const opportunityId = parseInt(req.params.opportunityId);
+      
+      if (isNaN(userId) || isNaN(opportunityId)) {
+        console.log(`❌ Invalid IDs: userId=${req.params.userId}, opportunityId=${req.params.opportunityId}`);
+        return res.status(400).json({ message: "Invalid IDs" });
+      }
+      
+      // Ensure the user can only check their own saved status
+      if (req.user!.id !== userId) {
+        console.log(`❌ Unauthorized: User ${req.user!.id} trying to check status for user ${userId}`);
+        return res.status(403).json({ message: "Unauthorized: Can only check your own saved status" });
+      }
+      
+      console.log(`🔍 Fetching saved status from storage...`);
+      const saved = await storage.getSavedOpportunity(userId, opportunityId);
+      console.log(`📋 Saved status result: ${saved ? 'SAVED' : 'NOT SAVED'}`);
+      
+      const response = { isSaved: !!saved };
+      console.log(`✅ Sending response:`, response);
+      res.json(response);
+    } catch (error: any) {
+      console.error('💥 Error checking saved status:', error);
+      res.status(500).json({ message: "Failed to check saved status", error: error.message });
     }
   });
   

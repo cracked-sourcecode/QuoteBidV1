@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Clock, Users, TrendingUp, AlertTriangle, Flame, Award, Building, DollarSign, Eye, TrendingDown, Zap } from 'lucide-react';
+import { Clock, Users, TrendingUp, AlertTriangle, Flame, Award, Building, DollarSign, Eye, TrendingDown, Zap, Bookmark } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Opportunity, OutletTier } from '@shared/types/opportunity';
 import { Button } from '@/components/ui/button';
@@ -7,8 +7,10 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSubscription } from '@/hooks/use-subscription';
 import PaywallModal from '@/components/paywall-modal';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getLogoContainerClasses, getDeviceOptimizedClasses } from '@/lib/responsive-utils';
+import { useAuth } from '@/hooks/use-auth';
+import { apiFetch } from '@/lib/apiFetch';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -23,9 +25,12 @@ const tierLabels: Record<OutletTier, string> = {
 
 export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
   const { hasActiveSubscription } = useSubscription();
+  const { user } = useAuth();
   const [showPaywallModal, setShowPaywallModal] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     id,
@@ -122,6 +127,104 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
       return;
     }
     window.location.href = `/opportunities/${id}`;
+  };
+
+  // Check if opportunity is saved when component mounts
+  useEffect(() => {
+    const checkSavedStatus = async () => {
+      if (!user?.id) return;
+      
+      try {
+        console.log(`🔍 Checking saved status for opportunity ${id} for user ${user.id}`);
+        const response = await apiFetch(`/api/users/${user.id}/saved/${id}/status`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`📊 Saved status for opportunity ${id}: ${data.isSaved}`);
+          setIsSaved(data.isSaved);
+        } else {
+          console.error(`❌ Failed to check saved status for opportunity ${id}:`, response.status);
+          // Default to false if we can't check
+          setIsSaved(false);
+        }
+      } catch (error) {
+        console.error('💥 Error checking saved status:', error);
+        // Default to false if there's an error
+        setIsSaved(false);
+      }
+    };
+    
+    checkSavedStatus();
+    
+    // Listen for refresh events from the saved page
+    const handleRefreshSavedStatus = () => {
+      console.log(`🔄 Received refresh event for opportunity ${id}`);
+      checkSavedStatus();
+    };
+    
+    window.addEventListener('refreshSavedStatus', handleRefreshSavedStatus);
+    
+    return () => {
+      window.removeEventListener('refreshSavedStatus', handleRefreshSavedStatus);
+    };
+  }, [user?.id, id]);
+
+  const handleSaveClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!user?.id) return;
+    if (isLoading) return;
+    
+    setIsLoading(true);
+    console.log(`🔄 Save button clicked for opportunity ${id}, current isSaved state: ${isSaved}`);
+    
+    try {
+      if (isSaved) {
+        // Unsave the opportunity
+        console.log(`🗑️ Attempting to unsave opportunity ${id}`);
+        const response = await apiFetch(`/api/users/${user.id}/saved/${id}`, {
+          method: 'DELETE'
+        });
+        
+        if (response.ok) {
+          setIsSaved(false);
+          console.log(`✅ Successfully unsaved opportunity ${id}`);
+        } else {
+          const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+          console.error(`❌ Failed to unsave opportunity ${id}:`, response.status, errorData);
+        }
+      } else {
+        // Save the opportunity
+        console.log(`💾 Attempting to save opportunity ${id}`);
+        const response = await apiFetch('/api/saved', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            opportunityId: id
+          })
+        });
+        
+        if (response.ok) {
+          setIsSaved(true);
+          console.log(`✅ Successfully saved opportunity ${id}`);
+        } else {
+          const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+          console.error(`❌ Failed to save opportunity ${id}:`, response.status, errorData);
+          
+          // If it's already saved, just update our state to reflect that
+          if (response.status === 400 && errorData.message?.includes('already saved')) {
+            console.log(`🔄 Opportunity ${id} was already saved, updating button state to "Saved"`);
+            setIsSaved(true);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('💥 Error in save/unsave operation:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -273,15 +376,31 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
           </div>
           
           {/* Deadline info */}
-          <div className="flex items-center text-sm text-gray-600">
-            <Clock className="h-3.5 w-3.5 mr-1.5 text-gray-500" />
-            <span className="font-semibold">
-              {hoursRemaining <= 0 ? 'Closed' :
-               hoursRemaining <= 6 ? `${hoursRemaining}h left` :
-               hoursRemaining <= 24 ? 'Closes today' : 
-               daysRemaining === 1 ? 'Closes tomorrow' :
-               `${daysRemaining} days left`}
-            </span>
+          <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
+            <div className="flex items-center">
+              <Clock className="h-3.5 w-3.5 mr-1.5 text-gray-500" />
+              <span className="font-semibold">
+                {hoursRemaining <= 0 ? 'Closed' :
+                 hoursRemaining <= 6 ? `${hoursRemaining}h left` :
+                 hoursRemaining <= 24 ? 'Closes today' : 
+                 daysRemaining === 1 ? 'Closes tomorrow' :
+                 `${daysRemaining} days left`}
+              </span>
+            </div>
+            
+            {/* Save Button */}
+            <button
+              onClick={handleSaveClick}
+              disabled={isLoading}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isSaved 
+                  ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''} ${isLoading ? 'animate-pulse' : ''}`} />
+              <span>{isLoading ? 'Saving...' : isSaved ? 'Saved' : 'Save Opportunity'}</span>
+            </button>
           </div>
         </div>
         

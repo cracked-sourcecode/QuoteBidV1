@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Clock, TrendingUp, TrendingDown, Minus, Award, Target, Trophy } from 'lucide-react';
+import { Clock, TrendingUp, TrendingDown, Minus, Award, Target, Trophy, Bookmark } from 'lucide-react';
 import { Opportunity } from '@shared/types/opportunity';
 import { calculateMarketHeat, getMarketPulseIndicators } from '@/lib/marketPulse';
 import { useOpportunityPrice } from '@/contexts/PriceContext';
@@ -21,6 +21,7 @@ export default function OpportunityCard({
   priceDirection = 'neutral'
 }: OpportunityCardProps) {
   const [timeLeft, setTimeLeft] = useState('');
+  const [isSaved, setIsSaved] = useState(false);
   
   // Connect to real-time price updates from pricing engine
   const priceData = useOpportunityPrice(opportunity.id);
@@ -99,6 +100,12 @@ export default function OpportunityCard({
       onBidClick(opportunity.id);
     }
   };
+
+  const handleSaveClick = () => {
+    setIsSaved(!isSaved);
+    // TODO: Connect to database and pricing engine
+    console.log(`${isSaved ? 'Unsaved' : 'Saved'} opportunity ${opportunity.id}`);
+  };
   
   return (
     <Card className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg ${pulseIndicators.bgColor} ${pulseIndicators.borderColor} border-2 ${pulseIndicators.pulse}`}>
@@ -123,12 +130,27 @@ export default function OpportunityCard({
             </div>
           </div>
           
-          {/* Market Heat Indicator */}
-          <div className={`flex items-center space-x-1 px-2 py-1 rounded-full ${pulseIndicators.bgColor} ${pulseIndicators.borderColor} border`}>
-            <span className="text-xs">{pulseIndicators.icon}</span>
-            <span className={`text-xs font-medium ${pulseIndicators.color}`}>
-              {pulseIndicators.label}
-            </span>
+          <div className="flex items-center space-x-2">
+            {/* Save Button */}
+            <button
+              onClick={handleSaveClick}
+              className={`p-1.5 rounded-full transition-all duration-200 hover:scale-110 ${
+                isSaved 
+                  ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' 
+                  : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600'
+              }`}
+              title={isSaved ? 'Remove from saved' : 'Save opportunity'}
+            >
+              <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
+            </button>
+            
+            {/* Market Heat Indicator */}
+            <div className={`flex items-center space-x-1 px-2 py-1 rounded-full ${pulseIndicators.bgColor} ${pulseIndicators.borderColor} border`}>
+              <span className="text-xs">{pulseIndicators.icon}</span>
+              <span className={`text-xs font-medium ${pulseIndicators.color}`}>
+                {pulseIndicators.label}
+              </span>
+            </div>
           </div>
         </div>
         

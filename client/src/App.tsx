@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import OpportunitiesPage from "@/pages/opportunities";
+import SavedOpportunitiesPage from "@/pages/saved-opportunities";
 import OpportunityDetail from "@/pages/opportunity-detail";
 import MyPitches from "@/pages/my-pitches";
 import PitchHistory from "@/pages/pitch-history";
@@ -160,6 +161,13 @@ function Router() {
           <>
             <Navbar />
             <OpportunitiesPage />
+          </>
+        )} />
+        
+        <ProtectedRoute path="/saved" component={() => (
+          <>
+            <Navbar />
+            <SavedOpportunitiesPage />
           </>
         )} />
         

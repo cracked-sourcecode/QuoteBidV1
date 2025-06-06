@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/apiFetch';
 import { useLocation } from 'wouter';
-import { Search, Filter, SlidersHorizontal, Loader2 } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, Loader2, Bookmark } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
