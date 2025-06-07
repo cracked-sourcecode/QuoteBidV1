@@ -234,29 +234,71 @@ export default function OpportunityDetail() {
         const opportunityData = await opportunityResponse.json();
         setOpportunity(opportunityData);
         
-        // Fetch price history
+        // Fetch price history - Load complete accumulated price movement history
         try {
-          const priceResponse = await apiFetch(`/api/opportunities/${opportunityId}/price-history`, {
+          console.log('📊 Loading complete price history for opportunity:', opportunityId);
+          const priceResponse = await apiFetch(`/api/opportunities/${opportunityId}/price-trend?window=30d`, {
             credentials: 'include'
           });
           
           if (priceResponse.ok) {
             const priceData = await priceResponse.json();
-            // Transform price history data for the chart
-            const chartData = priceData.map((item: any, index: number) => ({
-              day: index + 1,
-              price: item.price,
-              label: `${index + 1}d`,
-              timestamp: item.timestamp
+            console.log('📊 Loaded price history from database:', priceData.length, 'data points');
+            
+            // Transform database price history for the chart
+            // The API returns format: { t: timestamp, p: price }
+            const chartData = priceData.map((item: any) => ({
+              timestamp: new Date(item.t).getTime(),
+              price: Number(item.p),
+              date: new Date(item.t),
+              label: format(new Date(item.t), 'MMM d, HH:mm:ss'),
+              slotsRemaining: opportunityData.slotsRemaining || 5,
+              trend: 'historical',
+              isRealTime: false
             }));
+            
             setPriceHistory(chartData);
+            console.log('📊 Chart will show COMPLETE PERSISTENT JOURNEY:', chartData.length, 'recorded price points');
           }
         } catch (priceError) {
-          console.log('Price history not available, using fallback data');
-          // Generate fallback price data
-          const fallbackData = generateFallbackPriceData(opportunityData);
-          setPriceHistory(fallbackData);
+          console.log('📊 Price history API not available, will create base price point');
+          // Will create base price point below regardless
         }
+        
+        // ALWAYS ensure we have a base price starting point
+        const basePrice = opportunityData.tier === 1 ? 225 : 
+                         opportunityData.tier === 2 ? 175 : 125;
+        
+        const startTime = new Date(opportunityData.postedAt || opportunityData.createdAt);
+        
+        const initialPricePoint = {
+          timestamp: startTime.getTime(),
+          price: basePrice,
+          date: startTime,
+          label: format(startTime, 'MMM d, HH:mm'),
+          slotsRemaining: opportunityData.slotsRemaining || 5,
+          trend: 'initial',
+          isRealTime: false
+        };
+        
+        // If we don't have any price history, start with base price
+        // If we do have history, ensure it starts with the base price
+        setPriceHistory(prev => {
+          if (prev.length === 0) {
+            console.log('📊 No existing history - starting with tier base price:', basePrice, 'for tier', opportunityData.tier);
+            return [initialPricePoint];
+          } else {
+            // Check if first point is the base price
+            const firstPoint = prev[0];
+            if (firstPoint.price !== basePrice || Math.abs(firstPoint.timestamp - startTime.getTime()) > 60000) {
+              console.log('📊 Prepending tier base price to existing history:', basePrice, 'for tier', opportunityData.tier);
+              return [initialPricePoint, ...prev];
+            } else {
+              console.log('📊 Using existing price history that already starts with base price:', prev.length, 'points');
+              return prev;
+            }
+          }
+        });
         
         // Fetch bid info
         try {
@@ -328,26 +370,69 @@ export default function OpportunityDetail() {
     
     fetchOpportunityData();
   }, [opportunityId]);
+
+  // Real-time price history state
+  const [realTimePriceHistory, setRealTimePriceHistory] = useState<any[]>([]);
   
-  // Generate fallback price data if API doesn't have it
-  const generateFallbackPriceData = (opp: any) => {
-    const basePrice = opp.basePrice || 100;
-    const currentPrice = opp.currentPrice || basePrice;
-    const days = 7;
+    // Real-time price update effect - Record EVERY price update from the engine
+  useEffect(() => {
+    if (!priceData || !opportunity) return;
     
-    const data = [];
-    for (let i = 0; i < days; i++) {
-      const progress = i / (days - 1);
-      const price = Math.round(basePrice + (currentPrice - basePrice) * progress);
-      data.push({
-        day: i + 1,
-        price: price,
-        label: `${i + 1}d`
-      });
-    }
+    const now = new Date();
+    const currentTimestamp = now.getTime();
     
-    return data;
-  };
+    console.log('📊 🎯 CAPTURING EVERY PRICE UPDATE:', priceData.currentPrice, 'at', now.toISOString());
+    
+    // Create new price point for every update
+    const newPricePoint = {
+      timestamp: currentTimestamp,
+      price: priceData.currentPrice,
+      date: now,
+      label: format(now, 'MMM d, HH:mm:ss'),
+      slotsRemaining: opportunity.slotsRemaining || 5,
+      trend: priceData.trend || 'stable',
+      isRealTime: true
+    };
+    
+    // Add to real-time array for immediate feedback
+    setRealTimePriceHistory(prev => {
+      console.log('📊 Adding to real-time history (total will be:', prev.length + 1, ')');
+      return [...prev, newPricePoint].slice(-100); // Keep last 100 for performance
+    });
+    
+    // CRITICAL: Record EVERY price update to persistent history
+    setPriceHistory(prev => {
+      const lastEntry = prev[prev.length - 1];
+      
+      // Record EVERY price update - no filtering by time or amount
+      // Only skip if it's literally the exact same price at the exact same timestamp
+      const isDuplicate = lastEntry && 
+        lastEntry.price === priceData.currentPrice && 
+        Math.abs(new Date(lastEntry.timestamp).getTime() - currentTimestamp) < 5000; // 5 second buffer for duplicates
+      
+      if (!isDuplicate) {
+        const persistentPoint = {
+          timestamp: now.toISOString(),
+          price: priceData.currentPrice,
+          date: now,
+          label: format(now, 'MMM d, HH:mm:ss'),
+          slotsRemaining: opportunity.slotsRemaining || 5,
+          trend: priceData.trend || 'stable',
+          isRealTime: true
+        };
+        
+        console.log('📊 ✅ RECORDED TO PERSISTENT HISTORY:', persistentPoint.price, '(total history:', prev.length + 1, 'points)');
+        return [...prev, persistentPoint];
+      } else {
+        console.log('📊 ⏭️  Skipping duplicate price point');
+        return prev;
+      }
+    });
+  }, [priceData?.currentPrice, priceData?.trend, priceData?.lastPriceUpdate, opportunity]);
+
+    // No auto-refresh needed - we capture every price update directly from the engine
+  
+
   
   // Loading state
   if (isLoading) {
@@ -386,16 +471,178 @@ export default function OpportunityDetail() {
   // Calculate if today is the deadline
   const isToday = opportunity?.deadline ? format(new Date(opportunity.deadline), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') : false;
 
-  // Use real price data or fallback data
-  const priceDataForChart = priceHistory.length > 0 ? priceHistory : [
-    { day: 1, price: currentPrice - 50, label: '1d' },
-    { day: 2, price: currentPrice - 30, label: '2d' },
-    { day: 3, price: currentPrice - 20, label: '3d' },
-    { day: 4, price: currentPrice - 35, label: '4d' },
-    { day: 5, price: currentPrice - 10, label: '5d' },
-    { day: 6, price: currentPrice - 5, label: '6d' },
-    { day: 7, price: currentPrice, label: '7d' }
-  ];
+  // Enhanced price data processing - Show complete persistent price journey
+  const getEnhancedPriceData = () => {
+    if (!opportunity) return [];
+    
+    // Always use the persistent price history as the primary data source
+    if (priceHistory.length > 0) {
+      console.log('📊 Using persistent price history:', priceHistory.length, 'points');
+      
+      // Transform persistent history for chart display
+      const persistentData = priceHistory.map((item: any) => ({
+        timestamp: new Date(item.timestamp).getTime(),
+        price: item.price,
+        date: new Date(item.timestamp),
+        label: item.label || format(new Date(item.timestamp), 'MMM d, HH:mm'),
+        slotsRemaining: item.slotsRemaining || opportunity.slotsRemaining || 5,
+        trend: item.trend || 'historical',
+        isRealTime: item.isRealTime || false
+      }));
+      
+      // Add any recent real-time points that might not be in persistent history yet
+      if (realTimePriceHistory.length > 0) {
+        const lastPersistentTime = persistentData[persistentData.length - 1]?.timestamp || 0;
+        const newRealTimePoints = realTimePriceHistory.filter(rt => rt.timestamp > lastPersistentTime);
+        
+        if (newRealTimePoints.length > 0) {
+          console.log('📊 Adding', newRealTimePoints.length, 'new real-time points');
+          persistentData.push(...newRealTimePoints);
+        }
+      }
+      
+      // Sort by timestamp to ensure chronological order
+      const sortedData = persistentData.sort((a, b) => a.timestamp - b.timestamp);
+      console.log('📊 Complete price journey:', sortedData.length, 'data points');
+      return sortedData;
+    }
+    
+    // Generate base price point if we have no price history at all
+    console.log('📊 No price history found, generating TIER BASE PRICE as starting point');
+    const startDate = new Date(opportunity.postedAt || opportunity.createdAt);
+    const basePrice = opportunity.tier === 1 ? 225 : 
+                     opportunity.tier === 2 ? 175 : 125;
+    
+    console.log('📊 🎯 CHART WILL START AT TIER', opportunity.tier, 'BASE PRICE:', basePrice);
+    
+    return [{
+      timestamp: startDate.getTime(),
+      price: basePrice,
+      date: startDate,
+      label: format(startDate, 'MMM d, HH:mm'),
+      slotsRemaining: opportunity.slotsRemaining || 5,
+      trend: 'initial',
+      isRealTime: false
+    }];
+  };
+
+  // Calculate dynamic Y-axis domain with smart padding
+  const getYAxisDomain = (data: any[]) => {
+    if (data.length === 0) return [0, 300];
+    
+    const prices = data.map(d => d.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const range = maxPrice - minPrice;
+    
+    // Add 10% padding on each side, minimum 20 price units
+    const padding = Math.max(20, range * 0.1);
+    
+    return [
+      Math.max(0, Math.floor(minPrice - padding)),
+      Math.ceil(maxPrice + padding)
+    ];
+  };
+
+  // Calculate X-axis domain based on opportunity timeline
+  const getXAxisDomain = () => {
+    if (!opportunity) return [Date.now() - 7 * 24 * 60 * 60 * 1000, Date.now()];
+    
+    const startDate = new Date(opportunity.postedAt || opportunity.createdAt);
+    const endDate = new Date(opportunity.deadline);
+    
+    // Show from start to deadline (full timeline)
+    return [
+      startDate.getTime(),
+      endDate.getTime()
+    ];
+  };
+
+  // Enhanced chart data
+  const enhancedPriceData = getEnhancedPriceData();
+  const yAxisDomain = getYAxisDomain(enhancedPriceData);
+  const xAxisDomain = getXAxisDomain();
+
+  // Enhanced Custom Tooltip with Real-Time Info
+  const EnhancedTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const price = payload[0].value;
+      const date = new Date(data.timestamp);
+      
+      // Calculate price change from previous point
+      const chartData = getEnhancedPriceData();
+      const currentIndex = chartData.findIndex(d => d.timestamp === data.timestamp);
+      const prevPrice = currentIndex > 0 ? chartData[currentIndex - 1].price : price;
+      const priceChange = price - prevPrice;
+      const changeDirection = priceChange >= 0 ? '+' : '';
+      
+      // Determine time format based on data type
+      const timeFormat = data.isRealTime ? 'MMM d, HH:mm' : 'MMM d, yyyy';
+      
+      return (
+        <div className="bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-[200px]">
+          {/* Date/Time Header */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-gray-500 font-medium">
+              {format(date, timeFormat)}
+            </div>
+            {data.isRealTime && (
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                <span className="text-xs font-semibold text-red-600">Live</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Price Display */}
+          <div className="flex items-baseline space-x-2 mb-2">
+            <div className="text-lg font-bold text-gray-900">${price}</div>
+            {data.trend && data.trend !== 'stable' && (
+              <div className={`text-xs font-semibold px-2 py-1 rounded ${
+                data.trend === 'up' ? 'bg-green-50 text-green-600' :
+                data.trend === 'down' ? 'bg-red-50 text-red-600' :
+                'bg-gray-50 text-gray-600'
+              }`}>
+                {data.trend === 'up' ? '↗ Rising' : 
+                 data.trend === 'down' ? '↘ Falling' : 
+                 '→ Stable'}
+              </div>
+            )}
+          </div>
+          
+          {/* Price Change */}
+          {currentIndex > 0 && (
+            <div className={`text-xs font-semibold ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {changeDirection}${Math.abs(priceChange)} from previous {data.isRealTime ? 'update' : 'day'}
+            </div>
+          )}
+          
+          {/* Real-Time Indicators */}
+          {data.isRealTime && (
+            <div className="mt-2 pt-2 border-t border-gray-100">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-500">Market Activity</span>
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-green-600 font-medium">Active</span>
+                </div>
+              </div>
+              {data.isMinuteMark && (
+                <div className="text-xs text-blue-600 font-medium mt-1">
+                  📊 Minute Mark Update
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Use the enhanced price data which includes the complete persistent price journey
+  const priceDataForChart = getEnhancedPriceData();
 
   const handleSecurePitch = async () => {
     try {
@@ -486,30 +733,6 @@ export default function OpportunityDetail() {
         variant: "destructive"
       });
     }
-  };
-
-  // Custom tooltip component
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const currentPrice = payload[0].value;
-      const dayIndex = payload[0].payload.day;
-      const prevPrice = dayIndex > 1 ? priceDataForChart[dayIndex - 2].price : priceDataForChart[0].price;
-      const priceChange = currentPrice - prevPrice;
-      const changeDirection = priceChange >= 0 ? '+' : '';
-      
-      return (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[140px]">
-          <div className="text-xs text-gray-500 font-medium mb-1">Day {dayIndex}</div>
-          <div className="text-lg font-bold text-gray-900 mb-1">${currentPrice}</div>
-          {dayIndex > 1 && (
-            <div className={`text-xs font-semibold ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {changeDirection}${Math.abs(priceChange)} from yesterday
-            </div>
-          )}
-        </div>
-      );
-    }
-    return null;
   };
 
   // Get tier display
@@ -872,7 +1095,10 @@ export default function OpportunityDetail() {
                   
                   <div className="flex items-center space-x-2 bg-gradient-to-r from-green-50 to-emerald-50 px-4 py-2 rounded-xl border border-green-200/50 shadow-md">
                     <TrendingUp className="h-5 w-5 text-green-600" />
-                    <span className="text-sm font-semibold text-green-700">${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'} (last hour)</span>
+                    <span className="text-sm font-semibold text-green-700">
+                      ${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'} 
+                      {realTimePriceHistory.length > 0 ? ' (live pricing)' : ' (last hour)'}
+                    </span>
                   </div>
                   
                   <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-cyan-50 px-4 py-2 rounded-xl border border-blue-200/50 shadow-md">
@@ -974,12 +1200,42 @@ export default function OpportunityDetail() {
                 <div className="p-8 border-r border-gray-200/50">
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-8">
-                      <h3 className="text-xl font-bold text-gray-900">Price Trend</h3>
+                      <div className="flex items-center space-x-4">
+                        <h3 className="text-xl font-bold text-gray-900">Price Trend</h3>
+                        <div className="flex items-center space-x-2">
+                          {isConnected && priceData ? (
+                            <>
+                              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                              <span className="text-sm font-medium text-green-600">Live</span>
+                              <span className="text-xs text-gray-500">•</span>
+                              <span className="text-xs text-gray-500">Updates every minute</span>
+                              {realTimePriceHistory.length > 0 && (
+                                <>
+                                  <span className="text-xs text-gray-500">•</span>
+                                  <span className="text-xs font-semibold text-blue-600">
+                                    {realTimePriceHistory.length} live points
+                                  </span>
+                                </>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                              <span className="text-sm font-medium text-gray-500">Static</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
                       <div className="flex bg-gray-100 rounded-lg p-1">
                         <button
-                          className="px-4 py-2 text-sm font-medium rounded-md bg-white text-gray-900 shadow-sm"
+                          onClick={() => setSelectedTimeframe('Daily')}
+                          className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                            selectedTimeframe === 'Daily' 
+                              ? 'bg-white text-gray-900 shadow-sm' 
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
                         >
-                          Daily
+                          Timeline
                         </button>
                       </div>
                     </div>
@@ -996,6 +1252,10 @@ export default function OpportunityDetail() {
                               <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.25} />
                               <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.01} />
                             </linearGradient>
+                            <linearGradient id="realTimePriceGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#EF4444" stopOpacity={0.3} />
+                              <stop offset="100%" stopColor="#EF4444" stopOpacity={0.02} />
+                            </linearGradient>
                           </defs>
                           
                           <CartesianGrid 
@@ -1007,68 +1267,123 @@ export default function OpportunityDetail() {
                           
                           <XAxis 
                             type="number"
-                            dataKey="day"
-                            domain={[1, 7]}
-                            ticks={[1, 2, 3, 4, 5, 6, 7]}
+                            dataKey="timestamp"
+                            domain={xAxisDomain}
+                            scale="time"
                             axisLine={false}
                             tickLine={false}
                             tick={{ fontSize: 11, fill: '#9CA3AF' }}
-                            tickFormatter={(value) => `${value}d`}
-                            height={15}
+                            tickFormatter={(value) => {
+                              const date = new Date(value);
+                              const chartData = getEnhancedPriceData();
+                              // If we have live minute-by-minute data, show time only
+                              const hasLiveData = chartData.some(d => d.isRealTime);
+                              return hasLiveData ? format(date, 'HH:mm') : format(date, 'MMM d');
+                            }}
+                            height={20}
+                            ticks={[
+                              xAxisDomain[0], // Start date
+                              xAxisDomain[1]  // End date (deadline)
+                            ]}
                           />
                           
                           <YAxis 
                             type="number"
-                            domain={[
-                              Math.floor(Math.min(...priceDataForChart.map(p => p.price)) * 0.95), 
-                              Math.ceil(Math.max(...priceDataForChart.map(p => p.price)) * 1.05)
-                            ]}
+                            domain={yAxisDomain}
                             axisLine={false}
                             tickLine={false}
                             tick={{ fontSize: 11, fill: '#9CA3AF' }}
                             tickFormatter={(value) => `$${value}`}
-                            width={25}
+                            width={35}
+                            tickCount={6}
                           />
                           
-                          <Tooltip content={<CustomTooltip />} />
+                          <Tooltip content={<EnhancedTooltip />} />
                           
                           <Area
                             type="monotone"
                             dataKey="price"
-                            stroke="#3B82F6"
-                            strokeWidth={3.5}
-                            fill="url(#priceGradient)"
+                            stroke={realTimePriceHistory.length > 0 ? "#EF4444" : "#3B82F6"}
+                            strokeWidth={realTimePriceHistory.length > 0 ? 4 : 3.5}
+                            fill={realTimePriceHistory.length > 0 ? "url(#realTimePriceGradient)" : "url(#priceGradient)"}
                             dot={false}
                             activeDot={{ 
-                              r: 5, 
-                              fill: '#3B82F6', 
+                              r: realTimePriceHistory.length > 0 ? 6 : 5, 
+                              fill: realTimePriceHistory.length > 0 ? '#EF4444' : '#3B82F6', 
                               stroke: '#FFFFFF', 
-                              strokeWidth: 2
+                              strokeWidth: 2,
+                              className: realTimePriceHistory.length > 0 ? "animate-pulse" : ""
                             }}
                           />
                           
+                          {/* Current price indicator */}
                           <ReferenceDot
-                            x={priceDataForChart.length}
+                            x={Date.now()}
                             y={currentPrice}
-                            r={4}
-                            fill="#3B82F6"
+                            r={priceData ? 6 : 4}
+                            fill={priceData ? "#EF4444" : "#3B82F6"}
                             stroke="#FFFFFF"
                             strokeWidth={2}
+                            className={priceData ? "animate-pulse" : ""}
                           />
+                          
+                          {/* Opportunity deadline line */}
+                          {opportunity?.deadline && (
+                            <ReferenceDot
+                              x={new Date(opportunity.deadline).getTime()}
+                              y={currentPrice}
+                              r={3}
+                              fill="#F59E0B"
+                              stroke="#FFFFFF"
+                              strokeWidth={1}
+                              opacity={0.7}
+                            />
+                          )}
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
 
-                    {/* Price range */}
-                    <div className="flex justify-between items-center mt-6">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-green-600 font-bold text-lg">${Math.min(...priceDataForChart.map(p => p.price))}</span>
-                        <span className="text-gray-500 text-sm">Low</span>
+                    {/* Enhanced price range and timeline info */}
+                    <div className="space-y-4 mt-6">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-green-600 font-bold text-lg">${Math.min(...priceDataForChart.map(p => p.price))}</span>
+                          <span className="text-gray-500 text-sm">Low</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-red-500 font-bold text-lg">${Math.max(...priceDataForChart.map(p => p.price))}</span>
+                          <span className="text-gray-500 text-sm">High</span>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-red-500 font-bold text-lg">${Math.max(...priceDataForChart.map(p => p.price))}</span>
-                        <span className="text-gray-500 text-sm">High</span>
+                      
+                      {/* Timeline information */}
+                      <div className="flex justify-between items-center text-xs text-gray-500 border-t pt-3">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-1">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span>Historical price</span>
+                          </div>
+                          {priceData && (
+                            <div className="flex items-center space-x-1">
+                              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                              <span>Live pricing active</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          {opportunity && (
+                            <>
+                              <span>Started {format(new Date(opportunity.postedAt || opportunity.createdAt), 'MMM d')}</span>
+                              <span>•</span>
+                              <span>Ends {format(new Date(opportunity.deadline), 'MMM d')}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
+                      
+
+                      
+                      
                     </div>
                   </div>
                 </div>
