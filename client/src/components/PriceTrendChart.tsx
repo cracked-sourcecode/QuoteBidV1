@@ -123,7 +123,7 @@ export default function PriceTrendChart({
           : index % Math.max(1, Math.floor(filteredData.length / 5)) === 0 
             ? format(date, 'MMM d') 
             : '',
-        fullTime: format(date, 'MMM d, HH:mm:ss'),
+        fullTime: format(date, 'MMM d, h:mm:ss a'),
         index,
         isRealTime: isRecentUpdate,
         originalTimestamp: point.t
