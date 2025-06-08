@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { processVoiceRecording } from "./lib/voice";
 import { increaseBidAmount } from "./lib/bidding";
 import { z } from "zod";
-import { insertBidSchema, insertOpportunitySchema, insertPitchSchema, insertPublicationSchema, insertSavedOpportunitySchema, User, PlacementWithRelations, users, pitches, opportunities, publications, notifications, placements, price_snapshots, variable_registry, pricing_config, push_subscriptions, insertPushSubscriptionSchema } from "@shared/schema";
+import { insertBidSchema, insertOpportunitySchema, insertPitchSchema, insertPublicationSchema, insertSavedOpportunitySchema, User, PlacementWithRelations, users, pitches, opportunities, publications, notifications, placements, price_snapshots, variable_registry, pricing_config, push_subscriptions, insertPushSubscriptionSchema, mediaCoverage } from "@shared/schema";
 import { getDb } from "./db";
 import { eq, sql, desc, and, ne, asc, isNull, isNotNull, gte, lte, or, inArray, gt } from "drizzle-orm";
 import { notificationService } from "./services/notification-service";
@@ -3480,6 +3480,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Admin endpoint to manually sync missing media coverage
+  app.post("/api/admin/sync-media-coverage", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      console.log("🔄 Manual media coverage sync triggered by admin");
+      const createdCount = await syncMissingMediaCoverage();
+      
+      res.json({
+        success: true,
+        message: `Media coverage sync completed: ${createdCount} new entries created`,
+        createdCount
+      });
+    } catch (error: any) {
+      console.error("❌ Error in manual media coverage sync:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to sync media coverage",
+        error: error.message
+      });
+    }
+  });
+
+  // Debug endpoint to check media coverage table directly
+  app.get("/api/admin/debug/media-coverage", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      console.log("🔍 Debug: Checking media coverage table directly");
+      
+      // Get raw media coverage data
+      const allMediaCoverage = await getDb()
+        .select()
+        .from(mediaCoverage)
+        .orderBy(desc(mediaCoverage.createdAt));
+
+      // Get all users for reference
+      const allUsers = await storage.getAllUsers();
+      const userMap = new Map(allUsers.map(u => [u.id, u]));
+
+      // Get all pitches for reference
+      const allPitches = await storage.getAllPitches();
+      const pitchMap = new Map(allPitches.map(p => [p.id, p]));
+
+      // Get delivered/successful pitches
+      const deliveredPitches = allPitches.filter(pitch => 
+        pitch.status === 'delivered' || 
+        pitch.status === 'successful' || 
+        pitch.status === 'Successful Coverage' ||
+        pitch.status === 'accepted'
+      );
+
+      res.json({
+        totalMediaCoverageEntries: allMediaCoverage.length,
+        totalUsers: allUsers.length,
+        totalPitches: allPitches.length,
+        deliveredPitches: deliveredPitches.length,
+        mediaCoverageEntries: allMediaCoverage.map(mc => ({
+          id: mc.id,
+          userId: mc.userId,
+          userName: userMap.get(mc.userId!)?.fullName || 'Unknown User',
+          userEmail: userMap.get(mc.userId!)?.email || 'Unknown Email',
+          title: mc.title,
+          publication: mc.publication,
+          url: mc.url,
+          source: mc.source,
+          pitchId: mc.pitchId,
+          pitchStatus: mc.pitchId ? pitchMap.get(mc.pitchId)?.status || 'Unknown' : 'N/A',
+          placementId: mc.placementId,
+          isVerified: mc.isVerified,
+          createdAt: mc.createdAt
+        })),
+        deliveredPitchesWithoutCoverage: deliveredPitches.filter(pitch => 
+          !allMediaCoverage.some(mc => mc.pitchId === pitch.id)
+        ).map(pitch => ({
+          pitchId: pitch.id,
+          userId: pitch.userId,
+          userName: userMap.get(pitch.userId)?.fullName || 'Unknown User',
+          userEmail: userMap.get(pitch.userId)?.email || 'Unknown Email',
+          status: pitch.status,
+          opportunityId: pitch.opportunityId
+        }))
+      });
+    } catch (error: any) {
+      console.error("❌ Error in debug media coverage endpoint:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to debug media coverage",
+        error: error.message
+      });
+    }
+  });
+
   // ============ ADMIN ENDPOINTS ============
   
   // Admin registration endpoint (hidden, requires a secret key)
@@ -5987,8 +6076,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   };
   
+  // Function to sync missing media coverage entries for delivered pitches
+  const syncMissingMediaCoverage = async () => {
+    try {
+      console.log("🔍 Checking for delivered pitches without media coverage entries...");
+      
+      // Get all pitches that are delivered/successful
+      const allPitches = await storage.getAllPitches();
+      const deliveredPitches = allPitches.filter(pitch => 
+        pitch.status === 'delivered' || 
+        pitch.status === 'successful' || 
+        pitch.status === 'Successful Coverage' ||
+        pitch.status === 'accepted'
+      );
+      
+      console.log(`📊 Found ${deliveredPitches.length} delivered pitches`);
+      
+      // Get all existing media coverage entries
+      const allUsers = await storage.getAllUsers();
+      const mediaCoverageEntries = [];
+      
+      for (const user of allUsers) {
+        const userCoverage = await storage.getUserMediaCoverage(user.id);
+        mediaCoverageEntries.push(...userCoverage);
+      }
+      
+      console.log(`📊 Found ${mediaCoverageEntries.length} existing media coverage entries`);
+      
+      let createdCount = 0;
+      
+      // For each delivered pitch, check if media coverage exists
+      for (const pitch of deliveredPitches) {
+        try {
+          // Check if media coverage already exists for this pitch
+          const existingCoverage = mediaCoverageEntries.find(coverage => 
+            coverage.pitchId === pitch.id
+          );
+          
+          if (!existingCoverage) {
+            // Get the opportunity and publication info
+            const opportunity = await storage.getOpportunity(pitch.opportunityId);
+            if (!opportunity) {
+              console.log(`⚠️ Opportunity not found for pitch ${pitch.id}, skipping`);
+              continue;
+            }
+            
+            const publication = await storage.getPublication(opportunity.publicationId);
+            const publicationName = publication?.name || 'Unknown Publication';
+            
+            // Get placement info if it exists
+            const placements = await storage.getAllPlacements();
+            const placement = placements.find(p => p.pitchId === pitch.id);
+            
+            // Create media coverage entry
+            const mediaCoverageData = {
+              userId: pitch.userId,
+              title: opportunity.title || `Published Article - ${opportunity.title}`,
+              publication: publicationName,
+              url: '', // Will be filled when article URL is provided
+              source: 'auto_sync',
+              placementId: placement ? placement.id : null,
+              pitchId: pitch.id,
+              isVerified: true, // Mark as verified since it's from a delivered pitch
+              articleDate: new Date(), // Use current date as default
+            };
+            
+            await storage.createMediaCoverage(mediaCoverageData);
+            createdCount++;
+            
+            console.log(`✅ Created media coverage entry for pitch ${pitch.id} (user ${pitch.userId})`);
+          }
+        } catch (error: any) {
+          console.error(`❌ Error processing pitch ${pitch.id}:`, error);
+        }
+      }
+      
+      console.log(`🎉 Media coverage sync completed: ${createdCount} new entries created`);
+      return createdCount;
+    } catch (error: any) {
+      console.error("❌ Error syncing media coverage:", error);
+      return 0;
+    }
+  };
+
   // Run the sync on server startup
   syncSuccessfulPitchesToPlacements();
+  
+  // Run media coverage sync on startup (with delay)
+  setTimeout(() => {
+    syncMissingMediaCoverage();
+  }, 5000); // Wait 5 seconds after startup
 
   const httpServer = createServer(app);
   

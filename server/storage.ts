@@ -1095,6 +1095,50 @@ export class DatabaseStorage implements IStorage {
       .set(updateData)
       .where(eq(pitches.id, id))
       .returning();
+    
+    // 🎯 AUTOMATICALLY CREATE MEDIA COVERAGE WHEN PITCH IS DELIVERED/SUCCESSFUL
+    if (updatedPitch && (status === 'delivered' || status === 'successful' || status === 'Successful Coverage')) {
+      try {
+        console.log(`📰 Auto-creating media coverage for pitch ${id} with status: ${status}`);
+        
+        // Get pitch details including opportunity and publication
+        const opportunity = await this.getOpportunity(updatedPitch.opportunityId);
+        if (opportunity) {
+          const publication = await this.getPublication(opportunity.publicationId);
+          const publicationName = publication?.name || 'Unknown Publication';
+          
+          // Check if media coverage already exists for this pitch
+          const existingCoverage = await getDb()
+            .select()
+            .from(mediaCoverage)
+            .where(eq(mediaCoverage.pitchId, id))
+            .limit(1);
+          
+          if (existingCoverage.length === 0) {
+            // Create media coverage entry
+            const mediaCoverageData = {
+              userId: updatedPitch.userId,
+              title: opportunity.title || `Published Article - ${opportunity.title}`,
+              publication: publicationName,
+              url: updatedPitch.articleUrl || '', // Use article URL if available
+              source: 'auto_delivery',
+              pitchId: id,
+              isVerified: true,
+              articleDate: new Date(),
+            };
+            
+            const newMediaCoverage = await this.createMediaCoverage(mediaCoverageData);
+            console.log(`✅ Auto-created media coverage entry ${newMediaCoverage.id} for pitch ${id}`);
+          } else {
+            console.log(`ℹ️ Media coverage already exists for pitch ${id}`);
+          }
+        }
+      } catch (error: any) {
+        console.error(`❌ Failed to auto-create media coverage for pitch ${id}:`, error);
+        // Don't fail the pitch status update if media coverage creation fails
+      }
+    }
+    
     return updatedPitch;
   }
 
