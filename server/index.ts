@@ -14,6 +14,9 @@ console.log('All environment variables:', Object.keys(process.env));
 console.log('STRIPE_SECRET_KEY value:', process.env.STRIPE_SECRET_KEY ? 'exists' : 'missing');
 console.log('STRIPE_SECRET_KEY length:', process.env.STRIPE_SECRET_KEY?.length);
 
+// Force email module initialization during server startup
+import './lib/email';
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
