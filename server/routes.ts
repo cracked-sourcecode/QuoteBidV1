@@ -3763,8 +3763,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store the reset token in the database (you'll need to add a resetToken field to your users table)
       // For this implementation, we'll just send the email without storing the token
       
-      // Send the password reset email
-      const emailSent = await sendPasswordResetEmail(email, resetToken, user.username);
+      // Send the password reset email using the resend instance from routes.ts
+      let emailSent = false;
+      
+      if (!resend) {
+        console.error('❌ Resend not initialized in routes.ts');
+        return res.status(500).json({ message: "Email service not configured" });
+      }
+      
+      try {
+        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+        
+        const { data, error } = await resend.emails.send({
+          from: 'QuoteBid <onboarding@resend.dev>',
+          to: [email],
+          subject: '🔐 Reset Your QuoteBid Password',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h2 style="color: #2563eb;">Reset Your Password</h2>
+              <p>Hi ${user.username || 'there'},</p>
+              <p>We received a request to reset your password for your QuoteBid account.</p>
+              <p style="margin: 30px 0;">
+                <a href="${resetUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Reset Password</a>
+              </p>
+              <p style="font-size: 14px; color: #666;">If the button doesn't work, copy and paste this link into your browser:<br>
+              <a href="${resetUrl}">${resetUrl}</a></p>
+              <p style="font-size: 14px; color: #666;">If you didn't request this, you can safely ignore this email.</p>
+              <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+              <p style="font-size: 12px; color: #999;">Best regards,<br>The QuoteBid Team</p>
+            </div>
+          `,
+        });
+
+        if (error) {
+          console.error('❌ Resend error:', error);
+          return res.status(500).json({ message: "Failed to send password reset email" });
+        }
+
+        console.log('✅ Password reset email sent successfully:', data);
+        emailSent = true;
+      } catch (emailError: any) {
+        console.error('❌ Email error:', emailError);
+        return res.status(500).json({ message: "Failed to send password reset email" });
+      }
       
       if (!emailSent) {
         return res.status(500).json({ message: "Failed to send password reset email" });
