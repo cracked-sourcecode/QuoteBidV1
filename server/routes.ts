@@ -720,6 +720,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Signup stage router is already registered above; duplicate registration removed
   // to avoid redundant handlers after auth setup.
 
+  // Password reset endpoints
+  app.post('/api/auth/validate-reset-token', async (req: Request, res: Response) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ message: 'Token is required' });
+      }
+      
+      // Verify the JWT token
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as any;
+        
+        // Check if token is for password reset and not expired
+        if (decoded.type !== 'password-reset') {
+          return res.status(400).json({ message: 'Invalid token type' });
+        }
+        
+        // Check if user still exists
+        const user = await storage.getUser(decoded.userId);
+        if (!user) {
+          return res.status(400).json({ message: 'User not found' });
+        }
+        
+        res.json({ valid: true });
+      } catch (jwtError) {
+        return res.status(400).json({ message: 'Invalid or expired reset token' });
+      }
+    } catch (error: any) {
+      console.error('Error validating reset token:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/auth/reset-password', async (req: Request, res: Response) => {
+    try {
+      const { token, newPassword } = req.body;
+      
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: 'Token and new password are required' });
+      }
+      
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+      }
+      
+      // Verify the JWT token
+      let decoded: any;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as any;
+        
+        // Check if token is for password reset
+        if (decoded.type !== 'password-reset') {
+          return res.status(400).json({ message: 'Invalid token type' });
+        }
+      } catch (jwtError) {
+        return res.status(400).json({ message: 'Invalid or expired reset token' });
+      }
+      
+      // Get the user
+      const user = await storage.getUser(decoded.userId);
+      if (!user) {
+        return res.status(400).json({ message: 'User not found' });
+      }
+      
+      // Hash the new password
+      const { hashPassword } = await import('./utils/passwordUtils');
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Update user's password
+      await getDb()
+        .update(users)
+        .set({
+          password: hashedPassword,
+        })
+        .where(eq(users.id, user.id));
+      
+      res.json({ success: true, message: 'Password reset successfully' });
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Set up admin authentication
   setupAdminAuth(app);
   
@@ -3757,8 +3841,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email does not match user record" });
       }
       
-      // Generate a secure reset token
-      const resetToken = randomBytes(32).toString('hex');
+      // Generate a JWT reset token with 1 hour expiration
+      const resetToken = jwt.sign(
+        { 
+          userId: user.id, 
+          type: 'password-reset',
+          email: user.email 
+        },
+        process.env.JWT_SECRET || 'default-secret',
+        { expiresIn: '1h' }
+      );
       
       // Store the reset token in the database (you'll need to add a resetToken field to your users table)
       // For this implementation, we'll just send the email without storing the token
@@ -3772,7 +3864,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5050'}/reset-password?token=${resetToken}`;
         
         const { data, error } = await resend.emails.send({
           from: 'QuoteBid <onboarding@resend.dev>',

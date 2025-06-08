@@ -42,6 +42,7 @@ import AdminPricing from "@/pages/admin/pricing";
 import PublicationsManager from "@/pages/admin/publications-manager";
 import LoginPage from "@/pages/login-page";
 import TermsOfService from "@/pages/TermsOfService";
+import ResetPassword from "@/pages/reset-password";
 import AdminLogin from "@/pages/admin/login";
 import CreateAdmin from "@/pages/admin/create-admin";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -141,6 +142,7 @@ function Router() {
         <Route path="/admin/create-admin" component={CreateAdmin} />
         <Route path="/signup-wizard" component={SignupWizard} />
         <Route path="/terms" component={TermsOfService} />
+        <Route path="/reset-password" component={ResetPassword} />
         
         {/* Routes that require authentication */}
         <ProtectedRoute path="/subscribe" component={() => <Subscribe />} />
