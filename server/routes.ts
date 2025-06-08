@@ -3349,6 +3349,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ============ MEDIA COVERAGE ENDPOINTS ============
   
+  // Simple function to sync published pitches to media coverage  
+  async function syncPitchesToMediaCoverage(userId: number) {
+    try {
+      console.log(`🔄 SYNC START: Syncing published pitches to media coverage for user ${userId}`);
+      
+      // Get ALL pitches for user first to debug
+      const allUserPitches = await getDb()
+        .select()
+        .from(pitches)
+        .where(eq(pitches.userId, userId));
+      
+      console.log(`📊 SYNC DEBUG: User ${userId} has ${allUserPitches.length} total pitches`);
+      
+      // Check which have article URLs
+      const pitchesWithUrls = allUserPitches.filter(p => p.articleUrl && p.articleUrl !== '' && p.articleUrl !== '#');
+      console.log(`📰 SYNC DEBUG: Found ${pitchesWithUrls.length} pitches with article URLs for user ${userId}`);
+      
+      pitchesWithUrls.forEach(pitch => {
+        console.log(`   Pitch ${pitch.id}: status="${pitch.status}", articleUrl="${pitch.articleUrl}"`);
+      });
+      
+      // Get all pitches for user that have article URLs (published articles)
+      const publishedPitches = await getDb()
+        .select()
+        .from(pitches)
+        .where(
+          and(
+            eq(pitches.userId, userId),
+            isNotNull(pitches.articleUrl),
+            ne(pitches.articleUrl, ''),
+            ne(pitches.articleUrl, '#')
+            // Remove status filter for now to see all pitches with URLs
+          )
+        );
+
+      console.log(`📰 Found ${publishedPitches.length} published pitches for user ${userId}`);
+
+      for (const pitch of publishedPitches) {
+        // Check if media coverage already exists for this pitch
+        const [existingCoverage] = await getDb()
+          .select()
+          .from(mediaCoverage)
+          .where(
+            and(
+              eq(mediaCoverage.userId, userId),
+              eq(mediaCoverage.pitchId, pitch.id)
+            )
+          );
+
+        if (existingCoverage) {
+          console.log(`✅ Media coverage already exists for pitch ${pitch.id}`);
+          continue;
+        }
+
+        // Get opportunity and publication info for better title/publication name
+        let opportunity = null;
+        let publication = null;
+        
+        if (pitch.opportunityId) {
+          const [opp] = await getDb()
+            .select()
+            .from(opportunities)
+            .where(eq(opportunities.id, pitch.opportunityId));
+          opportunity = opp;
+          
+          if (opportunity?.publicationId) {
+            const [pub] = await getDb()
+              .select()
+              .from(publications)
+              .where(eq(publications.id, opportunity.publicationId));
+            publication = pub;
+          }
+        }
+
+        // Create media coverage entry using the same data shown in My Pitches
+        const mediaTitle = pitch.articleTitle || 
+                          `Published Article - ${opportunity?.title || 'Article Coverage'}`;
+        const publicationName = publication?.name || 'Publication';
+
+        await storage.createMediaCoverage({
+          userId: userId,
+          title: mediaTitle,
+          publication: publicationName,
+          url: pitch.articleUrl!,
+          source: 'pitch_sync',
+          pitchId: pitch.id,
+          placementId: undefined,
+          isVerified: true,
+        });
+
+        console.log(`✅ Created media coverage for pitch ${pitch.id}: ${mediaTitle} in ${publicationName}`);
+      }
+
+      console.log(`🎉 Sync complete for user ${userId}`);
+    } catch (error) {
+      console.error(`❌ Error syncing pitches to media coverage for user ${userId}:`, error);
+    }
+  }
+
   // Get user's media coverage
   app.get("/api/users/:userId/media-coverage", ensureAuth, async (req: Request, res: Response) => {
     try {
@@ -3363,8 +3462,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
-      const mediaCoverage = await storage.getUserMediaCoverage(userId);
-      res.json(mediaCoverage);
+      // Disable caching for this endpoint - AGGRESSIVE CACHE BUSTING
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+      res.set('ETag', `"${Date.now()}"`); // Force different ETag every time
+      res.set('Last-Modified', new Date().toUTCString()); // Force different last-modified
+
+      // DEBUG: Log request details to understand caching
+      console.log(`🔍 MEDIA COVERAGE REQUEST: User ${userId}`);
+      console.log(`🔍 Request headers:`, {
+        'if-none-match': req.headers['if-none-match'],
+        'if-modified-since': req.headers['if-modified-since'],
+        'cache-control': req.headers['cache-control']
+      });
+
+      // First, sync any published pitches that aren't in media coverage yet
+      await syncPitchesToMediaCoverage(userId);
+
+      // Then get the media coverage
+      const mediaCoverageData = await storage.getUserMediaCoverage(userId);
+      console.log(`📊 Retrieved ${mediaCoverageData.length} media coverage items for user ${userId}`);
+      res.json(mediaCoverageData);
     } catch (error: any) {
       console.error("Failed to fetch media coverage:", error);
       res.status(500).json({ message: "Failed to fetch media coverage", error: error.message });
@@ -7956,20 +8075,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
                   // Also create a media coverage notification specifically for the account page
         if (invoiceData?.publicationLink) {
+          // Get the pitch data first to extract proper title and publication info
+          let pitchData = null;
+          let opportunityData = null;
+          let publicationData = null;
+          
+          try {
+            if (placementId) {
+              pitchData = await storage.getPitchWithRelations(placementId);
+              if (pitchData) {
+                opportunityData = pitchData.opportunity;
+                publicationData = pitchData.publication;
+              }
+            }
+          } catch (error) {
+            console.error(`❌ Failed to get pitch data for placement ${placementId}:`, error);
+          }
+          
           // Create the media coverage entry automatically
           try {
+            const mediaTitle = invoiceData.articleTitle || 
+                             `Published Article - ${opportunityData?.title || 'Article Coverage'}`;
+            const publicationName = publicationData?.name || 'Publication';
+            
             await storage.createMediaCoverage({
               userId: userId,
-              title: invoiceData.articleTitle || `Published Article - ${placementData?.opportunity?.title || 'Unknown'}`,
-              publication: placementData?.publication?.name || 'Unknown Publication',
+              title: mediaTitle,
+              publication: publicationName,
               url: invoiceData.publicationLink,
               source: 'billing_manager',
               placementId: placementId,
-              pitchId: placementData?.pitchId || null,
+              pitchId: pitchData?.id || null,
               isVerified: true, // Mark as verified since it's from billing manager
             });
             
-            console.log(`✅ Created media coverage entry for user ${userId}`);
+            console.log(`✅ Created media coverage entry for user ${userId} - ${mediaTitle} in ${publicationName}`);
           } catch (error) {
             console.error(`❌ Failed to create media coverage entry:`, error);
           }

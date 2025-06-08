@@ -239,20 +239,56 @@ export default function AccountPage() {
   });
 
   // Fetch user's pitches for communication
-  const { data: userPitches, isLoading: isLoadingPitches } = useQuery<any[]>({
-    queryKey: [`/api/pitches/user/${user?.id}`],
+  const { data: userPitches, isLoading: isLoadingPitches, error: pitchesError } = useQuery<any[]>({
+    queryKey: [`/api/users/${user?.id}/pitches`],
+    queryFn: async () => {
+      if (!user?.id) throw new Error('User ID required');
+      console.log(`🔍 FETCHING PITCHES for user ${user.id}`);
+      const response = await apiFetch(`/api/users/${user.id}/pitches`);
+      console.log(`🔍 PITCH RESPONSE:`, response.status, response.ok);
+      if (!response.ok) {
+        console.error(`🔍 PITCH ERROR:`, response.status, response.statusText);
+        throw new Error(`Failed to fetch pitches: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log(`🔍 PITCH DATA:`, data?.length, 'pitches loaded');
+      return data;
+    },
     enabled: !!user?.id,
     refetchOnWindowFocus: true, // Auto-refresh when window gains focus
     staleTime: 30000, // Refetch after 30 seconds to catch new data
   });
 
-  // Fetch user's media coverage from database
-  const { data: mediaCoverage, isLoading: isLoadingMediaCoverage, refetch: refetchMediaCoverage } = useQuery<any[]>({
-    queryKey: [`/api/users/${user?.id}/media-coverage`],
-    enabled: !!user?.id,
-    refetchOnWindowFocus: true,
-    staleTime: 30000,
-  });
+  // SIMPLE SOLUTION: Use My Pitches data directly for Media Coverage 
+  console.log('🔍 DEBUG userPitches:', userPitches);
+  console.log('🔍 DEBUG userPitches length:', userPitches?.length);
+  console.log('🔍 DEBUG pitches loading:', isLoadingPitches);
+  console.log('🔍 DEBUG pitches error:', pitchesError);
+  
+  const mediaCoverage = userPitches?.filter(pitch => {
+    console.log('🔍 DEBUG pitch:', pitch.id, 'status:', pitch.status, 'articleUrl:', pitch.articleUrl);
+    return pitch.articleUrl && 
+           pitch.articleUrl.trim() !== '' && 
+           pitch.articleUrl !== '#' &&
+           (pitch.status === 'successful' || 
+            pitch.status === 'delivered' || 
+            pitch.status === 'published' ||
+            pitch.status === 'successful_coverage' ||
+            pitch.status === 'completed' ||
+            pitch.status === 'placed');
+  }).map(pitch => ({
+    id: pitch.id,
+    userId: pitch.userId,
+    title: pitch.articleTitle || `Published Article - ${pitch.opportunity?.title || 'Article Coverage'}`,
+    publication: pitch.opportunity?.publication?.name || 'Publication',
+    url: pitch.articleUrl,
+    source: 'my_pitches',
+    pitchId: pitch.id,
+    isVerified: true,
+    publicationLogo: pitch.opportunity?.publication?.logo
+  })) || [];
+  
+  const isLoadingMediaCoverage = isLoadingPitches;
 
   // Fetch all publications to get logos by name
   const { data: allPublications } = useQuery<any[]>({
