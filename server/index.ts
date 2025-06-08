@@ -15,7 +15,9 @@ console.log('STRIPE_SECRET_KEY value:', process.env.STRIPE_SECRET_KEY ? 'exists'
 console.log('STRIPE_SECRET_KEY length:', process.env.STRIPE_SECRET_KEY?.length);
 
 // Force email module initialization during server startup
+console.log('🔄 About to import email module...');
 import './lib/email';
+console.log('✅ Email module import completed');
 
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";

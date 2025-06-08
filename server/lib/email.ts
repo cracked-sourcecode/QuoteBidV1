@@ -1,3 +1,5 @@
+console.log('🚀 EMAIL MODULE STARTING TO LOAD...');
+
 import { Resend } from 'resend';
 
 console.log('📦 Initializing email system...');
