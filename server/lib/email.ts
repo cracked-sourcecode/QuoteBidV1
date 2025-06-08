@@ -1,23 +1,20 @@
 import { Resend } from 'resend';
 
-console.log('📦 Resend package imported:', typeof Resend);
+console.log('📦 Initializing email system...');
 
-// Initialize Resend if API key is available
+// Initialize Resend
 let resend: Resend | null = null;
 
 try {
   if (process.env.RESEND_API_KEY) {
-    console.log('🔧 Initializing Resend with API key...');
-    console.log('🔑 API Key length:', process.env.RESEND_API_KEY.length);
-    console.log('🔑 API Key prefix:', process.env.RESEND_API_KEY.substring(0, 15));
+    console.log('🔧 Creating Resend instance...');
     resend = new Resend(process.env.RESEND_API_KEY);
     console.log('✅ Resend initialized successfully');
   } else {
-    console.log('⚠️ No RESEND_API_KEY found in environment');
+    console.log('⚠️ RESEND_API_KEY not found in environment');
   }
 } catch (error) {
   console.error('❌ Failed to initialize Resend:', error);
-  console.error('❌ Error details:', error);
   resend = null;
 }
 
@@ -67,18 +64,13 @@ export async function sendOpportunityNotification(
 }
 
 /**
- * Sends a password reset email
- * @param email User's email address
- * @param resetToken Password reset token
- * @param username User's username (optional)
- * @returns Boolean indicating success or failure
+ * Send password reset email to user
  */
 export async function sendPasswordResetEmail(
   email: string,
   resetToken: string,
   username?: string
 ): Promise<boolean> {
-  // Debug logging for Resend configuration
   console.log('🔍 EMAIL DEBUG:', {
     hasResendApiKey: !!process.env.RESEND_API_KEY,
     resendApiKeyLength: process.env.RESEND_API_KEY?.length || 0,
@@ -89,121 +81,207 @@ export async function sendPasswordResetEmail(
   });
 
   if (!resend) {
-    console.error('❌ Resend instance is null. Check initialization logs above.');
-    console.error('❌ RESEND_API_KEY value (first 20 chars):', process.env.RESEND_API_KEY?.substring(0, 20) || 'undefined');
+    console.error('❌ Resend not initialized. Check API key and initialization.');
     return false;
   }
 
   try {
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5050'}/reset-password?token=${resetToken}`;
-    const displayName = username ? ` (${username})` : '';
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
     
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Password Reset - QuoteBid</title>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+            .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔐 Password Reset Request</h1>
+              <p>QuoteBid Security Team</p>
+            </div>
+            <div class="content">
+              <p>Hello ${username ? username : 'there'},</p>
+              <p>We received a request to reset your QuoteBid account password. If you made this request, click the button below to reset your password:</p>
+              <p style="text-align: center; margin: 30px 0;">
+                <a href="${resetUrl}" class="button">Reset My Password</a>
+              </p>
+              <p><strong>This link will expire in 1 hour for security reasons.</strong></p>
+              <p>If you didn't request this password reset, please ignore this email. Your password will remain unchanged.</p>
+              <p>For security, this reset link can only be used once.</p>
+              <div class="footer">
+                <p>Need help? Contact our support team at support@quotebid.co</p>
+                <p>© 2024 QuoteBid. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
     console.log('📧 Sending password reset email to:', email);
     
-    const result = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'QuoteBid <onboarding@resend.dev>',
       to: [email],
-      subject: 'Reset Your QuoteBid Password',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
-            <h1 style="color: #4a5568; margin: 0;">QuoteBid</h1>
-          </div>
-          <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
-            <h2 style="color: #2d3748;">Reset Your Password</h2>
-            <p style="color: #4a5568; line-height: 1.6;">
-              Hi${displayName},<br><br>
-              We received a request to reset your password for your QuoteBid account. Click the button below to create a new password:
-            </p>
-            <div style="margin: 30px 0; text-align: center;">
-              <a href="${resetUrl}" 
-                 style="background-color: #4299e1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                Reset Password
-              </a>
-            </div>
-            <p style="color: #718096; font-size: 14px;">
-              If you didn't request this password reset, you can safely ignore this email.
-              This link will expire in 24 hours.
-            </p>
-            <p style="color: #718096; font-size: 12px; margin-top: 20px;">
-              Reset URL: ${resetUrl}
-            </p>
-          </div>
-        </div>
-      `,
+      subject: '🔐 Reset Your QuoteBid Password',
+      html: emailHtml,
     });
-    
-    console.log('✅ Password reset email sent successfully:', result);
+
+    if (error) {
+      console.error('❌ Resend error:', error);
+      return false;
+    }
+
+    console.log('✅ Password reset email sent successfully:', data);
     return true;
   } catch (error) {
-    console.error('❌ Failed to send password reset email:', error);
+    console.error('❌ Error sending password reset email:', error);
     return false;
   }
 }
 
 /**
- * Sends a username reminder email
- * @param email User's email address
- * @param username User's username
- * @returns Boolean indicating success or failure
+ * Send username reminder email
  */
 export async function sendUsernameReminderEmail(
   email: string,
   username: string
 ): Promise<boolean> {
-  // Debug logging for Resend configuration
-  console.log('🔍 EMAIL DEBUG (Username Reminder):', {
-    hasResendApiKey: !!process.env.RESEND_API_KEY,
-    emailFrom: process.env.EMAIL_FROM || 'not set',
-    frontendUrl: process.env.FRONTEND_URL || 'not set'
-  });
-
   if (!resend) {
-    console.error('❌ Resend API key not configured. Please set RESEND_API_KEY environment variable.');
+    console.error('❌ Resend not initialized for username reminder');
     return false;
   }
 
   try {
-    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5050'}/login`;
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Username Reminder - QuoteBid</title>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+            .username { background: #667eea; color: white; padding: 15px; text-align: center; border-radius: 5px; font-size: 18px; font-weight: bold; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>👤 Username Reminder</h1>
+              <p>QuoteBid Account Services</p>
+            </div>
+            <div class="content">
+              <p>Hello,</p>
+              <p>You requested a reminder of your QuoteBid username. Here it is:</p>
+              <div class="username">${username}</div>
+              <p>You can use this username to log in to your QuoteBid account at <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}">quotebid.co</a></p>
+              <p>If you didn't request this reminder, please ignore this email.</p>
+              <div class="footer">
+                <p>Need help? Contact our support team at support@quotebid.co</p>
+                <p>© 2024 QuoteBid. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    console.log('📧 Sending username reminder to:', email);
     
-    console.log('📧 Sending username reminder email to:', email);
-    
-    const result = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'QuoteBid <onboarding@resend.dev>',
       to: [email],
-      subject: 'Your QuoteBid Username',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
-            <h1 style="color: #4a5568; margin: 0;">QuoteBid</h1>
-          </div>
-          <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
-            <h2 style="color: #2d3748;">Your Username</h2>
-            <p style="color: #4a5568; line-height: 1.6;">
-              Hi there,<br><br>
-              You requested a reminder of your QuoteBid username. Here it is:
-            </p>
-            <div style="margin: 30px 0; text-align: center; background-color: #f7fafc; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0;">
-              <h3 style="color: #2d3748; margin: 0; font-size: 24px;">${username}</h3>
-            </div>
-            <div style="margin: 30px 0; text-align: center;">
-              <a href="${loginUrl}" 
-                 style="background-color: #4299e1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                Login to QuoteBid
-              </a>
-            </div>
-            <p style="color: #718096; font-size: 14px;">
-              If you didn't request this username reminder, you can safely ignore this email.
-            </p>
-          </div>
-        </div>
-      `,
+      subject: '👤 Your QuoteBid Username',
+      html: emailHtml,
     });
-    
-    console.log('✅ Username reminder email sent successfully:', result);
+
+    if (error) {
+      console.error('❌ Username reminder error:', error);
+      return false;
+    }
+
+    console.log('✅ Username reminder sent successfully:', data);
     return true;
   } catch (error) {
-    console.error('❌ Failed to send username reminder email:', error);
+    console.error('❌ Error sending username reminder:', error);
+    return false;
+  }
+}
+
+/**
+ * General notification email function
+ */
+export async function sendNotificationEmail(
+  email: string,
+  subject: string,
+  message: string
+): Promise<boolean> {
+  if (!resend) {
+    console.error('❌ Resend not initialized for notification');
+    return false;
+  }
+
+  try {
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${subject}</title>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>📢 QuoteBid Notification</h1>
+            </div>
+            <div class="content">
+              <p>${message}</p>
+              <div class="footer">
+                <p>© 2024 QuoteBid. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'QuoteBid <onboarding@resend.dev>',
+      to: [email],
+      subject: subject,
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error('❌ Notification email error:', error);
+      return false;
+    }
+
+    console.log('✅ Notification email sent successfully:', data);
+    return true;
+  } catch (error) {
+    console.error('❌ Error sending notification email:', error);
     return false;
   }
 }
