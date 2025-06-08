@@ -13,7 +13,7 @@ import { createSampleNotifications } from "./data/sample-notifications";
 import Stripe from "stripe";
 import { setupAuth } from "./auth";
 import { Resend } from 'resend';
-import { sendOpportunityNotification, sendPasswordResetEmail } from './lib/email';
+import { sendOpportunityNotification, sendPasswordResetEmail, sendUsernameReminderEmail } from './lib/email';
 
 // Initialize Resend if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -289,11 +289,16 @@ Article headline:`;
 
 // Helper function to safely check if request is authenticated
 function isRequestAuthenticated(req: Request): boolean {
-  // Explicitly check for the passport isAuthenticated method
-  // to avoid any potential recursion issues
+  // Check for JWT authentication first (req.user set by jwtAuth middleware)
+  if (req.user && req.user.id) {
+    return true;
+  }
+  
+  // Then check for Passport.js session authentication
   if (typeof req.isAuthenticated === 'function' && req.isAuthenticated !== isRequestAuthenticated) {
     return req.isAuthenticated();
   }
+  
   return false;
 }
 
@@ -3773,6 +3778,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error sending password reset:", error);
       res.status(500).json({ 
         message: "Failed to send password reset email", 
+        error: error.message || "Unknown error" 
+      });
+    }
+  });
+
+  // Admin endpoint to send username reminder
+  app.post("/api/admin/send-username", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const { userId, email } = req.body;
+      
+      if (!userId || !email) {
+        return res.status(400).json({ message: "User ID and email are required" });
+      }
+      
+      // Get the user to ensure they exist and get their username
+      const user = await storage.getUser(parseInt(userId));
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Ensure the email matches the user record
+      if (user.email !== email) {
+        return res.status(400).json({ message: "Email does not match user record" });
+      }
+      
+      // Send the username reminder email
+      const emailSent = await sendUsernameReminderEmail(email, user.username);
+      
+      if (!emailSent) {
+        return res.status(500).json({ message: "Failed to send username reminder email" });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Username reminder email sent successfully" 
+      });
+    } catch (error: any) {
+      console.error("Error sending username reminder:", error);
+      res.status(500).json({ 
+        message: "Failed to send username reminder email", 
         error: error.message || "Unknown error" 
       });
     }
