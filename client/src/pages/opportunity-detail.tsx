@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useRoute, Link, useLocation } from 'wouter';
 import { ChevronLeft, Calendar, Clock, DollarSign, TrendingUp, Flame, ChevronUp, Info, Mic, Lock } from 'lucide-react';
 import { format } from 'date-fns';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { apiFetch } from '@/lib/apiFetch';
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, ReferenceDot, Tooltip } from 'recharts';
+import PriceTrendChart from '@/components/PriceTrendChart';
 import LogoUniform from '@/components/ui/logo-uniform';
 import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
@@ -31,6 +31,41 @@ const getOpportunityStatus = (opportunity: any) => {
 import { apiRequest } from '@/lib/queryClient';
 import { useOpportunityPrice, usePriceConnection } from '@/contexts/PriceContext';
 
+// Component to show live price for related opportunities
+function RelatedOpportunityPrice({ opportunityId, fallbackPrice }: { opportunityId: number; fallbackPrice: number }) {
+  const priceData = useOpportunityPrice(opportunityId);
+  const [fetchedPrice, setFetchedPrice] = useState<number | null>(null);
+  
+  // Fetch current price if live data isn't available
+  useEffect(() => {
+    const fetchCurrentPrice = async () => {
+      try {
+        const response = await apiFetch(`/api/opportunities/${opportunityId}`, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const opportunity = await response.json();
+          setFetchedPrice(opportunity.currentPrice || opportunity.basePrice);
+        }
+      } catch (error) {
+        console.error(`Failed to fetch price for opportunity ${opportunityId}:`, error);
+      }
+    };
+    
+    if (!priceData?.currentPrice) {
+      fetchCurrentPrice();
+    }
+  }, [opportunityId, priceData?.currentPrice]);
+  
+  const currentPrice = priceData?.currentPrice || fetchedPrice || fallbackPrice;
+  
+  return (
+    <span className="text-2xl font-bold text-green-600">
+      ${currentPrice}
+    </span>
+  );
+}
+
 export default function OpportunityDetail() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -46,7 +81,6 @@ export default function OpportunityDetail() {
   }, [opportunityId]);
   const [isBriefMinimized, setIsBriefMinimized] = useState(false);
   const [pitchContent, setPitchContent] = useState('');
-  const [selectedTimeframe, setSelectedTimeframe] = useState<'Daily' | 'Weekly'>('Daily');
   
   // Connect to real-time price updates from pricing engine
   const priceData = useOpportunityPrice(opportunityId);
@@ -434,6 +468,89 @@ export default function OpportunityDetail() {
   
 
   
+  // Enhanced price data processing - Show complete persistent price journey
+  const getEnhancedPriceData = () => {
+    if (!opportunity) return [];
+    
+    // Get tier base price
+    const tierBasePrice = opportunity.tier === 1 ? 225 : 
+                         opportunity.tier === 2 ? 175 : 125;
+    const oppStartDate = new Date(opportunity.postedAt || opportunity.createdAt);
+    
+    const basePricePoint = {
+      timestamp: oppStartDate.getTime(),
+      price: tierBasePrice,
+      date: oppStartDate,
+      label: format(oppStartDate, 'MMM d, HH:mm'),
+      slotsRemaining: opportunity.slotsRemaining || 5,
+      trend: 'initial',
+      isRealTime: false
+    };
+    
+    // Always use the persistent price history as the primary data source
+    if (priceHistory.length > 0) {
+      console.log('📊 Using persistent price history:', priceHistory.length, 'points');
+      
+      // Transform persistent history for chart display
+      const persistentData = priceHistory.map((item: any) => ({
+        timestamp: new Date(item.timestamp).getTime(),
+        price: item.price,
+        date: new Date(item.timestamp),
+        label: item.label || format(new Date(item.timestamp), 'MMM d, HH:mm'),
+        slotsRemaining: item.slotsRemaining || opportunity.slotsRemaining || 5,
+        trend: item.trend || 'historical',
+        isRealTime: item.isRealTime || false
+      }));
+      
+      // Add any recent real-time points that might not be in persistent history yet
+      if (realTimePriceHistory.length > 0) {
+        const lastPersistentTime = persistentData[persistentData.length - 1]?.timestamp || 0;
+        const newRealTimePoints = realTimePriceHistory.filter(rt => rt.timestamp > lastPersistentTime);
+        
+        if (newRealTimePoints.length > 0) {
+          console.log('📊 Adding', newRealTimePoints.length, 'new real-time points');
+          persistentData.push(...newRealTimePoints);
+        }
+      }
+      
+      // Ensure chart ALWAYS starts with tier base price
+      const firstPoint = persistentData[0];
+      if (!firstPoint || firstPoint.price !== tierBasePrice) {
+        console.log('📊 🎯 PREPENDING TIER BASE PRICE:', tierBasePrice, 'for tier', opportunity.tier);
+        persistentData.unshift(basePricePoint);
+      }
+      
+      // Sort by timestamp to ensure chronological order
+      const sortedData = persistentData.sort((a, b) => a.timestamp - b.timestamp);
+      console.log('📊 Complete price journey:', sortedData.length, 'data points');
+      return sortedData;
+    }
+    
+    // Generate base price point if we have no price history at all
+    console.log('📊 No price history found, generating TIER BASE PRICE as starting point');
+    const startDate = new Date(opportunity.postedAt || opportunity.createdAt);
+    const basePrice = opportunity.tier === 1 ? 225 : 
+                     opportunity.tier === 2 ? 175 : 125;
+    
+    console.log('📊 🎯 CHART WILL START AT TIER', opportunity.tier, 'BASE PRICE:', basePrice);
+    
+    return [{
+      timestamp: startDate.getTime(),
+      price: basePrice,
+      date: startDate,
+      label: format(startDate, 'MMM d, HH:mm'),
+      slotsRemaining: opportunity.slotsRemaining || 5,
+      trend: 'initial',
+      isRealTime: false
+    }];
+  };
+
+  // Use the enhanced price data which includes the complete persistent price journey
+  // Make this reactive to state changes using useMemo
+  const priceDataForChart = useMemo(() => {
+    return getEnhancedPriceData();
+  }, [priceHistory, realTimePriceHistory, opportunity]);
+
   // Loading state
   if (isLoading) {
     return (
@@ -464,6 +581,9 @@ export default function OpportunityDetail() {
   const currentPrice = priceData?.currentPrice || opportunity?.currentPrice || opportunity?.basePrice || 100;
   const priceTrend = priceData?.trend || 'stable';
   const priceIncrease = currentPrice - (opportunity?.basePrice || 100);
+  
+  // Enhanced dynamic pricing detection
+  const isDynamicPricing = priceData || isConnected || (Math.abs(priceIncrease) > 0);
   const belowListPercentage = 17; // This could be calculated based on real data later
   const maxPitchLength = 2000;
   const remainingChars = maxPitchLength - pitchContent.length;
@@ -471,178 +591,7 @@ export default function OpportunityDetail() {
   // Calculate if today is the deadline
   const isToday = opportunity?.deadline ? format(new Date(opportunity.deadline), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') : false;
 
-  // Enhanced price data processing - Show complete persistent price journey
-  const getEnhancedPriceData = () => {
-    if (!opportunity) return [];
-    
-    // Always use the persistent price history as the primary data source
-    if (priceHistory.length > 0) {
-      console.log('📊 Using persistent price history:', priceHistory.length, 'points');
-      
-      // Transform persistent history for chart display
-      const persistentData = priceHistory.map((item: any) => ({
-        timestamp: new Date(item.timestamp).getTime(),
-        price: item.price,
-        date: new Date(item.timestamp),
-        label: item.label || format(new Date(item.timestamp), 'MMM d, HH:mm'),
-        slotsRemaining: item.slotsRemaining || opportunity.slotsRemaining || 5,
-        trend: item.trend || 'historical',
-        isRealTime: item.isRealTime || false
-      }));
-      
-      // Add any recent real-time points that might not be in persistent history yet
-      if (realTimePriceHistory.length > 0) {
-        const lastPersistentTime = persistentData[persistentData.length - 1]?.timestamp || 0;
-        const newRealTimePoints = realTimePriceHistory.filter(rt => rt.timestamp > lastPersistentTime);
-        
-        if (newRealTimePoints.length > 0) {
-          console.log('📊 Adding', newRealTimePoints.length, 'new real-time points');
-          persistentData.push(...newRealTimePoints);
-        }
-      }
-      
-      // Sort by timestamp to ensure chronological order
-      const sortedData = persistentData.sort((a, b) => a.timestamp - b.timestamp);
-      console.log('📊 Complete price journey:', sortedData.length, 'data points');
-      return sortedData;
-    }
-    
-    // Generate base price point if we have no price history at all
-    console.log('📊 No price history found, generating TIER BASE PRICE as starting point');
-    const startDate = new Date(opportunity.postedAt || opportunity.createdAt);
-    const basePrice = opportunity.tier === 1 ? 225 : 
-                     opportunity.tier === 2 ? 175 : 125;
-    
-    console.log('📊 🎯 CHART WILL START AT TIER', opportunity.tier, 'BASE PRICE:', basePrice);
-    
-    return [{
-      timestamp: startDate.getTime(),
-      price: basePrice,
-      date: startDate,
-      label: format(startDate, 'MMM d, HH:mm'),
-      slotsRemaining: opportunity.slotsRemaining || 5,
-      trend: 'initial',
-      isRealTime: false
-    }];
-  };
 
-  // Calculate dynamic Y-axis domain with smart padding
-  const getYAxisDomain = (data: any[]) => {
-    if (data.length === 0) return [0, 300];
-    
-    const prices = data.map(d => d.price);
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
-    const range = maxPrice - minPrice;
-    
-    // Add 10% padding on each side, minimum 20 price units
-    const padding = Math.max(20, range * 0.1);
-    
-    return [
-      Math.max(0, Math.floor(minPrice - padding)),
-      Math.ceil(maxPrice + padding)
-    ];
-  };
-
-  // Calculate X-axis domain based on opportunity timeline
-  const getXAxisDomain = () => {
-    if (!opportunity) return [Date.now() - 7 * 24 * 60 * 60 * 1000, Date.now()];
-    
-    const startDate = new Date(opportunity.postedAt || opportunity.createdAt);
-    const endDate = new Date(opportunity.deadline);
-    
-    // Show from start to deadline (full timeline)
-    return [
-      startDate.getTime(),
-      endDate.getTime()
-    ];
-  };
-
-  // Enhanced chart data
-  const enhancedPriceData = getEnhancedPriceData();
-  const yAxisDomain = getYAxisDomain(enhancedPriceData);
-  const xAxisDomain = getXAxisDomain();
-
-  // Enhanced Custom Tooltip with Real-Time Info
-  const EnhancedTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const price = payload[0].value;
-      const date = new Date(data.timestamp);
-      
-      // Calculate price change from previous point
-      const chartData = getEnhancedPriceData();
-      const currentIndex = chartData.findIndex(d => d.timestamp === data.timestamp);
-      const prevPrice = currentIndex > 0 ? chartData[currentIndex - 1].price : price;
-      const priceChange = price - prevPrice;
-      const changeDirection = priceChange >= 0 ? '+' : '';
-      
-      // Determine time format based on data type
-      const timeFormat = data.isRealTime ? 'MMM d, HH:mm' : 'MMM d, yyyy';
-      
-      return (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-[200px]">
-          {/* Date/Time Header */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-xs text-gray-500 font-medium">
-              {format(date, timeFormat)}
-            </div>
-            {data.isRealTime && (
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-xs font-semibold text-red-600">Live</span>
-              </div>
-            )}
-          </div>
-          
-          {/* Price Display */}
-          <div className="flex items-baseline space-x-2 mb-2">
-            <div className="text-lg font-bold text-gray-900">${price}</div>
-            {data.trend && data.trend !== 'stable' && (
-              <div className={`text-xs font-semibold px-2 py-1 rounded ${
-                data.trend === 'up' ? 'bg-green-50 text-green-600' :
-                data.trend === 'down' ? 'bg-red-50 text-red-600' :
-                'bg-gray-50 text-gray-600'
-              }`}>
-                {data.trend === 'up' ? '↗ Rising' : 
-                 data.trend === 'down' ? '↘ Falling' : 
-                 '→ Stable'}
-              </div>
-            )}
-          </div>
-          
-          {/* Price Change */}
-          {currentIndex > 0 && (
-            <div className={`text-xs font-semibold ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {changeDirection}${Math.abs(priceChange)} from previous {data.isRealTime ? 'update' : 'day'}
-            </div>
-          )}
-          
-          {/* Real-Time Indicators */}
-          {data.isRealTime && (
-            <div className="mt-2 pt-2 border-t border-gray-100">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500">Market Activity</span>
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-green-600 font-medium">Active</span>
-                </div>
-              </div>
-              {data.isMinuteMark && (
-                <div className="text-xs text-blue-600 font-medium mt-1">
-                  📊 Minute Mark Update
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  // Use the enhanced price data which includes the complete persistent price journey
-  const priceDataForChart = getEnhancedPriceData();
 
   const handleSecurePitch = async () => {
     try {
@@ -1199,159 +1148,42 @@ export default function OpportunityDetail() {
                 {/* Price Trend Section - Left Side */}
                 <div className="p-8 border-r border-gray-200/50">
                   <div className="mb-6">
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center space-x-4">
-                        <h3 className="text-xl font-bold text-gray-900">Price Trend</h3>
-                        <div className="flex items-center space-x-2">
-                          {isConnected && priceData ? (
-                            <>
-                              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                              <span className="text-sm font-medium text-green-600">Live</span>
-                              <span className="text-xs text-gray-500">•</span>
-                              <span className="text-xs text-gray-500">Updates every minute</span>
-                              {realTimePriceHistory.length > 0 && (
-                                <>
-                                  <span className="text-xs text-gray-500">•</span>
-                                  <span className="text-xs font-semibold text-blue-600">
-                                    {realTimePriceHistory.length} live points
-                                  </span>
-                                </>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                              <span className="text-sm font-medium text-gray-500">Static</span>
-                            </>
-                          )}
-                        </div>
+                    {/* Live Status Indicator */}
+                    {isConnected && priceData && (
+                      <div className="flex items-center space-x-2 mb-4">
+                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm font-medium text-green-600">Live pricing active</span>
+                        <span className="text-xs text-gray-500">•</span>
+                        <span className="text-xs text-gray-500">Updates every minute</span>
+                        {realTimePriceHistory.length > 0 && (
+                          <>
+                            <span className="text-xs text-gray-500">•</span>
+                            <span className="text-xs font-semibold text-blue-600">
+                              {realTimePriceHistory.length} live points
+                            </span>
+                          </>
+                        )}
                       </div>
-                      <div className="flex bg-gray-100 rounded-lg p-1">
-                        <button
-                          onClick={() => setSelectedTimeframe('Daily')}
-                          className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                            selectedTimeframe === 'Daily' 
-                              ? 'bg-white text-gray-900 shadow-sm' 
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          Timeline
-                        </button>
-                      </div>
-                    </div>
+                    )}
 
-                    {/* Immersive Price Chart - Full Container */}
-                    <div className="h-96 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart 
-                          data={priceDataForChart} 
-                          margin={{ top: 5, right: 5, bottom: 5, left: 25 }}
-                        >
-                          <defs>
-                            <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.25} />
-                              <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.01} />
-                            </linearGradient>
-                            <linearGradient id="realTimePriceGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#EF4444" stopOpacity={0.3} />
-                              <stop offset="100%" stopColor="#EF4444" stopOpacity={0.02} />
-                            </linearGradient>
-                          </defs>
-                          
-                          <CartesianGrid 
-                            strokeDasharray="2 2" 
-                            stroke="#E5E7EB" 
-                            strokeOpacity={0.5}
-                            vertical={false}
-                          />
-                          
-                          <XAxis 
-                            type="number"
-                            dataKey="timestamp"
-                            domain={xAxisDomain}
-                            scale="time"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fontSize: 11, fill: '#9CA3AF' }}
-                            tickFormatter={(value) => {
-                              const date = new Date(value);
-                              const chartData = getEnhancedPriceData();
-                              // If we have live minute-by-minute data, show time only
-                              const hasLiveData = chartData.some(d => d.isRealTime);
-                              return hasLiveData ? format(date, 'HH:mm') : format(date, 'MMM d');
-                            }}
-                            height={20}
-                            ticks={[
-                              xAxisDomain[0], // Start date
-                              xAxisDomain[1]  // End date (deadline)
-                            ]}
-                          />
-                          
-                          <YAxis 
-                            type="number"
-                            domain={yAxisDomain}
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fontSize: 11, fill: '#9CA3AF' }}
-                            tickFormatter={(value) => `$${value}`}
-                            width={35}
-                            tickCount={6}
-                          />
-                          
-                          <Tooltip content={<EnhancedTooltip />} />
-                          
-                          <Area
-                            type="monotone"
-                            dataKey="price"
-                            stroke={realTimePriceHistory.length > 0 ? "#EF4444" : "#3B82F6"}
-                            strokeWidth={realTimePriceHistory.length > 0 ? 4 : 3.5}
-                            fill={realTimePriceHistory.length > 0 ? "url(#realTimePriceGradient)" : "url(#priceGradient)"}
-                            dot={false}
-                            activeDot={{ 
-                              r: realTimePriceHistory.length > 0 ? 6 : 5, 
-                              fill: realTimePriceHistory.length > 0 ? '#EF4444' : '#3B82F6', 
-                              stroke: '#FFFFFF', 
-                              strokeWidth: 2,
-                              className: realTimePriceHistory.length > 0 ? "animate-pulse" : ""
-                            }}
-                          />
-                          
-                          {/* Current price indicator */}
-                          <ReferenceDot
-                            x={Date.now()}
-                            y={currentPrice}
-                            r={priceData ? 6 : 4}
-                            fill={priceData ? "#EF4444" : "#3B82F6"}
-                            stroke="#FFFFFF"
-                            strokeWidth={2}
-                            className={priceData ? "animate-pulse" : ""}
-                          />
-                          
-                          {/* Opportunity deadline line */}
-                          {opportunity?.deadline && (
-                            <ReferenceDot
-                              x={new Date(opportunity.deadline).getTime()}
-                              y={currentPrice}
-                              r={3}
-                              fill="#F59E0B"
-                              stroke="#FFFFFF"
-                              strokeWidth={1}
-                              opacity={0.7}
-                            />
-                          )}
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
+                    {/* Interactive Price Chart */}
+                    <PriceTrendChart
+                      data={priceDataForChart.map(p => ({
+                        t: new Date(p.timestamp).toISOString(),
+                        p: p.price
+                      }))}
+                      live={isConnected && !!priceData}
+                    />
 
                     {/* Enhanced price range and timeline info */}
                     <div className="space-y-4 mt-6">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-2">
-                          <span className="text-green-600 font-bold text-lg">${Math.min(...priceDataForChart.map(p => p.price))}</span>
+                                                      <span className="text-green-600 font-bold text-lg">${Math.min(...priceDataForChart.map((p: any) => p.price))}</span>
                           <span className="text-gray-500 text-sm">Low</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <span className="text-red-500 font-bold text-lg">${Math.max(...priceDataForChart.map(p => p.price))}</span>
+                                                      <span className="text-red-500 font-bold text-lg">${Math.max(...priceDataForChart.map((p: any) => p.price))}</span>
                           <span className="text-gray-500 text-sm">High</span>
                         </div>
                       </div>
@@ -1415,9 +1247,9 @@ export default function OpportunityDetail() {
 
                     <div className="flex items-center justify-between mb-8">
                       <div className="flex items-center space-x-2">
-                        <span className={`w-3 h-3 rounded-full ${priceData ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`}></span>
+                        <span className={`w-3 h-3 rounded-full ${priceData || isConnected ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`}></span>
                         <span className="text-gray-600 font-medium">
-                          {priceData ? 'Dynamic pricing active' : 'Static pricing'}
+                          {priceData || isConnected ? 'Dynamic pricing active' : 'Static pricing'}
                         </span>
                       </div>
                       {priceData?.lastPriceUpdate && (
@@ -1879,9 +1711,7 @@ export default function OpportunityDetail() {
                           <div className="px-6 pb-6">
                             <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50/50 rounded-xl border border-gray-100">
                               <div className="flex items-baseline space-x-2">
-                                <span className="text-2xl font-bold text-green-600">
-                                  ${relatedOpp.minimumBid || relatedOpp.currentPrice || 0}
-                                </span>
+                                <RelatedOpportunityPrice opportunityId={relatedOpp.id} fallbackPrice={relatedOpp.minimumBid || relatedOpp.currentPrice || 0} />
                                 {relatedOpp.increment && (
                                   <span className="text-gray-500 text-sm font-medium">
                                     +${relatedOpp.increment}
