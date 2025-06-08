@@ -190,10 +190,10 @@ export default function OpportunityCard({
                 </Badge>
               )}
               {(priceTrend === 'up' || priceDirection === 'up') && (
-                <TrendingUp className={`h-3 w-3 text-green-500 ${showPriceAnimation || priceData ? 'animate-bounce' : ''}`} />
+                <TrendingUp className="h-3 w-3 text-green-500" />
               )}
               {(priceTrend === 'down' || priceDirection === 'down') && (
-                <TrendingDown className={`h-3 w-3 text-red-500 ${showPriceAnimation || priceData ? 'animate-bounce' : ''}`} />
+                <TrendingDown className="h-3 w-3 text-red-500" />
               )}
               {priceTrend === 'stable' && (
                 <Minus className="h-3 w-3 text-gray-400" />

@@ -66,6 +66,68 @@ function RelatedOpportunityPrice({ opportunityId, fallbackPrice }: { opportunity
   );
 }
 
+// Component to show hourly price change for related opportunities
+function RelatedOpportunityHourlyChange({ opportunityId }: { opportunityId: number }) {
+  const priceData = useOpportunityPrice(opportunityId);
+  const [hourlyChange, setHourlyChange] = useState<{ change: number; trend: string } | null>(null);
+  
+  // Fetch hourly price change data
+  useEffect(() => {
+    const fetchHourlyChange = async () => {
+      try {
+        const response = await apiFetch(`/api/opportunities/${opportunityId}/price-trend?window=1h`, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const priceHistory = await response.json();
+          if (priceHistory.length >= 2) {
+            const latest = priceHistory[priceHistory.length - 1];
+            const previous = priceHistory[0];
+            const change = latest.p - previous.p;
+            const trend = change > 0 ? 'up' : change < 0 ? 'down' : 'stable';
+            setHourlyChange({ change, trend });
+          } else {
+            setHourlyChange({ change: 0, trend: 'stable' });
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to fetch hourly change for opportunity ${opportunityId}:`, error);
+        setHourlyChange({ change: 0, trend: 'stable' });
+      }
+    };
+    
+    fetchHourlyChange();
+  }, [opportunityId]);
+  
+  // Use live data if available, otherwise use fetched data
+  const change = priceData?.deltaPastHour ?? hourlyChange?.change ?? 0;
+  const trend = priceData?.trend ?? hourlyChange?.trend ?? 'stable';
+  
+  if (trend === 'stable' || change === 0) {
+    return (
+      <div className="text-right">
+        <div className="text-xs text-gray-500 mb-1">Past Hour</div>
+        <div className="text-blue-600 text-sm font-semibold flex items-center justify-end space-x-1">
+          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+          <span>No change</span>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="text-right">
+      <div className="text-xs text-gray-500 mb-1">Past Hour</div>
+      <div className={`text-sm font-semibold flex items-center justify-end space-x-1 ${
+        trend === 'up' ? 'text-green-600' : 'text-red-600'
+      }`}>
+        <TrendingUp className={`h-3 w-3 ${trend === 'down' ? 'rotate-180' : ''}`} />
+        <span>{change > 0 ? '+' : ''}${Math.abs(change)}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function OpportunityDetail() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -669,10 +731,7 @@ export default function OpportunityDetail() {
         queryClient.invalidateQueries({ queryKey: [`/api/opportunities/${opportunity.id}/user-pitch-status`] });
       }
 
-      // Re-check pitch status to update UI immediately
-      setTimeout(() => {
-        checkUserPitchStatus(opportunity.id);
-      }, 500);
+      // No need to re-check pitch status - we already updated the state above
 
     } catch (error) {
       console.error('Error submitting pitch:', error);
@@ -1718,13 +1777,7 @@ export default function OpportunityDetail() {
                                   </span>
                                 )}
                               </div>
-                              <div className="text-right">
-                                <div className="text-xs text-gray-500 mb-1">Current Rate</div>
-                                <div className="text-green-600 text-sm font-semibold flex items-center space-x-1">
-                                  <TrendingUp className="h-3 w-3" />
-                                  <span>Live</span>
-                                </div>
-                              </div>
+                              <RelatedOpportunityHourlyChange opportunityId={relatedOpp.id} />
                             </div>
                           </div>
                         </div>

@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react';
 import { getLogoContainerClasses, getDeviceOptimizedClasses } from '@/lib/responsive-utils';
 import { useAuth } from '@/hooks/use-auth';
 import { apiFetch } from '@/lib/apiFetch';
+import { useOpportunityPrice } from '@/contexts/PriceContext';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -26,11 +27,13 @@ const tierLabels: Record<OutletTier, string> = {
 export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
   const { hasActiveSubscription } = useSubscription();
   const { user } = useAuth();
+  const priceData = useOpportunityPrice(opportunity.id);
   const [showPaywallModal, setShowPaywallModal] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [realPriceData, setRealPriceData] = useState<{deltaPastHour: number; trend: string} | null>(null);
 
   const {
     id,
@@ -83,9 +86,9 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     ? Math.round(((currentPrice - basePrice) / basePrice) * 100)
     : 0;
 
-  // Simulate hourly price movement (in production this would come from API)
-  const hourlyChange = Math.floor(Math.random() * 21) - 10; // -10 to +10
-  const recentTrend = hourlyChange > 0 ? 'up' : hourlyChange < 0 ? 'down' : 'stable';
+  // Get real hourly price change from pricing engine
+  const hourlyChange = priceData?.deltaPastHour || realPriceData?.deltaPastHour || 0;
+  const recentTrend = priceData?.trend || realPriceData?.trend || (hourlyChange > 0 ? 'up' : hourlyChange < 0 ? 'down' : 'stable');
 
   // Format deadline
   let deadlineDate: Date;
@@ -128,6 +131,29 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     }
     window.location.href = `/opportunities/${id}`;
   };
+
+  // Fetch real price data when component mounts
+  useEffect(() => {
+    const fetchPriceData = async () => {
+      try {
+        const response = await apiFetch(`/api/opportunities/${id}/price-trend?window=1h`);
+        if (response.ok) {
+          const priceHistory = await response.json();
+          if (priceHistory.length >= 2) {
+            const latest = priceHistory[priceHistory.length - 1];
+            const previous = priceHistory[0];
+            const deltaPastHour = latest.p - previous.p;
+            const trend = deltaPastHour > 0 ? 'up' : deltaPastHour < 0 ? 'down' : 'stable';
+            setRealPriceData({ deltaPastHour, trend });
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to fetch price data for opportunity ${id}:`, error);
+      }
+    };
+    
+    fetchPriceData();
+  }, [id]);
 
   // Check if opportunity is saved when component mounts
   useEffect(() => {
@@ -320,25 +346,29 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
           <div className="mb-3 p-3 sm:p-3.5 md:p-4 lg:p-4 xl:p-5 bg-gradient-to-r from-gray-50/50 to-blue-50/30 rounded-lg border border-gray-100">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs sm:text-xs md:text-sm lg:text-sm xl:text-sm font-semibold text-gray-700">Current Price</span>
-              {recentTrend !== 'stable' && (
-                <div className={cn(
-                  "flex items-center text-xs sm:text-xs md:text-xs lg:text-sm xl:text-sm font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full",
-                  recentTrend === 'up' ? "text-green-700 bg-green-50" : "text-red-700 bg-red-50"
-                )}>
-                  {recentTrend === 'up' ? (
-                    <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
-                  ) : (
-                    <TrendingDown className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
-                  )}
-                  <span>{recentTrend === 'up' ? '+' : ''}${Math.abs(hourlyChange)} past hour</span>
-                </div>
-              )}
+              <div className={cn(
+                "flex items-center text-xs sm:text-xs md:text-xs lg:text-sm xl:text-sm font-bold px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full border shadow-sm transition-all duration-200 hover:scale-105",
+                recentTrend === 'up' ? "text-green-700 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-green-100" : 
+                recentTrend === 'down' ? "text-red-700 bg-gradient-to-r from-red-50 to-rose-50 border-red-200 shadow-red-100" : 
+                "text-blue-700 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-blue-100"
+              )}>
+                {recentTrend === 'up' ? (
+                  <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
+                ) : recentTrend === 'down' ? (
+                  <TrendingDown className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
+                ) : (
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-1.5 animate-pulse"></div>
+                )}
+                <span>
+                  {recentTrend === 'stable' ? 'No change' : `${hourlyChange > 0 ? '+' : ''}$${Math.abs(hourlyChange)} past hour`}
+                </span>
+              </div>
             </div>
             <div className="text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-3xl font-black text-gray-900">${currentPrice % 1 === 0 ? Math.floor(currentPrice) : currentPrice}</div>
           </div>
           
           {/* Smart Status Badges */}
-          <div className="flex flex-wrap gap-1.5 mb-3">
+          <div className="flex flex-wrap gap-1.5 mb-3 pointer-events-none">
             {isPremium && (
               <Badge className="bg-blue-100 text-blue-700 flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5">
                 <Award className="h-2.5 w-2.5" /> 
