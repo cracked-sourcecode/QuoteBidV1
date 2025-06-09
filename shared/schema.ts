@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, primaryKey, pgEnum, numeric, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, primaryKey, pgEnum, numeric, uuid, bigint } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -107,6 +107,9 @@ export const opportunities = pgTable("opportunities", {
   inventory_level: integer("inventory_level").notNull().default(0),
   category: text("category"),
   variable_snapshot: jsonb("variable_snapshot"),
+  // Pricing Engine v2 telemetry (added in step-3)
+  meta: jsonb("meta"),
+  lastDriftAt: bigint("last_drift_at", { mode: "bigint" }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
