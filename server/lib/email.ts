@@ -37,7 +37,7 @@ export async function sendOpportunityNotification(
 
   try {
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'QuoteBid <onboarding@resend.dev>',
+      from: 'QuoteBid <onboarding@resend.dev>',
       to: toEmails,
       subject: `New Opportunity: ${opportunity.title}`,
       html: `
@@ -133,7 +133,7 @@ export async function sendPasswordResetEmail(
     console.log('📧 Sending password reset email to:', email);
     
     const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'QuoteBid <onboarding@resend.dev>',
+      from: 'QuoteBid <no-reply@quotebid.co>',
       to: [email],
       subject: '🔐 Reset Your QuoteBid Password',
       html: emailHtml,
@@ -205,7 +205,7 @@ export async function sendUsernameReminderEmail(
     console.log('📧 Sending username reminder to:', email);
     
     const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'QuoteBid <onboarding@resend.dev>',
+      from: 'QuoteBid <no-reply@quotebid.co>',
       to: [email],
       subject: '👤 Your QuoteBid Username',
       html: emailHtml,
@@ -339,7 +339,7 @@ export async function sendPricingNotificationEmail(
     console.log(`📧 Sending ${template} pricing notification to ${emails.length} users`);
     
     const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'QuoteBid <onboarding@resend.dev>',
+      from: 'QuoteBid <no-reply@quotebid.co>',
       to: emails,
       subject,
       html,
@@ -403,7 +403,7 @@ export async function sendNotificationEmail(
     `;
 
     const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'QuoteBid <onboarding@resend.dev>',
+      from: 'QuoteBid <no-reply@quotebid.co>',
       to: [email],
       subject: subject,
       html: emailHtml,
