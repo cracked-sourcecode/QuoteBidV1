@@ -4,13 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/apiFetch";
-import { Settings, Zap, TrendingUp, Clock, Cpu, RefreshCw } from "lucide-react";
+import { Settings, Zap, TrendingUp, Clock, Cpu, Activity, CheckCircle, AlertCircle, Save } from "lucide-react";
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -52,146 +51,151 @@ export default function AdminPricing() {
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 
-  // Local state for editing
-  const [editingValues, setEditingValues] = useState<Record<string, { weight: number; nonlinear_fn: string }>>({});
-  const [sliderValues, setSliderValues] = useState<{ priceStep: number; tickIntervalMs: number }>({
-    priceStep: 5,
-    tickIntervalMs: 60000,
-  });
+  // Local state for editing (unsaved changes)
+  const [pendingVariableChanges, setPendingVariableChanges] = useState<Record<string, { weight: number; nonlinear_fn: string }>>({});
+  const [pendingConfigChanges, setPendingConfigChanges] = useState<{ priceStep?: number; tickIntervalMs?: number }>({});
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Update slider values when config loads
-  useEffect(() => {
-    if (config) {
-      // Safely extract values, handling case where they might be objects
-      const extractValue = (value: any, defaultVal: number) => {
-        if (typeof value === 'number') return value;
-        if (typeof value === 'object' && value?.dollars) return value.dollars;
-        if (typeof value === 'string') return parseFloat(value) || defaultVal;
-        return defaultVal;
-      };
-      
-      setSliderValues({
-        priceStep: extractValue(config.priceStep, 5),
-        tickIntervalMs: extractValue(config.tickIntervalMs, 60000),
-      });
+  // Check if there are any unsaved changes
+  const hasUnsavedChanges = Object.keys(pendingVariableChanges).length > 0 || Object.keys(pendingConfigChanges).length > 0;
+
+  // Get current value for display (pending changes take priority over saved values)
+  const getCurrentVariableValue = (varName: string, field: 'weight' | 'nonlinear_fn') => {
+    if (pendingVariableChanges[varName]?.[field] !== undefined) {
+      return pendingVariableChanges[varName][field];
     }
-  }, [config]);
+    
+    const variable = variables?.find((v: any) => v.var_name === varName);
+    if (!variable) return field === 'weight' ? 0 : 'none';
+    
+    if (field === 'weight') {
+      const weight = variable.weight;
+      if (typeof weight === 'number') return weight;
+      if (typeof weight === 'string') return parseFloat(weight) || 0;
+      if (typeof weight === 'object' && weight?.dollars) return weight.dollars;
+      return 0;
+    } else {
+      return variable.nonlinear_fn || 'none';
+    }
+  };
 
-  // Debounced values for auto-save
-  const debouncedEditingValues = useDebounce(editingValues, 300);
+  const getCurrentConfigValue = (key: 'priceStep' | 'tickIntervalMs') => {
+    if (pendingConfigChanges[key] !== undefined) {
+      return pendingConfigChanges[key];
+    }
+    
+    if (!config) return key === 'priceStep' ? 5 : 60000;
+    
+    const extractValue = (value: any, defaultVal: number) => {
+      if (typeof value === 'number') return value;
+      if (typeof value === 'object' && value?.dollars) return value.dollars;
+      if (typeof value === 'string') return parseFloat(value) || defaultVal;
+      return defaultVal;
+    };
+    
+    return extractValue(config[key], key === 'priceStep' ? 5 : 60000);
+  };
 
-  // Update variable mutation
-  const updateVariableMutation = useMutation({
-    mutationFn: async ({ name, data }: { name: string; data: { weight?: number; nonlinear_fn?: string } }) => {
-      const response = await apiFetch(`/api/admin/variable/${name}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error('Failed to update variable');
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({ title: "Saved ✓", description: "Variable updated - syncing to pricing engine..." });
-      refetchVariables(); // Revalidate variables data
-      // Trigger immediate pricing engine sync
-      setTimeout(() => {
-        forceSyncMutation.mutate();
-      }, 500);
-    },
-    onError: (error: any) => {
-      toast({ 
-        title: "Save failed", 
-        description: error.message,
-        variant: "destructive" 
-      });
-    },
-  });
-
-  // Update config mutation
-  const updateConfigMutation = useMutation({
-    mutationFn: async ({ key, value }: { key: string; value: number }) => {
-      const response = await apiFetch(`/api/admin/config/${key}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ value }),
-      });
-      if (!response.ok) throw new Error('Failed to update config');
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({ title: "Saved ✓", description: "Configuration updated - syncing to pricing engine..." });
-      refetchConfig(); // Revalidate config data
-      // Trigger immediate pricing engine sync
-      setTimeout(() => {
-        forceSyncMutation.mutate();
-      }, 500);
-    },
-    onError: (error: any) => {
-      toast({ 
-        title: "Save failed", 
-        description: error.message,
-        variant: "destructive" 
-      });
-    },
-  });
-
-  // Force pricing engine sync mutation
-  const forceSyncMutation = useMutation({
-    mutationFn: async () => {
+  // Auto-sync to pricing engine after changes
+  const syncToPricingEngine = async () => {
+    try {
+      setSyncStatus('syncing');
       const response = await apiFetch('/api/admin/reload-pricing-engine', {
         method: 'POST',
       });
       if (!response.ok) throw new Error('Failed to sync pricing engine');
-      return response.json();
-    },
-    onSuccess: () => {
+      setSyncStatus('success');
+      setTimeout(() => setSyncStatus('idle'), 2000);
+    } catch (error) {
+      setSyncStatus('error');
+      setTimeout(() => setSyncStatus('idle'), 3000);
+    }
+  };
+
+  // Save all changes
+  const saveAllChanges = async () => {
+    if (!hasUnsavedChanges) return;
+    
+    setIsSaving(true);
+    try {
+      // Save variable changes
+      for (const [varName, changes] of Object.entries(pendingVariableChanges)) {
+        const response = await apiFetch(`/api/admin/variable/${varName}`, {
+          method: 'PATCH',
+          body: JSON.stringify(changes),
+        });
+        if (!response.ok) throw new Error(`Failed to update variable ${varName}`);
+      }
+
+      // Save config changes
+      for (const [key, value] of Object.entries(pendingConfigChanges)) {
+        if (value !== undefined) {
+          const response = await apiFetch(`/api/admin/config/${key}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ value }),
+          });
+          if (!response.ok) throw new Error(`Failed to update config ${key}`);
+        }
+      }
+
+      // Clear pending changes
+      setPendingVariableChanges({});
+      setPendingConfigChanges({});
+
+      // Refresh data
+      await Promise.all([refetchVariables(), refetchConfig()]);
+
       toast({ 
-        title: "Synced ✅", 
-        description: "Pricing engine updated with your changes" 
+        title: "Changes Saved", 
+        description: "All changes saved successfully. Syncing to pricing engine...",
+        className: "bg-green-50 border-green-200 text-green-800"
       });
-    },
-    onError: (error: any) => {
+
+      // Sync to pricing engine
+      await syncToPricingEngine();
+
+    } catch (error: any) {
       toast({ 
-        title: "Sync failed", 
+        title: "Save Failed", 
         description: error.message,
         variant: "destructive" 
       });
-    },
-  });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-  // Auto-save effect for variables
-  useEffect(() => {
-    Object.entries(debouncedEditingValues).forEach(([varName, values]) => {
-      updateVariableMutation.mutate({ name: varName, data: values });
-    });
-  }, [debouncedEditingValues]);
-
-  // Handle weight change
+  // Handle weight change (local only, not saved)
   const handleWeightChange = (varName: string, weight: number) => {
-    setEditingValues(prev => ({
+    setPendingVariableChanges(prev => ({
       ...prev,
       [varName]: {
         ...prev[varName],
         weight,
+        nonlinear_fn: prev[varName]?.nonlinear_fn ?? getCurrentVariableValue(varName, 'nonlinear_fn')
       }
     }));
   };
 
-  // Handle nonlinear function change
+  // Handle nonlinear function change (local only, not saved)
   const handleNonlinearFnChange = (varName: string, nonlinear_fn: string) => {
-    setEditingValues(prev => ({
+    setPendingVariableChanges(prev => ({
       ...prev,
       [varName]: {
         ...prev[varName],
-        nonlinear_fn,
+        weight: prev[varName]?.weight ?? getCurrentVariableValue(varName, 'weight'),
+        nonlinear_fn
       }
     }));
   };
 
-  // Handle slider changes (save immediately on release)
-  const handleSliderChange = (key: 'priceStep' | 'tickIntervalMs', value: number[]) => {
-    const newValue = value[0];
-    setSliderValues(prev => ({ ...prev, [key]: newValue }));
-    updateConfigMutation.mutate({ key, value: newValue });
+  // Handle config changes (local only, not saved)
+  const handleConfigChange = (key: 'priceStep' | 'tickIntervalMs', value: number) => {
+    setPendingConfigChanges(prev => ({
+      ...prev,
+      [key]: value
+    }));
   };
 
   // Prepare chart data
@@ -201,240 +205,358 @@ export default function AdminPricing() {
     tokens: metrics.tokens[index],
   })) : [];
 
+  // Sync status indicator
+  const SyncStatusIndicator = () => {
+    switch (syncStatus) {
+      case 'syncing':
+        return (
+          <div className="flex items-center gap-2 text-blue-600">
+            <Activity className="h-4 w-4 animate-spin" />
+            <span className="text-sm font-medium">Syncing to engine...</span>
+          </div>
+        );
+      case 'success':
+        return (
+          <div className="flex items-center gap-2 text-green-600">
+            <CheckCircle className="h-4 w-4" />
+            <span className="text-sm font-medium">Engine updated</span>
+          </div>
+        );
+      case 'error':
+        return (
+          <div className="flex items-center gap-2 text-red-600">
+            <AlertCircle className="h-4 w-4" />
+            <span className="text-sm font-medium">Sync failed</span>
+          </div>
+        );
+      default:
+        return (
+          <div className="flex items-center gap-2 text-gray-500">
+            <Zap className="h-4 w-4" />
+            <span className="text-sm font-medium">Live Engine Control</span>
+          </div>
+        );
+    }
+  };
+
   if (variablesError || configError || metricsError) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-2">
-          <Settings className="h-6 w-6" />
-          <h2 className="text-2xl font-bold">Pricing Control</h2>
-        </div>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <p className="text-red-600">Error loading pricing data:</p>
-              {variablesError && <p className="text-sm text-gray-600">Variables: {variablesError.message}</p>}
-              {configError && <p className="text-sm text-gray-600">Config: {configError.message}</p>}
-              {metricsError && <p className="text-sm text-gray-600">Metrics: {metricsError.message}</p>}
-              <p className="text-sm text-gray-500 mt-4">
-                This could be due to missing API endpoints or insufficient admin permissions.
-              </p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <Settings className="h-6 w-6 text-red-600" />
             </div>
-          </CardContent>
-        </Card>
+            <h1 className="text-3xl font-bold text-gray-900">Pricing Control</h1>
+          </div>
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <p className="text-red-600 font-medium">Error loading pricing data:</p>
+                {variablesError && <p className="text-sm text-gray-600">Variables: {variablesError.message}</p>}
+                {configError && <p className="text-sm text-gray-600">Config: {configError.message}</p>}
+                {metricsError && <p className="text-sm text-gray-600">Metrics: {metricsError.message}</p>}
+                <p className="text-sm text-gray-500 mt-4">
+                  This could be due to missing API endpoints or insufficient admin permissions.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Settings className="h-6 w-6" />
-          <h2 className="text-2xl font-bold">Pricing Control</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => forceSyncMutation.mutate()}
-            disabled={forceSyncMutation.isPending}
-            className="flex items-center gap-1"
-          >
-            <RefreshCw className={`h-3 w-3 ${forceSyncMutation.isPending ? 'animate-spin' : ''}`} />
-            {forceSyncMutation.isPending ? 'Syncing...' : 'Force Sync'}
-          </Button>
-          <Badge variant="outline" className="flex items-center gap-1">
-            <Zap className="h-3 w-3" />
-            Live Dashboard
-          </Badge>
-        </div>
-      </div>
-
-      {/* Variables Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Pricing Variables
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {!variables ? (
-            <div className="flex items-center justify-center h-32">
-              <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Settings className="h-6 w-6 text-blue-600" />
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Variable</TableHead>
-                  <TableHead>Weight</TableHead>
-                  <TableHead>Curve</TableHead>
-                  <TableHead>Last Updated</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {Array.isArray(variables) ? variables.map((variable: any) => {
-                  // Safely extract weight value
-                  const getWeight = () => {
-                    const weight = variable.weight;
-                    if (typeof weight === 'number') return weight;
-                    if (typeof weight === 'string') return parseFloat(weight) || 0;
-                    if (typeof weight === 'object' && weight?.dollars) return weight.dollars;
-                    return 0;
-                  };
-                  
-                  return (
-                    <TableRow key={variable.var_name || `var-${Math.random()}`}>
-                      <TableCell className="font-medium">{variable.var_name || 'Unknown'}</TableCell>
-                    <TableCell>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Pricing Control</h1>
+              <p className="text-gray-600">Real-time pricing engine configuration</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <SyncStatusIndicator />
+            <Button 
+              onClick={saveAllChanges}
+              disabled={!hasUnsavedChanges || isSaving}
+              className={hasUnsavedChanges ? "bg-green-600 hover:bg-green-700" : "bg-gray-400"}
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {isSaving ? "Saving..." : hasUnsavedChanges ? "Save Changes" : "No Changes"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Unsaved Changes Alert */}
+        {hasUnsavedChanges && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-2 text-orange-800">
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  You have unsaved changes. Click "Save Changes" to apply them to the pricing engine.
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Configuration Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Price Step */}
+          <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <div className="p-1.5 bg-green-100 rounded-md">
+                  <Settings className="h-4 w-4 text-green-600" />
+                </div>
+                Price Step
+                {pendingConfigChanges.priceStep !== undefined && (
+                  <Badge variant="outline" className="ml-2 text-xs bg-orange-50 text-orange-700 border-orange-200">
+                    Modified
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {!config ? (
+                <div className="flex items-center justify-center h-20">
+                  <div className="animate-spin w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full" />
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-gray-700">Dollar amount per price step</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg font-semibold">$</span>
                       <Input
                         type="number"
-                        step="0.1"
-                        min="-10"
-                        max="10"
-                          value={editingValues[variable.var_name]?.weight ?? getWeight()}
-                        onChange={(e) => handleWeightChange(variable.var_name, parseFloat(e.target.value) || 0)}
-                        className="w-20"
+                        min="1"
+                        max="20"
+                        step="1"
+                        value={getCurrentConfigValue('priceStep')}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 5;
+                          if (value >= 1 && value <= 20) {
+                            handleConfigChange('priceStep', value);
+                          }
+                        }}
+                        className="pl-8 text-center text-xl font-bold border-2 border-gray-200 focus:border-green-500 focus:ring-green-500"
+                        placeholder="5"
                       />
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={editingValues[variable.var_name]?.nonlinear_fn ?? (variable.nonlinear_fn || 'none')}
-                        onValueChange={(value) => handleNonlinearFnChange(variable.var_name, value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">none</SelectItem>
-                          <SelectItem value="decay24h">decay24h</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-500">
-                      {variable.updated_at ? new Date(variable.updated_at).toLocaleString() : 'Never'}
-                    </TableCell>
-                  </TableRow>
-                  );
-                }) : (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-gray-500">
-                      No variables data available
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                    </div>
+                    <div className="text-xs text-gray-500 text-center">
+                      Range: $1 - $20 per step
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Configuration Sliders */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Price Step ($)
+          {/* Tick Interval */}
+          <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <div className="p-1.5 bg-orange-100 rounded-md">
+                  <Clock className="h-4 w-4 text-orange-600" />
+                </div>
+                Tick Interval
+                {pendingConfigChanges.tickIntervalMs !== undefined && (
+                  <Badge variant="outline" className="ml-2 text-xs bg-orange-50 text-orange-700 border-orange-200">
+                    Modified
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {!config ? (
+                <div className="flex items-center justify-center h-20">
+                  <div className="animate-spin w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full" />
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-gray-700">Engine processing frequency</label>
+                    <Select
+                      value={getCurrentConfigValue('tickIntervalMs').toString()}
+                      onValueChange={(value) => {
+                        const numValue = parseInt(value);
+                        handleConfigChange('tickIntervalMs', numValue);
+                      }}
+                    >
+                      <SelectTrigger className="text-center text-xl font-bold border-2 border-gray-200 focus:border-orange-500">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="30000">30 seconds</SelectItem>
+                        <SelectItem value="60000">1 minute</SelectItem>
+                        <SelectItem value="90000">1.5 minutes</SelectItem>
+                        <SelectItem value="120000">2 minutes</SelectItem>
+                        <SelectItem value="180000">3 minutes</SelectItem>
+                        <SelectItem value="300000">5 minutes</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="text-xs text-gray-500 text-center">
+                      How often the engine evaluates price changes
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Variables Table */}
+        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="pb-6">
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-purple-600" />
+              </div>
+              Pricing Variables
+              {Object.keys(pendingVariableChanges).length > 0 && (
+                <Badge variant="outline" className="ml-2 text-xs bg-orange-50 text-orange-700 border-orange-200">
+                  {Object.keys(pendingVariableChanges).length} Modified
+                </Badge>
+              )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {!config ? (
-              <div className="flex items-center justify-center h-16">
-                <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
+          <CardContent>
+            {!variables ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full" />
               </div>
             ) : (
-              <>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">$1</span>
-                  <span className="text-lg font-bold">${Number(sliderValues.priceStep) || 5}</span>
-                  <span className="text-sm text-gray-600">$20</span>
-                </div>
-                <Slider
-                  value={[Number(sliderValues.priceStep) || 5]}
-                  onValueChange={(value) => handleSliderChange('priceStep', value)}
-                  min={1}
-                  max={20}
-                  step={1}
-                  className="w-full"
-                />
-              </>
+              <div className="overflow-hidden rounded-lg border border-gray-200">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50/80">
+                      <TableHead className="font-semibold text-gray-700">Variable</TableHead>
+                      <TableHead className="font-semibold text-gray-700">Weight</TableHead>
+                      <TableHead className="font-semibold text-gray-700">Curve</TableHead>
+                      <TableHead className="font-semibold text-gray-700">Last Updated</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Array.isArray(variables) ? variables.map((variable: any) => {
+                      const hasChanges = pendingVariableChanges[variable.var_name];
+                      
+                      return (
+                        <TableRow key={variable.var_name || `var-${Math.random()}`} className={`hover:bg-blue-50/30 transition-colors ${hasChanges ? 'bg-orange-50/30' : ''}`}>
+                          <TableCell className="font-medium text-gray-900">
+                            <div className="flex items-center gap-2">
+                              {variable.var_name || 'Unknown'}
+                              {hasChanges && (
+                                <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
+                                  Modified
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              step="0.1"
+                              min="-10"
+                              max="10"
+                              value={getCurrentVariableValue(variable.var_name, 'weight')}
+                              onChange={(e) => handleWeightChange(variable.var_name, parseFloat(e.target.value) || 0)}
+                              className="w-24 text-center border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={getCurrentVariableValue(variable.var_name, 'nonlinear_fn')}
+                              onValueChange={(value) => handleNonlinearFnChange(variable.var_name, value)}
+                            >
+                              <SelectTrigger className="w-32 border-gray-200 focus:border-blue-400">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">none</SelectItem>
+                                <SelectItem value="decay24h">decay24h</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-500">
+                            {variable.updated_at ? new Date(variable.updated_at).toLocaleString() : 'Never'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-gray-500 py-8">
+                          No variables data available
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Tick Interval
+        {/* GPT Performance Metrics */}
+        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="pb-6">
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <div className="p-2 bg-indigo-100 rounded-lg">
+                <Cpu className="h-5 w-5 text-indigo-600" />
+              </div>
+              GPT Performance Monitor
+              <Badge variant="outline" className="ml-auto text-xs bg-green-50 text-green-700 border-green-200">
+                Live data
+              </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {!config ? (
-              <div className="flex items-center justify-center h-16">
-                <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
+          <CardContent>
+            {!metrics ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="animate-spin w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full" />
               </div>
             ) : (
-              <>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">30s</span>
-                  <span className="text-lg font-bold">{Math.round((Number(sliderValues.tickIntervalMs) || 60000) / 1000)}s</span>
-                  <span className="text-sm text-gray-600">5m</span>
-                </div>
-                <Slider
-                  value={[Number(sliderValues.tickIntervalMs) || 60000]}
-                  onValueChange={(value) => handleSliderChange('tickIntervalMs', value)}
-                  min={30000}
-                  max={300000}
-                  step={5000}
-                  className="w-full"
-                />
-              </>
+              <div className="w-full h-32">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <XAxis 
+                      dataKey="time" 
+                      axisLine={false} 
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: '#6b7280' }}
+                    />
+                    <YAxis hide />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="latency" 
+                      stroke="#3b82f6" 
+                      strokeWidth={3}
+                      dot={false}
+                      activeDot={{ r: 4, fill: '#3b82f6' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
-
-      {/* GPT Metrics Sparkline */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Cpu className="h-5 w-5" />
-            GPT Performance (Last 60 Minutes)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {!metrics ? (
-            <div className="flex items-center justify-center h-24">
-              <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
-            </div>
-          ) : (
-            <div className="w-full h-24">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <XAxis 
-                    dataKey="time" 
-                    axisLine={false} 
-                    tickLine={false}
-                    tick={{ fontSize: 10 }}
-                  />
-                  <YAxis hide />
-                  <Line 
-                    type="monotone" 
-                    dataKey="latency" 
-                    stroke="#3b82f6" 
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 } 

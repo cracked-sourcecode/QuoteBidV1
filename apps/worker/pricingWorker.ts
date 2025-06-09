@@ -145,6 +145,14 @@ function buildPricingConfig(weights: Record<string, number>, config: any): Prici
   console.log(`   🗂️  Raw Cached Config:`, JSON.stringify(config, null, 2));
   console.log(`   ⚖️  Raw Cached Weights:`, weights);
   
+  // 🐛 DEBUG: Check priceStep specifically
+  console.log(`   🔍 DEBUGGING PRICE STEP:`);
+  console.log(`      config.priceStep =`, config.priceStep);
+  console.log(`      typeof config.priceStep =`, typeof config.priceStep);
+  console.log(`      config.priceStep || 5 =`, config.priceStep || 5);
+  console.log(`      Number(config.priceStep) =`, Number(config.priceStep));
+  console.log(`      Number(config.priceStep) || 5 =`, Number(config.priceStep) || 5);
+  
   const pricingConfig = {
     weights: {
       pitches: weights.pitches || 1.0,
@@ -155,7 +163,7 @@ function buildPricingConfig(weights: Record<string, number>, config: any): Prici
       successRateOutlet: weights.successRateOutlet || -0.5,
       hoursRemaining: weights.hoursRemaining || -1.2,
     },
-    priceStep: config.priceStep?.dollars || 5,
+    priceStep: Number(config.priceStep) || 5,
     elasticity: 1.0, // Default for now, can be made configurable
     floor: 50,
     ceil: 500,

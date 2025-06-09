@@ -31,6 +31,8 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
   const [logoLoaded, setLogoLoaded] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [hourlyChange, setHourlyChange] = useState<number>(0);
+  const [recentTrend, setRecentTrend] = useState<'up' | 'down' | 'stable'>('stable');
 
   const {
     id,
@@ -46,6 +48,37 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     slotsTotal,
     summary
   } = opportunity;
+
+  // Fetch real hourly price change data
+  useEffect(() => {
+    const fetchHourlyChange = async () => {
+      try {
+        const response = await apiFetch(`/api/opportunities/${id}/price-trend?window=1h`, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const priceHistory = await response.json();
+          if (priceHistory.length >= 2) {
+            const latest = priceHistory[priceHistory.length - 1];
+            const previous = priceHistory[0];
+            const change = latest.p - previous.p;
+            const trend = change > 0 ? 'up' : change < 0 ? 'down' : 'stable';
+            setHourlyChange(change);
+            setRecentTrend(trend);
+          } else {
+            setHourlyChange(0);
+            setRecentTrend('stable');
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to fetch hourly change for opportunity ${id}:`, error);
+        setHourlyChange(0);
+        setRecentTrend('stable');
+      }
+    };
+    
+    fetchHourlyChange();
+  }, [id]);
 
   // Improved logo loading handler for retina displays
   const handleLogoLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -82,11 +115,6 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
   const priceIncrease = currentPrice > basePrice
     ? Math.round(((currentPrice - basePrice) / basePrice) * 100)
     : 0;
-
-  // Use bulk pricing data from opportunities API instead of individual API calls
-  // Note: deltaPastHour and trend may not be available in base Opportunity type
-  const hourlyChange = 0; // Will be available in enhanced opportunity data from API
-  const recentTrend: 'up' | 'down' | 'stable' = hourlyChange > 0 ? 'up' : hourlyChange < 0 ? 'down' : 'stable';
 
   // Format deadline
   let deadlineDate: Date;

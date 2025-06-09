@@ -9129,21 +9129,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { key } = req.params;
       const { value } = req.body;
       
+      // 🐛 DEBUG: Log what we received
+      console.log(`🔧 ADMIN CONFIG UPDATE REQUEST:`);
+      console.log(`   📊 Key: ${key}`);
+      console.log(`   📊 Received Value: ${JSON.stringify(value)} (type: ${typeof value})`);
+      console.log(`   📊 Full Request Body: ${JSON.stringify(req.body)}`);
+      
       // Validate based on key
       let validatedValue: any;
       if (key === 'priceStep') {
         if (typeof value !== 'number' || value < 1 || value > 20) {
+          console.log(`   ❌ Validation failed for priceStep: ${value} (type: ${typeof value})`);
           return res.status(400).json({ message: "priceStep must be between 1 and 20" });
         }
         validatedValue = value;
       } else if (key === 'tickIntervalMs') {
         if (typeof value !== 'number' || value < 30000 || value > 300000) {
+          console.log(`   ❌ Validation failed for tickIntervalMs: ${value} (type: ${typeof value})`);
           return res.status(400).json({ message: "tickIntervalMs must be between 30000 and 300000" });
         }
         validatedValue = value;
       } else {
+        console.log(`   ❌ Invalid config key: ${key}`);
         return res.status(400).json({ message: "Invalid config key" });
       }
+      
+      console.log(`   ✅ Validated Value: ${validatedValue} (type: ${typeof validatedValue})`);
+      
+      // Get current value before update
+      const currentConfig = await getDb()
+        .select()
+        .from(pricing_config)
+        .where(eq(pricing_config.key, key))
+        .limit(1);
+      
+      const oldValue = currentConfig.length > 0 ? currentConfig[0].value : 'not set';
+      console.log(`   📊 Current DB Value: ${JSON.stringify(oldValue)} → New Value: ${JSON.stringify(validatedValue)}`);
       
       // Update or insert the config value
       const updatedConfig = await getDb()
@@ -9162,7 +9183,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .returning();
       
-      console.log(`🔧 Admin updated pricing config ${key}:`, validatedValue);
+      console.log(`🔧 Admin updated pricing config ${key}: ${oldValue} → ${validatedValue}`);
+      console.log(`   📊 Database Response: ${JSON.stringify(updatedConfig[0])}`);
       
       res.json(updatedConfig[0]);
     } catch (error: any) {
