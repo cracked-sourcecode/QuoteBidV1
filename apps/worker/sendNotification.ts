@@ -156,6 +156,8 @@ export async function sendNotification(
   };
 
   // Send web push notifications (always attempt, doesn't require configuration)
+  // DISABLED: Web push notifications not needed per user request
+  /*
   try {
     await sendWebPush(userIds, pushPayload[template]);
     console.log(`📱 Sent ${template} push notification to ${userIds.length} users for opportunity ${opportunityId}`);
@@ -163,6 +165,8 @@ export async function sendNotification(
     console.warn(`⚠️ Failed to send web push notifications:`, pushError);
     // Don't fail the entire notification process if push fails
   }
+  */
+  console.log(`📱 Web push notifications disabled for ${template} on opportunity ${opportunityId}`);
 
   // Send email notifications using our centralized email system
   try {
