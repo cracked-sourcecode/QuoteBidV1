@@ -1260,12 +1260,8 @@ export default function OpportunityDetail() {
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-xl font-bold text-gray-900">Current Price</h3>
-                      <div className={`flex items-center space-x-2 text-sm font-medium ${
-                        actualPriceDifference >= 0 ? 'text-red-600' : 'text-green-600'
-                      }`}>
-                        <span className={`w-2 h-2 rounded-full ${
-                          actualPriceDifference >= 0 ? 'bg-red-500' : 'bg-green-500'
-                        }`}></span>
+                      <div className="flex items-center space-x-2 text-green-600 text-sm font-medium">
+                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                         <span>
                           {Math.round(belowListPercentage)}% {actualPriceDifference >= 0 ? 'above' : 'below'} list price
                         </span>

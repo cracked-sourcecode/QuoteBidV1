@@ -13,7 +13,7 @@ import { createSampleNotifications } from "./data/sample-notifications";
 import Stripe from "stripe";
 import { setupAuth } from "./auth";
 import { Resend } from 'resend';
-import { sendOpportunityNotification, sendPasswordResetEmail, sendUsernameReminderEmail } from './lib/email';
+import { sendOpportunityNotification, sendPasswordResetEmail, sendUsernameReminderEmail, sendPricingNotificationEmail, sendNotificationEmail, sendWelcomeEmail } from './lib/email';
 
 // Initialize Resend if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -3012,12 +3012,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const { email, subject, message } = req.body;
+      const { email, subject, message, type, username, fullName } = req.body;
       if (!email) {
         return res.status(400).json({ 
           success: false, 
           message: 'Email is required' 
         });
+      }
+
+      // Handle different email types
+      if (type) {
+        switch (type.toUpperCase()) {
+          case 'WELCOME':
+            const success = await sendWelcomeEmail(
+              email, 
+              username || 'TestUser', 
+              fullName
+            );
+            
+            if (success) {
+              return res.json({ 
+                success: true, 
+                message: 'Welcome email sent successfully!' 
+              });
+            } else {
+              throw new Error('Failed to send welcome email');
+            }
+
+          case 'PASSWORD_RESET':
+            const resetSuccess = await sendPasswordResetEmail(
+              email,
+              'test-token-12345',
+              username || 'TestUser'
+            );
+            
+            if (resetSuccess) {
+              return res.json({ 
+                success: true, 
+                message: 'Password reset email sent successfully!' 
+              });
+            } else {
+              throw new Error('Failed to send password reset email');
+            }
+
+          case 'USERNAME_REMINDER':
+            const usernameSuccess = await sendUsernameReminderEmail(
+              email,
+              username || 'TestUser'
+            );
+            
+            if (usernameSuccess) {
+              return res.json({ 
+                success: true, 
+                message: 'Username reminder email sent successfully!' 
+              });
+            } else {
+              throw new Error('Failed to send username reminder email');
+            }
+
+          case 'PRICE_DROP':
+            const priceDropSuccess = await sendPricingNotificationEmail(
+              [email],
+              'PRICE_DROP',
+              'Test PR Opportunity - Capital Markets Expert Needed',
+              '195'
+            );
+            
+            if (priceDropSuccess) {
+              return res.json({ 
+                success: true, 
+                message: 'Price drop alert email sent successfully!' 
+              });
+            } else {
+              throw new Error('Failed to send price drop email');
+            }
+
+          case 'LAST_CALL':
+            const lastCallSuccess = await sendPricingNotificationEmail(
+              [email],
+              'LAST_CALL',
+              'Test PR Opportunity - Closing Soon!',
+              '200'
+            );
+            
+            if (lastCallSuccess) {
+              return res.json({ 
+                success: true, 
+                message: 'Last call alert email sent successfully!' 
+              });
+            } else {
+              throw new Error('Failed to send last call email');
+            }
+
+          case 'NOTIFICATION':
+            const notificationSuccess = await sendNotificationEmail(
+              email,
+              'Test QuoteBid Notification',
+              'This is a test notification from QuoteBid. Everything is working correctly!'
+            );
+            
+            if (notificationSuccess) {
+              return res.json({ 
+                success: true, 
+                message: 'General notification email sent successfully!' 
+              });
+            } else {
+              throw new Error('Failed to send notification email');
+            }
+
+          case 'OPPORTUNITY':
+            const opportunitySuccess = await sendOpportunityNotification([email], {
+              title: 'New PR Opportunity: Looking for Tech Industry Experts',
+              description: 'A major tech publication is seeking expert commentary on emerging AI trends. This is a high-value opportunity with excellent exposure potential.'
+            });
+            
+            if (opportunitySuccess) {
+              return res.json({ 
+                success: true, 
+                message: 'New opportunity email sent successfully!' 
+              });
+            } else {
+              throw new Error('Failed to send opportunity email');
+            }
+
+          default:
+            return res.status(400).json({ 
+              success: false, 
+              message: 'Invalid email type. Supported types: WELCOME, PASSWORD_RESET, USERNAME_REMINDER, PRICE_DROP, LAST_CALL, NOTIFICATION, OPPORTUNITY' 
+            });
+        }
       }
 
       // If subject and message are provided, it's a custom support email
@@ -3867,7 +3990,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5050'}/reset-password?token=${resetToken}`;
         
         const { data, error } = await resend.emails.send({
-          from: 'QuoteBid <onboarding@resend.dev>',
+          from: process.env.EMAIL_FROM || 'QuoteBid <ben@rubiconprgroup.com>',
           to: [email],
           subject: '🔐 Reset Your QuoteBid Password',
           html: `
@@ -3912,6 +4035,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         message: "Failed to send password reset email", 
         error: error.message || "Unknown error" 
+      });
+    }
+  });
+
+  // Test email endpoint (admin only) - send yourself emails in real-time
+  app.post('/api/admin/test-email', requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const { type = 'PRICE_DROP', email = 'ben@rubiconprgroup.com' } = req.body;
+      
+      console.log(`🧪 Testing ${type} email to:`, email);
+      
+      let success = false;
+      let message = '';
+      
+      if (type === 'PRICE_DROP' || type === 'LAST_CALL') {
+        success = await sendPricingNotificationEmail(
+          [email],
+          type as "PRICE_DROP" | "LAST_CALL",
+          "🔥 Test Opportunity - GPT-4o Real-time Pricing Story",
+          "195"
+        );
+        message = `${type} pricing notification sent`;
+      } else if (type === 'PASSWORD_RESET') {
+        success = await sendPasswordResetEmail(email, 'test-token-123', 'Ben');
+        message = 'Password reset email sent';
+      } else if (type === 'USERNAME_REMINDER') {
+        success = await sendUsernameReminderEmail(email, 'bendeveran');
+        message = 'Username reminder email sent';
+      } else {
+        success = await sendNotificationEmail(email, '🎉 Test Email from QuoteBid', 'This is a test email to verify the email system is working!');
+        message = 'General notification email sent';
+      }
+      
+      if (success) {
+        res.json({ 
+          success: true, 
+          message: `✅ ${message} successfully to ${email}` 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: `❌ Failed to send ${type} email` 
+        });
+      }
+    } catch (error) {
+      console.error('Test email error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Internal server error during test email' 
+      });
+    }
+  });
+
+  // Test pricing notification endpoint (admin only)
+  app.post('/api/admin/test-pricing-notification', requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const { type = 'PRICE_DROP', emails = ['ben@rubiconprgroup.com'] } = req.body;
+      
+      console.log(`🧪 Testing ${type} notification to:`, emails);
+      
+      const success = await sendPricingNotificationEmail(
+        emails,
+        type as "PRICE_DROP" | "LAST_CALL",
+        "Test Opportunity - GPT-4o Integration Story",
+        "195"
+      );
+      
+      if (success) {
+        res.json({ 
+          success: true, 
+          message: `${type} notification sent successfully to ${emails.length} recipient(s)` 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: 'Failed to send pricing notification' 
+        });
+      }
+    } catch (error: any) {
+      console.error('❌ Test notification error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error testing pricing notification', 
+        error: error.message 
       });
     }
   });

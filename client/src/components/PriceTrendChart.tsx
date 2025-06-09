@@ -173,22 +173,22 @@ export default function PriceTrendChart({
     return (
       <div className="w-full h-[520px]">
         {/* Header with timeframe buttons */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <div className="text-lg font-semibold text-gray-900">Price History</div>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+          <div className="flex flex-wrap items-center gap-3 min-w-0">
+            <div className="text-lg font-semibold text-gray-900 whitespace-nowrap">Price History</div>
             {live && (
-              <div className="flex items-center space-x-1 px-2 py-1 bg-green-50 rounded-lg">
+              <div className="flex items-center space-x-1 px-2 py-1 bg-green-50 rounded-lg whitespace-nowrap">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span className="text-green-600 font-medium text-sm">Live</span>
               </div>
             )}
           </div>
-          <div className="flex bg-gray-100 rounded-lg p-1">
+          <div className="flex bg-gray-100 rounded-lg p-1 flex-shrink-0">
             {timeframes.map((tf) => (
               <button
                 key={tf.label}
                 onClick={() => handleTimeframeChange(tf)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
+                className={`px-2 lg:px-3 py-1.5 text-xs lg:text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap ${
                   selectedTimeframe.label === tf.label
                     ? 'bg-white text-gray-900 shadow-sm' 
                     : 'text-gray-600 hover:text-gray-900'
@@ -214,17 +214,17 @@ export default function PriceTrendChart({
       return (
       <div className="w-full h-[520px]">
       {/* Header with live price ticker and timeframe controls */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-4">
-          <div className="text-lg font-semibold text-gray-900">Price History</div>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+        <div className="flex flex-wrap items-center gap-3 min-w-0">
+          <div className="text-lg font-semibold text-gray-900 whitespace-nowrap">Price History</div>
           {priceStats && (
-            <div className="flex items-center space-x-4">
-              <div className={`text-2xl font-bold transition-colors duration-300 ${
+            <div className="flex flex-wrap items-center gap-3">
+              <div className={`text-xl lg:text-2xl font-bold transition-colors duration-300 whitespace-nowrap ${
                 isAnimating && live ? 'text-blue-600' : 'text-gray-900'
               }`}>
                 ${priceStats.current}
               </div>
-              <div className={`flex items-center space-x-1 text-sm font-semibold transition-all duration-300 ${
+              <div className={`flex items-center space-x-1 text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
                 priceStats.isUp ? 'text-green-600' : 'text-red-600'
               }`}>
                 <span className={isAnimating && live ? 'animate-bounce' : ''}>
@@ -233,7 +233,7 @@ export default function PriceTrendChart({
                 <span>${Math.abs(priceStats.change).toFixed(0)} ({priceStats.isUp ? '+' : ''}{priceStats.changePercent}%)</span>
               </div>
               {live && (
-                <div className="flex items-center space-x-1 px-3 py-1 bg-green-50 rounded-lg">
+                <div className="flex items-center space-x-1 px-2 py-1 bg-green-50 rounded-lg whitespace-nowrap">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   <span className="text-green-600 font-medium text-sm">Live Updates</span>
                 </div>
@@ -242,12 +242,12 @@ export default function PriceTrendChart({
           )}
         </div>
         
-        <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="flex bg-gray-100 rounded-lg p-1 flex-shrink-0">
           {timeframes.map((tf) => (
             <button
               key={tf.label}
               onClick={() => handleTimeframeChange(tf)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
+              className={`px-2 lg:px-3 py-1.5 text-xs lg:text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap ${
                 selectedTimeframe.label === tf.label
                   ? 'bg-white text-gray-900 shadow-sm' 
                   : 'text-gray-600 hover:text-gray-900'

@@ -147,6 +147,16 @@ export async function startSignup(req: Request, res: Response) {
     role
   });
 
+  // Send welcome email to new user
+  try {
+    const { sendWelcomeEmail } = await import('../lib/email');
+    await sendWelcomeEmail(email, normalizedUsername, name || normalizedUsername);
+    console.log('✅ Welcome email sent to new user:', email);
+  } catch (emailError) {
+    console.error('❌ Failed to send welcome email to:', email, emailError);
+    // Don't fail the signup if email fails - just log the error
+  }
+
   return res.status(201).json({ 
     userId: newId, 
     step: 'payment',
