@@ -13,7 +13,7 @@ import { createSampleNotifications } from "./data/sample-notifications";
 import Stripe from "stripe";
 import { setupAuth } from "./auth";
 import { Resend } from 'resend';
-import { sendOpportunityNotification, sendPasswordResetEmail, sendUsernameReminderEmail, sendPricingNotificationEmail, sendNotificationEmail, sendWelcomeEmail } from './lib/email';
+import { sendOpportunityNotification, sendPasswordResetEmail, sendUsernameReminderEmail, sendPricingNotificationEmail, sendNotificationEmail, sendWelcomeEmail, sendUserNotificationEmail } from './lib/email';
 
 // Initialize Resend if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -3121,18 +3121,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
           case 'OPPORTUNITY':
-            const opportunitySuccess = await sendOpportunityNotification([email], {
-              title: 'New PR Opportunity: Looking for Tech Industry Experts',
-              description: 'A major tech publication is seeking expert commentary on emerging AI trends. This is a high-value opportunity with excellent exposure potential.'
-            });
+            // For test emails, we need to find a user by email first
+            const testUser = await getDb()
+              .select({ id: users.id, username: users.username, fullName: users.fullName })
+              .from(users)
+              .where(eq(users.email, email))
+              .limit(1);
             
-            if (opportunitySuccess) {
-              return res.json({ 
-                success: true, 
-                message: 'New opportunity email sent successfully!' 
-              });
+            if (testUser.length > 0) {
+              const user = testUser[0];
+              const userName = user.fullName || user.username;
+              
+              const opportunitySuccess = await sendUserNotificationEmail(
+                email,
+                userName,
+                'opportunity',
+                'New PR Opportunity: Looking for Tech Industry Experts',
+                'A major tech publication is seeking expert commentary on emerging AI trends. This is a high-value opportunity with excellent exposure potential.',
+                '/opportunities',
+                'View Opportunities'
+              );
+              
+              if (opportunitySuccess) {
+                return res.json({ 
+                  success: true, 
+                  message: 'New opportunity email sent successfully!' 
+                });
+              } else {
+                throw new Error('Failed to send opportunity email');
+              }
             } else {
-              throw new Error('Failed to send opportunity email');
+              throw new Error('User not found for opportunity email test');
             }
 
           default:
@@ -3185,18 +3204,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Default test notification email
-      const success = await sendOpportunityNotification([email], {
-        title: 'Test PR Platform Email',
-        description: 'This is a test email from your PR Platform'
-      });
+      // For test emails, we need to find a user by email first
+      const testUserForDefault = await getDb()
+        .select({ id: users.id, username: users.username, fullName: users.fullName })
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
       
-      if (success) {
-        res.json({ 
-          success: true, 
-          message: 'Test email sent successfully!' 
-        });
+      if (testUserForDefault.length > 0) {
+        const user = testUserForDefault[0];
+        const userName = user.fullName || user.username;
+        
+        const success = await sendUserNotificationEmail(
+          email,
+          userName,
+          'system',
+          'Test PR Platform Email',
+          'This is a test email from your PR Platform',
+          undefined,
+          'Visit Dashboard'
+        );
+        
+        if (success) {
+          res.json({ 
+            success: true, 
+            message: 'Test email sent successfully!' 
+          });
+        } else {
+          throw new Error('Failed to send email');
+        }
       } else {
-        throw new Error('Failed to send email');
+        throw new Error('User not found for test email');
       }
     } catch (error: any) {
       console.error('Error sending email:', error);
@@ -4332,15 +4370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const matchingUsers = await storage.getUsersByIndustry(opportunityData.industry);
           
           if (matchingUsers.length > 0) {
-            const userEmails = matchingUsers.map((user: User) => user.email);
-            
-            // Send email notifications
-            await sendOpportunityNotification(userEmails, {
-              title: newOpportunity.title,
-              description: newOpportunity.description
-            });
-            
-            // Create in-app notifications for each matching user
+            // Create in-app notifications for each matching user (emails will be sent automatically)
             const notificationPromises = matchingUsers.map(async (user: User) => {
               try {
                 await notificationService.createNotification({
@@ -4361,10 +4391,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             
             await Promise.all(notificationPromises);
-            console.log(`Created ${matchingUsers.length} opportunity notifications for new opportunity: ${newOpportunity.title}`);
+            console.log(`Created ${matchingUsers.length} opportunity notifications (with emails) for new opportunity: ${newOpportunity.title}`);
           }
-        } catch (emailError) {
-          console.error("Failed to send email notifications:", emailError);
+        } catch (notificationError) {
+          console.error("Failed to send notifications:", notificationError);
           // Continue anyway, don't fail the opportunity creation
         }
       }

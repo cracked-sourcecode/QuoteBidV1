@@ -4,6 +4,7 @@ import { Resend } from 'resend';
 import { render } from '@react-email/render';
 import WelcomeEmail from '../../emails/templates/WelcomeEmail';
 import PriceDropAlert from '../../emails/templates/PriceDropAlert';
+import NotificationEmail from '../../emails/templates/NotificationEmail';
 
 console.log('📦 Initializing email system...');
 
@@ -420,6 +421,93 @@ export async function sendNotificationEmail(
       from: process.env.EMAIL_FROM || 'QuoteBid <ben@rubiconprgroup.com>',
       to: [email],
       subject: subject,
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error('❌ Notification email error:', error);
+      return false;
+    }
+
+    console.log('✅ Notification email sent successfully:', data);
+    return true;
+  } catch (error) {
+    console.error('❌ Error sending notification email:', error);
+    return false;
+  }
+}
+
+/**
+ * Send notification email using React Email template
+ */
+export async function sendUserNotificationEmail(
+  email: string,
+  userName: string,
+  notificationType: 'system' | 'opportunity' | 'pitch_status' | 'payment' | 'media_coverage',
+  title: string,
+  message: string,
+  linkUrl?: string,
+  linkText?: string
+): Promise<boolean> {
+  console.log(`🔍 sendUserNotificationEmail called with:`, {
+    email,
+    userName,
+    notificationType,
+    title,
+    message: message.substring(0, 100) + '...',
+    linkUrl,
+    linkText
+  });
+
+  const resendInstance = getResendInstance();
+  
+  if (!resendInstance) {
+    console.error('❌ Resend not initialized for notification email');
+    return false;
+  }
+
+  try {
+    console.log(`🔧 Building email for ${notificationType} notification...`);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
+    const fullLinkUrl = linkUrl ? (linkUrl.startsWith('http') ? linkUrl : `${frontendUrl}${linkUrl}`) : undefined;
+    
+    console.log(`🎨 About to render NotificationEmail template...`);
+    
+    // Render React Email template to HTML
+    const emailHtml = await render(NotificationEmail({
+      type: notificationType,
+      title,
+      message,
+      userName,
+      linkUrl: fullLinkUrl,
+      linkText,
+    }));
+
+    console.log(`✅ React Email template rendered successfully! HTML length: ${emailHtml.length}`);
+
+    // Generate appropriate subject based on notification type
+    const getSubject = () => {
+      switch (notificationType) {
+        case 'opportunity':
+          return '🚀 New Opportunity Available - QuoteBid';
+        case 'pitch_status':
+          return `📄 Pitch Update - ${title}`;
+        case 'payment':
+          return '💰 Payment Update - QuoteBid';
+        case 'media_coverage':
+          return '📰 New Media Coverage - QuoteBid';
+        case 'system':
+        default:
+          return `📢 ${title} - QuoteBid`;
+      }
+    };
+
+    console.log(`📧 Sending ${notificationType} notification email to:`, email);
+    
+    const { data, error } = await resendInstance.emails.send({
+      from: process.env.EMAIL_FROM || 'QuoteBid <ben@rubiconprgroup.com>',
+      to: [email],
+      subject: getSubject(),
       html: emailHtml,
     });
 
