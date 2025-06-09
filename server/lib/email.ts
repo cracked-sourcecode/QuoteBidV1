@@ -1,6 +1,9 @@
 console.log('🚀 EMAIL MODULE STARTING TO LOAD...');
 
 import { Resend } from 'resend';
+import { render } from '@react-email/render';
+import WelcomeEmail from '../../emails/templates/WelcomeEmail';
+import PriceDropAlert from '../../emails/templates/PriceDropAlert';
 
 console.log('📦 Initializing email system...');
 
@@ -434,7 +437,7 @@ export async function sendNotificationEmail(
 }
 
 /**
- * Send welcome email to new users
+ * Send welcome email to new users using React Email
  */
 export async function sendWelcomeEmail(
   email: string,
@@ -449,189 +452,15 @@ export async function sendWelcomeEmail(
   }
 
   try {
-    const displayName = fullName || username;
+    const userFirstName = fullName?.split(' ')[0] || username;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
     
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Welcome to QuoteBid - Your PR Opportunity Platform</title>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f7fa; }
-            .container { max-width: 650px; margin: 0 auto; background-color: #ffffff; }
-            .header { background: linear-gradient(135deg, #4299e1 0%, #667eea 50%, #764ba2 100%); color: white; text-align: center; padding: 40px 20px; }
-            .logo { font-size: 32px; font-weight: bold; margin-bottom: 10px; }
-            .subtitle { font-size: 18px; opacity: 0.9; }
-            .content { padding: 40px 30px; }
-            .welcome-section { text-align: center; margin-bottom: 40px; }
-            .welcome-title { color: #2d3748; font-size: 28px; margin-bottom: 15px; }
-            .welcome-text { color: #4a5568; font-size: 16px; margin-bottom: 30px; }
-            .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin: 40px 0; }
-            .feature-card { background: #f7fafc; padding: 25px; border-radius: 12px; text-align: center; border-left: 4px solid #4299e1; }
-            .feature-icon { font-size: 32px; margin-bottom: 15px; }
-            .feature-title { color: #2d3748; font-size: 18px; font-weight: bold; margin-bottom: 10px; }
-            .feature-text { color: #4a5568; font-size: 14px; line-height: 1.5; }
-            .cta-section { background: linear-gradient(135deg, #4299e1 0%, #667eea 100%); color: white; padding: 30px; border-radius: 12px; text-align: center; margin: 40px 0; }
-            .cta-title { font-size: 24px; margin-bottom: 15px; }
-            .cta-text { font-size: 16px; margin-bottom: 25px; opacity: 0.9; }
-            .button { display: inline-block; background: #ffffff; color: #4299e1; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; transition: all 0.3s ease; }
-            .button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-            .how-it-works { margin: 40px 0; }
-            .how-title { color: #2d3748; font-size: 24px; text-align: center; margin-bottom: 30px; }
-            .step { display: flex; align-items: flex-start; margin-bottom: 25px; }
-            .step-number { background: #4299e1; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 20px; flex-shrink: 0; }
-            .step-content { flex: 1; }
-            .step-title { color: #2d3748; font-weight: bold; margin-bottom: 5px; }
-            .step-text { color: #4a5568; font-size: 14px; }
-            .tips-section { background: #edf2f7; padding: 25px; border-radius: 12px; margin: 30px 0; }
-            .tips-title { color: #2d3748; font-size: 20px; margin-bottom: 20px; text-align: center; }
-            .tip { margin-bottom: 15px; }
-            .tip-icon { color: #4299e1; margin-right: 10px; }
-            .footer { background: #2d3748; color: white; padding: 30px; text-align: center; }
-            .footer-text { margin-bottom: 15px; }
-            .social-links { margin-top: 20px; }
-            .social-link { color: #4299e1; text-decoration: none; margin: 0 10px; }
-            @media (max-width: 600px) {
-              .feature-grid { grid-template-columns: 1fr; }
-              .content { padding: 20px; }
-              .step { flex-direction: column; text-align: center; }
-              .step-number { margin: 0 auto 15px auto; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <!-- Header -->
-            <div class="header">
-              <div class="logo">🎯 QuoteBid</div>
-              <div class="subtitle">Your AI-Powered PR Opportunity Platform</div>
-            </div>
-
-            <!-- Welcome Content -->
-            <div class="content">
-              <div class="welcome-section">
-                <h1 class="welcome-title">Welcome to QuoteBid, ${displayName}! 🎉</h1>
-                <p class="welcome-text">
-                  You've just joined the future of PR pitching. QuoteBid is the world's first real-time bidding platform for PR opportunities, powered by GPT-4o intelligence to help you win more clients at better prices.
-                </p>
-              </div>
-
-              <!-- Feature Grid -->
-              <div class="feature-grid">
-                <div class="feature-card">
-                  <div class="feature-icon">🤖</div>
-                  <div class="feature-title">AI Pricing Engine</div>
-                  <div class="feature-text">Our GPT-4o powered engine analyzes market demand and adjusts prices in real-time, helping you find the best opportunities.</div>
-                </div>
-                <div class="feature-card">
-                  <div class="feature-icon">💰</div>
-                  <div class="feature-title">Dynamic Bidding</div>
-                  <div class="feature-text">Watch prices fluctuate based on demand, competition, and time remaining. Get better deals by timing your bids perfectly.</div>
-                </div>
-                <div class="feature-card">
-                  <div class="feature-icon">📊</div>
-                  <div class="feature-title">Market Intelligence</div>
-                  <div class="feature-text">Access real-time market data, competitor analysis, and pricing trends to make informed decisions.</div>
-                </div>
-                <div class="feature-card">
-                  <div class="feature-icon">🎯</div>
-                  <div class="feature-title">Quality Opportunities</div>
-                  <div class="feature-text">Browse curated PR opportunities from top-tier publications and media outlets, organized by tier and industry.</div>
-                </div>
-              </div>
-
-              <!-- How It Works -->
-              <div class="how-it-works">
-                <h2 class="how-title">How QuoteBid Works</h2>
-                
-                <div class="step">
-                  <div class="step-number">1</div>
-                  <div class="step-content">
-                    <div class="step-title">Browse Live Opportunities</div>
-                    <div class="step-text">Explore real-time PR opportunities with dynamic pricing. Filter by industry, tier, and budget to find your perfect match.</div>
-                  </div>
-                </div>
-
-                <div class="step">
-                  <div class="step-number">2</div>
-                  <div class="step-content">
-                    <div class="step-title">Watch AI-Powered Pricing</div>
-                    <div class="step-text">Our GPT-4o engine continuously analyzes demand, competition, and deadline proximity to adjust prices every minute.</div>
-                  </div>
-                </div>
-
-                <div class="step">
-                  <div class="step-number">3</div>
-                  <div class="step-content">
-                    <div class="step-title">Place Your Bid</div>
-                    <div class="step-text">Submit your pitch when the price is right. Include your expertise, angles, and why you're the perfect fit for the story.</div>
-                  </div>
-                </div>
-
-                <div class="step">
-                  <div class="step-number">4</div>
-                  <div class="step-content">
-                    <div class="step-title">Get Selected & Paid</div>
-                    <div class="step-text">If chosen, you'll receive the media contact details and get paid securely through our platform once your story is published.</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Pro Tips -->
-              <div class="tips-section">
-                <h3 class="tips-title">💡 Pro Tips to Get Started</h3>
-                <div class="tip">
-                  <span class="tip-icon">🔥</span>
-                  <strong>Watch for Price Drops:</strong> Set up alerts for opportunities you're interested in and bid when prices drop.
-                </div>
-                <div class="tip">
-                  <span class="tip-icon">⏰</span>
-                  <strong>Time Your Bids:</strong> Prices often drop as deadlines approach, but don't wait too long!
-                </div>
-                <div class="tip">
-                  <span class="tip-icon">✨</span>
-                  <strong>Complete Your Profile:</strong> A complete profile with portfolio links increases your chances of being selected.
-                </div>
-                <div class="tip">
-                  <span class="tip-icon">🎯</span>
-                  <strong>Focus on Your Expertise:</strong> Bid on opportunities in your area of expertise for the highest success rate.
-                </div>
-              </div>
-
-              <!-- CTA Section -->
-              <div class="cta-section">
-                <h2 class="cta-title">Ready to Start Winning? 🚀</h2>
-                <p class="cta-text">
-                  Your dashboard is ready and waiting. Browse live opportunities, watch real-time pricing, and start bidding on the perfect PR matches for your expertise.
-                </p>
-                <a href="${process.env.FRONTEND_URL || 'http://localhost:5050'}/opportunities" class="button">
-                  Explore Opportunities Now →
-                </a>
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="footer">
-              <div class="footer-text">
-                <strong>Need Help Getting Started?</strong><br>
-                Check out our <a href="${process.env.FRONTEND_URL || 'http://localhost:5050'}/help" style="color: #4299e1;">Help Center</a> 
-                or contact our support team at <a href="mailto:support@quotebid.co" style="color: #4299e1;">support@quotebid.co</a>
-              </div>
-              <div class="social-links">
-                <a href="#" class="social-link">LinkedIn</a> | 
-                <a href="#" class="social-link">Twitter</a> | 
-                <a href="#" class="social-link">Help Center</a>
-              </div>
-              <div style="margin-top: 20px; font-size: 14px; opacity: 0.8;">
-                © 2024 QuoteBid. All rights reserved.<br>
-                You're receiving this because you just created a QuoteBid account.
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+    // Render React Email template to HTML
+    const emailHtml = await render(WelcomeEmail({
+      userFirstName,
+      username,
+      frontendUrl,
+    }));
 
     console.log('📧 Sending welcome email to:', email);
     
