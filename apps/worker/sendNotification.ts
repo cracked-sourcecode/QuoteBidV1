@@ -15,6 +15,31 @@ import { sendPricingNotificationEmail } from "../../server/lib/email";
 // Load environment variables
 config();
 
+// Email throttling: track when we last sent emails for each opportunity
+const lastEmailSentMap = new Map<string, number>();
+
+// Minimum time between emails for the same opportunity (in milliseconds)
+const EMAIL_THROTTLE_MINUTES = parseInt(process.env.EMAIL_THROTTLE_MINUTES || "15");
+const EMAIL_THROTTLE_MS = EMAIL_THROTTLE_MINUTES * 60 * 1000; // Default: 15 minutes
+
+console.log(`📧 Email throttling configured: ${EMAIL_THROTTLE_MINUTES} minutes between emails for same opportunity`);
+
+// Cleanup old throttle entries every hour to prevent memory buildup
+setInterval(() => {
+  const now = Date.now();
+  const cutoffTime = now - (24 * 60 * 60 * 1000); // Remove entries older than 24 hours
+  
+  for (const [opportunityId, timestamp] of lastEmailSentMap.entries()) {
+    if (timestamp < cutoffTime) {
+      lastEmailSentMap.delete(opportunityId);
+    }
+  }
+  
+  if (lastEmailSentMap.size > 0) {
+    console.log(`🧹 Email throttle cache cleanup: ${lastEmailSentMap.size} active throttles remaining`);
+  }
+}, 60 * 60 * 1000); // Every hour
+
 // Initialize database
 const neonSql = neon(process.env.DATABASE_URL!);
 const db = drizzle(neonSql);
@@ -78,6 +103,16 @@ export async function sendNotification(
 ): Promise<void> {
   console.log(`📨 Sending ${template} notification for opportunity ${opportunityId}...`);
 
+  // Check email throttling - prevent sending emails too frequently for the same opportunity
+  const now = Date.now();
+  const lastEmailTime = lastEmailSentMap.get(opportunityId);
+  
+  if (lastEmailTime && (now - lastEmailTime) < EMAIL_THROTTLE_MS) {
+    const timeRemaining = Math.ceil((EMAIL_THROTTLE_MS - (now - lastEmailTime)) / 60000);
+    console.log(`⏳ Email throttled for opportunity ${opportunityId}. Last email sent ${Math.ceil((now - lastEmailTime) / 60000)} minutes ago. Will allow next email in ${timeRemaining} minutes.`);
+    return;
+  }
+
   // Get users who should receive this notification
   const users = await getUsersForOpportunity(opportunityId);
   
@@ -130,6 +165,10 @@ export async function sendNotification(
 
     if (success) {
       console.log(`✅ Sent ${template} email notification to ${emails.length} users for opportunity ${opportunityId}`);
+      
+      // Record successful email send time for throttling
+      lastEmailSentMap.set(opportunityId, now);
+      console.log(`📧 Email throttle timer set for opportunity ${opportunityId}. Next email allowed in ${EMAIL_THROTTLE_MINUTES} minutes.`);
     } else {
       console.error(`❌ Failed to send ${template} email notification for opportunity ${opportunityId}`);
     }

@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/apiFetch";
-import { Settings, Zap, TrendingUp, Clock, Cpu } from "lucide-react";
+import { Settings, Zap, TrendingUp, Clock, Cpu, RefreshCw } from "lucide-react";
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -90,8 +91,12 @@ export default function AdminPricing() {
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: "Saved ✓", description: "Variable updated successfully" });
+      toast({ title: "Saved ✓", description: "Variable updated - syncing to pricing engine..." });
       refetchVariables(); // Revalidate variables data
+      // Trigger immediate pricing engine sync
+      setTimeout(() => {
+        forceSyncMutation.mutate();
+      }, 500);
     },
     onError: (error: any) => {
       toast({ 
@@ -113,12 +118,40 @@ export default function AdminPricing() {
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: "Saved ✓", description: "Configuration updated successfully" });
+      toast({ title: "Saved ✓", description: "Configuration updated - syncing to pricing engine..." });
       refetchConfig(); // Revalidate config data
+      // Trigger immediate pricing engine sync
+      setTimeout(() => {
+        forceSyncMutation.mutate();
+      }, 500);
     },
     onError: (error: any) => {
       toast({ 
         title: "Save failed", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // Force pricing engine sync mutation
+  const forceSyncMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiFetch('/api/admin/reload-pricing-engine', {
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error('Failed to sync pricing engine');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ 
+        title: "Synced ✅", 
+        description: "Pricing engine updated with your changes" 
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Sync failed", 
         description: error.message,
         variant: "destructive" 
       });
@@ -201,6 +234,16 @@ export default function AdminPricing() {
           <h2 className="text-2xl font-bold">Pricing Control</h2>
         </div>
         <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => forceSyncMutation.mutate()}
+            disabled={forceSyncMutation.isPending}
+            className="flex items-center gap-1"
+          >
+            <RefreshCw className={`h-3 w-3 ${forceSyncMutation.isPending ? 'animate-spin' : ''}`} />
+            {forceSyncMutation.isPending ? 'Syncing...' : 'Force Sync'}
+          </Button>
           <Badge variant="outline" className="flex items-center gap-1">
             <Zap className="h-3 w-3" />
             Live Dashboard

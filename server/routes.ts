@@ -8941,7 +8941,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const timeBack = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
 
-      // Get price history
+      // Get opportunity details for starting price and creation time
+      const oppDetails = await getDb()
+        .select({
+          minimumBid: opportunities.minimumBid,
+          current_price: opportunities.current_price,
+          tier: opportunities.tier,
+          createdAt: opportunities.createdAt
+        })
+        .from(opportunities)
+        .where(eq(opportunities.id, opportunityId))
+        .limit(1);
+
+      if (oppDetails.length === 0) {
+        return res.status(404).json({ error: "Opportunity not found" });
+      }
+
+      const { minimumBid, current_price, tier, createdAt } = oppDetails[0];
+      
+      // Use tier-based starting prices instead of minimumBid
+      let startingPrice = 225; // Default Tier 1
+      switch (tier) {
+        case "Tier 1":
+          startingPrice = 225;
+          break;
+        case "Tier 2":
+          startingPrice = 175;
+          break;
+        case "Tier 3":
+          startingPrice = 125;
+          break;
+        default:
+          startingPrice = 225;
+      }
+      const currentPrice = Number(current_price) || startingPrice;
+      const creationTime = createdAt || new Date();
+
+      // Get price history from price_snapshots
       const priceHistory = await getDb()
         .select({
           timestamp: price_snapshots.tick_time,
@@ -8954,27 +8990,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ))
         .orderBy(sql`${price_snapshots.tick_time} ASC`);
 
-      // Format for chart consumption
+      // Format price history for chart consumption
       const chartData = priceHistory.map(point => ({
         t: point.timestamp?.toISOString(),
         p: Number(point.price) || 0
       }));
 
-      // If no history, get current price as single point
-      if (chartData.length === 0) {
-        const currentOpp = await getDb()
-          .select({ current_price: opportunities.current_price })
-          .from(opportunities)
-          .where(eq(opportunities.id, opportunityId))
-          .limit(1);
+      // 🎯 ALWAYS include the starting price at opportunity creation time
+      const shouldIncludeStartingPoint = creationTime >= timeBack || chartData.length === 0;
+      
+      if (shouldIncludeStartingPoint) {
+        // Check if we already have a price point at or near the creation time
+        const hasEarlyPoint = chartData.some(point => {
+          const pointTime = new Date(point.t!).getTime();
+          const creationTimestamp = creationTime.getTime();
+          return Math.abs(pointTime - creationTimestamp) < 60000; // Within 1 minute
+        });
 
-        if (currentOpp.length > 0) {
-          chartData.push({
-            t: new Date().toISOString(),
-            p: Number(currentOpp[0].current_price) || 0
+        if (!hasEarlyPoint) {
+          // Prepend the starting price at creation time
+          chartData.unshift({
+            t: creationTime.toISOString(),
+            p: startingPrice
           });
         }
       }
+
+      // If we still have no data points, add current price as a single point
+      if (chartData.length === 0) {
+        chartData.push({
+          t: new Date().toISOString(),
+          p: currentPrice
+        });
+      }
+
+      // Ensure data is sorted by timestamp
+      chartData.sort((a, b) => new Date(a.t!).getTime() - new Date(b.t!).getTime());
 
       res.json(chartData);
     } catch (error) {
@@ -9139,6 +9190,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error fetching GPT metrics:", error);
       res.status(500).json({ message: "Failed to fetch GPT metrics" });
+    }
+  });
+  
+  // POST /api/admin/reload-pricing-engine - Force immediate reload of pricing engine config
+  app.post("/api/admin/reload-pricing-engine", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      // Update both config and variable registry timestamps to force reload
+      const now = new Date();
+      
+      // 🐛 DEBUG: Log current values before forcing reload
+      console.log("🔄 ADMIN FORCED RELOAD - Current Values:");
+      
+      const currentConfig = await getDb().select().from(pricing_config);
+      const currentWeights = await getDb().select().from(variable_registry);
+      
+      console.log("   📊 Current Config Values:");
+      currentConfig.forEach(item => {
+        console.log(`      ${item.key}: ${JSON.stringify(item.value)} (updated: ${item.updated_at?.toISOString()})`);
+      });
+      
+      console.log("   ⚖️  Current Variable Weights:");
+      currentWeights.forEach(item => {
+        console.log(`      ${item.var_name}: ${item.weight} (updated: ${item.updated_at?.toISOString()})`);
+      });
+      
+      await Promise.all([
+        getDb()
+          .update(pricing_config)
+          .set({ updated_at: now })
+          .where(sql`key IN ('priceStep', 'tickIntervalMs')`),
+        getDb()
+          .update(variable_registry)
+          .set({ updated_at: now })
+          .where(sql`1=1`) // Update all variables
+      ]);
+      
+      console.log(`🔄 Admin forced pricing engine reload at ${now.toISOString()}`);
+      console.log("   ✅ Config timestamps updated to trigger worker sync");
+      console.log("   ✅ Variable registry timestamps updated to trigger worker sync");
+      
+      res.json({ 
+        success: true, 
+        message: "Pricing engine reload triggered",
+        timestamp: now.toISOString()
+      });
+    } catch (error: any) {
+      console.error("Error triggering pricing engine reload:", error);
+      res.status(500).json({ message: "Failed to trigger pricing engine reload" });
     }
   });
 

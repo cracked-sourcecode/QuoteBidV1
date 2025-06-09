@@ -46,6 +46,7 @@ const db = drizzle(neonSql);
 let cachedWeights: Record<string, number> = {};
 let cachedConfig: any = {};
 let cachedConfigTime: Date = new Date(0);
+let cachedWeightsTime: Date = new Date(0);
 let lastReload: number = 0;
 let isRunning = false;
 
@@ -59,6 +60,15 @@ async function loadWeights(): Promise<Record<string, number>> {
   const weights = Object.fromEntries(
     rows.map(r => [r.var_name, Number(r.weight)])
   );
+  
+  // Update cached weights time
+  if (rows.length > 0) {
+    const latestUpdate = rows.reduce((latest, row) => {
+      const rowTime = new Date(row.updated_at!);
+      return rowTime > latest ? rowTime : latest;
+    }, new Date(0));
+    cachedWeightsTime = latestUpdate;
+  }
   
   console.log("✅ Loaded weights:", weights);
   return weights;
@@ -92,12 +102,34 @@ async function loadPricingConfig(): Promise<any> {
  * Reload weights and config from database (hot-reload)
  */
 async function reloadWeightsAndConfig(): Promise<void> {
-  console.log("🔄 Hot-reloading pricing configuration...");
+  console.log("🔄 Hot-reloading pricing configuration from admin changes...");
   
   try {
+    const oldWeights = { ...cachedWeights };
+    const oldConfig = { ...cachedConfig };
+    
     cachedWeights = await loadWeights();
     cachedConfig = await loadPricingConfig();
-    console.log("✅ Hot-reload completed successfully");
+    
+    // Log what changed
+    const weightChanges = Object.keys(cachedWeights).filter(
+      key => oldWeights[key] !== cachedWeights[key]
+    );
+    if (weightChanges.length > 0) {
+      console.log('⚖️  Variable weights updated:', weightChanges.map(
+        key => `${key}: ${oldWeights[key]} → ${cachedWeights[key]}`
+      ).join(', '));
+    }
+    
+    if (oldConfig.priceStep !== cachedConfig.priceStep) {
+      console.log(`💰 Price step updated: $${oldConfig.priceStep} → $${cachedConfig.priceStep}`);
+    }
+    
+    if (oldConfig.tickIntervalMs !== cachedConfig.tickIntervalMs) {
+      console.log(`⏰ Tick interval updated: ${oldConfig.tickIntervalMs}ms → ${cachedConfig.tickIntervalMs}ms`);
+    }
+    
+    console.log("✅ Pricing engine successfully synced with admin configuration");
   } catch (error) {
     console.error("❌ Hot-reload failed:", error);
     throw error;
@@ -108,7 +140,12 @@ async function reloadWeightsAndConfig(): Promise<void> {
  * Build pricing configuration object
  */
 function buildPricingConfig(weights: Record<string, number>, config: any): PricingConfig {
-  return {
+  // 🐛 DEBUG: Log raw cached values being processed
+  console.log("🔧 BUILDING PRICING CONFIG:");
+  console.log(`   🗂️  Raw Cached Config:`, JSON.stringify(config, null, 2));
+  console.log(`   ⚖️  Raw Cached Weights:`, weights);
+  
+  const pricingConfig = {
     weights: {
       pitches: weights.pitches || 1.0,
       clicks: weights.clicks || 0.3,
@@ -123,6 +160,10 @@ function buildPricingConfig(weights: Record<string, number>, config: any): Prici
     floor: 50,
     ceil: 500,
   };
+  
+  console.log(`   ✅ Final Pricing Config:`, JSON.stringify(pricingConfig, null, 2));
+  
+  return pricingConfig;
 }
 
 /**
@@ -271,6 +312,16 @@ async function processPricingTick(): Promise<void> {
     const liveOpps = await fetchLiveOpportunities();
     const pricingConfig = buildPricingConfig(cachedWeights, cachedConfig);
     
+    // 🐛 DEBUG: Log current configuration being used
+    console.log("🔧 PRICING CONFIG DEBUG:");
+    console.log(`   💰 Price Step: $${pricingConfig.priceStep}`);
+    console.log(`   ⏰ Tick Interval: ${cachedConfig.tickIntervalMs || 300000}ms`);
+    console.log(`   ⚖️  Variable Weights:`, Object.entries(pricingConfig.weights).map(([key, value]) => `${key}=${value}`).join(', '));
+    console.log(`   🏢 Price Range: $${pricingConfig.floor} - $${pricingConfig.ceil}`);
+    console.log(`   📈 Elasticity: ${pricingConfig.elasticity}`);
+    console.log(`   📊 Last Config Update: ${cachedConfigTime.toISOString()}`);
+    console.log(`   📊 Last Weights Update: ${cachedWeightsTime.toISOString()}`);
+    
     let updatedCount = 0;
     let skippedCount = 0;
     const gptBatch: PricingSnapshot[] = [];
@@ -282,6 +333,12 @@ async function processPricingTick(): Promise<void> {
       const priceDelta = newPrice - currentPrice;
       
       if (newPrice !== currentPrice) {
+        // 🐛 DEBUG: Log pricing decision details
+        console.log(`🧮 PRICING CALC OPP ${opp.id}:`);
+        console.log(`   📊 Metrics: ${snapshot.pitches} pitches, ${snapshot.clicks} clicks, ${snapshot.saves} saves, ${snapshot.drafts} drafts`);
+        console.log(`   ⏱️  Time: ${snapshot.hoursRemaining.toFixed(1)} hours remaining`);
+        console.log(`   💰 Price: $${currentPrice} → $${newPrice} (Δ${priceDelta > 0 ? '+' : ''}$${priceDelta})`);
+        
         // Check gatekeeper rule
         if (shouldSkipGPT(priceDelta, snapshot.hoursRemaining, pricingConfig.priceStep)) {
           // Apply price change directly
@@ -343,7 +400,7 @@ async function startWorker(): Promise<void> {
     await initializeWorker();
     
     // Get tick interval from config
-    const tickInterval = cachedConfig.tickIntervalMs || 60000; // Default 60 seconds
+    const tickInterval = cachedConfig.tickIntervalMs || 300000; // Default 5 minutes (was 60 seconds)
     console.log(`⏰ Starting worker loop with ${tickInterval}ms intervals`);
     
     // Check for --once flag for single-run testing
@@ -359,18 +416,37 @@ async function startWorker(): Promise<void> {
     // Start the main loop
     const interval = setInterval(async () => {
       try {
-        // Hot-reload check every 5 minutes
-        if (Date.now() - lastReload > 300_000) { // 5 min
-          const latestResult = await db
-            .select({ ts: sql<Date>`MAX(updated_at)` })
-            .from(pricing_config);
+        // Hot-reload check every 30 seconds for admin responsiveness
+        if (Date.now() - lastReload > 30_000) { // 30 sec
+          // Check both config and variable registry for updates
+          const [latestConfigResult, latestWeightsResult] = await Promise.all([
+            db.select({ ts: sql<Date>`MAX(updated_at)` }).from(pricing_config),
+            db.select({ ts: sql<Date>`MAX(updated_at)` }).from(variable_registry)
+          ]);
           
-          const latest = latestResult[0]?.ts;
-          if (latest && latest > cachedConfigTime) {
+          const latestConfig = latestConfigResult[0]?.ts;
+          const latestWeights = latestWeightsResult[0]?.ts;
+          
+          const configNeedsReload = latestConfig && latestConfig > cachedConfigTime;
+          const weightsNeedReload = latestWeights && latestWeights > cachedWeightsTime;
+          
+          // 🐛 DEBUG: Always log sync check status
+          console.log("🔍 ADMIN SYNC CHECK:");
+          console.log(`   📊 Config Last Updated: ${latestConfig?.toISOString() || 'Never'}`);
+          console.log(`   📊 Weights Last Updated: ${latestWeights?.toISOString() || 'Never'}`);
+          console.log(`   💾 Cached Config Time: ${cachedConfigTime.toISOString()}`);
+          console.log(`   💾 Cached Weights Time: ${cachedWeightsTime.toISOString()}`);
+          console.log(`   🔄 Config Needs Reload: ${configNeedsReload ? '✅ YES' : '❌ No'}`);
+          console.log(`   🔄 Weights Need Reload: ${weightsNeedReload ? '✅ YES' : '❌ No'}`);
+          
+          if (configNeedsReload || weightsNeedReload) {
+            console.log(`🔄 Admin changes detected - reloading pricing configuration...`);
             await reloadWeightsAndConfig();
             lastReload = Date.now();
+            console.log(`✅ Pricing engine synced with admin changes`);
           } else {
             lastReload = Date.now(); // Update check time even if no reload needed
+            console.log(`⏹️  No admin changes detected - pricing engine up to date`);
           }
         }
         
@@ -418,7 +494,7 @@ const isMainModule = currentModuleUrl === mainModuleUrl ||
 if (isMainModule) {
   console.log("✅ Running as main module, starting worker...");
   startWorker().catch((error) => {
-    console.error("💥 Unhandled error:", error);
+    console.error("�� Unhandled error:", error);
     process.exit(1);
   });
 }
