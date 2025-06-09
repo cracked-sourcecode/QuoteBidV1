@@ -59,6 +59,8 @@ let cachedConfigTime: Date = new Date(0);
 let cachedWeightsTime: Date = new Date(0);
 let lastReload: number = 0;
 let isRunning = false;
+let currentInterval: NodeJS.Timeout | null = null; // Track current interval
+let currentTickInterval: number = 300000; // Track current tick interval
 
 /**
  * Load variable weights from database once on startup
@@ -111,7 +113,7 @@ async function loadPricingConfig(): Promise<any> {
 /**
  * Reload weights and config from database (hot-reload)
  */
-async function reloadWeightsAndConfig(): Promise<void> {
+async function reloadWeightsAndConfig(): Promise<boolean> {
   console.log("🔄 Hot-reloading pricing configuration from admin changes...");
   
   try {
@@ -120,6 +122,8 @@ async function reloadWeightsAndConfig(): Promise<void> {
     
     cachedWeights = await loadWeights();
     cachedConfig = await loadPricingConfig();
+    
+    let needsIntervalRestart = false;
     
     // Log what changed
     const weightChanges = Object.keys(cachedWeights).filter(
@@ -136,10 +140,16 @@ async function reloadWeightsAndConfig(): Promise<void> {
     }
     
     if (oldConfig.tickIntervalMs !== cachedConfig.tickIntervalMs) {
-      console.log(`⏰ Tick interval updated: ${oldConfig.tickIntervalMs}ms → ${cachedConfig.tickIntervalMs}ms`);
+      const newInterval = cachedConfig.tickIntervalMs || 300000;
+      console.log(`⏰ Tick interval updated: ${oldConfig.tickIntervalMs}ms → ${newInterval}ms`);
+      if (newInterval !== currentTickInterval) {
+        needsIntervalRestart = true;
+        currentTickInterval = newInterval;
+      }
     }
     
     console.log("✅ Pricing engine successfully synced with admin configuration");
+    return needsIntervalRestart;
   } catch (error) {
     console.error("❌ Hot-reload failed:", error);
     throw error;
@@ -399,8 +409,73 @@ async function initializeWorker(): Promise<void> {
   // Load cached data
   cachedWeights = await loadWeights();
   cachedConfig = await loadPricingConfig();
+  currentTickInterval = cachedConfig.tickIntervalMs || 300000; // Set initial tick interval
   
   console.log("✅ Worker initialized successfully");
+}
+
+/**
+ * Start the pricing tick loop with current interval
+ */
+function startTickLoop(): void {
+  // Clear any existing interval
+  if (currentInterval) {
+    clearInterval(currentInterval);
+  }
+  
+  console.log(`⏰ Starting worker loop with ${currentTickInterval}ms intervals`);
+  
+  // Start the main loop
+  currentInterval = setInterval(async () => {
+    try {
+      // Hot-reload check every 30 seconds for admin responsiveness
+      if (Date.now() - lastReload > 30_000) { // 30 sec
+        // Check both config and variable registry for updates
+        const [latestConfigResult, latestWeightsResult] = await Promise.all([
+          db.select({ ts: sql<Date>`MAX(updated_at)` }).from(pricing_config),
+          db.select({ ts: sql<Date>`MAX(updated_at)` }).from(variable_registry)
+        ]);
+        
+        const latestConfig = latestConfigResult[0]?.ts;
+        const latestWeights = latestWeightsResult[0]?.ts;
+        
+        const configNeedsReload = latestConfig && new Date(latestConfig) > cachedConfigTime;
+        const weightsNeedReload = latestWeights && new Date(latestWeights) > cachedWeightsTime;
+        
+        // 🐛 DEBUG: Always log sync check status
+        console.log("🔍 ADMIN SYNC CHECK:");
+        console.log(`   📊 Config Last Updated: ${latestConfig ? new Date(latestConfig).toISOString() : 'Never'}`);
+        console.log(`   📊 Weights Last Updated: ${latestWeights ? new Date(latestWeights).toISOString() : 'Never'}`);
+        console.log(`   💾 Cached Config Time: ${cachedConfigTime.toISOString()}`);
+        console.log(`   💾 Cached Weights Time: ${cachedWeightsTime.toISOString()}`);
+        console.log(`   🔄 Config Needs Reload: ${configNeedsReload ? '✅ YES' : '❌ No'}`);
+        console.log(`   🔄 Weights Need Reload: ${weightsNeedReload ? '✅ YES' : '❌ No'}`);
+        
+        if (configNeedsReload || weightsNeedReload) {
+          console.log(`🔄 Admin changes detected - reloading pricing configuration...`);
+          const needsIntervalRestart = await reloadWeightsAndConfig();
+          lastReload = Date.now();
+          console.log(`✅ Pricing engine synced with admin changes`);
+          if (needsIntervalRestart) {
+            console.log(`⏰ Tick interval changed - restarting worker loop...`);
+            startTickLoop(); // Restart the loop with new interval
+            return; // Exit current iteration
+          }
+        } else {
+          lastReload = Date.now(); // Update check time even if no reload needed
+          console.log(`⏹️  No admin changes detected - pricing engine up to date`);
+        }
+      }
+      
+      await processPricingTick();
+    } catch (error) {
+      console.error("💥 Fatal error in pricing tick:", error);
+      if (currentInterval) {
+        clearInterval(currentInterval);
+      }
+      process.exit(1); // Exit so PM2/supervisor can restart
+    }
+  }, currentTickInterval);
 }
 
 /**
@@ -417,10 +492,6 @@ async function startWorker(): Promise<void> {
   try {
     await initializeWorker();
     
-    // Get tick interval from config
-    const tickInterval = cachedConfig.tickIntervalMs || 300000; // Default 5 minutes (was 60 seconds)
-    console.log(`⏰ Starting worker loop with ${tickInterval}ms intervals`);
-    
     // Check for --once flag for single-run testing
     const isOnceMode = process.argv.includes("--once");
     
@@ -431,64 +502,26 @@ async function startWorker(): Promise<void> {
       process.exit(0);
     }
     
-    // Start the main loop
-    const interval = setInterval(async () => {
-      try {
-        // Hot-reload check every 30 seconds for admin responsiveness
-        if (Date.now() - lastReload > 30_000) { // 30 sec
-          // Check both config and variable registry for updates
-          const [latestConfigResult, latestWeightsResult] = await Promise.all([
-            db.select({ ts: sql<Date>`MAX(updated_at)` }).from(pricing_config),
-            db.select({ ts: sql<Date>`MAX(updated_at)` }).from(variable_registry)
-          ]);
-          
-          const latestConfig = latestConfigResult[0]?.ts;
-          const latestWeights = latestWeightsResult[0]?.ts;
-          
-          const configNeedsReload = latestConfig && new Date(latestConfig) > cachedConfigTime;
-          const weightsNeedReload = latestWeights && new Date(latestWeights) > cachedWeightsTime;
-          
-          // 🐛 DEBUG: Always log sync check status
-          console.log("🔍 ADMIN SYNC CHECK:");
-          console.log(`   📊 Config Last Updated: ${latestConfig ? new Date(latestConfig).toISOString() : 'Never'}`);
-          console.log(`   📊 Weights Last Updated: ${latestWeights ? new Date(latestWeights).toISOString() : 'Never'}`);
-          console.log(`   💾 Cached Config Time: ${cachedConfigTime.toISOString()}`);
-          console.log(`   💾 Cached Weights Time: ${cachedWeightsTime.toISOString()}`);
-          console.log(`   🔄 Config Needs Reload: ${configNeedsReload ? '✅ YES' : '❌ No'}`);
-          console.log(`   🔄 Weights Need Reload: ${weightsNeedReload ? '✅ YES' : '❌ No'}`);
-          
-          if (configNeedsReload || weightsNeedReload) {
-            console.log(`🔄 Admin changes detected - reloading pricing configuration...`);
-            await reloadWeightsAndConfig();
-            lastReload = Date.now();
-            console.log(`✅ Pricing engine synced with admin changes`);
-          } else {
-            lastReload = Date.now(); // Update check time even if no reload needed
-            console.log(`⏹️  No admin changes detected - pricing engine up to date`);
-          }
-        }
-        
-        await processPricingTick();
-      } catch (error) {
-        console.error("💥 Fatal error in pricing tick:", error);
-        clearInterval(interval);
-        process.exit(1); // Exit so PM2/supervisor can restart
-      }
-    }, tickInterval);
+    // Start the tick loop
+    startTickLoop();
     
     console.log("🔄 Worker loop started successfully");
     
     // Handle graceful shutdown
     process.on("SIGINT", () => {
       console.log("🛑 Received SIGINT, shutting down gracefully...");
-      clearInterval(interval);
+      if (currentInterval) {
+        clearInterval(currentInterval);
+      }
       isRunning = false;
       process.exit(0);
     });
     
     process.on("SIGTERM", () => {
       console.log("🛑 Received SIGTERM, shutting down gracefully...");
-      clearInterval(interval);
+      if (currentInterval) {
+        clearInterval(currentInterval);
+      }
       isRunning = false;
       process.exit(0);
     });
