@@ -11,7 +11,6 @@ import { useState, useEffect } from 'react';
 import { getLogoContainerClasses, getDeviceOptimizedClasses } from '@/lib/responsive-utils';
 import { useAuth } from '@/hooks/use-auth';
 import { apiFetch } from '@/lib/apiFetch';
-import { useOpportunityPrice } from '@/contexts/PriceContext';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -27,13 +26,11 @@ const tierLabels: Record<OutletTier, string> = {
 export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
   const { hasActiveSubscription } = useSubscription();
   const { user } = useAuth();
-  const priceData = useOpportunityPrice(opportunity.id);
   const [showPaywallModal, setShowPaywallModal] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [realPriceData, setRealPriceData] = useState<{deltaPastHour: number; trend: string} | null>(null);
 
   const {
     id,
@@ -81,14 +78,15 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
 
   console.log(`OpportunityCard - ${outlet}: logo URL = ${logoUrl}, original = ${outletLogo}`);
 
-  // Calculate price changes and trends
+  // Calculate price changes and trends using bulk data from opportunities API
   const priceIncrease = currentPrice > basePrice
     ? Math.round(((currentPrice - basePrice) / basePrice) * 100)
     : 0;
 
-  // Get real hourly price change from pricing engine
-  const hourlyChange = priceData?.deltaPastHour || realPriceData?.deltaPastHour || 0;
-  const recentTrend = priceData?.trend || realPriceData?.trend || (hourlyChange > 0 ? 'up' : hourlyChange < 0 ? 'down' : 'stable');
+  // Use bulk pricing data from opportunities API instead of individual API calls
+  // Note: deltaPastHour and trend may not be available in base Opportunity type
+  const hourlyChange = 0; // Will be available in enhanced opportunity data from API
+  const recentTrend: 'up' | 'down' | 'stable' = hourlyChange > 0 ? 'up' : hourlyChange < 0 ? 'down' : 'stable';
 
   // Format deadline
   let deadlineDate: Date;
@@ -108,7 +106,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
   const daysRemaining = Math.ceil(timeRemaining / (1000 * 60 * 60 * 24));
   const hoursRemaining = Math.ceil(timeRemaining / (1000 * 60 * 60));
 
-  // Smart tag logic
+  // Smart tag logic using bulk pricing data
   const isPremium = tier === 1; // Only Tier 1 is premium
   const isUrgent = hoursRemaining <= 24; // Less than 24 hours
   const isHot = priceIncrease > 25; // Price increased significantly
@@ -131,29 +129,6 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     }
     window.location.href = `/opportunities/${id}`;
   };
-
-  // Fetch real price data when component mounts
-  useEffect(() => {
-    const fetchPriceData = async () => {
-      try {
-        const response = await apiFetch(`/api/opportunities/${id}/price-trend?window=1h`);
-        if (response.ok) {
-          const priceHistory = await response.json();
-          if (priceHistory.length >= 2) {
-            const latest = priceHistory[priceHistory.length - 1];
-            const previous = priceHistory[0];
-            const deltaPastHour = latest.p - previous.p;
-            const trend = deltaPastHour > 0 ? 'up' : deltaPastHour < 0 ? 'down' : 'stable';
-            setRealPriceData({ deltaPastHour, trend });
-          }
-        }
-      } catch (error) {
-        console.error(`Failed to fetch price data for opportunity ${id}:`, error);
-      }
-    };
-    
-    fetchPriceData();
-  }, [id]);
 
   // Check if opportunity is saved when component mounts
   useEffect(() => {

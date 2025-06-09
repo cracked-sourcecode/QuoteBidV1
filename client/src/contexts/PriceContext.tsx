@@ -320,22 +320,27 @@ export const useOpportunityPrice = (opportunityId: number) => {
   if (!opportunityId || opportunityId <= 0) {
     return null;
   }
-  
+
   const price = getPrice(opportunityId);
   
-  // Load prices immediately on mount, then refresh if stale
+  // 🚀 PERFORMANCE FIX: Only auto-fetch prices for detail views, not list views
+  // This prevents dozens of individual API calls on opportunity list pages
   useEffect(() => {
-    if (opportunityId > 0) {
+    // Only auto-fetch if this is likely a detail page (based on URL)
+    const isDetailPage = window.location.pathname.includes(`/opportunities/${opportunityId}`);
+    
+    if (opportunityId > 0 && isDetailPage) {
       if (!price) {
-        // Load immediately if no price data
-        console.log(`💰 Loading price immediately for opportunity ${opportunityId}`);
+        // Load immediately if no price data on detail page
+        console.log(`💰 Loading price for detail view of opportunity ${opportunityId}`);
         refreshPrice(opportunityId);
-      } else if (Date.now() - price.lastUpdated > 120000) {
-        // Refresh if stale (older than 2 minutes)
-        console.log(`🔄 Refreshing stale price for opportunity ${opportunityId}`);
+      } else if (Date.now() - price.lastUpdated > 60000) {
+        // Refresh more frequently on detail pages (1 minute) for real-time updates
+        console.log(`🔄 Refreshing stale price for detail view of opportunity ${opportunityId}`);
         refreshPrice(opportunityId);
       }
     }
+    // For list views, rely on bulk data from opportunities API instead of individual calls
   }, [opportunityId, price, refreshPrice]);
   
   return price;

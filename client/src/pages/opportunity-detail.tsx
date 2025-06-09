@@ -36,26 +36,30 @@ function RelatedOpportunityPrice({ opportunityId, fallbackPrice }: { opportunity
   const priceData = useOpportunityPrice(opportunityId);
   const [fetchedPrice, setFetchedPrice] = useState<number | null>(null);
   
-  // Fetch current price if live data isn't available
+  // 🚀 PERFORMANCE FIX: Use cached price data and avoid individual API calls for related opportunities
+  // Only fetch if we absolutely need to and don't have cached data
   useEffect(() => {
-    const fetchCurrentPrice = async () => {
-      try {
-        const response = await apiFetch(`/api/opportunities/${opportunityId}`, {
-          credentials: 'include'
-        });
-        if (response.ok) {
-          const opportunity = await response.json();
-          setFetchedPrice(opportunity.currentPrice || opportunity.basePrice);
+    // Only fetch if we don't have any price data at all (neither live nor cached)
+    if (!priceData?.currentPrice && !fetchedPrice) {
+      const fetchCurrentPrice = async () => {
+        try {
+          const response = await apiFetch(`/api/opportunities/${opportunityId}`, {
+            credentials: 'include'
+          });
+          if (response.ok) {
+            const opportunity = await response.json();
+            setFetchedPrice(opportunity.currentPrice || opportunity.basePrice);
+          }
+        } catch (error) {
+          console.error(`Failed to fetch price for related opportunity ${opportunityId}:`, error);
         }
-      } catch (error) {
-        console.error(`Failed to fetch price for opportunity ${opportunityId}:`, error);
-      }
-    };
-    
-    if (!priceData?.currentPrice) {
-      fetchCurrentPrice();
+      };
+      
+      // Add small delay to prevent too many simultaneous requests
+      const timeoutId = setTimeout(fetchCurrentPrice, Math.random() * 1000);
+      return () => clearTimeout(timeoutId);
     }
-  }, [opportunityId, priceData?.currentPrice]);
+  }, [opportunityId, priceData?.currentPrice, fetchedPrice]);
   
   const currentPrice = priceData?.currentPrice || fetchedPrice || fallbackPrice;
   

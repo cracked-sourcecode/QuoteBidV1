@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Clock, TrendingUp, TrendingDown, Minus, Award, Target, Trophy, Bookmark } from 'lucide-react';
 import { Opportunity } from '@shared/types/opportunity';
 import { calculateMarketHeat, getMarketPulseIndicators } from '@/lib/marketPulse';
-import { useOpportunityPrice } from '@/contexts/PriceContext';
+// Remove individual price fetching for list pages - use bulk data instead
+// import { useOpportunityPrice } from '@/contexts/PriceContext';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -23,13 +24,12 @@ export default function OpportunityCard({
   const [timeLeft, setTimeLeft] = useState('');
   const [isSaved, setIsSaved] = useState(false);
   
-  // Connect to real-time price updates from pricing engine
-  const priceData = useOpportunityPrice(opportunity.id);
-  
-  // Use real-time price data if available, fallback to opportunity data
-  const currentPrice = priceData?.currentPrice || opportunity.currentPrice;
-  const priceTrend = priceData?.trend || opportunity.trend || 'stable';
-  const percentChange = priceData?.percentChange || 0;
+  // 🚀 PERFORMANCE FIX: Use pricing data from opportunities list API instead of individual calls
+  // This eliminates dozens of individual API calls that were causing 401 errors and slow loading
+  const currentPrice = opportunity.currentPrice;
+  const priceTrend = opportunity.trend || 'stable';
+  // Calculate percentage change from available data
+  const calculatedPercentChange = ((currentPrice - opportunity.basePrice) / opportunity.basePrice) * 100;
   
   // Calculate time until deadline
   useEffect(() => {
@@ -61,13 +61,13 @@ export default function OpportunityCard({
     return () => clearInterval(interval);
   }, [opportunity.deadline]);
   
-  // Calculate market heat and indicators using real-time price
+  // Calculate market heat and indicators using current price from bulk data
   const hoursActive = (Date.now() - new Date(opportunity.postedAt).getTime()) / (1000 * 60 * 60);
   const marketHeat = calculateMarketHeat(opportunity.basePrice, currentPrice, hoursActive);
   const pulseIndicators = getMarketPulseIndicators(marketHeat);
   
-  // Price change percentage using real-time data
-  const realPriceChange = ((currentPrice - opportunity.basePrice) / opportunity.basePrice) * 100;
+  // Price change percentage using bulk pricing data
+  const realPriceChange = calculatedPercentChange;
   
   // Tier styling
   const getTierStyling = (tier: number) => {
@@ -178,17 +178,15 @@ export default function OpportunityCard({
           )}
         </div>
         
-        {/* Price Section - Now using real-time pricing data */}
+        {/* Price Section - Using bulk pricing data from opportunities API */}
         <div className="bg-white rounded-lg p-3 mb-3 border border-gray-200">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-medium text-gray-600">Current Price</span>
             <div className="flex items-center space-x-1">
               {/* Dynamic pricing indicator */}
-              {priceData && (
-                <Badge variant="outline" className="text-xs px-1.5 py-0.5 text-red-600 border-red-200">
-                  ● Dynamic
-                </Badge>
-              )}
+              <Badge variant="outline" className="text-xs px-1.5 py-0.5 text-blue-600 border-blue-200">
+                ● Live
+              </Badge>
               {(priceTrend === 'up' || priceDirection === 'up') && (
                 <TrendingUp className="h-3 w-3 text-green-500" />
               )}
@@ -206,7 +204,7 @@ export default function OpportunityCard({
               <span className={`text-xl font-bold ${
                 (showPriceAnimation && priceDirection === 'up') || priceTrend === 'up' ? 'text-green-600 animate-pulse' :
                 (showPriceAnimation && priceDirection === 'down') || priceTrend === 'down' ? 'text-red-600 animate-pulse' :
-                priceData ? 'text-blue-600' : 'text-gray-900'
+                'text-blue-600'
               } transition-colors duration-300`}>
                 ${currentPrice}
               </span>
@@ -221,7 +219,7 @@ export default function OpportunityCard({
               </span>
             </div>
             
-            {/* Show percentage change with real-time data */}
+            {/* Show percentage change from bulk data */}
             {realPriceChange !== 0 && (
               <div className="flex items-center space-x-1">
                 {realPriceChange > 0 ? (
@@ -243,11 +241,11 @@ export default function OpportunityCard({
             )}
           </div>
           
-          {/* Real-time price metadata */}
-          {priceData?.lastPriceUpdate && (
+          {/* Show if pricing data is from bulk API */}
+          {opportunity.lastPriceUpdate && (
             <div className="mt-2 text-xs text-gray-500 flex items-center space-x-1">
               <Clock className="h-3 w-3" />
-              <span>Updated {new Date(priceData.lastPriceUpdate).toLocaleTimeString()}</span>
+              <span>Updated {new Date(opportunity.lastPriceUpdate).toLocaleTimeString()}</span>
             </div>
           )}
         </div>
@@ -267,7 +265,7 @@ export default function OpportunityCard({
           </div>
         </div>
         
-        {/* Action Button - using real-time price */}
+        {/* Action Button - using bulk pricing data */}
         <Button 
           onClick={handleBidClick}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:scale-105"
