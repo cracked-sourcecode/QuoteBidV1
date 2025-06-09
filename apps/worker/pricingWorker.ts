@@ -427,13 +427,13 @@ async function startWorker(): Promise<void> {
           const latestConfig = latestConfigResult[0]?.ts;
           const latestWeights = latestWeightsResult[0]?.ts;
           
-          const configNeedsReload = latestConfig && latestConfig > cachedConfigTime;
-          const weightsNeedReload = latestWeights && latestWeights > cachedWeightsTime;
+          const configNeedsReload = latestConfig && new Date(latestConfig) > cachedConfigTime;
+          const weightsNeedReload = latestWeights && new Date(latestWeights) > cachedWeightsTime;
           
           // 🐛 DEBUG: Always log sync check status
           console.log("🔍 ADMIN SYNC CHECK:");
-          console.log(`   📊 Config Last Updated: ${latestConfig?.toISOString() || 'Never'}`);
-          console.log(`   📊 Weights Last Updated: ${latestWeights?.toISOString() || 'Never'}`);
+          console.log(`   📊 Config Last Updated: ${latestConfig ? new Date(latestConfig).toISOString() : 'Never'}`);
+          console.log(`   📊 Weights Last Updated: ${latestWeights ? new Date(latestWeights).toISOString() : 'Never'}`);
           console.log(`   💾 Cached Config Time: ${cachedConfigTime.toISOString()}`);
           console.log(`   💾 Cached Weights Time: ${cachedWeightsTime.toISOString()}`);
           console.log(`   🔄 Config Needs Reload: ${configNeedsReload ? '✅ YES' : '❌ No'}`);
@@ -494,7 +494,7 @@ const isMainModule = currentModuleUrl === mainModuleUrl ||
 if (isMainModule) {
   console.log("✅ Running as main module, starting worker...");
   startWorker().catch((error) => {
-    console.error("�� Unhandled error:", error);
+    console.error(" Unhandled error:", error);
     process.exit(1);
   });
 }
