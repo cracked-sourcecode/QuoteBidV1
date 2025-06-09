@@ -7,7 +7,8 @@
 import { config } from "dotenv";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { eq, sql, gt, and } from "drizzle-orm";
+import { eq, sql, gt, and, gte } from "drizzle-orm";
+import { subMinutes } from "date-fns";
 import { 
   opportunities, 
   price_snapshots, 
@@ -31,9 +32,9 @@ const neonSql = neon(connectionString);
 const db = drizzle(neonSql);
 
 /**
- * Build signals for pricing calculation
+ * Build signals for pricing calculation with real data
  */
-function buildSignals(opp: Opportunity & { pitchCount: number; clickCount: number; saveCount: number; draftCount: number }, now: number) {
+async function buildSignals(opp: Opportunity & { pitchCount: number; clickCount: number; saveCount: number; draftCount: number }, now: number) {
   const deadline = new Date(opp.deadline!);
   const hoursRemaining = Math.max(0, (deadline.getTime() - now) / (1000 * 60 * 60));
   
@@ -43,22 +44,32 @@ function buildSignals(opp: Opportunity & { pitchCount: number; clickCount: numbe
   else if (opp.tier === "Tier 2") tier = 2;
   else if (opp.tier === "Tier 3") tier = 3;
   
+  // Get real signal data
+  const clicksLast10m = await countEvents(opp.id, "click", 10);
+  const pitchesLast10m = await countEvents(opp.id, "pitch", 10);
+  const lastInteractionMins = await minsSinceLastInteraction(opp.id);
+  const outletLoad = await countOpenOutletLoad(opp.publicationId);
+  
+  const clicks = opp.clickCount;     // total clicks column (placeholder until click tracking implemented)
+  const pitches = opp.pitchCount;   // total pitches column
+  const conversionRate = clicks >= 5 ? pitches / clicks : 0;
+  
   return {
     opportunityId: opp.id.toString(),
     tier,
     current_price: Number(opp.current_price) || 100,
-    pitches: opp.pitchCount,
-    clicks: opp.clickCount,
+    pitches,
+    clicks,
     saves: opp.saveCount,
     drafts: opp.draftCount,
     hoursRemaining,
-    clicksLast10m: 0, // Placeholder - will wire in Step 2
-    pitchesLast10m: 0, // Placeholder - will wire in Step 2  
-    conversionRate: 0, // Placeholder - will wire in Step 2
-    outletLoad: 0, // Placeholder - will wire in Step 2
-    lastInteractionMins: 0, // Placeholder - will wire in Step 2
-    outlet_avg_price: undefined, // TODO: Add outlet metrics
-    successRateOutlet: undefined, // TODO: Add outlet metrics
+    clicksLast10m,
+    pitchesLast10m,
+    conversionRate,
+    outletLoad,
+    lastInteractionMins,
+    outlet_avg_price: undefined, // TODO: Add outlet metrics in future step
+    successRateOutlet: undefined, // TODO: Add outlet metrics in future step
     inventory_level: Number(opp.inventory_level) || 0,
     category: opp.category || undefined,
   };
@@ -119,6 +130,56 @@ async function fetchLiveOpportunities(): Promise<Array<Opportunity & {
   return oppsWithMetrics;
 }
 
+// Returns count of pitches for an opp in the last <mins> (placeholder for event tracking)
+async function countEvents(oppId: number, event: "click" | "pitch", mins: number): Promise<number> {
+  if (event === "pitch") {
+    // Count actual pitches from the last N minutes
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(pitches)
+      .where(
+        and(
+          eq(pitches.opportunityId, oppId),
+          gte(pitches.createdAt, subMinutes(new Date(), mins))
+        )
+      );
+    return Number(result[0]?.count || 0);
+  }
+  
+  // Click tracking not implemented yet - return 0 as placeholder
+  return 0;
+}
+
+// Returns minutes since the last interaction of ANY kind (placeholder implementation)
+async function minsSinceLastInteraction(oppId: number): Promise<number> {
+  // Check last pitch as proxy for interaction until full event tracking is implemented
+  const lastPitch = await db
+    .select({ createdAt: pitches.createdAt })
+    .from(pitches)
+    .where(eq(pitches.opportunityId, oppId))
+    .orderBy(sql`${pitches.createdAt} desc`)
+    .limit(1);
+  
+  if (!lastPitch || lastPitch.length === 0) return 9999;
+  return Math.floor((Date.now() - lastPitch[0].createdAt!.getTime()) / 60000);
+}
+
+// Returns count of currently OPEN opps for the same publication
+async function countOpenOutletLoad(publicationId: number): Promise<number> {
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(opportunities)
+    .where(
+      and(
+        eq(opportunities.publicationId, publicationId),
+        eq(opportunities.status, "open"),
+        gte(opportunities.createdAt, subMinutes(new Date(), 60 * 24 * 7)) // 7-day window
+      )
+    );
+  
+  return Number(result[0]?.count || 0);
+}
+
 /**
  * Main update prices function
  */
@@ -130,7 +191,7 @@ export async function updatePrices(): Promise<void> {
     let updatedCount = 0;
     
     for (const opp of liveOpps) {
-      const signals = buildSignals(opp, Date.now());
+      const signals = await buildSignals(opp, Date.now());
       
       const price = computePrice(signals, {
         weights: {
