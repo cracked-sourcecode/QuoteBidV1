@@ -88,7 +88,7 @@ export async function sendPasswordResetEmail(
   }
 
   try {
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5050'}/reset-password?token=${resetToken}`;
     
     const emailHtml = `
       <!DOCTYPE html>
@@ -190,7 +190,7 @@ export async function sendUsernameReminderEmail(
               <p>Hello,</p>
               <p>You requested a reminder of your QuoteBid username. Here it is:</p>
               <div class="username">${username}</div>
-              <p>You can use this username to log in to your QuoteBid account at <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}">quotebid.co</a></p>
+              <p>You can use this username to log in to your QuoteBid account at <a href="${process.env.FRONTEND_URL || 'http://localhost:5050'}">quotebid.co</a></p>
               <p>If you didn't request this reminder, please ignore this email.</p>
               <div class="footer">
                 <p>Need help? Contact our support team at support@quotebid.co</p>
@@ -220,6 +220,140 @@ export async function sendUsernameReminderEmail(
     return true;
   } catch (error) {
     console.error('❌ Error sending username reminder:', error);
+    return false;
+  }
+}
+
+/**
+ * Send pricing notification emails (price drops, last call)
+ */
+export async function sendPricingNotificationEmail(
+  emails: string[],
+  template: "PRICE_DROP" | "LAST_CALL",
+  opportunityTitle: string,
+  currentPrice: string
+): Promise<boolean> {
+  if (!resend) {
+    console.error('❌ Resend not initialized for pricing notification');
+    return false;
+  }
+
+  const emailConfig = {
+    PRICE_DROP: {
+      subject: "🔥 Price dropped on an opportunity you're interested in",
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Price Drop Alert - QuoteBid</title>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+              .price-alert { background: #059669; color: white; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0; }
+              .button { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; }
+              .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>💰 Price Drop Alert!</h1>
+                <p>QuoteBid Pricing Engine</p>
+              </div>
+              <div class="content">
+                <p>Great news! The price has dropped on an opportunity you've shown interest in:</p>
+                <div class="price-alert">
+                  <h3 style="margin: 0 0 10px 0;">${opportunityTitle}</h3>
+                  <p style="margin: 0; font-size: 18px;">
+                    <strong>New Price: $${currentPrice}</strong>
+                  </p>
+                </div>
+                <p>This could be a great opportunity to submit your pitch at a better price point.</p>
+                <p style="text-align: center; margin: 30px 0;">
+                  <a href="${process.env.FRONTEND_URL || 'http://localhost:5050'}" class="button">View Opportunity</a>
+                </p>
+                <div class="footer">
+                  <p>You're receiving this because you've previously shown interest in this opportunity.</p>
+                  <p>© 2024 QuoteBid. All rights reserved.</p>
+                </div>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
+    },
+    LAST_CALL: {
+      subject: "⏰ Last call for pitches - Opportunity closing soon",
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Last Call Alert - QuoteBid</title>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+              .urgent-alert { background: #fef2f2; padding: 20px; border-left: 4px solid #dc2626; border-radius: 8px; margin: 20px 0; }
+              .button { display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; }
+              .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>⏰ Last Call!</h1>
+                <p>QuoteBid Deadline Alert</p>
+              </div>
+              <div class="content">
+                <p>Time is running out! An opportunity you're interested in is closing soon:</p>
+                <div class="urgent-alert">
+                  <h3 style="margin: 0 0 10px 0; color: #1f2937;">${opportunityTitle}</h3>
+                  <p style="margin: 0; color: #dc2626;">
+                    <strong>Closing Soon - Current Price: $${currentPrice}</strong>
+                  </p>
+                </div>
+                <p>Don't miss out! Submit your pitch now before this opportunity expires.</p>
+                <p style="text-align: center; margin: 30px 0;">
+                  <a href="${process.env.FRONTEND_URL || 'http://localhost:5050'}" class="button">Submit Pitch Now</a>
+                </p>
+                <div class="footer">
+                  <p style="color: #dc2626; font-weight: bold;">Act fast - this opportunity may not be available much longer!</p>
+                  <p>© 2024 QuoteBid. All rights reserved.</p>
+                </div>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
+    },
+  };
+
+  try {
+    const { subject, html } = emailConfig[template];
+    
+    console.log(`📧 Sending ${template} pricing notification to ${emails.length} users`);
+    
+    const { data, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'QuoteBid <onboarding@resend.dev>',
+      to: emails,
+      subject,
+      html,
+    });
+
+    if (error) {
+      console.error('❌ Pricing notification error:', error);
+      return false;
+    }
+
+    console.log('✅ Pricing notification sent successfully:', data);
+    return true;
+  } catch (error) {
+    console.error('❌ Error sending pricing notification:', error);
     return false;
   }
 }
