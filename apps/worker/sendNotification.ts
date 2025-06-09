@@ -11,9 +11,19 @@ import { config } from "dotenv";
 import { opportunities } from "../../shared/schema";
 import { sendWebPush } from "../../lib/sendWebPush";
 import { sendPricingNotificationEmail } from "../../server/lib/email";
+// Import database initialization for web push notifications
+import { initializeDatabase } from "../../server/db";
 
 // Load environment variables
 config();
+
+// Initialize database for web push notifications
+try {
+  initializeDatabase();
+  console.log("✅ Database initialized for web push notifications in sendNotification worker");
+} catch (error) {
+  console.log("⚠️ Database initialization for web push notifications failed in sendNotification worker:", error);
+}
 
 // Email throttling: track when we last sent emails for each opportunity
 const lastEmailSentMap = new Map<string, number>();

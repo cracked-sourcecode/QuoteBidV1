@@ -30,9 +30,19 @@ import {
 import { shouldSkipGPT } from "./gatekeeper";
 import { queueForGPT } from "./gptPricingAgent";
 import { priceUpdates, systemEvents } from "../wsServer";
+// Import database initialization for web push notifications
+import { initializeDatabase } from "../../server/db";
 
 // Load environment variables
 config();
+
+// Initialize database for web push notifications
+try {
+  initializeDatabase();
+  console.log("✅ Database initialized for web push notifications");
+} catch (error) {
+  console.log("⚠️ Database initialization for web push notifications failed:", error);
+}
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
