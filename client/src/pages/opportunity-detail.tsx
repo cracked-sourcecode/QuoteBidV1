@@ -1207,23 +1207,7 @@ export default function OpportunityDetail() {
                 {/* Price Trend Section - Left Side */}
                 <div className="p-8 border-r border-gray-200/50">
                   <div className="mb-6">
-                    {/* Live Status Indicator */}
-                    {isConnected && priceData && (
-                      <div className="flex items-center space-x-2 mb-4">
-                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm font-medium text-green-600">Live pricing active</span>
-                        <span className="text-xs text-gray-500">•</span>
-                        <span className="text-xs text-gray-500">Updates every minute</span>
-                        {realTimePriceHistory.length > 0 && (
-                          <>
-                            <span className="text-xs text-gray-500">•</span>
-                            <span className="text-xs font-semibold text-blue-600">
-                              {realTimePriceHistory.length} live points
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    )}
+                    {/* Live Status Indicator removed */}
 
                     {/* Interactive Price Chart */}
                     <PriceTrendChart
@@ -1235,7 +1219,7 @@ export default function OpportunityDetail() {
                     />
 
                     {/* Enhanced price range and timeline info */}
-                    <div className="space-y-4 mt-6">
+                    <div className="space-y-4 mt-12">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-2">
                                                       <span className="text-green-600 font-bold text-lg">${Math.min(...priceDataForChart.map((p: any) => p.price))}</span>
@@ -1248,19 +1232,7 @@ export default function OpportunityDetail() {
                       </div>
                       
                       {/* Timeline information */}
-                      <div className="flex justify-between items-center text-xs text-gray-500 border-t pt-3">
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center space-x-1">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <span>Historical price</span>
-                          </div>
-                          {priceData && (
-                            <div className="flex items-center space-x-1">
-                              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                              <span>Live pricing active</span>
-                            </div>
-                          )}
-                        </div>
+                      <div className="flex justify-end items-center text-xs text-gray-500 border-t pt-3">
                         <div className="flex items-center space-x-4">
                           {opportunity && (
                             <>
