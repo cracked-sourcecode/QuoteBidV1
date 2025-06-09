@@ -205,8 +205,8 @@ export async function updatePrices(): Promise<void> {
         },
         priceStep: 5,
         elasticity: 1.0,
-        floor: 50,
-        ceil: 500,
+        floor: 10, // Minimum safety floor
+        ceil: 10000, // Maximum safety ceiling
       });
       
       // Only update if price changed

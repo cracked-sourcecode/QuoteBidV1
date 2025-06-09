@@ -159,7 +159,7 @@ export function getDefaultPricingConfig(): PricingConfig {
     },
     priceStep: 5,
     elasticity: 1.0,
-    floor: 50,   // Minimum $50
-    ceil: 500,   // Maximum $500
+    floor: 10,     // Minimum safety floor
+    ceil: 10000,   // Maximum safety ceiling
   };
 } 

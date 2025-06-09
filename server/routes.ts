@@ -3495,7 +3495,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Get publication if opportunity exists
                 let publication = null;
                 if (opportunity?.publicationId) {
-                  const [pub] = await getDb().select()
+                  const [pub] = await getDb()
+                    .select()
                     .from(publications)
                     .where(eq(publications.id, opportunity.publicationId));
                   publication = pub;
@@ -8857,10 +8858,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid opportunity ID" });
       }
 
-      // Validate price
-      if (typeof price !== "number" || price < 50 || price > 999) {
+      // Validate price (v2: let pricingEngine.ts handle bounds)
+      if (typeof price !== "number" || price <= 0) {
         return res.status(400).json({ 
-          error: "Invalid price - must be a number between $50 and $999" 
+          error: "Invalid price - must be a positive number" 
         });
       }
 

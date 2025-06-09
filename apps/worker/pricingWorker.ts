@@ -185,8 +185,8 @@ function buildPricingConfig(weights: Record<string, number>, config: any): Prici
     },
     priceStep: Number(config.priceStep) || 5,
     elasticity: 1.0, // Default for now, can be made configurable
-    floor: 50,
-    ceil: 500,
+    floor: 10, // Minimum safety floor
+    ceil: 10000, // Maximum safety ceiling  
   };
   
   console.log(`   ✅ Final Pricing Config:`, JSON.stringify(pricingConfig, null, 2));

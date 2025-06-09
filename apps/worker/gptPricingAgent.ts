@@ -191,8 +191,8 @@ async function executePriceAction(action: PriceAction, snapshot?: PricingSnapsho
       : currentPrice - stepSize;
   }
 
-  // Clamp price to valid range
-  finalPrice = Math.max(50, Math.min(500, finalPrice));
+  // v2: pricingEngine.ts handles bounds
+  // finalPrice = Math.max(50, Math.min(500, finalPrice));
 
   try {
     const response = await fetch(url, {
