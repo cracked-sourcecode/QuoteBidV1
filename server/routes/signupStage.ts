@@ -147,15 +147,7 @@ export async function startSignup(req: Request, res: Response) {
     role
   });
 
-  // Send welcome email to new user
-  try {
-    const { sendWelcomeEmail } = await import('../lib/email');
-    await sendWelcomeEmail(email, normalizedUsername, name || normalizedUsername);
-    console.log('✅ Welcome email sent to new user:', email);
-  } catch (emailError) {
-    console.error('❌ Failed to send welcome email to:', email, emailError);
-    // Don't fail the signup if email fails - just log the error
-  }
+  // Welcome email will be sent when signup is completed, not at the start
 
   return res.status(201).json({ 
     userId: newId, 
@@ -607,6 +599,16 @@ router.post('/:email/complete', async (req: Request, res: Response) => {
         profileCompleted: true
       })
       .where(eq(users.id, user.id));
+    
+    // Send welcome email to new user
+    try {
+      const { sendWelcomeEmail } = await import('../lib/email');
+      await sendWelcomeEmail(user.email, user.username, user.fullName || user.username);
+      console.log('✅ Welcome email sent to new user:', user.email);
+    } catch (emailError) {
+      console.error('❌ Failed to send welcome email to:', user.email, emailError);
+      // Don't fail the signup if email fails - just log the error
+    }
     
     // Generate a JWT token for the user
     const role = user.isAdmin ? 'admin' : 'user';
