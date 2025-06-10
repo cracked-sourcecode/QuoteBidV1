@@ -1,114 +1,66 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, Link } from 'wouter';
 import SignupCard from '@/components/SignupCard';
 import Field from '@/components/FormFieldWrapper';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
 
-// Country codes list
+// Add custom CSS for animations
+const customStyles = `
+  @keyframes blob {
+    0% {
+      transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+  }
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+`;
+
+// Country codes list - Most commonly used countries
 const COUNTRY_CODES = [
   { code: '+1', country: 'US/Canada', flag: '🇺🇸' },
   { code: '+44', country: 'UK', flag: '🇬🇧' },
   { code: '+61', country: 'Australia', flag: '🇦🇺' },
-  { code: '+91', country: 'India', flag: '🇮🇳' },
-  { code: '+86', country: 'China', flag: '🇨🇳' },
   { code: '+33', country: 'France', flag: '🇫🇷' },
   { code: '+49', country: 'Germany', flag: '🇩🇪' },
-  { code: '+81', country: 'Japan', flag: '🇯🇵' },
-  { code: '+82', country: 'South Korea', flag: '🇰🇷' },
   { code: '+39', country: 'Italy', flag: '🇮🇹' },
   { code: '+34', country: 'Spain', flag: '🇪🇸' },
   { code: '+31', country: 'Netherlands', flag: '🇳🇱' },
+  { code: '+91', country: 'India', flag: '🇮🇳' },
+  { code: '+86', country: 'China', flag: '🇨🇳' },
+  { code: '+81', country: 'Japan', flag: '🇯🇵' },
+  { code: '+82', country: 'South Korea', flag: '🇰🇷' },
+  { code: '+55', country: 'Brazil', flag: '🇧🇷' },
+  { code: '+52', country: 'Mexico', flag: '🇲🇽' },
+  { code: '+7', country: 'Russia', flag: '🇷🇺' },
   { code: '+46', country: 'Sweden', flag: '🇸🇪' },
   { code: '+47', country: 'Norway', flag: '🇳🇴' },
   { code: '+45', country: 'Denmark', flag: '🇩🇰' },
-  { code: '+358', country: 'Finland', flag: '🇫🇮' },
-  { code: '+48', country: 'Poland', flag: '🇵🇱' },
   { code: '+41', country: 'Switzerland', flag: '🇨🇭' },
   { code: '+43', country: 'Austria', flag: '🇦🇹' },
   { code: '+32', country: 'Belgium', flag: '🇧🇪' },
   { code: '+353', country: 'Ireland', flag: '🇮🇪' },
   { code: '+351', country: 'Portugal', flag: '🇵🇹' },
-  { code: '+30', country: 'Greece', flag: '🇬🇷' },
-  { code: '+420', country: 'Czech Republic', flag: '🇨🇿' },
-  { code: '+36', country: 'Hungary', flag: '🇭🇺' },
-  { code: '+40', country: 'Romania', flag: '🇷🇴' },
-  { code: '+7', country: 'Russia', flag: '🇷🇺' },
-  { code: '+380', country: 'Ukraine', flag: '🇺🇦' },
-  { code: '+90', country: 'Turkey', flag: '🇹🇷' },
-  { code: '+27', country: 'South Africa', flag: '🇿🇦' },
-  { code: '+234', country: 'Nigeria', flag: '🇳🇬' },
-  { code: '+20', country: 'Egypt', flag: '🇪🇬' },
-  { code: '+212', country: 'Morocco', flag: '🇲🇦' },
-  { code: '+216', country: 'Tunisia', flag: '🇹🇳' },
-  { code: '+254', country: 'Kenya', flag: '🇰🇪' },
-  { code: '+255', country: 'Tanzania', flag: '🇹🇿' },
-  { code: '+256', country: 'Uganda', flag: '🇺🇬' },
-  { code: '+233', country: 'Ghana', flag: '🇬🇭' },
-  { code: '+237', country: 'Cameroon', flag: '🇨🇲' },
-  { code: '+225', country: 'Ivory Coast', flag: '🇨🇮' },
-  { code: '+221', country: 'Senegal', flag: '🇸🇳' },
-  { code: '+52', country: 'Mexico', flag: '🇲🇽' },
-  { code: '+55', country: 'Brazil', flag: '🇧🇷' },
-  { code: '+54', country: 'Argentina', flag: '🇦🇷' },
-  { code: '+57', country: 'Colombia', flag: '🇨🇴' },
-  { code: '+51', country: 'Peru', flag: '🇵🇪' },
-  { code: '+56', country: 'Chile', flag: '🇨🇱' },
-  { code: '+58', country: 'Venezuela', flag: '🇻🇪' },
-  { code: '+593', country: 'Ecuador', flag: '🇪🇨' },
-  { code: '+591', country: 'Bolivia', flag: '🇧🇴' },
-  { code: '+595', country: 'Paraguay', flag: '🇵🇾' },
-  { code: '+598', country: 'Uruguay', flag: '🇺🇾' },
-  { code: '+506', country: 'Costa Rica', flag: '🇨🇷' },
-  { code: '+507', country: 'Panama', flag: '🇵🇦' },
-  { code: '+503', country: 'El Salvador', flag: '🇸🇻' },
-  { code: '+502', country: 'Guatemala', flag: '🇬🇹' },
-  { code: '+504', country: 'Honduras', flag: '🇭🇳' },
-  { code: '+505', country: 'Nicaragua', flag: '🇳🇮' },
-  { code: '+509', country: 'Haiti', flag: '🇭🇹' },
-  { code: '+1876', country: 'Jamaica', flag: '🇯🇲' },
-  { code: '+1868', country: 'Trinidad', flag: '🇹🇹' },
-  { code: '+1246', country: 'Barbados', flag: '🇧🇧' },
-  { code: '+1242', country: 'Bahamas', flag: '🇧🇸' },
-  { code: '+62', country: 'Indonesia', flag: '🇮🇩' },
-  { code: '+60', country: 'Malaysia', flag: '🇲🇾' },
-  { code: '+65', country: 'Singapore', flag: '🇸🇬' },
-  { code: '+66', country: 'Thailand', flag: '🇹🇭' },
-  { code: '+84', country: 'Vietnam', flag: '🇻🇳' },
-  { code: '+63', country: 'Philippines', flag: '🇵🇭' },
-  { code: '+92', country: 'Pakistan', flag: '🇵🇰' },
-  { code: '+880', country: 'Bangladesh', flag: '🇧🇩' },
-  { code: '+94', country: 'Sri Lanka', flag: '🇱🇰' },
-  { code: '+977', country: 'Nepal', flag: '🇳🇵' },
-  { code: '+93', country: 'Afghanistan', flag: '🇦🇫' },
-  { code: '+98', country: 'Iran', flag: '🇮🇷' },
-  { code: '+964', country: 'Iraq', flag: '🇮🇶' },
-  { code: '+966', country: 'Saudi Arabia', flag: '🇸🇦' },
-  { code: '+971', country: 'UAE', flag: '🇦🇪' },
-  { code: '+972', country: 'Israel', flag: '🇮🇱' },
-  { code: '+962', country: 'Jordan', flag: '🇯🇴' },
-  { code: '+961', country: 'Lebanon', flag: '🇱🇧' },
-  { code: '+963', country: 'Syria', flag: '🇸🇾' },
-  { code: '+965', country: 'Kuwait', flag: '🇰🇼' },
-  { code: '+968', country: 'Oman', flag: '🇴🇲' },
-  { code: '+974', country: 'Qatar', flag: '🇶🇦' },
-  { code: '+973', country: 'Bahrain', flag: '🇧🇭' },
-  { code: '+967', country: 'Yemen', flag: '🇾🇪' },
   { code: '+64', country: 'New Zealand', flag: '🇳🇿' },
-  { code: '+679', country: 'Fiji', flag: '🇫🇯' },
-  { code: '+675', country: 'Papua New Guinea', flag: '🇵🇬' },
-  { code: '+677', country: 'Solomon Islands', flag: '🇸🇧' },
-  { code: '+678', country: 'Vanuatu', flag: '🇻🇺' },
-  { code: '+676', country: 'Tonga', flag: '🇹🇴' },
-  { code: '+685', country: 'Samoa', flag: '🇼🇸' },
-  { code: '+686', country: 'Kiribati', flag: '🇰🇮' },
-  { code: '+688', country: 'Tuvalu', flag: '🇹🇻' },
-  { code: '+674', country: 'Nauru', flag: '🇳🇷' },
-  { code: '+682', country: 'Cook Islands', flag: '🇨🇰' },
-  { code: '+687', country: 'New Caledonia', flag: '🇳🇨' },
-  { code: '+689', country: 'French Polynesia', flag: '🇵🇫' },
-].sort((a, b) => a.country.localeCompare(b.country));
+  { code: '+65', country: 'Singapore', flag: '🇸🇬' },
+];
 
 // Debounce helper
 function debounce(fn: (...args: any[]) => void, delay: number) {
@@ -122,6 +74,16 @@ function debounce(fn: (...args: any[]) => void, delay: number) {
 export default function RegisterPage() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  
+  /* Reset body opacity on mount and scroll to top */
+  useEffect(() => {
+    document.body.style.opacity = "1";
+    document.body.classList.remove("navigating");
+    window.scrollTo(0, 0);
+    return () => {
+      document.body.style.opacity = "1";
+    };
+  }, []);
   
   // Check if user is already in signup wizard and redirect them back
   useEffect(() => {
@@ -538,230 +500,265 @@ export default function RegisterPage() {
     form.agreeTerms;
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-gradient-to-br from-[#3B267A] to-[#A084E8]">
-      {/* Mobile Header - Show on small screens */}
-      <div className="lg:hidden px-6 pt-8 pb-4 text-center">
-        <h1 className="text-3xl sm:text-4xl font-extrabold leading-tight mb-4 text-white">
-          Get Featured in <span className="text-[#FFD84D]">Top Media</span> Outlets
-        </h1>
-        <p className="text-base sm:text-lg text-white/90">
-          Join thousands of experts connecting with journalists at top publications.
-        </p>
-      </div>
-
-      {/* Left: Hero Panel - Desktop only */}
-      <div className="hidden lg:flex flex-col justify-center items-center w-1/2 px-12 xl:px-16">
-        <div className="max-w-2xl w-full">
-          <h1 className="text-5xl xl:text-6xl font-extrabold leading-tight mb-8 text-white" style={{letterSpacing: '-0.01em'}}>
-            Get Featured in <span className="text-[#FFD84D]">Top Media</span> Outlets
-          </h1>
-          <p className="mb-12 text-xl xl:text-2xl max-w-xl text-white/90">
-            Join thousands of experts connecting with journalists at <span className="font-semibold">Forbes</span>, <span className="font-semibold">Bloomberg</span>, <span className="font-semibold">TechCrunch</span>, and more.
-          </p>
-          <ul className="space-y-8 xl:space-y-10 text-base xl:text-lg">
-            <li className="flex items-start gap-4">
-              <span className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-white/10 border border-white/20 flex-shrink-0">
-                <svg width="28" height="28" fill="none" stroke="#C7BFFF" strokeWidth="2" className=""><circle cx="14" cy="14" r="10" strokeDasharray="2 2" /><path d="M14 8v6l4 2" stroke="#C7BFFF"/></svg>
-              </span>
-              <span>
-                <span className="font-semibold text-white">Bid on Premium Opportunities</span>
-                <br />
-                <span className="text-sm xl:text-base text-white/70">Set your price and only pay when published</span>
-              </span>
-            </li>
-            <li className="flex items-start gap-4">
-              <span className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-white/10 border border-white/20 flex-shrink-0">
-                <svg width="28" height="28" fill="none" stroke="#C7BFFF" strokeWidth="2" className=""><circle cx="14" cy="14" r="10" strokeDasharray="2 2" /><path d="M10 10l8 8M18 10l-8 8" stroke="#C7BFFF"/></svg>
-              </span>
-              <span>
-                <span className="font-semibold text-white">AI-Powered Voice Pitches</span>
-                <br />
-                <span className="text-sm xl:text-base text-white/70">Record a pitch – we transcribe & attach it automatically</span>
-              </span>
-            </li>
-            <li className="flex items-start gap-4">
-              <span className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-white/10 border border-white/20 flex-shrink-0">
-                <svg width="28" height="28" fill="none" stroke="#C7BFFF" strokeWidth="2" className=""><circle cx="14" cy="14" r="10" strokeDasharray="2 2" /><path d="M14 8v6l4 2" stroke="#C7BFFF"/></svg>
-              </span>
-              <span>
-                <span className="font-semibold text-white">Verified Media Requests</span>
-                <br />
-                <span className="text-sm xl:text-base text-white/70">Every opportunity vetted by our editorial team</span>
-              </span>
-            </li>
-          </ul>
+    <>
+      <style dangerouslySetInnerHTML={{ __html: customStyles }} />
+      <div className="min-h-screen relative font-inter text-gray-900 overflow-hidden">
+        {/* ——— Premium dark gradient backdrop ——— */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-violet-900" />
+        {/* Overlay gradient for depth */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/10" />
+        {/* Animated mesh gradient */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
+          <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-violet-400 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
         </div>
-      </div>
-      
-      {/* Right: Signup Card */}
-      <div className="flex flex-col justify-center items-center w-full lg:w-1/2 min-h-[80vh] px-4 py-8 lg:px-8 xl:px-12">
-        <SignupCard className="w-full max-w-[480px] lg:max-w-[600px] xl:max-w-[700px] flex flex-col gap-6 lg:gap-8 min-h-[320px] rounded-2xl bg-white px-6 sm:px-8 lg:px-10 xl:px-12 py-8 lg:py-10 shadow-2xl">
-          <div className="text-center">
-            <h2 className="text-3xl lg:text-4xl font-extrabold mb-3 bg-gradient-to-r from-[#5B6EE1] to-[#7C3AED] bg-clip-text text-transparent">Join QuoteBid</h2>
-            <p className="text-gray-500 text-base lg:text-lg">Start connecting with top journalists today</p>
+
+        {/* ——— PREMIUM NAVBAR ——— */}
+        <header className="absolute top-0 w-full z-30 py-6 px-6 md:px-8">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <Link href="/" className="flex items-center group">
+              <span className="text-white font-black text-3xl tracking-tight">
+                <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Quote</span>
+                <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Bid</span>
+              </span>
+              <div className="ml-3 px-2 py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
+                Beta
+              </div>
+            </Link>
+            
+            <div className="flex items-center space-x-3">
+              <Button 
+                variant="ghost" 
+                className="text-white/80 hover:text-white hover:bg-white/10 font-semibold px-6 py-3 rounded-xl transition-all duration-300"
+                onClick={() => navigate('/login')}
+              >
+                Log In
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        <div className="relative z-20 flex flex-col lg:flex-row min-h-screen pt-24">
+          {/* Mobile Header - Show on small screens */}
+          <div className="lg:hidden px-6 pt-8 pb-4 text-center relative z-10">
+            <h1 className="text-4xl font-black leading-tight mb-4 text-white">
+              Get Featured in <span className="text-yellow-400">Top</span><br />Media Outlets
+            </h1>
+            <p className="text-lg text-gray-300 max-w-md mx-auto">
+              Join thousands of experts connecting with journalists at top publications.
+            </p>
+          </div>
+
+          {/* Left: Hero Panel - Desktop only */}
+          <div className="hidden lg:flex flex-col justify-center items-start w-1/2 pl-24 pr-6 xl:pl-28 xl:pr-8 relative z-10">
+            <div className="max-w-2xl w-full">
+              <h1 className="text-5xl xl:text-6xl font-black leading-tight mb-8 text-white" style={{letterSpacing: '-0.01em'}}>
+                Get Featured in <span className="text-yellow-400">Top</span><br />Media Outlets
+              </h1>
+              <p className="mb-12 text-xl xl:text-2xl max-w-xl text-gray-300">
+                Join thousands of experts connecting with journalists at <span className="font-semibold text-white">Forbes</span>, <span className="font-semibold text-white">Bloomberg</span>, <span className="font-semibold text-white">TechCrunch</span>, and more.
+              </p>
+              <ul className="space-y-8 xl:space-y-10 text-base xl:text-lg">
+                <li className="flex items-start gap-6">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h2m5 0h2a2 2 0 002-2V7a2 2 0 00-2-2h-2m-5 4h6m-6 4h6m-6-8h6" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="font-bold text-white text-lg">Bid on Premium Opportunities</div>
+                    <div className="text-gray-300 mt-1">Set your price and only pay when published</div>
+                  </div>
+                </li>
+                <li className="flex items-start gap-6">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="font-bold text-white text-lg">AI-Powered Voice Pitches</div>
+                    <div className="text-gray-300 mt-1">Record a pitch – we transcribe & attach it automatically</div>
+                  </div>
+                </li>
+                <li className="flex items-start gap-6">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-green-500/20 border border-green-400/30 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="font-bold text-white text-lg">Verified Media Requests</div>
+                    <div className="text-gray-300 mt-1">Every opportunity vetted by our editorial team</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
           </div>
           
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-5">
-              <Field error={errors.fullName} className="col-span-1">
-                <input 
-                  name="fullName" 
-                  value={form.fullName} 
-                  onChange={handleChange} 
-                  placeholder="Full Name" 
-                  className="rounded-xl border border-gray-200 px-5 py-3.5 lg:py-4 w-full text-base lg:text-lg transition-all hover:border-gray-300 focus:border-[#7B5FFF] focus:ring-2 focus:ring-[#7B5FFF]/20" 
-                  style={{background: '#f7f6fd'}} 
-                />
-              </Field>
-              <Field error={errors.username} className="col-span-1">
-                <input
-                  name="username"
-                  value={form.username}
-                  onChange={e => {
-                    // Prevent uppercase and spaces
-                    const value = e.target.value.replace(/[^a-z0-9_-]/g, '').toLowerCase();
-                    setForm(f => ({ ...f, username: value }));
-                  }}
-                  onBlur={() => handleBlur('username')}
-                  placeholder="Username"
-                  className="rounded-xl border border-gray-200 px-5 py-3.5 lg:py-4 w-full text-base lg:text-lg transition-all hover:border-gray-300 focus:border-[#7B5FFF] focus:ring-2 focus:ring-[#7B5FFF]/20"
-                  style={{background: '#f7f6fd'}}
-                />
-                <div className="h-4 mt-1">
-                  {usernameChecking && <div className="text-xs text-gray-400">Checking username...</div>}
-                  {!usernameChecking && !usernameUnique && <div className="text-xs text-red-500">Username is already taken.</div>}
+          {/* Right: Signup Card */}
+          <div className="flex flex-col justify-center items-center w-full lg:w-1/2 px-4 py-8 lg:px-8 relative z-10">
+            <div className="w-full max-w-[480px] lg:max-w-[560px] bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-5 lg:p-7">
+              <div className="text-center mb-5">
+                <h2 className="text-2xl lg:text-3xl font-black mb-2 text-white">Join QuoteBid</h2>
+                <p className="text-gray-300 text-sm lg:text-base">Start connecting with top journalists today</p>
+              </div>
+              
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
+                  <Field error={errors.fullName} className="col-span-1">
+                    <input 
+                      name="fullName" 
+                      value={form.fullName} 
+                      onChange={handleChange} 
+                      placeholder="Full Name" 
+                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" 
+                    />
+                  </Field>
+                  <Field error={errors.username} className="col-span-1">
+                    <input
+                      name="username"
+                      value={form.username}
+                      onChange={e => {
+                        // Prevent uppercase and spaces
+                        const value = e.target.value.replace(/[^a-z0-9_-]/g, '').toLowerCase();
+                        setForm(f => ({ ...f, username: value }));
+                      }}
+                      onBlur={() => handleBlur('username')}
+                      placeholder="Username"
+                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                    />
+                    <div className="h-4 mt-1">
+                      {usernameChecking && <div className="text-xs text-gray-300">Checking username...</div>}
+                      {!usernameChecking && !usernameUnique && <div className="text-xs text-red-400">Username is already taken.</div>}
+                    </div>
+                  </Field>
+                  <Field error={errors.email} className="col-span-1">
+                    <input
+                      name="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      onBlur={() => handleBlur('email')}
+                      placeholder="Email"
+                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                    />
+                    <div className="h-4 mt-1">
+                      {emailChecking && <div className="text-xs text-gray-300">Checking email...</div>}
+                      {!emailChecking && !emailValid && <div className="text-xs text-red-400">Please enter a valid email address.</div>}
+                      {!emailChecking && emailValid && !emailUnique && <div className="text-xs text-red-400">Email is already in use.</div>}
+                    </div>
+                  </Field>
+                  <Field error={errors.companyName} className="col-span-1">
+                    <input 
+                      name="companyName" 
+                      value={form.companyName} 
+                      onChange={handleChange} 
+                      placeholder="Company Name" 
+                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" 
+                    />
+                  </Field>
+                  <Field error={errors.phone} className="col-span-1 sm:col-span-2">
+                    <div className="flex gap-3">
+                      <select
+                        value={countryCode}
+                        onChange={(e) => setCountryCode(e.target.value)}
+                        className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-2 py-2.5 w-18 lg:w-20 text-sm lg:text-base text-white transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                      >
+                        {COUNTRY_CODES.map(({ code, country, flag }) => (
+                          <option key={code} value={code} className="bg-slate-800 text-white">
+                            {flag} {code}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        name="phone"
+                        value={form.phone}
+                        onChange={handleChange}
+                        onBlur={() => handleBlur('phone')}
+                        placeholder="Phone number"
+                        className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                        required
+                      />
+                    </div>
+                    <div className="h-4 mt-1">
+                      {phoneChecking && <div className="text-xs text-gray-300">Checking phone number...</div>}
+                      {!phoneChecking && !phoneValid && <div className="text-xs text-red-400">Please enter a valid phone number.</div>}
+                      {!phoneChecking && phoneValid && !phoneUnique && <div className="text-xs text-red-400">Phone number is already in use.</div>}
+                    </div>
+                  </Field>
+                  <Field error={errors.industry} className="col-span-1 sm:col-span-2">
+                    <div className="relative">
+                      <select
+                        name="industry"
+                        value={form.industry}
+                        onChange={handleChange}
+                        className="w-full rounded-xl px-4 py-2.5 text-sm lg:text-base font-medium text-white bg-white/10 backdrop-blur-md border border-white/20 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 appearance-none"
+                      >
+                        <option value="" disabled className="bg-slate-800 text-gray-300">Select your industry</option>
+                        {INDUSTRY_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value} className="bg-slate-800 text-white">{opt.label}</option>
+                        ))}
+                      </select>
+                      <svg className="pointer-events-none absolute right-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </Field>
+                  <Field error={errors.password} className="col-span-1">
+                    <input 
+                      name="password" 
+                      type="password" 
+                      value={form.password} 
+                      onChange={handleChange} 
+                      placeholder="Create password" 
+                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" 
+                    />
+                    <div className="h-4 mt-1">
+                      {form.password && form.password.length < 8 && <div className="text-xs text-red-400">Password must be at least 8 characters.</div>}
+                    </div>
+                  </Field>
+                  <Field error={errors.confirmPassword} className="col-span-1">
+                    <input 
+                      name="confirmPassword" 
+                      type="password" 
+                      value={form.confirmPassword} 
+                      onChange={handleChange} 
+                      placeholder="Confirm password" 
+                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" 
+                    />
+                    <div className="h-4 mt-1">
+                      {form.confirmPassword && !passwordsMatch && <div className="text-xs text-red-400">Passwords do not match.</div>}
+                    </div>
+                  </Field>
                 </div>
-              </Field>
-              <Field error={errors.email} className="col-span-1">
-                <input
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  onBlur={() => handleBlur('email')}
-                  placeholder="Email"
-                  className="rounded-xl border border-gray-200 px-5 py-3.5 lg:py-4 w-full text-base lg:text-lg transition-all hover:border-gray-300 focus:border-[#7B5FFF] focus:ring-2 focus:ring-[#7B5FFF]/20"
-                  style={{background: '#f7f6fd'}}
-                />
-                <div className="h-4 mt-1">
-                  {emailChecking && <div className="text-xs text-gray-400">Checking email...</div>}
-                  {!emailChecking && !emailValid && <div className="text-xs text-red-500">Please enter a valid email address.</div>}
-                  {!emailChecking && emailValid && !emailUnique && <div className="text-xs text-red-500">Email is already in use.</div>}
-                </div>
-              </Field>
-              <Field error={errors.companyName} className="col-span-1">
-                <input 
-                  name="companyName" 
-                  value={form.companyName} 
-                  onChange={handleChange} 
-                  placeholder="Company Name" 
-                  className="rounded-xl border border-gray-200 px-5 py-3.5 lg:py-4 w-full text-base lg:text-lg transition-all hover:border-gray-300 focus:border-[#7B5FFF] focus:ring-2 focus:ring-[#7B5FFF]/20" 
-                  style={{background: '#f7f6fd'}} 
-                />
-              </Field>
-              <Field error={errors.phone} className="col-span-1 sm:col-span-2">
-                <div className="flex gap-3">
-                  <select
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
-                    className="rounded-xl border border-gray-200 px-2 py-3.5 lg:py-4 w-20 lg:w-24 text-base lg:text-lg transition-all hover:border-gray-300 focus:border-[#7B5FFF] focus:ring-2 focus:ring-[#7B5FFF]/20"
-                    style={{ background: '#f7f6fd' }}
-                  >
-                    {COUNTRY_CODES.map(({ code, country, flag }) => (
-                      <option key={code} value={code}>
-                        {flag} {code}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    name="phone"
-                    value={form.phone}
-                    onChange={handleChange}
-                    onBlur={() => handleBlur('phone')}
-                    placeholder="Phone number"
-                    className="rounded-xl border border-gray-200 px-5 py-3.5 lg:py-4 w-full text-base lg:text-lg transition-all hover:border-gray-300 focus:border-[#7B5FFF] focus:ring-2 focus:ring-[#7B5FFF]/20"
-                    style={{ background: '#f7f6fd' }}
-                    required
+                
+                <div className="flex items-center mt-4 mb-4">
+                  <input 
+                    type="checkbox" 
+                    name="agreeTerms" 
+                    checked={form.agreeTerms} 
+                    onChange={handleChange} 
+                    className="accent-blue-500 w-5 h-5 border-2 border-white/30 rounded transition-all duration-150 mr-3 outline-none focus:outline-none cursor-pointer" 
+                    required 
                   />
+                  <label htmlFor="terms" className="text-sm lg:text-base font-medium text-gray-300 select-none cursor-pointer">
+                    I agree to the <Link href="/legal/terms" className="text-blue-400 underline font-semibold hover:text-blue-300 transition-colors">Terms of Service</Link>
+                  </label>
                 </div>
-                <div className="h-4 mt-1">
-                  {phoneChecking && <div className="text-xs text-gray-400">Checking phone number...</div>}
-                  {!phoneChecking && !phoneValid && <div className="text-xs text-red-500">Please enter a valid phone number.</div>}
-                  {!phoneChecking && phoneValid && !phoneUnique && <div className="text-xs text-red-500">Phone number is already in use.</div>}
-                </div>
-              </Field>
-              <Field error={errors.industry} className="col-span-1 sm:col-span-2">
-                <div className="relative">
-                  <select
-                    name="industry"
-                    value={form.industry}
-                    onChange={handleChange}
-                    className="w-full rounded-xl px-5 py-3.5 lg:py-4 text-base lg:text-lg font-medium text-[#2d3142] bg-[#f7f6fd] border border-[#eceaf6] transition-all hover:border-gray-300 focus:border-[#7B5FFF] focus:ring-2 focus:ring-[#7B5FFF]/20 appearance-none"
-                    style={{ boxShadow: 'none', outline: 'none' }}
-                  >
-                    <option value="" disabled>Select your industry</option>
-                    {INDUSTRY_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                  <svg className="pointer-events-none absolute right-5 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#2d3142]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </Field>
-              <Field error={errors.password} className="col-span-1">
-                <input 
-                  name="password" 
-                  type="password" 
-                  value={form.password} 
-                  onChange={handleChange} 
-                  placeholder="Create password" 
-                  className="rounded-xl border border-gray-200 px-5 py-3.5 lg:py-4 w-full text-base lg:text-lg transition-all hover:border-gray-300 focus:border-[#7B5FFF] focus:ring-2 focus:ring-[#7B5FFF]/20" 
-                  style={{background: '#f7f6fd'}} 
-                />
-                <div className="h-4 mt-1">
-                  {form.password && form.password.length < 8 && <div className="text-xs text-red-500">Password must be at least 8 characters.</div>}
-                </div>
-              </Field>
-              <Field error={errors.confirmPassword} className="col-span-1">
-                <input 
-                  name="confirmPassword" 
-                  type="password" 
-                  value={form.confirmPassword} 
-                  onChange={handleChange} 
-                  placeholder="Confirm password" 
-                  className="rounded-xl border border-gray-200 px-5 py-3.5 lg:py-4 w-full text-base lg:text-lg transition-all hover:border-gray-300 focus:border-[#7B5FFF] focus:ring-2 focus:ring-[#7B5FFF]/20" 
-                  style={{background: '#f7f6fd'}} 
-                />
-                <div className="h-4 mt-1">
-                  {form.confirmPassword && !passwordsMatch && <div className="text-xs text-red-500">Passwords do not match.</div>}
-                </div>
-              </Field>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full py-2.5 text-sm lg:text-base font-semibold rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-violet-700 text-white transition-all duration-300 shadow-xl hover:shadow-2xl" 
+                  disabled={!isFormComplete}
+                >
+                  Create Account
+                </Button>
+              </form>
             </div>
-            
-            <div className="flex items-center mt-6 mb-6">
-              <input 
-                type="checkbox" 
-                name="agreeTerms" 
-                checked={form.agreeTerms} 
-                onChange={handleChange} 
-                className="accent-[#7B5FFF] w-5 h-5 border-2 border-[#D1D5DB] rounded transition-all duration-150 mr-3 outline-none focus:outline-none cursor-pointer" 
-                required 
-              />
-              <label htmlFor="terms" className="text-base lg:text-lg font-medium text-gray-700 select-none cursor-pointer">
-                I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#7B5FFF] underline font-semibold hover:text-[#6B4FEF] transition-colors">Terms of Service</a>
-              </label>
-            </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full py-4 lg:py-5 text-lg lg:text-xl font-semibold rounded-xl bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] hover:opacity-90 flex items-center justify-center gap-2 shadow-xl transition-all hover:shadow-2xl" 
-              disabled={!isFormComplete}
-            >
-              Create Account
-            </Button>
-          </form>
-        </SignupCard>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
