@@ -12,7 +12,8 @@
 import { config } from "dotenv";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { eq, sql, gt, and } from "drizzle-orm";
+import { eq, sql, gt, and, gte } from "drizzle-orm";
+import { subMinutes } from "date-fns";
 import { 
   opportunities, 
   price_snapshots, 
@@ -256,19 +257,39 @@ async function fetchLiveOpportunities(): Promise<Array<Opportunity & {
 }
 
 /**
+ * Count email clicks in the last hour for pricing emails only
+ */
+async function emailClicksLastHour(oppId: number): Promise<number> {
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(emailClicks)
+    .where(
+      and(
+        eq(emailClicks.opportunityId, oppId),
+        gte(emailClicks.clickedAt, subMinutes(new Date(), 60))
+      )
+    );
+  
+  return Number(result[0]?.count || 0);
+}
+
+/**
  * Build pricing snapshot for an opportunity
  */
-function buildPricingSnapshot(
+async function buildPricingSnapshot(
   opp: Opportunity & {
     pitchCount: number;
     clickCount: number;
     saveCount: number; 
     draftCount: number;
   }
-): PricingSnapshot {
+): Promise<PricingSnapshot> {
   const now = new Date();
   const deadline = new Date(opp.deadline!);
   const hoursRemaining = Math.max(0, (deadline.getTime() - now.getTime()) / (1000 * 60 * 60));
+  
+  // Get email clicks in the last hour
+  const emailClicks1h = await emailClicksLastHour(opp.id);
   
   return {
     opportunityId: opp.id.toString(),
@@ -278,7 +299,7 @@ function buildPricingSnapshot(
     clicks: opp.clickCount,
     saves: opp.saveCount,
     drafts: opp.draftCount,
-    emailClicks1h: 0, // TODO: Implement email click tracking in worker
+    emailClicks1h,
     hoursRemaining,
     outlet_avg_price: undefined, // TODO: Add outlet metrics
     successRateOutlet: undefined, // TODO: Add outlet metrics
@@ -358,7 +379,7 @@ async function processPricingTick(): Promise<void> {
     const gptBatch: PricingSnapshot[] = [];
     
     for (const opp of liveOpps) {
-      const snapshot = buildPricingSnapshot(opp);
+      const snapshot = await buildPricingSnapshot(opp);
       const newPrice = computePrice(snapshot, pricingConfig);
       const currentPrice = snapshot.current_price;
       const priceDelta = newPrice - currentPrice;
@@ -366,7 +387,7 @@ async function processPricingTick(): Promise<void> {
       if (newPrice !== currentPrice) {
         // 🐛 DEBUG: Log pricing decision details
         console.log(`🧮 PRICING CALC OPP ${opp.id}:`);
-        console.log(`   📊 Metrics: ${snapshot.pitches} pitches, ${snapshot.clicks} clicks, ${snapshot.saves} saves, ${snapshot.drafts} drafts`);
+        console.log(`   📊 Metrics: ${snapshot.pitches} pitches, ${snapshot.clicks} clicks, ${snapshot.saves} saves, ${snapshot.drafts} drafts, ${snapshot.emailClicks1h} email clicks`);
         console.log(`   ⏱️  Time: ${snapshot.hoursRemaining.toFixed(1)} hours remaining`);
         console.log(`   💰 Price: $${currentPrice} → $${newPrice} (Δ${priceDelta > 0 ? '+' : ''}$${priceDelta})`);
         
