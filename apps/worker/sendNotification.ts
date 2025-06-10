@@ -9,7 +9,7 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { eq, sql } from "drizzle-orm";
 import { config } from "dotenv";
 import { opportunities } from "../../shared/schema";
-import { sendWebPush } from "../../lib/sendWebPush";
+
 import { sendPricingNotificationEmail } from "../../server/lib/email";
 // Import database initialization for web push notifications
 import { initializeDatabase } from "../../server/db";

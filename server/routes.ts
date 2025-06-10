@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { processVoiceRecording } from "./lib/voice";
 import { increaseBidAmount } from "./lib/bidding";
 import { z } from "zod";
-import { insertBidSchema, insertOpportunitySchema, insertPitchSchema, insertPublicationSchema, insertSavedOpportunitySchema, User, PlacementWithRelations, users, pitches, opportunities, publications, notifications, placements, price_snapshots, variable_registry, pricing_config, push_subscriptions, insertPushSubscriptionSchema, mediaCoverage, emailClicks } from "@shared/schema";
+import { insertBidSchema, insertOpportunitySchema, insertPitchSchema, insertPublicationSchema, insertSavedOpportunitySchema, User, PlacementWithRelations, users, pitches, opportunities, publications, notifications, placements, price_snapshots, variable_registry, pricing_config, mediaCoverage, emailClicks } from "@shared/schema";
 import { getDb } from "./db";
 import { eq, sql, desc, and, ne, asc, isNull, isNotNull, gte, lte, or, inArray, gt } from "drizzle-orm";
 import { notificationService } from "./services/notification-service";
@@ -24,7 +24,7 @@ import { setupAdminAuth, requireAdminAuth } from "./admin-auth-middleware";
 import { enforceOnboarding } from "./middleware/enforceOnboarding";
 import { jwtAuth } from "./middleware/jwtAuth";
 import { ensureAuth } from "./middleware/ensureAuth";
-import { getVapidPublicKey } from "../lib/sendWebPush";
+
 import upload from './middleware/upload';
 import pdfUpload from './middleware/pdfUpload';
 import path from 'path';
@@ -9304,96 +9304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ============ PUSH NOTIFICATION ENDPOINTS ============
-  
-  // GET /api/push/vapid-public - Get VAPID public key for client subscription
-  app.get("/api/push/vapid-public", async (req: Request, res: Response) => {
-    try {
-      const publicKey = await getVapidPublicKey();
-      res.json({ key: publicKey });
-    } catch (error: any) {
-      console.error("Error fetching VAPID public key:", error);
-      res.status(500).json({ message: "Failed to fetch VAPID public key" });
-    }
-  });
-  
-  // POST /api/push/subscribe - Subscribe user to push notifications
-  app.post("/api/push/subscribe", jwtAuth, async (req: Request, res: Response) => {
-    try {
-      if (!req.user?.id) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      const { subscription } = req.body;
-      if (!subscription || !subscription.endpoint) {
-        return res.status(400).json({ message: "Invalid subscription data" });
-      }
-      
-      // Validate subscription with Zod
-      const validationResult = insertPushSubscriptionSchema.safeParse({
-        user_id: req.user.id,
-        endpoint: subscription.endpoint,
-        subscription,
-      });
-      
-      if (!validationResult.success) {
-        return res.status(400).json({ 
-          message: "Invalid subscription format", 
-          errors: validationResult.error.errors 
-        });
-      }
-      
-      // Upsert subscription (update if endpoint exists, insert if new)
-      await getDb()
-        .insert(push_subscriptions)
-        .values(validationResult.data)
-        .onConflictDoUpdate({
-          target: push_subscriptions.endpoint,
-          set: {
-            subscription: validationResult.data.subscription,
-            user_id: validationResult.data.user_id,
-            created_at: new Date(),
-          },
-        });
-      
-      console.log(`📱 Push subscription registered for user ${req.user.id}`);
-      res.status(200).json({ ok: true, message: "Push subscription registered" });
-      
-    } catch (error: any) {
-      console.error("Error registering push subscription:", error);
-      res.status(500).json({ message: "Failed to register push subscription" });
-    }
-  });
-  
-  // DELETE /api/push/unsubscribe - Unsubscribe user from push notifications
-  app.delete("/api/push/unsubscribe", jwtAuth, async (req: Request, res: Response) => {
-    try {
-      if (!req.user?.id) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      const { endpoint } = req.body;
-      if (!endpoint) {
-        return res.status(400).json({ message: "Endpoint is required" });
-      }
-      
-      await getDb()
-        .delete(push_subscriptions)
-        .where(
-          and(
-            eq(push_subscriptions.user_id, req.user.id),
-            eq(push_subscriptions.endpoint, endpoint)
-          )
-        );
-      
-      console.log(`📱 Push subscription removed for user ${req.user.id}, endpoint: ${endpoint}`);
-      res.status(200).json({ ok: true, message: "Push subscription removed" });
-      
-    } catch (error: any) {
-      console.error("Error removing push subscription:", error);
-      res.status(500).json({ message: "Failed to remove push subscription" });
-    }
-  });
+
 
   // ============ RESEND PRICING WEBHOOK ============
   

@@ -378,23 +378,31 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                   <ul className="space-y-2.5">
                     <li className="flex items-start gap-2.5">
                       <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-white text-sm">Unlimited access to all media opportunities</span>
+                      <span className="text-white text-sm">Full access to all live media opportunities</span>
                     </li>
                     <li className="flex items-start gap-2.5">
                       <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-white text-sm">Direct messaging with journalists</span>
+                      <span className="text-white text-sm">Dynamic pricing — no retainers, no fixed fees</span>
                     </li>
                     <li className="flex items-start gap-2.5">
                       <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-white text-sm">Premium placement in search results</span>
+                      <span className="text-white text-sm">New opportunities added daily</span>
                     </li>
                     <li className="flex items-start gap-2.5">
                       <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-white text-sm">Advanced analytics and reporting</span>
+                      <span className="text-white text-sm">Interactive market chart with live price updates</span>
                     </li>
                     <li className="flex items-start gap-2.5">
                       <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-white text-sm">Expert profile optimization</span>
+                      <span className="text-white text-sm">Track pitch status and history</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-white text-sm">Record and submit pitches with your voice</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-white text-sm">Fast, minimal UI built for professionals</span>
                     </li>
                   </ul>
                 </div>

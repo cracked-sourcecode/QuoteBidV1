@@ -28,7 +28,7 @@ import { AdminAuthProvider, useAdminAuth } from "@/hooks/use-admin-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { AdminProtectedRoute } from "@/lib/admin-protected-route";
 import { useEffect, useState, useContext } from "react";
-import { usePushSubscribe } from "@/hooks/usePushSubscribe";
+
 import { PriceProvider } from "@/contexts/PriceContext";
 import AdminDashboard from "@/pages/admin/index";
 import OpportunitiesManager from "@/pages/admin/opportunities-manager-new";
@@ -104,9 +104,6 @@ function AdminLogoutHandler() {
 }
 
 function Router() {
-  // Initialize push notifications for authenticated users
-  usePushSubscribe();
-  
   // Note: Removed usePriceUpdates() since we're using PriceContext system now
   
   return (

@@ -8,7 +8,7 @@ import { getSignupEmail, getSignupData, updateSignupProfile, clearSignupData } f
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
 import { post } from '@/lib/api';
 import { apiFetch } from '@/lib/apiFetch';
-import { INDUSTRY_OPTIONS } from "@/lib/constants";
+
 
 interface ProfileStepProps {
   onComplete: (jwt: string) => void;
@@ -29,7 +29,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
   const [fullName, setFullName] = useState('');
   const [location, setLocation] = useState('');
   const [title, setTitle] = useState('');
-  const [industry, setIndustry] = useState('');
+
   const [bio, setBio] = useState('');
   const [linkedin, setLinkedin] = useState('');
   const [website, setWebsite] = useState('');
@@ -58,9 +58,9 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
       toast({ title: 'Error', description: 'Email not found. Please restart the signup process.', variant: 'destructive' });
       return;
     }
-    if (!fullName.trim() || !location.trim() || !title.trim() || !industry.trim() || !bio.trim() || 
-        !linkedin.trim() || !website.trim() || !twitter.trim() || !instagram.trim() || !doFollow || !avatar) {
-      toast({ title: 'Required Fields', description: 'Please fill out all fields and upload a profile photo to complete your profile.', variant: 'destructive' });
+    // Only validate required fields
+    if (!fullName.trim() || !location.trim() || !title.trim() || !bio.trim()) {
+      toast({ title: 'Required Fields', description: 'Please fill out all required fields to complete your profile.', variant: 'destructive' });
       return;
     }
     setIsLoading(true);
@@ -69,7 +69,6 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
         fullName,
         location,
         title,
-        industry,
         bio,
         linkedin,
         website,
@@ -128,16 +127,10 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
 
         <form onSubmit={handleSubmit} className="p-6 sm:p-8">
           {/* Required Fields Notice */}
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>All fields and profile photo are required</strong> to ensure journalists have complete information about your expertise.
-            </p>
-          </div>
-
           {/* Avatar Upload Section */}
           <div className="mb-8 text-center">
             <Label className="text-sm font-medium text-gray-700 mb-3 block">
-              Profile Photo *
+              Profile Photo
             </Label>
             <div className="relative inline-block">
               <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center mx-auto border-4 border-white shadow-lg">
@@ -155,18 +148,12 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
                   accept="image/*"
                   onChange={handleAvatarChange}
                   className="hidden"
-                  required
                 />
               </label>
             </div>
             <p className="text-xs sm:text-sm text-gray-500 mt-3">
               Professional headshots get 7x more responses
             </p>
-            {!avatarPreview && (
-              <p className="text-xs text-red-600 mt-2">
-                Please upload a profile photo
-              </p>
-            )}
           </div>
 
           {/* Form Fields */}
@@ -203,47 +190,23 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
               </div>
             </div>
 
-            {/* Title and Industry */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="title" className="text-sm font-medium text-gray-700 mb-1 block">
-                  Professional Title *
-                </Label>
-                <Input 
-                  id="title" 
-                  type="text" 
-                  value={title} 
-                  onChange={e => setTitle(e.target.value)} 
-                  required
-                  placeholder="CEO, Founder, Expert, etc."
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Your professional title (e.g., "CEO of QuoteBid", "Finance Expert", etc.)
-                </p>
-              </div>
-              <div>
-                <Label htmlFor="industry" className="text-sm font-medium text-gray-700 mb-1 block">
-                  Primary Industry *
-                </Label>
-                <div className="relative">
-                  <select
-                    id="industry"
-                    value={industry}
-                    onChange={e => setIndustry(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all appearance-none bg-white"
-                  >
-                    <option value="">Select your industry</option>
-                    {INDUSTRY_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                  <svg className="pointer-events-none absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
+            {/* Professional Title */}
+            <div>
+              <Label htmlFor="title" className="text-sm font-medium text-gray-700 mb-1 block">
+                Professional Title *
+              </Label>
+              <Input 
+                id="title" 
+                type="text" 
+                value={title} 
+                onChange={e => setTitle(e.target.value)} 
+                required
+                placeholder="CEO, Founder, Expert, etc."
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Your professional title (e.g., "CEO of QuoteBid", "Finance Expert", etc.)
+              </p>
             </div>
 
             {/* Bio */}
@@ -266,74 +229,69 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
 
             {/* Online Presence Section */}
             <div className="bg-gray-50 rounded-xl p-4 sm:p-6">
-              <h3 className="font-semibold text-lg mb-4">Online Presence *</h3>
+              <h3 className="font-semibold text-lg mb-4">Online Presence</h3>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="linkedin" className="text-sm font-medium text-gray-700 mb-1 block">
-                    LinkedIn *
+                    LinkedIn
                   </Label>
                   <Input 
                     id="linkedin" 
                     type="url" 
                     value={linkedin} 
                     onChange={e => setLinkedin(e.target.value)} 
-                    required
                     placeholder="https://linkedin.com/in/username"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                   />
                 </div>
                 <div>
                   <Label htmlFor="website" className="text-sm font-medium text-gray-700 mb-1 block">
-                    Website *
+                    Website
                   </Label>
                   <Input 
                     id="website" 
                     type="url" 
                     value={website} 
                     onChange={e => setWebsite(e.target.value)} 
-                    required
                     placeholder="https://yourwebsite.com"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                   />
                 </div>
                 <div>
                   <Label htmlFor="twitter" className="text-sm font-medium text-gray-700 mb-1 block">
-                    X / Twitter *
+                    X / Twitter
                   </Label>
                   <Input 
                     id="twitter" 
                     type="url" 
                     value={twitter} 
                     onChange={e => setTwitter(e.target.value)} 
-                    required
                     placeholder="https://x.com/username"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                   />
                 </div>
                 <div>
                   <Label htmlFor="instagram" className="text-sm font-medium text-gray-700 mb-1 block">
-                    Instagram *
+                    Instagram
                   </Label>
                   <Input 
                     id="instagram" 
                     type="url" 
                     value={instagram} 
                     onChange={e => setInstagram(e.target.value)} 
-                    required
                     placeholder="https://instagram.com/username"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                   />
                 </div>
                 <div>
                   <Label htmlFor="doFollow" className="text-sm font-medium text-gray-700 mb-1 block">
-                    Do-Follow Link (For article placements) *
+                    Do-Follow Link (For article placements)
                   </Label>
                   <div className="relative">
                     <select 
                       id="doFollow" 
                       value={doFollow} 
                       onChange={e => setDoFollow(e.target.value)} 
-                      required
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all appearance-none bg-white"
                     >
                       <option value="">Select a do-follow link</option>
@@ -360,19 +318,19 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
               <div className="space-y-2">
                 <div className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">Get discovered by top-tier journalists</span>
+                  <span className="text-sm text-gray-700">Improve your visibility for relevant media opportunities</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">Build your media presence and authority</span>
+                  <span className="text-sm text-gray-700">Strengthen your credibility when pitching</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">Automated matching with relevant opportunities</span>
+                  <span className="text-sm text-gray-700">Enable better targeting based on your background</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">Journalists see your full profile before pitching</span>
+                  <span className="text-sm text-gray-700">Give journalists the context they need to evaluate your pitch</span>
                 </div>
               </div>
             </div>

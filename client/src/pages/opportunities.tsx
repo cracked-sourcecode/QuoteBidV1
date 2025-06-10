@@ -20,7 +20,7 @@ import { Opportunity } from '@shared/types/opportunity';
 import { useAuth } from '@/hooks/use-auth';
 import { apiRequest } from '@/lib/queryClient';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
-import { PushNotificationBanner } from '@/components/PushNotificationBanner';
+
 
 export default function OpportunitiesPage() {
   const [, setLocation] = useLocation();
@@ -217,10 +217,7 @@ export default function OpportunitiesPage() {
         </div>
       </div>
       
-      {/* Push Notification Banner */}
-      <div className="px-4 sm:px-6 lg:px-8 py-4 bg-white">
-        <PushNotificationBanner />
-      </div>
+
       
       {/* Search and filters */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 border-b border-gray-200 bg-white">
