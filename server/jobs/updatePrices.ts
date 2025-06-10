@@ -18,7 +18,7 @@ import {
   savedOpportunities,
   type Opportunity
 } from "../../shared/schema";
-import { computePrice } from "../../lib/pricing/pricingEngine";
+import { calculatePrice } from "../../lib/pricing/pricingEngine";
 
 // Load environment variables
 config();
@@ -193,7 +193,7 @@ export async function updatePrices(): Promise<void> {
     for (const opp of liveOpps) {
       const signals = await buildSignals(opp, Date.now());
       
-      const price = computePrice(signals, {
+      const result = calculatePrice(signals, {
         weights: {
           pitches: 1.0,
           clicks: 0.3,
@@ -210,13 +210,13 @@ export async function updatePrices(): Promise<void> {
       });
       
       // Only update if price changed
-      if (price !== Number(opp.current_price)) {
+      if (result.price !== Number(opp.current_price)) {
         await db
           .update(opportunities)
           .set({
-            current_price: price.toString(),
-            // meta: meta, // JSON blob for chart/debug - TODO: Add in Step 3
-            // lastDriftAt: meta.driftApplied ? new Date() : opp.lastDriftAt, // TODO: Add in Step 3
+            current_price: result.price.toString(),
+            meta: result.meta, // V2 telemetry metadata
+            lastDriftAt: result.meta.driftApplied ? BigInt(Date.now()) : opp.lastDriftAt,
           })
           .where(eq(opportunities.id, opp.id));
         
@@ -225,12 +225,12 @@ export async function updatePrices(): Promise<void> {
           .insert(price_snapshots)
           .values({
             opportunity_id: opp.id,
-            suggested_price: price.toString(),
+            suggested_price: result.price.toString(),
             snapshot_payload: signals as any,
           });
         
         updatedCount++;
-        console.log(`💰 Updated OPP ${opp.id}: $${opp.current_price} → $${price}`);
+        console.log(`💰 Updated OPP ${opp.id}: $${opp.current_price} → $${result.price} (score: ${result.meta.score.toFixed(2)})`);
       }
     }
     

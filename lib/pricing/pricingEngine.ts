@@ -36,8 +36,21 @@ export interface PricingConfig {
   ceil: number; // Maximum price
 }
 
+export interface PricingMeta {
+  score: number;
+  driftApplied: boolean;
+  outletLoadPenalty?: number;
+  ambientDrift?: number;
+  lastCalculated: string;
+}
+
+export interface PricingResult {
+  price: number;
+  meta: PricingMeta;
+}
+
 /**
- * Computes the new price for an opportunity based on current market conditions
+ * V2 Pricing Engine - Returns both price and metadata
  * 
  * Algorithm:
  * 1. Demand score = pitches × w.pitches + clicks × w.clicks + ...
@@ -46,9 +59,9 @@ export interface PricingConfig {
  * 4. Risk adj. = (1 - successRateOutlet) × w.successRateOutlet
  * 5. Delta = elasticity × demand + yieldPull - supplyPressure - riskAdj
  * 6. Move = Math.sign(delta) × priceStep
- * 7. Return clamp(currentPrice + move, floor, ceil)
+ * 7. Return clamp(currentPrice + move, floor, ceil) + metadata
  */
-export function computePrice(input: PricingSnapshot, cfg: PricingConfig): number {
+export function calculatePrice(input: PricingSnapshot, cfg: PricingConfig): PricingResult {
   const { weights, priceStep, elasticity, floor, ceil } = cfg;
   
   // Step 1: Calculate demand score
@@ -85,7 +98,35 @@ export function computePrice(input: PricingSnapshot, cfg: PricingConfig): number
 
   // Step 7: Apply move and clamp to bounds
   const newPrice = input.current_price + move;
-  return clamp(newPrice, floor, ceil);
+  const price = clamp(newPrice, floor, ceil);
+
+  // Step 8: Build metadata
+  const meta: PricingMeta = {
+    score: demandScore + yieldPull - supplyPressure - riskAdjustment,
+    driftApplied: Math.abs(move) > 0 && Math.abs(delta) < 0.1, // Small moves might be drift
+    outletLoadPenalty: input.outlet_avg_price ? yieldPull : undefined,
+    ambientDrift: Math.abs(delta) < 0.1 ? move : undefined,
+    lastCalculated: new Date().toISOString(),
+  };
+
+  return { price, meta };
+}
+
+/**
+ * Legacy V1 function - Returns only price for backwards compatibility
+ * 
+ * Algorithm:
+ * 1. Demand score = pitches × w.pitches + clicks × w.clicks + ...
+ * 2. Supply pressure = decay24h(hrsRemaining) when hrs < 24, else hrsRemaining/72
+ * 3. Yield pull = (outletAvgPrice - currentPrice) / outletAvgPrice  
+ * 4. Risk adj. = (1 - successRateOutlet) × w.successRateOutlet
+ * 5. Delta = elasticity × demand + yieldPull - supplyPressure - riskAdj
+ * 6. Move = Math.sign(delta) × priceStep
+ * 7. Return clamp(currentPrice + move, floor, ceil)
+ */
+export function computePrice(input: PricingSnapshot, cfg: PricingConfig): number {
+  const result = calculatePrice(input, cfg);
+  return result.price;
 }
 
 /**
