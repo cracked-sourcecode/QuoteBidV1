@@ -241,6 +241,13 @@ export const mediaCoverage = pgTable("media_coverage", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Email clicks table for tracking clicks on pricing emails only
+export const emailClicks = pgTable("email_clicks", {
+  id: serial("id").primaryKey(),
+  opportunityId: integer("opportunity_id").notNull().references(() => opportunities.id, { onDelete: 'cascade' }),
+  clickedAt: timestamp("clicked_at").notNull(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true })
@@ -321,6 +328,8 @@ export const insertMediaCoverageSchema = createInsertSchema(mediaCoverage)
     placementId: z.number().optional(),
   });
 
+export const insertEmailClickSchema = createInsertSchema(emailClicks).omit({ id: true });
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -370,6 +379,9 @@ export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema
 export type MediaCoverage = typeof mediaCoverage.$inferSelect;
 export type InsertMediaCoverage = z.infer<typeof insertMediaCoverageSchema>;
 
+export type EmailClick = typeof emailClicks.$inferSelect;
+export type InsertEmailClick = z.infer<typeof insertEmailClickSchema>;
+
 // Define relationships between tables
 export const usersRelations = relations(users, ({ many, one }) => ({
   bids: many(bids),
@@ -409,6 +421,7 @@ export const opportunitiesRelations = relations(opportunities, ({ one, many }) =
   savedOpportunities: many(savedOpportunities),
   placements: many(placements),
   priceSnapshots: many(price_snapshots),
+  emailClicks: many(emailClicks),
 }));
 
 export const bidsRelations = relations(bids, ({ one }) => ({
@@ -486,6 +499,13 @@ export const mediaCoverageRelations = relations(mediaCoverage, ({ one }) => ({
   placement: one(placements, {
     fields: [mediaCoverage.placementId],
     references: [placements.id],
+  }),
+}));
+
+export const emailClicksRelations = relations(emailClicks, ({ one }) => ({
+  opportunity: one(opportunities, {
+    fields: [emailClicks.opportunityId],
+    references: [opportunities.id],
   }),
 }));
 

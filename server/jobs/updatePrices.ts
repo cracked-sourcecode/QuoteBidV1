@@ -16,6 +16,7 @@ import {
   pricing_config,
   pitches,
   savedOpportunities,
+  emailClicks,
   type Opportunity
 } from "../../shared/schema";
 import { calculatePrice } from "../../lib/pricing/pricingEngine";
@@ -47,6 +48,7 @@ async function buildSignals(opp: Opportunity & { pitchCount: number; clickCount:
   // Get real signal data
   const clicksLast10m = await countEvents(opp.id, "click", 10);
   const pitchesLast10m = await countEvents(opp.id, "pitch", 10);
+  const emailClicks1h = await emailClicksLastHour(opp.id);
   const lastInteractionMins = await minsSinceLastInteraction(opp.id);
   const outletLoad = await countOpenOutletLoad(opp.publicationId);
   
@@ -62,6 +64,7 @@ async function buildSignals(opp: Opportunity & { pitchCount: number; clickCount:
     clicks,
     saves: opp.saveCount,
     drafts: opp.draftCount,
+    emailClicks1h,
     hoursRemaining,
     clicksLast10m,
     pitchesLast10m,
@@ -150,6 +153,21 @@ async function countEvents(oppId: number, event: "click" | "pitch", mins: number
   return 0;
 }
 
+// Returns count of email clicks in the last hour for pricing emails only
+async function emailClicksLastHour(oppId: number): Promise<number> {
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(emailClicks)
+    .where(
+      and(
+        eq(emailClicks.opportunityId, oppId),
+        gte(emailClicks.clickedAt, subMinutes(new Date(), 60))
+      )
+    );
+  
+  return Number(result[0]?.count || 0);
+}
+
 // Returns minutes since the last interaction of ANY kind (placeholder implementation)
 async function minsSinceLastInteraction(oppId: number): Promise<number> {
   // Check last pitch as proxy for interaction until full event tracking is implemented
@@ -199,6 +217,7 @@ export async function updatePrices(): Promise<void> {
           clicks: 0.3,
           saves: 0.2,
           drafts: 0.1,
+          emailClickBoost: 0.05, // New email click boost weight
           outlet_avg_price: -1.0,
           successRateOutlet: -0.5,
           hoursRemaining: -1.2,
@@ -230,7 +249,7 @@ export async function updatePrices(): Promise<void> {
           });
         
         updatedCount++;
-        console.log(`💰 Updated OPP ${opp.id}: $${opp.current_price} → $${result.price} (score: ${result.meta.score.toFixed(2)})`);
+        console.log(`💰 Updated OPP ${opp.id}: $${opp.current_price} → $${result.price} (score: ${result.meta.score.toFixed(2)}, emailClicks1h: ${signals.emailClicks1h})`);
       }
     }
     
@@ -240,4 +259,4 @@ export async function updatePrices(): Promise<void> {
     console.error("❌ Error in updatePrices job:", error);
     throw error;
   }
-} 
+}

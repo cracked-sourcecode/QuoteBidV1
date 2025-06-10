@@ -20,6 +20,7 @@ import {
   pricing_config,
   pitches,
   savedOpportunities,
+  emailClicks,
   type Opportunity
 } from "../../shared/schema";
 import { 
@@ -179,6 +180,7 @@ function buildPricingConfig(weights: Record<string, number>, config: any): Prici
       clicks: weights.clicks || 0.3,
       saves: weights.saves || 0.2,
       drafts: weights.drafts || 0.1,
+      emailClickBoost: Number(config.emailClickBoost) || 0.05,
       outlet_avg_price: weights.outlet_avg_price || -1.0,
       successRateOutlet: weights.successRateOutlet || -0.5,
       hoursRemaining: weights.hoursRemaining || -1.2,
@@ -276,6 +278,7 @@ function buildPricingSnapshot(
     clicks: opp.clickCount,
     saves: opp.saveCount,
     drafts: opp.draftCount,
+    emailClicks1h: 0, // TODO: Implement email click tracking in worker
     hoursRemaining,
     outlet_avg_price: undefined, // TODO: Add outlet metrics
     successRateOutlet: undefined, // TODO: Add outlet metrics

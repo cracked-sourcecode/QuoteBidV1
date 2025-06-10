@@ -69,6 +69,22 @@ const WEIGHT_TUNING_GUIDE = [
     example: "7 → 10 minutes",
     description: "Reduces frequency of ambient adjustments",
     currentKey: "ambient.triggerMins"
+  },
+  {
+    symptom: "Email engagement not boosting prices enough",
+    weight: "emailClickBoost",
+    direction: "Increase",
+    example: "0.05 → 0.1",
+    description: "Stronger boost for pricing email clicks",
+    currentKey: "emailClickBoost"
+  },
+  {
+    symptom: "Email clicks causing price volatility",
+    weight: "emailClickBoost",
+    direction: "Decrease",
+    example: "0.05 → 0.02",
+    description: "Gentler boost for pricing email engagement",
+    currentKey: "emailClickBoost"
   }
 ];
 
@@ -123,6 +139,7 @@ export default function AdminPricing() {
     conversionPenalty?: number;
     pitchVelocityBoost?: number;
     outletLoadPenalty?: number;
+    emailClickBoost?: number;
   }>({});
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [isSaving, setIsSaving] = useState(false);
@@ -296,6 +313,15 @@ export default function AdminPricing() {
       max: 0,
       step: 0.1, 
       default: -0.2
+    },
+    {
+      key: 'emailClickBoost',
+      label: 'Email-click boost',
+      description: 'Boost applied when users click pricing emails',
+      min: 0,
+      max: 1,
+      step: 0.01,
+      default: 0.05
     }
   ];
 

@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { processVoiceRecording } from "./lib/voice";
 import { increaseBidAmount } from "./lib/bidding";
 import { z } from "zod";
-import { insertBidSchema, insertOpportunitySchema, insertPitchSchema, insertPublicationSchema, insertSavedOpportunitySchema, User, PlacementWithRelations, users, pitches, opportunities, publications, notifications, placements, price_snapshots, variable_registry, pricing_config, push_subscriptions, insertPushSubscriptionSchema, mediaCoverage } from "@shared/schema";
+import { insertBidSchema, insertOpportunitySchema, insertPitchSchema, insertPublicationSchema, insertSavedOpportunitySchema, User, PlacementWithRelations, users, pitches, opportunities, publications, notifications, placements, price_snapshots, variable_registry, pricing_config, push_subscriptions, insertPushSubscriptionSchema, mediaCoverage, emailClicks } from "@shared/schema";
 import { getDb } from "./db";
 import { eq, sql, desc, and, ne, asc, isNull, isNotNull, gte, lte, or, inArray, gt } from "drizzle-orm";
 import { notificationService } from "./services/notification-service";
@@ -9136,20 +9136,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`   📊 Received Value: ${JSON.stringify(value)} (type: ${typeof value})`);
       console.log(`   📊 Full Request Body: ${JSON.stringify(req.body)}`);
       
+      // Helper function to safely parse numeric values
+      const parseNumericValue = (val: any): number | null => {
+        if (typeof val === 'number') return val;
+        if (typeof val === 'string') {
+          const parsed = parseFloat(val);
+          return isNaN(parsed) ? null : parsed;
+        }
+        return null;
+      };
+
       // Validate based on key
       let validatedValue: any;
       if (key === 'priceStep') {
-        if (typeof value !== 'number' || value < 1 || value > 20) {
-          console.log(`   ❌ Validation failed for priceStep: ${value} (type: ${typeof value})`);
+        const numValue = parseNumericValue(value);
+        if (numValue === null || numValue < 1 || numValue > 20) {
+          console.log(`   ❌ Validation failed for priceStep: ${value} (type: ${typeof value}) parsed: ${numValue}`);
           return res.status(400).json({ message: "priceStep must be between 1 and 20" });
         }
-        validatedValue = value;
+        validatedValue = numValue;
       } else if (key === 'tickIntervalMs') {
-        if (typeof value !== 'number' || value < 30000 || value > 300000) {
-          console.log(`   ❌ Validation failed for tickIntervalMs: ${value} (type: ${typeof value})`);
+        const numValue = parseNumericValue(value);
+        if (numValue === null || numValue < 30000 || numValue > 300000) {
+          console.log(`   ❌ Validation failed for tickIntervalMs: ${value} (type: ${typeof value}) parsed: ${numValue}`);
           return res.status(400).json({ message: "tickIntervalMs must be between 30000 and 300000" });
         }
-        validatedValue = value;
+        validatedValue = numValue;
+      } else if (key === 'conversionPenalty') {
+        const numValue = parseNumericValue(value);
+        if (numValue === null || numValue < -1 || numValue > 0) {
+          console.log(`   ❌ Validation failed for conversionPenalty: ${value} (type: ${typeof value}) parsed: ${numValue}`);
+          return res.status(400).json({ message: "conversionPenalty must be between -1 and 0" });
+        }
+        validatedValue = numValue;
+      } else if (key === 'pitchVelocityBoost') {
+        const numValue = parseNumericValue(value);
+        if (numValue === null || numValue < 0 || numValue > 1) {
+          console.log(`   ❌ Validation failed for pitchVelocityBoost: ${value} (type: ${typeof value}) parsed: ${numValue}`);
+          return res.status(400).json({ message: "pitchVelocityBoost must be between 0 and 1" });
+        }
+        validatedValue = numValue;
+      } else if (key === 'outletLoadPenalty') {
+        const numValue = parseNumericValue(value);
+        if (numValue === null || numValue < -1 || numValue > 0) {
+          console.log(`   ❌ Validation failed for outletLoadPenalty: ${value} (type: ${typeof value}) parsed: ${numValue}`);
+          return res.status(400).json({ message: "outletLoadPenalty must be between -1 and 0" });
+        }
+        validatedValue = numValue;
+      } else if (key === 'emailClickBoost') {
+        const numValue = parseNumericValue(value);
+        if (numValue === null || numValue < 0 || numValue > 1) {
+          console.log(`   ❌ Validation failed for emailClickBoost: ${value} (type: ${typeof value}) parsed: ${numValue}`);
+          return res.status(400).json({ message: "emailClickBoost must be between 0 and 1" });
+        }
+        validatedValue = numValue;
       } else {
         console.log(`   ❌ Invalid config key: ${key}`);
         return res.status(400).json({ message: "Invalid config key" });
@@ -9352,6 +9392,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error removing push subscription:", error);
       res.status(500).json({ message: "Failed to remove push subscription" });
+    }
+  });
+
+  // ============ RESEND PRICING WEBHOOK ============
+  
+  // POST /api/webhooks/resend/pricing - Handle email click events for pricing emails only
+  app.post("/api/webhooks/resend/pricing", async (req: Request, res: Response) => {
+    try {
+      const { type, data } = req.body;
+
+      // Ignore non-click events
+      if (type !== "email.clicked") {
+        return res.json({ ok: true, ignored: true, reason: "not a click event" });
+      }
+
+      // Only accept emails tagged with x-pricing
+      if (!data.tags?.includes("x-pricing")) {
+        return res.json({ ok: true, ignored: true, reason: "not a pricing email" });
+      }
+
+      // Extract opportunity ID from headers
+      const opportunityId = data.headers?.["X-Opportunity-ID"];
+      if (!opportunityId) {
+        console.warn("Resend click webhook: Missing X-Opportunity-ID header");
+        return res.json({ ok: true, ignored: true, reason: "missing opportunity ID" });
+      }
+
+      // Insert the email click record
+      await getDb().insert(emailClicks).values({
+        opportunityId: Number(opportunityId),
+        clickedAt: new Date(data.timestamp || Date.now()),
+      });
+
+      console.log(`📧 Email click recorded for opportunity ${opportunityId}`);
+      return res.json({ ok: true, recorded: true, opportunityId: Number(opportunityId) });
+
+    } catch (error) {
+      console.error("Resend pricing webhook error:", error);
+      return res.status(500).json({ ok: false, error: "Internal server error" });
     }
   });
 

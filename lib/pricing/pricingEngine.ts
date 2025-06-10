@@ -13,6 +13,7 @@ export interface PricingSnapshot {
   clicks: number;
   saves: number;
   drafts: number;
+  emailClicks1h: number; // Email clicks in last hour (pricing emails only)
   hoursRemaining: number;
   outlet_avg_price?: number;
   successRateOutlet?: number; // 0-1 
@@ -26,6 +27,7 @@ export interface PricingConfig {
     clicks: number;
     saves: number;
     drafts: number;
+    emailClickBoost: number; // Boost for email clicks on pricing emails
     outlet_avg_price: number;
     successRateOutlet: number;
     hoursRemaining: number;
@@ -69,7 +71,8 @@ export function calculatePrice(input: PricingSnapshot, cfg: PricingConfig): Pric
     input.pitches * weights.pitches +
     input.clicks * weights.clicks +
     input.saves * weights.saves +
-    input.drafts * weights.drafts;
+    input.drafts * weights.drafts +
+    input.emailClicks1h * weights.emailClickBoost;
 
   // Step 2: Calculate supply pressure (urgency factor)
   const supplyPressure = calculateSupplyPressure(input.hoursRemaining);
@@ -194,6 +197,7 @@ export function getDefaultPricingConfig(): PricingConfig {
       clicks: 0.3,
       saves: 0.2,
       drafts: 0.1,
+      emailClickBoost: 0.05,
       outlet_avg_price: -1.0,
       successRateOutlet: -0.5,
       hoursRemaining: -1.2,
