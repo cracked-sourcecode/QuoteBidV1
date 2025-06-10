@@ -1,0 +1,182 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "QuoteBid Pricing Engine v2 - Post-Deploy Monitoring",
+    "tags": ["pricing", "v2", "canary"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "🚨 Critical KPIs Overview",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(rate(pricing_drift_applied_total[1h]))",
+            "refId": "A",
+            "legendFormat": "Drift Count/Hour"
+          },
+          {
+            "expr": "avg(pricing_price_delta_avg)",
+            "refId": "B", 
+            "legendFormat": "Avg Price Delta"
+          },
+          {
+            "expr": "sum(pricing_clicks_total) / sum(pricing_pitches_total)",
+            "refId": "C",
+            "legendFormat": "Pitch-to-Click %"
+          },
+          {
+            "expr": "sum(pricing_ceiling_hits_total) / sum(pricing_opportunities_total)",
+            "refId": "D",
+            "legendFormat": "Ceiling Hits %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 5},
+                {"color": "red", "value": 8}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "📊 Drift Application Rate (Target: ≤6/hr)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "sum(rate(pricing_drift_applied_total[1h]))",
+            "legendFormat": "Drift Applications/Hour"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "query": {"queryType": "", "refId": "A"},
+              "reducer": {"type": "last", "params": []},
+              "evaluator": {"params": [6], "type": "gt"}
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "30s",
+          "handler": 1,
+          "name": "High Drift Rate Alert",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 3,
+        "title": "💰 Average Price Delta per Tick (Target: $1-$15)",
+        "type": "timeseries", 
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "avg(pricing_price_delta_avg)",
+            "legendFormat": "Avg Price Delta ($)"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "query": {"queryType": "", "refId": "A"},
+              "reducer": {"type": "last", "params": []},
+              "evaluator": {"params": [1, 15], "type": "outside_range"}
+            }
+          ],
+          "name": "Price Delta Out of Range"
+        }
+      },
+      {
+        "id": 4,
+        "title": "🎯 Pitch-to-Click Conversion (Target: ≥10%)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "(sum(rate(pricing_clicks_total[1h])) / sum(rate(pricing_pitches_total[1h]))) * 100",
+            "legendFormat": "Conversion Rate %"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "⏱️ Time-to-Floor on Dead Opportunities",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "avg(pricing_time_to_floor_hours)",
+            "legendFormat": "Avg Hours to Floor"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "🚧 Elastic Ceiling Hits (Target: <2%)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "(sum(rate(pricing_ceiling_hits_total[1h])) / sum(rate(pricing_opportunities_total[1h]))) * 100",
+            "legendFormat": "Ceiling Hit Rate %"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "🔧 V2 Engine Performance",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+        "targets": [
+          {
+            "expr": "rate(pricing_engine_ticks_total[5m])",
+            "legendFormat": "Tick Rate"
+          },
+          {
+            "expr": "avg(pricing_gpt_latency_ms)",
+            "legendFormat": "GPT Latency (ms)"
+          },
+          {
+            "expr": "sum(rate(pricing_errors_total[5m]))",
+            "legendFormat": "Error Rate"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "📈 V2 Metadata Health",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32},
+        "targets": [
+          {
+            "expr": "group by (opportunity_id) (pricing_meta_score)",
+            "legendFormat": "Meta Scores by Opportunity",
+            "format": "table"
+          }
+        ]
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "name": "V2 Deployments",
+          "datasource": "-- Grafana --",
+          "type": "tags",
+          "tags": ["v2-deploy"]
+        }
+      ]
+    }
+  }
+} 
