@@ -53,7 +53,13 @@ export default function AdminPricing() {
 
   // Local state for editing (unsaved changes)
   const [pendingVariableChanges, setPendingVariableChanges] = useState<Record<string, { weight: number; nonlinear_fn: string }>>({});
-  const [pendingConfigChanges, setPendingConfigChanges] = useState<{ priceStep?: number; tickIntervalMs?: number }>({});
+  const [pendingConfigChanges, setPendingConfigChanges] = useState<{ 
+    priceStep?: number; 
+    tickIntervalMs?: number;
+    conversionPenalty?: number;
+    pitchVelocityBoost?: number;
+    outletLoadPenalty?: number;
+  }>({});
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -197,6 +203,69 @@ export default function AdminPricing() {
       [key]: value
     }));
   };
+
+  // V2 Weight Keys Configuration
+  const V2_WEIGHT_KEYS = [
+    {
+      key: 'conversionPenalty',
+      label: 'Vanity-click penalty', 
+      description: 'Penalty applied for saves without engagement',
+      min: -1,
+      max: 0,
+      step: 0.1,
+      default: -0.4
+    },
+    {
+      key: 'pitchVelocityBoost',
+      label: 'Velocity boost',
+      description: 'Boost applied for rapid pitch submissions', 
+      min: 0,
+      max: 1,
+      step: 0.1,
+      default: 0.2
+    },
+    {
+      key: 'outletLoadPenalty', 
+      label: 'Outlet-overload penalty',
+      description: 'Penalty when outlet has too many opportunities',
+      min: -1,
+      max: 0,
+      step: 0.1, 
+      default: -0.2
+    }
+  ];
+
+  // Get current v2 weight value
+  const getCurrentV2WeightValue = (key: string) => {
+    if ((pendingConfigChanges as any)[key] !== undefined) {
+      return (pendingConfigChanges as any)[key];
+    }
+    
+    if (!config) {
+      const weightConfig = V2_WEIGHT_KEYS.find(w => w.key === key);
+      return weightConfig?.default || 0;
+    }
+    
+    const value = config[key];
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') return parseFloat(value) || 0;
+    
+    const weightConfig = V2_WEIGHT_KEYS.find(w => w.key === key);
+    return weightConfig?.default || 0;
+  };
+
+  // Handle v2 weight changes
+  const handleV2WeightChange = (key: string, value: number) => {
+    setPendingConfigChanges(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  // Check if there are any v2 weight changes
+  const hasV2WeightChanges = V2_WEIGHT_KEYS.some(weight => 
+    (pendingConfigChanges as any)[weight.key] !== undefined
+  );
 
   // Prepare chart data
   const chartData = metrics ? metrics.labels.map((label: string, index: number) => ({
@@ -413,6 +482,80 @@ export default function AdminPricing() {
             </CardContent>
           </Card>
         </div>
+
+        {/* V2 Weight Keys Configuration */}
+        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="pb-6">
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Settings className="h-5 w-5 text-purple-600" />
+              </div>
+              V2 Weight Keys Configuration
+              {hasV2WeightChanges && (
+                <Badge variant="outline" className="ml-2 text-xs bg-orange-50 text-orange-700 border-orange-200">
+                  {V2_WEIGHT_KEYS.filter(weight => (pendingConfigChanges as any)[weight.key] !== undefined).length} Modified
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!config ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full" />
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-lg border border-gray-200">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50/80">
+                      <TableHead className="font-semibold text-gray-700">Key</TableHead>
+                      <TableHead className="font-semibold text-gray-700">Value</TableHead>
+                      <TableHead className="font-semibold text-gray-700">Description</TableHead>
+                      <TableHead className="font-semibold text-gray-700">Last Updated</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {V2_WEIGHT_KEYS.map((weight) => {
+                                             const hasChanges = (pendingConfigChanges as any)[weight.key] !== undefined;
+                      
+                      return (
+                        <TableRow key={weight.key} className={`hover:bg-blue-50/30 transition-colors ${hasChanges ? 'bg-orange-50/30' : ''}`}>
+                                                     <TableCell className="font-medium text-gray-900">
+                             <div className="flex items-center gap-2">
+                               {weight.label}
+                               {hasChanges && (
+                                 <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
+                                   Modified
+                                 </Badge>
+                               )}
+                             </div>
+                           </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              min={weight.min}
+                              max={weight.max}
+                              step={weight.step}
+                              value={getCurrentV2WeightValue(weight.key)}
+                              onChange={(e) => handleV2WeightChange(weight.key, parseFloat(e.target.value) || 0)}
+                              className="w-24 text-center border-gray-200 focus:border-blue-400 focus:ring-blue-400"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {weight.description}
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-500">
+                            {config?.updated_at ? new Date(config.updated_at).toLocaleString() : 'Never'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Variables Table */}
         <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
