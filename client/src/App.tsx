@@ -141,6 +141,7 @@ function Router() {
         <Route path="/admin/create-admin" component={CreateAdmin} />
         <Route path="/signup-wizard" component={SignupWizard} />
         <Route path="/terms" component={TermsOfService} />
+        <Route path="/legal/terms" component={TermsOfService} />
         <Route path="/reset-password" component={ResetPassword} />
         <Route path="/home-test" component={Home} />
         <Route path="/engine" component={PricingEngine} />

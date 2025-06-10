@@ -32,7 +32,7 @@ const customStyles = `
 
 export default function Home() {
   const { user } = useAuth();
-
+  
   /* Reset body opacity on mount */
   useEffect(() => {
     document.body.style.opacity = "1";
@@ -41,12 +41,12 @@ export default function Home() {
       document.body.style.opacity = "1";
     };
   }, []);
-
+  
   const handleLogin = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     window.location.href = "/login";
   };
-
+  
   const handleSignup = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     window.location.href = "/register";
@@ -69,35 +69,35 @@ export default function Home() {
 
       {/* ——— PREMIUM NAVBAR ——— */}
       <header className="absolute top-0 w-full z-30 py-6 px-6 md:px-8">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center group">
             <span className="text-white font-black text-3xl tracking-tight">
               <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Quote</span>
               <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Bid</span>
-            </span>
+              </span>
             <div className="ml-3 px-2 py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
               Beta
             </div>
-          </Link>
-
+            </Link>
+            
           <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
+              <Button 
+                variant="ghost" 
               className="text-white/80 hover:text-white hover:bg-white/10 font-semibold px-6 py-3 rounded-xl transition-all duration-300"
-              onClick={handleLogin}
-            >
-              Log In
-            </Button>
-            <Button
+                onClick={handleLogin}
+              >
+                Log In
+              </Button>
+              <Button 
               className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold hover:from-purple-600 hover:to-violet-700 px-6 py-3 rounded-xl transition-all duration-300 shadow-lg"
-              onClick={handleSignup}
-            >
-              Sign Up
-            </Button>
+                onClick={handleSignup}
+              >
+                Sign Up
+              </Button>
+            </div>
           </div>
-        </div>
-      </header>
-
+        </header>
+      
       {/* ——— HERO ——— */}
       <section className="relative z-20 pt-40 pb-24 px-6 overflow-hidden">
 
@@ -110,8 +110,8 @@ export default function Home() {
                 <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
                 World's First PR Pricing Engine
               </div>
-            </div>
-            
+          </div>
+          
             <h1 className="text-6xl md:text-7xl font-black text-white leading-[0.9] tracking-tight">
               <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
                 The First Live
@@ -124,7 +124,7 @@ export default function Home() {
               <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
                 for Earned Media
               </span>
-            </h1>
+                </h1>
             
             <p className="mt-8 text-blue-300 text-xl font-bold tracking-wide">
               Built for experts, not PR agencies.
@@ -137,17 +137,17 @@ export default function Home() {
             </p>
 
             <div className="mt-12 flex flex-col sm:flex-row gap-6">
-              <Button
-                size="lg"
+                  <Button 
+                    size="lg" 
                 className="group relative overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold px-10 py-7 rounded-2xl shadow-2xl transform transition-all duration-300 hover:scale-105"
-                onClick={handleSignup}
-              >
+                    onClick={handleSignup}
+                  >
                 <span className="relative z-10 text-lg">Create an Account</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-violet-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
                 className="group relative border-2 border-white/50 text-white hover:border-white px-10 py-7 rounded-2xl bg-white/5 backdrop-blur-md font-semibold text-lg transition-all duration-300 hover:bg-white/10 hover:scale-105"
                 onClick={() =>
                   document
@@ -157,13 +157,13 @@ export default function Home() {
               >
                 <span className="relative z-10">How It Works</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
-              </Button>
-            </div>
-          </div>
-
+                  </Button>
+                </div>
+              </div>
+              
           {/* Interactive card stack */}
-          <div className="md:w-1/2 flex justify-center md:justify-end">
-            <div className="relative w-full max-w-md">
+              <div className="md:w-1/2 flex justify-center md:justify-end">
+                <div className="relative w-full max-w-md">
               {/* Premium ambient glow effects */}
               <div className="absolute -inset-8 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-violet-600/20 rounded-3xl blur-3xl animate-pulse"></div>
               <div className="absolute -inset-6 bg-gradient-to-r from-purple-500/15 via-pink-500/15 to-violet-500/15 rounded-3xl blur-2xl animate-pulse" style={{animationDelay: '1s'}}></div>
@@ -177,17 +177,17 @@ export default function Home() {
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
                         <span className="text-white font-bold text-sm">B</span>
-                      </div>
+                        </div>
                       <div>
                         <h3 className="text-white font-bold text-lg">Bloomberg</h3>
                         <p className="text-blue-200 text-xs">Expert Request</p>
+                        </div>
                       </div>
-                    </div>
                     <div className="px-3 py-1 bg-blue-500 rounded-full">
                       <span className="text-white font-bold text-xs">Tier 1</span>
                     </div>
-                  </div>
-
+                    </div>
+                    
                   <div className="mb-4">
                     <span className="text-blue-200 text-xs font-semibold uppercase tracking-wide">
                       Expert Request
@@ -204,7 +204,7 @@ export default function Home() {
                   
                   <div className="inline-block px-3 py-1 bg-blue-500/30 text-blue-200 rounded-full text-sm mb-4">
                     • Capital Markets
-                  </div>
+                      </div>
 
                   <div className="bg-white/10 rounded-xl p-4 mb-4">
                     <div className="flex items-center justify-between">
@@ -216,8 +216,8 @@ export default function Home() {
                         <span className="text-red-300 text-xs">📈 $4 past hour</span>
                       </div>
                     </div>
-                  </div>
-
+                    </div>
+                    
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center space-x-2 text-blue-200">
                       <span>⏰ 3 days left</span>
@@ -225,24 +225,24 @@ export default function Home() {
                     </div>
                     <span className="px-2 py-1 bg-blue-500/20 rounded text-blue-200">📌 Saved</span>
                   </div>
-                </div>
-
+                    </div>
+                    
                 {/* Card 2 - Investopedia (middle) */}
                 <div className="absolute inset-0 bg-white/15 backdrop-blur-2xl border border-white/20 rounded-2xl p-6 shadow-2xl transition-all duration-700 ease-in-out transform translate-x-2 translate-y-2 scale-98 z-20 group-hover:rotate-6 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:scale-100">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
                         <span className="text-white font-bold text-sm">I</span>
-                      </div>
+                          </div>
                       <div>
                         <h3 className="text-white font-bold text-lg">Investopedia</h3>
                         <p className="text-blue-200 text-xs">Market Analysis</p>
-                      </div>
-                    </div>
+                          </div>
+                        </div>
                     <div className="px-3 py-1 bg-green-500 rounded-full">
                       <span className="text-white font-bold text-xs">Tier 2</span>
+                      </div>
                     </div>
-                  </div>
 
                   <div className="mb-4">
                     <span className="text-blue-200 text-xs font-semibold uppercase tracking-wide">
@@ -260,19 +260,19 @@ export default function Home() {
                   
                   <div className="inline-block px-3 py-1 bg-green-500/30 text-green-200 rounded-full text-sm mb-4">
                     • Real Estate
-                  </div>
+                </div>
 
                   <div className="bg-white/10 rounded-xl p-4 mb-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-blue-200 text-xs">Current Price</p>
                         <p className="text-white text-2xl font-bold">$355</p>
-                      </div>
+              </div>
                       <div className="text-right">
                         <span className="text-green-300 text-xs">📈 $12 past hour</span>
-                      </div>
-                    </div>
-                  </div>
+            </div>
+          </div>
+        </div>
 
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center space-x-2 text-blue-200">
@@ -281,7 +281,7 @@ export default function Home() {
                     </div>
                     <span className="px-2 py-1 bg-blue-500/20 rounded text-blue-200">📌 Saved</span>
                   </div>
-                </div>
+            </div>
 
                 {/* Card 3 - Yahoo Finance (bottom) */}
                 <div className="absolute inset-0 bg-white/15 backdrop-blur-2xl border border-white/20 rounded-2xl p-6 shadow-2xl transition-all duration-700 ease-in-out transform translate-x-4 translate-y-4 scale-96 z-10 group-hover:rotate-12 group-hover:translate-x-20 group-hover:translate-y-8 group-hover:scale-95">
@@ -362,8 +362,8 @@ export default function Home() {
           <p className="text-gray-300 text-xl max-w-4xl mx-auto mb-16 leading-relaxed">
             Real-time access. Market-based pricing. Direct pitches — full editorial control stays with the journalist.
           </p>
-
-          <div className="grid md:grid-cols-3 gap-8">
+            
+            <div className="grid md:grid-cols-3 gap-8">
             {[
               {
                 title: "You Bid, Not Guess",
@@ -388,9 +388,9 @@ export default function Home() {
                 <div className="text-4xl mb-6">{b.icon}</div>
                 <h3 className="text-2xl font-bold text-white mb-4">{b.title}</h3>
                 <p className="text-gray-300 leading-relaxed">{b.desc}</p>
-              </div>
+                </div>
             ))}
-          </div>
+              </div>
         </div>
       </section>
 
@@ -592,14 +592,14 @@ export default function Home() {
                             
                             {/* Current price indicator */}
                             <line x1="300" y1="0" x2="300" y2="80" stroke="#22c55e" strokeWidth="1" strokeDasharray="3,3" opacity="0.6"/>
-                          </svg>
+                  </svg>
                           
                           {/* Price labels */}
                           <div className="absolute top-1 left-2 text-green-300 text-xs font-mono">$536</div>
                           <div className="absolute bottom-1 left-2 text-green-300 text-xs font-mono">$144</div>
                           <div className="absolute bottom-1 right-2 text-red-300 text-xs font-mono">$500</div>
                           <div className="absolute top-1 right-2 text-blue-400 text-xs font-bold">NOW: $345</div>
-                        </div>
+                </div>
                         
                         {/* Time Filters */}
                         <div className="flex space-x-2">
@@ -607,8 +607,8 @@ export default function Home() {
                           <button className="px-2 py-1 bg-white/10 text-gray-300 rounded text-xs">3D</button>
                           <button className="px-2 py-1 bg-white/10 text-gray-300 rounded text-xs">1W</button>
                         </div>
-                      </div>
-                      
+              </div>
+              
                       {/* Current Price & Bidding */}
                       <div className="p-4">
                         <div className="mb-4">
@@ -705,13 +705,13 @@ export default function Home() {
                               <circle cx="10" cy="35" r="2" fill="#EF4444"/>
                               <circle cx="90" cy="22" r="2" fill="#F59E0B"/>
                               <circle cx="190" cy="8" r="3" fill="#10B981"/>
-                            </svg>
+                  </svg>
                             
                             {/* Price labels */}
                             <div className="absolute bottom-1 left-2 text-xs text-red-400">$180</div>
                             <div className="absolute top-1 right-2 text-xs text-green-400 font-bold">$245</div>
-                          </div>
-                        </div>
+                </div>
+              </div>
                         
                         {/* Current metrics */}
                         <div className="grid grid-cols-2 gap-4 mb-6">
@@ -719,14 +719,14 @@ export default function Home() {
                             <div className="text-gray-400 text-xs mb-1">Hours Remaining</div>
                             <div className="text-white text-lg font-bold">47.8</div>
                             <div className="text-orange-400 text-xs">Decay active</div>
-                          </div>
+            </div>
                           <div className="bg-white/5 rounded-lg p-4">
                             <div className="text-gray-400 text-xs mb-1">Outlet Success Rate</div>
                             <div className="text-white text-lg font-bold">84%</div>
                             <div className="text-blue-400 text-xs">Historical avg</div>
-                          </div>
-                        </div>
-                        
+          </div>
+        </div>
+
                         {/* Engine output */}
                         <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 border border-green-400/30 rounded-lg p-4">
                           <div className="flex items-center justify-between">
@@ -739,9 +739,9 @@ export default function Home() {
                               <div className="text-green-400 text-lg font-bold">94%</div>
                             </div>
                           </div>
-                        </div>
-                        
-                      </div>
+            </div>
+
+                </div>
                     </div>
                   ) : (
                     // App Preview for Step 4 - Success Dashboard
@@ -757,9 +757,9 @@ export default function Home() {
                           <div className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">
                             8 Published
                           </div>
-                        </div>
-                      </div>
-                      
+                            </div>
+                          </div>
+                          
                       {/* Success notification */}
                       <div className="p-6">
                         <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-4 mb-4">
@@ -773,14 +773,14 @@ export default function Home() {
                               <div className="text-green-400 font-medium">Article Published! 🎉</div>
                               <div className="text-gray-300 text-sm">Payment processed: $245</div>
                             </div>
-                          </div>
-                        </div>
-                        
+                              </div>
+                            </div>
+                            
                         {/* Published article */}
                         <div className="bg-white/5 rounded-lg p-4 mb-4">
                           <div className="flex items-start space-x-3">
                             <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">F</div>
-                            <div className="flex-1">
+                              <div className="flex-1">
                               <div className="text-white font-medium mb-1">Forbes - Capital Market Analysis</div>
                               <div className="text-gray-400 text-sm mb-2">Your expertise on S&P market trends</div>
                               <div className="flex items-center space-x-4">
@@ -791,19 +791,19 @@ export default function Home() {
                             <button className="px-3 py-1 bg-white/10 text-white rounded text-xs hover:bg-white/20">
                               View Article
                             </button>
-                          </div>
-                        </div>
-                        
+                              </div>
+                            </div>
+                            
                         {/* Stats */}
                         <div className="grid grid-cols-3 gap-4">
                           <div className="text-center">
                             <div className="text-white text-xl font-bold">8</div>
                             <div className="text-gray-400 text-xs">Published</div>
-                          </div>
+                              </div>
                           <div className="text-center">
                             <div className="text-white text-xl font-bold">$1,847</div>
                             <div className="text-gray-400 text-xs">Total Spent</div>
-                          </div>
+                            </div>
                           <div className="text-center">
                             <div className="text-white text-xl font-bold">92%</div>
                             <div className="text-gray-400 text-xs">Success Rate</div>
@@ -812,11 +812,11 @@ export default function Home() {
                       </div>
                     </div>
                   )}
-                </div>
+                    </div>
               </li>
             ))}
           </ol>
-        </div>
+                  </div>
       </section>
 
       {/* ——— EDITORIAL INTEGRITY STRIP ——— */}
@@ -827,7 +827,7 @@ export default function Home() {
             backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0)`,
             backgroundSize: '40px 40px'
           }}></div>
-        </div>
+                </div>
         
         <div className="max-w-7xl mx-auto px-6 relative">
           <div className="text-center">
@@ -837,8 +837,8 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
               Editorial Integrity
-            </div>
-            
+              </div>
+
             <h2 className="text-5xl font-black text-white mb-12 leading-tight">
               Built to Protect the <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">Editorial Line</span>
             </h2>
@@ -851,7 +851,7 @@ export default function Home() {
                     <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                     </svg>
-                  </div>
+                </div>
                   <div>
                     <h3 className="text-white font-semibold mb-2">100% Editorial Control</h3>
                     <p className="text-gray-300 text-sm">Journalists retain complete editorial control over all content decisions</p>
@@ -871,9 +871,9 @@ export default function Home() {
                     <h3 className="text-white font-semibold mb-2">No Media Payments</h3>
                     <p className="text-gray-300 text-sm">We never compensate journalists or media outlets — directly or indirectly.</p>
                   </div>
-                </div>
-              </div>
-              
+                            </div>
+                          </div>
+                          
               <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all text-left">
                 <div className="flex items-start space-x-4">
                   <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -885,9 +885,9 @@ export default function Home() {
                     <h3 className="text-white font-semibold mb-2">Direct to Reporters</h3>
                     <p className="text-gray-300 text-sm">Pitches are reviewed directly by reporters without intermediaries</p>
                   </div>
-                </div>
-              </div>
-              
+                              </div>
+                            </div>
+                            
               <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all text-left">
                 <div className="flex items-start space-x-4">
                   <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -901,8 +901,8 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            </div>
-            
+                              </div>
+                              
             <Link 
               href="/legal/editorial-integrity"
               className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-green-500 to-blue-600 hover:from-blue-600 hover:to-green-500 text-white font-bold rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105"
@@ -910,23 +910,23 @@ export default function Home() {
               Read Our Editorial Integrity Policy
               <svg className="w-5 h-5 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
+                                  </svg>
             </Link>
-          </div>
-        </div>
+                                </div>
+                              </div>
       </section>
 
       {/* ——— PRICING ENGINE STRIP ——— */}
-      <section className="relative z-20 bg-gradient-to-b from-slate-900 to-purple-900 py-24 overflow-hidden">
+      <section className="relative z-20 bg-gradient-to-b from-slate-900 to-purple-900 py-20 overflow-hidden">
         {/* Animated data flow background */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-1/4 left-0 w-64 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent"></div>
           <div className="absolute top-1/2 right-0 w-48 h-px bg-gradient-to-l from-transparent via-purple-400 to-transparent"></div>
           <div className="absolute bottom-1/4 left-1/4 w-32 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
-        </div>
+                            </div>
         
         <div className="max-w-7xl mx-auto px-6 relative">
-          <div className="flex flex-col lg:flex-row-reverse items-center gap-16">
+          <div className="flex flex-col lg:flex-row-reverse items-center gap-24">
             
             {/* Left side - Content */}
             <div className="lg:w-1/2 text-center lg:text-left">
@@ -935,7 +935,7 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
                 Pricing Technology
-              </div>
+                          </div>
               
               <h2 className="text-5xl font-black text-white mb-8 leading-tight">
                 How Our <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Pricing Engine</span> Works
@@ -950,16 +950,16 @@ export default function Home() {
                 <div className="flex items-center space-x-4">
                   <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
                   <span className="text-gray-200">Real-time demand tracking</span>
-                </div>
+                        </div>
                 <div className="flex items-center space-x-4">
                   <div className="w-3 h-3 bg-purple-400 rounded-full"></div>
                   <span className="text-gray-200">Deadline decay algorithms</span>
-                </div>
+                      </div>
                 <div className="flex items-center space-x-4">
                   <div className="w-3 h-3 bg-cyan-400 rounded-full"></div>
                   <span className="text-gray-200">Outlet yield optimization</span>
-                </div>
-              </div>
+                    </div>
+                  </div>
               
               <Link 
                 href="/engine"
@@ -970,7 +970,7 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </Link>
-            </div>
+                </div>
             
             {/* Right side - Engine visualization */}
             <div className="lg:w-1/2 flex justify-center lg:justify-start">
@@ -984,13 +984,13 @@ export default function Home() {
                     <div className="text-center">
                       <div className="text-white text-4xl font-bold mb-2">$245</div>
                       <div className="text-blue-300 text-sm">Live Price</div>
-                    </div>
-                  </div>
+              </div>
+            </div>
                   
                   {/* Data input nodes */}
                   <div className="absolute top-6 left-6 w-12 h-8 bg-blue-500/30 border border-blue-400/50 rounded-lg flex items-center justify-center">
                     <span className="text-blue-400 text-xs font-bold">DMD</span>
-                  </div>
+          </div>
                   <div className="absolute top-6 right-6 w-12 h-8 bg-green-500/30 border border-green-400/50 rounded-lg flex items-center justify-center">
                     <span className="text-green-400 text-xs font-bold">VEL</span>
                   </div>
@@ -999,8 +999,8 @@ export default function Home() {
                   </div>
                   <div className="absolute bottom-6 right-6 w-12 h-8 bg-purple-500/30 border border-purple-400/50 rounded-lg flex items-center justify-center">
                     <span className="text-purple-400 text-xs font-bold">YLD</span>
-                  </div>
-                  
+        </div>
+
                   {/* Data flow lines */}
                   <svg className="absolute inset-0 w-full h-full pointer-events-none">
                     <defs>
@@ -1016,10 +1016,10 @@ export default function Home() {
                   </svg>
                   
                   {/* Processing indicators */}
-                  <div className="absolute top-1/2 left-4 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                  <div className="absolute top-1/2 right-4 w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
-                  <div className="absolute top-4 left-1/2 w-2 h-2 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
-                  <div className="absolute bottom-4 left-1/2 w-2 h-2 bg-orange-400 rounded-full animate-pulse" style={{animationDelay: '1.5s'}}></div>
+                  <div className="absolute top-1/2 left-4 w-2 h-2 bg-blue-400 rounded-full"></div>
+                  <div className="absolute top-1/2 right-4 w-2 h-2 bg-purple-400 rounded-full"></div>
+                  <div className="absolute top-4 left-1/2 w-2 h-2 bg-green-400 rounded-full"></div>
+                  <div className="absolute bottom-4 left-1/2 w-2 h-2 bg-orange-400 rounded-full"></div>
                   
                   {/* Background circuit pattern */}
                   <div className="absolute inset-0 opacity-20">
@@ -1055,8 +1055,8 @@ export default function Home() {
                 </div>
                 
                 {/* Orbiting elements */}
-                <div className="absolute top-1/2 -left-8 w-6 h-6 bg-cyan-400/30 rounded-full animate-pulse"></div>
-                <div className="absolute top-1/2 -right-8 w-6 h-6 bg-pink-400/30 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
+                <div className="absolute top-1/2 -left-8 w-6 h-6 bg-cyan-400/30 rounded-full"></div>
+                <div className="absolute top-1/2 -right-8 w-6 h-6 bg-pink-400/30 rounded-full"></div>
               </div>
             </div>
           </div>
@@ -1072,7 +1072,7 @@ export default function Home() {
         </div>
         
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="text-center mb-16">
+            <div className="text-center mb-16">
             <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-full text-blue-300 text-sm font-semibold uppercase tracking-wide backdrop-blur-sm mb-8">
               <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
               Start Today
@@ -1081,12 +1081,12 @@ export default function Home() {
               Join the New Era of <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-purple-500 bg-clip-text text-transparent">Media Access</span>
             </h2>
             <p className="text-gray-300 text-xl max-w-3xl mx-auto leading-relaxed">
-              No retainers. No guesswork. Just you, the story, and a price you control.
-            </p>
-          </div>
-          
+                No retainers. No guesswork. Just you, the story, and a price you control.
+              </p>
+            </div>
+            
           <div className="flex flex-col lg:flex-row gap-12 items-stretch max-w-6xl mx-auto">
-            {/* Left side: Benefits */}
+              {/* Left side: Benefits */}
             <div className="lg:w-1/2 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-10 lg:p-12">
               <h3 className="text-3xl font-bold mb-8 text-white">Reclaim Control of How You Get Covered</h3>
               
@@ -1095,33 +1095,33 @@ export default function Home() {
                   <div className="flex-shrink-0 h-12 w-12 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center">
                     <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h2m5 0h2a2 2 0 002-2V7a2 2 0 00-2-2h-2m-5 4h6m-6 4h6m-6-8h6" />
-                    </svg>
-                  </div>
-                  <div>
+                      </svg>
+                    </div>
+                    <div>
                     <h4 className="text-xl font-semibold mb-2 text-white">Access Live Editorial Opportunities</h4>
                     <p className="text-gray-300 leading-relaxed">Log in and browse time-sensitive, real media requests — curated, categorized, and priced by demand.</p>
+                    </div>
                   </div>
-                </div>
-                
+                  
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0 h-12 w-12 rounded-2xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center">
                     <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                    </svg>
-                  </div>
-                  <div>
+                      </svg>
+                    </div>
+                    <div>
                     <h4 className="text-xl font-semibold mb-2 text-white">Bid for Coverage at Market Price</h4>
                     <p className="text-gray-300 leading-relaxed">Every pitch is a bid. You decide what coverage is worth to you. No retainers, no fixed fees — just real-time pricing that adjusts with demand.</p>
+                    </div>
                   </div>
-                </div>
-                
+                  
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0 h-12 w-12 rounded-2xl bg-green-500/20 border border-green-400/30 flex items-center justify-center">
                     <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div>
+                      </svg>
+                    </div>
+                    <div>
                     <h4 className="text-xl font-semibold mb-2 text-white">Pay Only When You're Published</h4>
                     <p className="text-gray-300 leading-relaxed">There's no upfront cost to pitch. You're only charged if your quote appears in the final published article. No placement? No charge.</p>
                   </div>
@@ -1132,71 +1132,71 @@ export default function Home() {
                     <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                     </svg>
-                  </div>
+                    </div>
                   <div>
                     <h4 className="text-xl font-semibold mb-2 text-white">Submit Pitches with Your Voice</h4>
                     <p className="text-gray-300 leading-relaxed">Record your pitch, we transcribe it instantly. Submit in seconds — no formatting stress, no friction.</p>
                   </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Right side: Pricing Card */}
-            <div className="lg:w-1/2 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden hover:scale-105 transition-all duration-300">
-              <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 px-8 py-8 border-b border-white/20">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-2xl font-bold text-white mb-1">QuoteBid</h3>
-                    <p className="text-gray-300 text-lg">Premium Membership</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-baseline">
-                      <span className="text-5xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-purple-500 bg-clip-text text-transparent animate-pulse">
-                        $99.99
-                      </span>
-                      <span className="ml-2 text-lg text-gray-300">/month</span>
-                    </div>
-                    <p className="text-gray-400 text-sm mt-1">Billed monthly</p>
-                  </div>
-                </div>
-                
-                <div className="bg-blue-500/20 border border-blue-400/30 rounded-xl p-4 mt-6">
-                  <div className="flex items-start">
-                    <svg className="w-5 h-5 mr-3 text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div>
-                      <p className="text-blue-300 font-medium text-sm">Subscription required to access the marketplace</p>
-                      <p className="text-blue-200 text-xs mt-1">Cancel anytime • No contracts • No commitments</p>
-                    </div>
                   </div>
                 </div>
               </div>
               
-              <div className="p-8">
-                <ul className="space-y-4 mb-8">
-                  <li className="flex items-start">
+            {/* Right side: Pricing Card */}
+            <div className="lg:w-1/2 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden hover:scale-105 transition-all duration-300">
+              <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 px-8 py-8 border-b border-white/20">
+                  <div className="flex justify-between items-start">
+                    <div>
+                    <h3 className="text-2xl font-bold text-white mb-1">QuoteBid</h3>
+                    <p className="text-gray-300 text-lg">Premium Membership</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-baseline">
+                      <span className="text-5xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-purple-500 bg-clip-text text-transparent animate-pulse">
+                        $99.99
+                      </span>
+                      <span className="ml-2 text-lg text-gray-300">/month</span>
+                      </div>
+                    <p className="text-gray-400 text-sm mt-1">Billed monthly</p>
+                    </div>
+                  </div>
+                  
+                <div className="bg-blue-500/20 border border-blue-400/30 rounded-xl p-4 mt-6">
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 mr-3 text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    <div>
+                      <p className="text-blue-300 font-medium text-sm">Subscription required to access the marketplace</p>
+                      <p className="text-blue-200 text-xs mt-1">Cancel anytime • No contracts • No commitments</p>
+                    </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-8">
+                  <ul className="space-y-4 mb-8">
+                    <li className="flex items-start">
                     <svg className="w-6 h-6 text-green-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
                     <span className="text-white text-lg">Unlimited access to all media opportunities</span>
-                  </li>
-                  <li className="flex items-start">
+                    </li>
+                    <li className="flex items-start">
                     <svg className="w-6 h-6 text-green-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
                     <span className="text-white text-lg">Voice recording with AI transcription</span>
-                  </li>
-                  <li className="flex items-start">
+                    </li>
+                    <li className="flex items-start">
                     <svg className="w-6 h-6 text-green-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
                     <span className="text-white text-lg">Dynamic bidding platform with real-time pricing</span>
-                  </li>
-                  <li className="flex items-start">
+                    </li>
+                    <li className="flex items-start">
                     <svg className="w-6 h-6 text-green-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
                     <span className="text-white text-lg">Payment only when your quotes get published</span>
                   </li>
                   <li className="flex items-start">
@@ -1204,28 +1204,28 @@ export default function Home() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                     </svg>
                     <span className="text-white text-lg">Live market data and pricing insights</span>
-                  </li>
-                </ul>
-                
-                <div className="space-y-4">
-                  <Button 
-                    className="w-full py-6 text-lg font-semibold bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-violet-700 text-white rounded-2xl shadow-2xl transition-all duration-300"
-                    size="lg"
-                    onClick={handleSignup}
-                  >
-                    Get Full Marketplace Access
-                  </Button>
+                    </li>
+                  </ul>
                   
-                  <div className="text-center">
+                <div className="space-y-4">
+                    <Button 
+                    className="w-full py-6 text-lg font-semibold bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-violet-700 text-white rounded-2xl shadow-2xl transition-all duration-300"
+                      size="lg"
+                      onClick={handleSignup}
+                    >
+                      Get Full Marketplace Access
+                    </Button>
+                    
+                    <div className="text-center">
                     <p className="text-gray-400 text-sm">
                       Join thousands of experts already using QuoteBid
-                    </p>
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
       </section>
 
       {/* ——— FOOTER ——— */}
@@ -1245,12 +1245,12 @@ export default function Home() {
               </span>
               <div className="ml-3 px-2 py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
                 Beta
-              </div>
+      </div>
             </Link>
             <p className="text-gray-400 mt-4 text-lg">
               The world's first live marketplace for earned media
             </p>
-          </div>
+    </div>
           
           <div className="flex flex-wrap justify-center gap-8 mb-8">
             <Link 
@@ -1286,4 +1286,4 @@ export default function Home() {
     </div>
     </>
   );
-} 
+}
