@@ -7,7 +7,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
-import HomeNew from "@/pages/home-new";
 import PricingEngine from "@/pages/engine";
 import EditorialIntegrity from "@/pages/legal/editorial-integrity";
 import OpportunitiesPage from "@/pages/opportunities";
@@ -143,7 +142,7 @@ function Router() {
         <Route path="/signup-wizard" component={SignupWizard} />
         <Route path="/terms" component={TermsOfService} />
         <Route path="/reset-password" component={ResetPassword} />
-        <Route path="/home-test" component={HomeNew} />
+        <Route path="/home-test" component={Home} />
         <Route path="/engine" component={PricingEngine} />
         <Route path="/legal/editorial-integrity" component={EditorialIntegrity} />
         
