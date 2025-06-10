@@ -5,28 +5,24 @@ import { useEffect } from "react";
 
 export default function Home() {
   const { user } = useAuth();
-  
-  // Ensure opacity is reset when component mounts
+
+  /* Reset body opacity on mount */
   useEffect(() => {
-    document.body.style.opacity = '1';
-    document.body.classList.remove('navigating');
+    document.body.style.opacity = "1";
+    document.body.classList.remove("navigating");
     return () => {
-      document.body.style.opacity = '1';
+      document.body.style.opacity = "1";
     };
   }, []);
-  
-  // Function for handling login
+
   const handleLogin = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    // Use window.location for a clean transition
-    window.location.href = '/login';
+    window.location.href = "/login";
   };
-  
-  // Function for handling signup
+
   const handleSignup = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    // Use window.location for a clean transition
-    window.location.href = '/register';
+    window.location.href = "/register";
   };
 
   return (
