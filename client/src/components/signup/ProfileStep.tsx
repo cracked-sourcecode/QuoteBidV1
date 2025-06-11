@@ -296,7 +296,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
                     <option value="None" className="bg-white text-black">None</option>
                     <option value="LinkedIn" className="bg-white text-black">LinkedIn</option>
                     <option value="Website" className="bg-white text-black">Website</option>
-                    <option value="Twitter" className="bg-white text-black">Twitter</option>
+                    <option value="Twitter" className="bg-white text-black">X</option>
                     <option value="Instagram" className="bg-white text-black">Instagram</option>
                   </select>
                   <svg className="pointer-events-none absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">

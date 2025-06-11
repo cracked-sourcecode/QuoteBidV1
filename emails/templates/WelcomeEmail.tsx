@@ -8,6 +8,7 @@ import {
   Text,
   Heading,
 } from '@react-email/components';
+import EmailFooter from '../components/EmailFooter';
 
 interface LiveOpportunity {
   id: number;
@@ -412,20 +413,8 @@ export default function WelcomeEmail({
 
           </Section>
 
-          {/* Minimal Footer */}
-          <Section style={footer}>
-            <Text style={footerBrand}>
-              <strong>QuoteBid</strong> — Built for experts, not PR agencies.
-            </Text>
-            <Text style={footerLinks}>
-              <a href={frontendUrl} style={footerLink}>Platform</a> • 
-              <a href={`${frontendUrl}/legal/privacy`} style={footerLink}> Privacy</a> • 
-              <a href={`${frontendUrl}/unsubscribe`} style={footerLink}> Unsubscribe</a>
-            </Text>
-            <Text style={copyright}>
-              © 2025 QuoteBid Inc. • Revolutionizing earned media.
-            </Text>
-          </Section>
+          {/* Global Footer */}
+          <EmailFooter frontendUrl={frontendUrl} />
 
         </Container>
       </Body>
@@ -743,35 +732,7 @@ const ctaFootnote = {
   margin: '0',
 };
 
-const footer = {
-  background: 'rgba(0, 0, 0, 0.5)',
-  padding: '32px 40px',
-  textAlign: 'center' as const,
-};
 
-const footerBrand = {
-  color: '#ffffff',
-  fontSize: '16px',
-  margin: '0 0 12px 0',
-  fontWeight: '600',
-};
-
-const footerLinks = {
-  color: '#64748b',
-  fontSize: '13px',
-  margin: '0 0 8px 0',
-};
-
-const footerLink = {
-  color: '#94a3b8',
-  textDecoration: 'none',
-};
-
-const copyright = {
-  color: '#475569',
-  fontSize: '12px',
-  margin: '0',
-};
 
 const opportunitySection = {
   padding: '32px 24px',

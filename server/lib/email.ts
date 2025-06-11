@@ -78,7 +78,8 @@ export async function sendOpportunityNotification(
 export async function sendPasswordResetEmail(
   email: string,
   resetToken: string,
-  username?: string
+  username?: string,
+  fullName?: string
 ): Promise<boolean> {
   const resendInstance = getResendInstance();
   
@@ -98,46 +99,19 @@ export async function sendPasswordResetEmail(
 
   try {
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5050'}/reset-password?token=${resetToken}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
+    const userFirstName = fullName?.split(' ')[0] || username;
     
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Password Reset - QuoteBid</title>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-            .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>🔐 Password Reset Request</h1>
-              <p>QuoteBid Security Team</p>
-            </div>
-            <div class="content">
-              <p>Hello ${username ? username : 'there'},</p>
-              <p>We received a request to reset your QuoteBid account password. If you made this request, click the button below to reset your password:</p>
-              <p style="text-align: center; margin: 30px 0;">
-                <a href="${resetUrl}" class="button">Reset My Password</a>
-              </p>
-              <p><strong>This link will expire in 1 hour for security reasons.</strong></p>
-              <p>If you didn't request this password reset, please ignore this email. Your password will remain unchanged.</p>
-              <p>For security, this reset link can only be used once.</p>
-              <div class="footer">
-                <p>Need help? Contact our support team at support@quotebid.co</p>
-                <p>© 2024 QuoteBid. All rights reserved.</p>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+    // Render React Email template to HTML
+    const { render } = await import('@react-email/render');
+    const { default: PasswordResetEmail } = await import('../../emails/templates/PasswordResetEmail');
+    
+    const emailHtml = await render(PasswordResetEmail({
+      userFirstName,
+      username,
+      resetUrl,
+      frontendUrl,
+    }));
 
     console.log('📧 Sending password reset email to:', email);
     
