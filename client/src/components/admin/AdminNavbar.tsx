@@ -13,7 +13,8 @@ import {
   Settings,
   LogOut,
   Menu,
-  X
+  X,
+  Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -80,22 +81,22 @@ export default function AdminNavbar() {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <nav className="bg-slate-900/95 backdrop-blur-md border-b border-white/10 sticky top-0 z-50 shadow-xl">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
-            <Link href="/admin" className="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <span className="ml-2 text-xl font-bold text-gray-900">Admin Portal</span>
+            <Link href="/admin" className="flex items-center group">
+              <div className="p-2 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-200">
+                <Shield className="h-5 w-5 text-white" />
+              </div>
+              <span className="ml-3 text-xl font-bold text-white">Admin Portal</span>
             </Link>
           </div>
 
           {/* Centered Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:justify-center md:flex-1">
-            <div className="flex space-x-1">
+            <div className="flex space-x-1 bg-slate-800/50 rounded-2xl p-1 backdrop-blur-sm">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href, item.exact);
@@ -105,13 +106,13 @@ export default function AdminNavbar() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                      "inline-flex items-center px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200",
                       active
-                        ? "bg-purple-100 text-purple-700"
-                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                        ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
+                        : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
                     )}
                   >
-                    <Icon className="h-4 w-4 mr-1.5" />
+                    <Icon className="h-4 w-4 mr-2" />
                     {item.label}
                   </Link>
                 );
@@ -119,11 +120,23 @@ export default function AdminNavbar() {
             </div>
           </div>
 
-          {/* Right side - Logout only */}
-          <div className="flex items-center">
+          {/* Right side - Admin info and Logout */}
+          <div className="flex items-center space-x-4">
+            {/* Admin User Info */}
+            {adminUser && (
+              <div className="hidden md:flex items-center text-slate-300 text-sm">
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                {adminUser.username}
+              </div>
+            )}
+            
             {/* Logout Button - Desktop */}
             <Link href="/admin-logout" className="hidden md:block">
-              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-400/50 transition-all duration-200"
+              >
                 <LogOut className="h-4 w-4 mr-1.5" />
                 Logout
               </Button>
@@ -132,7 +145,7 @@ export default function AdminNavbar() {
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+              className="md:hidden inline-flex items-center justify-center p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
             >
               {mobileMenuOpen ? (
                 <X className="h-6 w-6" />
@@ -146,7 +159,7 @@ export default function AdminNavbar() {
 
       {/* Mobile Navigation Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-200">
+        <div className="md:hidden bg-slate-900/95 backdrop-blur-md border-t border-white/10">
           <div className="px-2 pt-2 pb-3 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -158,10 +171,10 @@ export default function AdminNavbar() {
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
-                    "flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors w-full",
+                    "flex items-center px-4 py-3 text-base font-medium rounded-xl transition-all duration-200 w-full",
                     active
-                      ? "bg-purple-100 text-purple-700"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                      ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
+                      : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
                   )}
                 >
                   <Icon className="h-5 w-5 mr-3" />
@@ -171,10 +184,20 @@ export default function AdminNavbar() {
             })}
           </div>
           
-          {/* Mobile Logout */}
-          <div className="border-t border-gray-200 px-4 py-3">
+          {/* Mobile Admin Info and Logout */}
+          <div className="border-t border-white/10 px-4 py-3">
+            {adminUser && (
+              <div className="flex items-center text-slate-300 text-sm mb-3">
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                Logged in as: {adminUser.username}
+              </div>
+            )}
             <Link href="/admin-logout" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="outline" size="sm" className="w-full text-red-600 hover:text-red-700 hover:bg-red-50">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-400/50 transition-all duration-200"
+              >
                 <LogOut className="h-4 w-4 mr-1.5" />
                 Logout
               </Button>

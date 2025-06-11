@@ -184,7 +184,7 @@ export default function ResetPassword() {
         <div className="relative z-10 w-full max-w-md mx-auto px-6">
           <div className="bg-gradient-to-br from-blue-900/50 via-purple-900/50 to-violet-900/50 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-8">
             <div className="flex items-center justify-center py-8">
-              <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
                 <span className="text-gray-300">Validating reset link...</span>
               </div>
@@ -342,8 +342,8 @@ export default function ResetPassword() {
                   <div className="space-y-2 text-sm">
                     <div className={`flex items-center space-x-2 ${passwordValidation.requirements.minLength ? 'text-green-400' : 'text-gray-400'}`}>
                       {passwordValidation.requirements.minLength ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                      <span>At least 8 characters</span>
-                    </div>
+                  <span>At least 8 characters</span>
+                </div>
                     <div className={`flex items-center space-x-2 ${passwordValidation.requirements.uppercase ? 'text-green-400' : 'text-gray-400'}`}>
                       {passwordValidation.requirements.uppercase ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
                       <span>At least one uppercase letter</span>
@@ -363,7 +363,7 @@ export default function ResetPassword() {
                     {confirmPassword && (
                       <div className={`flex items-center space-x-2 ${passwordsMatch ? 'text-green-400' : 'text-red-400'}`}>
                         {passwordsMatch ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                        <span>Passwords match</span>
+                  <span>Passwords match</span>
                       </div>
                     )}
                   </div>

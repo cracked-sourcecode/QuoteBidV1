@@ -106,19 +106,19 @@ export function SignupWizard({ children }: SignupWizardProps) {
               {stepText}
             </p>
             
-            {/* Interactive Progress Bar */}
+          {/* Interactive Progress Bar */}
             <div className="w-full max-w-lg mx-auto mb-4">
-              <SignupProgress />
+            <SignupProgress />
             </div>
           </div>
         </div>
 
-        {/* Main content */}
+      {/* Main content */}
         <main className="relative z-20 flex-1 flex items-center">
-          <div className="w-full">
-            {children}
-          </div>
-        </main>
+        <div className="w-full">
+          {children}
+        </div>
+      </main>
 
         {/* ——— FOOTER ——— */}
         <footer className="relative z-20 bg-gradient-to-b from-violet-900 via-purple-900 to-slate-900 py-12">
@@ -163,10 +163,10 @@ export function SignupWizard({ children }: SignupWizardProps) {
               <p className="text-gray-500 text-sm mt-2">
                 Built for experts, not PR agencies.
               </p>
-            </div>
           </div>
-        </footer>
-      </div>
+        </div>
+      </footer>
+    </div>
     </>
   );
 }

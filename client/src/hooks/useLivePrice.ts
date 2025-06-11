@@ -28,7 +28,8 @@ interface ConnectionStatus {
   error?: string;
 }
 
-const WS_URL = process.env.REACT_APP_WS_URL || "http://localhost:4000";
+// Use Vite environment variables or fallback to localhost:4000 for the pricing WebSocket
+const WS_URL = import.meta.env.VITE_WS_URL || "http://localhost:4000";
 
 export function useLivePrice() {
   const queryClient = useQueryClient();

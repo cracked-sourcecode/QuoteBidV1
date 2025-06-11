@@ -168,8 +168,8 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                   <div className="flex items-center gap-2 text-green-400">
                     <Lock className="h-4 w-4" />
                     <span className="text-sm font-medium">Secure</span>
-                  </div>
-                </div>
+        </div>
+      </div>
                   
                 <div className="space-y-6 flex-grow">
                   <div>
@@ -344,7 +344,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
   }
 
   if (errorMessage && !clientSecret) {
-    return (
+  return (
       <div className="flex items-center justify-center min-h-[80vh] px-6 py-8">
         <div className="w-full max-w-6xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">

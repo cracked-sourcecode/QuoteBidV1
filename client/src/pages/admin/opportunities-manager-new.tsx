@@ -64,7 +64,9 @@ import {
   Eye,
   Building2,
   Loader2,
-  CalendarIcon
+  CalendarIcon,
+  TrendingUp,
+  TrendingDown
 } from "lucide-react";
 import { INDUSTRY_OPTIONS, MEDIA_TYPES, OPPORTUNITY_TIERS, REQUEST_TYPES } from "@/lib/constants";
 import { useLocation } from 'wouter';
@@ -75,6 +77,8 @@ import { format, addDays } from 'date-fns';
 import { cn } from "@/lib/utils";
 import 'react-day-picker/dist/style.css';
 import { getPublicationLogo } from '@/lib/responsive-utils';
+import { useLivePrice } from '@/hooks/useLivePrice';
+import { usePrices } from '@/contexts/PriceContext';
 
 const opportunitySchema = z.object({
   publicationId: z.coerce.number(),
@@ -134,6 +138,34 @@ export default function OpportunitiesManager() {
   const [updatingStatus, setUpdatingStatus] = useState<Record<number, boolean>>({});
   const [managingOpportunity, setManagingOpportunity] = useState<any | null>(null);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+  const [showCloseConfirmation, setShowCloseConfirmation] = useState<number | null>(null);
+  
+  // Initialize live price updates for admin
+  const { connectionStatus, joinAdminRoom } = useLivePrice();
+  const { getPrice } = usePrices();
+  
+  // Join admin room for real-time price updates
+  useEffect(() => {
+    joinAdminRoom();
+  }, [joinAdminRoom]);
+  
+  // Helper function to get live price for an opportunity
+  const getLivePrice = (opportunity: any) => {
+    const livePrice = getPrice(opportunity.id);
+    if (livePrice && livePrice.currentPrice) {
+      // Log price updates for debugging
+      console.log(`💰 Live price for OPP ${opportunity.id}: $${livePrice.currentPrice} (trend: ${livePrice.trend})`);
+      return livePrice.currentPrice;
+    }
+    // Fallback to opportunity data if no live price available
+    return opportunity.currentPrice || opportunity.current_price || opportunity.minimumBid;
+  };
+  
+  // Helper function to get price trend/animation class
+  const getPriceTrend = (opportunity: any) => {
+    const livePrice = getPrice(opportunity.id);
+    return livePrice?.trend || 'stable';
+  };
   
   // Auto-open create modal if coming from quick actions
   useEffect(() => {
@@ -544,22 +576,44 @@ export default function OpportunitiesManager() {
   return (
     <div className="space-y-6">
       {/* Header Section with Gradient Background */}
-      <div className="bg-white rounded-lg p-8 border border-gray-200 shadow-sm">
+      <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-8 border border-white/10 shadow-xl">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900 flex items-center">
-              <Newspaper className="h-8 w-8 mr-3 text-gray-600" />
-              Opportunity Manager
-            </h2>
-            <p className="text-gray-600 mt-2 text-lg">
-              Create and manage PR opportunities to connect journalists with industry experts
-            </p>
+            <div className="flex items-center space-x-4 mb-2">
+              <h2 className="text-3xl font-bold text-white flex items-center">
+                <Newspaper className="h-8 w-8 mr-3 text-slate-300" />
+                Opportunity Manager
+              </h2>
+              {/* Live Price Connection Indicator */}
+              <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium ${
+                connectionStatus.connected 
+                  ? 'bg-green-500/20 text-green-300 border border-green-400/30' 
+                  : 'bg-red-500/20 text-red-300 border border-red-400/30'
+              }`}>
+                <div className={`w-2 h-2 rounded-full ${
+                  connectionStatus.connected 
+                    ? 'bg-green-400 animate-pulse' 
+                    : 'bg-red-400'
+                }`}></div>
+                                 <span>
+                   {connectionStatus.connected ? 'Live Pricing' : 'Disconnected'}
+                 </span>
+               </div>
+             </div>
+             <p className="text-slate-300 text-lg">
+               Create and manage PR opportunities with real-time pricing updates
+               {connectionStatus.lastUpdate && (
+                 <span className="block text-sm text-slate-400 mt-1">
+                   Last update: {new Date(connectionStatus.lastUpdate).toLocaleTimeString()}
+                 </span>
+               )}
+             </p>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
             <Button 
               onClick={() => setIsCreateDialogOpen(true)} 
-              className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold"
+              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-lg font-semibold"
             >
               <Plus className="mr-2 h-5 w-5" />
               Create Opportunity
@@ -569,21 +623,21 @@ export default function OpportunitiesManager() {
       </div>
       
       {/* Enhanced Search and Filter Section */}
-      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-          <Filter className="h-5 w-5 mr-2 text-gray-600" />
+      <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg shadow-xl p-6 border border-white/10">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+          <Filter className="h-5 w-5 mr-2 text-slate-300" />
           Search & Filter Opportunities
         </h3>
         
         {/* Search Bar */}
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
             <Input
               placeholder="Search by title, description, publication, industry, tier, or tags..."
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="pl-12 h-12 text-base border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg bg-white"
+              className="pl-12 h-12 text-base border border-white/20 focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/30 focus-visible:ring-offset-0 focus:outline-none focus-visible:outline-none rounded-lg bg-slate-700/50 text-white placeholder:text-slate-400"
             />
           </div>
         </div>
@@ -592,20 +646,20 @@ export default function OpportunitiesManager() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {/* Status Filter */}
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Status</label>
+            <label className="text-sm font-medium text-slate-300 mb-2 block">Status</label>
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="h-10 bg-white border border-gray-300 hover:border-gray-400 focus:border-blue-500">
+              <SelectTrigger className="h-10 bg-slate-700/50 border border-white/20 hover:border-amber-400/30 focus:border-amber-500 focus:ring-0 focus:ring-offset-0 focus:outline-none text-white">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="open">
+              <SelectContent className="bg-slate-800 border border-white/20 text-white">
+                <SelectItem value="all" className="focus:bg-slate-700 focus:text-white">All Statuses</SelectItem>
+                <SelectItem value="open" className="focus:bg-slate-700 focus:text-white">
                   <div className="flex items-center">
                     <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
                     Open
                   </div>
                 </SelectItem>
-                <SelectItem value="closed">
+                <SelectItem value="closed" className="focus:bg-slate-700 focus:text-white">
                   <div className="flex items-center">
                     <div className="w-2 h-2 bg-gray-500 rounded-full mr-2"></div>
                     Closed
@@ -617,15 +671,15 @@ export default function OpportunitiesManager() {
 
           {/* Tier Filter */}
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Tier</label>
+            <label className="text-sm font-medium text-slate-300 mb-2 block">Tier</label>
             <Select value={selectedTier} onValueChange={setSelectedTier}>
-              <SelectTrigger className="h-10 bg-white border border-gray-300 hover:border-gray-400 focus:border-blue-500">
+              <SelectTrigger className="h-10 bg-slate-700/50 border border-white/20 hover:border-amber-400/30 focus:border-amber-500 focus:ring-0 focus:ring-offset-0 focus:outline-none text-white">
                 <SelectValue placeholder="All Tiers" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Tiers</SelectItem>
+              <SelectContent className="bg-slate-800 border border-white/20 text-white">
+                <SelectItem value="all" className="focus:bg-slate-700 focus:text-white">All Tiers</SelectItem>
                 {OPPORTUNITY_TIERS.map((tier) => (
-                  <SelectItem key={tier.value} value={tier.value}>
+                  <SelectItem key={tier.value} value={tier.value} className="focus:bg-slate-700 focus:text-white">
                     {tier.label}
                   </SelectItem>
                 ))}
@@ -635,23 +689,23 @@ export default function OpportunitiesManager() {
 
           {/* Publication Filter */}
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Publication</label>
+            <label className="text-sm font-medium text-slate-300 mb-2 block">Publication</label>
             <Select value={selectedPublication} onValueChange={setSelectedPublication}>
-              <SelectTrigger className="h-10 bg-white border border-gray-300 hover:border-gray-400 focus:border-blue-500">
+              <SelectTrigger className="h-10 bg-slate-700/50 border border-white/20 hover:border-amber-400/30 focus:border-amber-500 focus:ring-0 focus:ring-offset-0 focus:outline-none text-white">
                 <SelectValue placeholder="All Publications" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Publications</SelectItem>
+              <SelectContent className="bg-slate-800 border border-white/20 text-white">
+                <SelectItem value="all" className="focus:bg-slate-700 focus:text-white">All Publications</SelectItem>
                 {publications && publications.length > 0 && (
                   <>
-                    <div className="border-t my-2"></div>
+                    <div className="border-t border-white/20 my-2"></div>
                     <div className="px-2 py-1">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Available Publications</p>
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Available Publications</p>
                     </div>
                     {publications.map((pub: any) => (
-                      <SelectItem key={pub.id} value={pub.id.toString()}>
+                      <SelectItem key={pub.id} value={pub.id.toString()} className="focus:bg-slate-700 focus:text-white">
                         <div className="flex items-center py-1">
-                          <Building2 className="mr-3 h-4 w-4 text-gray-500" />
+                          <Building2 className="mr-3 h-4 w-4 text-slate-400" />
                           <div>
                             <p className="font-medium">{pub.name}</p>
                           </div>
@@ -666,15 +720,15 @@ export default function OpportunitiesManager() {
 
           {/* Industry Filter */}
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Industry</label>
+            <label className="text-sm font-medium text-slate-300 mb-2 block">Industry</label>
             <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
-              <SelectTrigger className="h-10 bg-white border border-gray-300 hover:border-gray-400 focus:border-blue-500">
+              <SelectTrigger className="h-10 bg-slate-700/50 border border-white/20 hover:border-amber-400/30 focus:border-amber-500 focus:ring-0 focus:ring-offset-0 focus:outline-none text-white">
                 <SelectValue placeholder="All Industries" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Industries</SelectItem>
+              <SelectContent className="bg-slate-800 border border-white/20 text-white">
+                <SelectItem value="all" className="focus:bg-slate-700 focus:text-white">All Industries</SelectItem>
                 {INDUSTRY_OPTIONS.map((industry) => (
-                  <SelectItem key={industry.value} value={industry.value}>
+                  <SelectItem key={industry.value} value={industry.value} className="focus:bg-slate-700 focus:text-white">
                     {industry.label}
                   </SelectItem>
                 ))}
@@ -684,15 +738,15 @@ export default function OpportunitiesManager() {
 
           {/* Request Type Filter */}
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Request Type</label>
+            <label className="text-sm font-medium text-slate-300 mb-2 block">Request Type</label>
             <Select value={selectedRequestType} onValueChange={setSelectedRequestType}>
-              <SelectTrigger className="h-10 bg-white border border-gray-300 hover:border-gray-400 focus:border-blue-500">
+              <SelectTrigger className="h-10 bg-slate-700/50 border border-white/20 hover:border-amber-400/30 focus:border-amber-500 focus:ring-0 focus:ring-offset-0 focus:outline-none text-white">
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
+              <SelectContent className="bg-slate-800 border border-white/20 text-white">
+                <SelectItem value="all" className="focus:bg-slate-700 focus:text-white">All Types</SelectItem>
                 {REQUEST_TYPES.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
+                  <SelectItem key={type.value} value={type.value} className="focus:bg-slate-700 focus:text-white">
                     {type.label}
                   </SelectItem>
                 ))}
@@ -712,7 +766,7 @@ export default function OpportunitiesManager() {
                 setSelectedIndustry('all');
                 setSelectedRequestType('all');
               }}
-              className="h-10 w-full border border-gray-300 hover:border-gray-400 hover:bg-gray-50 text-gray-700"
+              className="h-10 w-full bg-slate-800/50 border border-white/20 hover:border-amber-400/50 hover:bg-amber-500/10 text-slate-300 hover:text-amber-400 font-medium transition-all duration-200"
             >
               <X className="h-4 w-4 mr-2" />
               Clear All
@@ -722,17 +776,17 @@ export default function OpportunitiesManager() {
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-6 bg-gray-100 p-1 rounded-lg">
-          <TabsTrigger value="all" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md px-6">
+        <TabsList className="mb-6 bg-slate-800/50 p-1 rounded-lg border border-white/10">
+          <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-slate-300 rounded-md px-6">
             All Opportunities
           </TabsTrigger>
-          <TabsTrigger value="open" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md px-6">
+          <TabsTrigger value="open" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-slate-300 rounded-md px-6">
             <div className="flex items-center">
               <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
               Open
             </div>
           </TabsTrigger>
-          <TabsTrigger value="closed" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md px-6">
+          <TabsTrigger value="closed" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-slate-300 rounded-md px-6">
             <div className="flex items-center">
               <div className="w-2 h-2 bg-gray-500 rounded-full mr-2"></div>
               Closed
@@ -744,20 +798,20 @@ export default function OpportunitiesManager() {
       {finalLoading ? (
         <div className="flex justify-center py-16">
           <div className="text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Loader2 className="h-8 w-8 text-gray-600 animate-spin" />
+            <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Loader2 className="h-8 w-8 text-slate-300 animate-spin" />
             </div>
-            <p className="text-gray-600 font-medium">Loading opportunities...</p>
+            <p className="text-slate-300 font-medium">Loading opportunities...</p>
           </div>
         </div>
       ) : opportunitiesError ? (
-        <Card className="bg-red-50 border border-red-200">
+        <Card className="bg-red-500/10 border border-red-400/30">
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-              <X className="h-8 w-8 text-red-600" />
+            <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+              <X className="h-8 w-8 text-red-400" />
             </div>
-            <p className="text-xl font-bold text-gray-800 mb-2">Failed to Load Opportunities</p>
-            <p className="text-gray-600 mb-6 text-center max-w-md">
+            <p className="text-xl font-bold text-white mb-2">Failed to Load Opportunities</p>
+            <p className="text-slate-300 mb-6 text-center max-w-md">
               {opportunitiesError.message || "We couldn't fetch the opportunities. Please try again."}
             </p>
             <Button 
@@ -766,7 +820,7 @@ export default function OpportunitiesManager() {
                 queryClient.invalidateQueries({queryKey: ["/api/admin/opportunities"]});
               }}
               variant="outline"
-              className="border border-red-300 text-red-700 hover:bg-red-50"
+              className="border border-red-400/50 text-red-400 hover:bg-red-500/20"
             >
               <Loader2 className="mr-2 h-4 w-4" />
               Try Again
@@ -774,87 +828,95 @@ export default function OpportunitiesManager() {
           </CardContent>
         </Card>
       ) : filteredOpportunities?.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 lg:gap-6 xl:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
           {filteredOpportunities.map((opportunity: any) => (
-            <Card key={opportunity.id} className="group relative bg-white border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-lg flex flex-col overflow-hidden">
-              {/* Status ribbon */}
-              <div className={`absolute top-0 right-0 px-3 py-1 text-xs font-medium uppercase tracking-wider ${
+            <Card key={opportunity.id} className="group relative bg-slate-900/80 backdrop-blur-sm border-2 border-white/20 hover:border-amber-400/50 transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 flex flex-col overflow-hidden hover:scale-[1.02]">
+              {/* Status indicator */}
+              <div className={`absolute top-4 right-4 w-3 h-3 rounded-full ${
                 getOpportunityStatus(opportunity) === 'open' 
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-gray-400 text-white'
+                  ? 'bg-green-400 shadow-green-400/50 shadow-lg' 
+                  : 'bg-gray-400 shadow-gray-400/50 shadow-lg'
               }`}>
-                {getOpportunityStatus(opportunity)}
               </div>
               
-              <CardHeader className="pb-3 pt-4 flex-shrink-0">
-                {/* Publication Info with Logo */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-10 h-10 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
-                      <Building2 className="h-5 w-5 text-gray-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800">
-                        {opportunity.publication.name}
-                      </p>
-                      {opportunity.tier && (
-                        <p className="text-xs text-gray-500">{opportunity.tier}</p>
-                      )}
-                    </div>
+              <CardHeader className="pb-6 pt-6">
+                {/* Publication Header */}
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-500/20 to-orange-600/20 rounded-xl border border-amber-400/30 flex items-center justify-center">
+                    <Building2 className="h-6 w-6 text-amber-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-white">
+                      {opportunity.publication.name}
+                    </h4>
+                    <p className="text-sm text-amber-400 font-medium">
+                      {opportunity.tier || 'Tier 1'}
+                    </p>
                   </div>
                 </div>
                 
-                {/* Title and Tags */}
-                <div className="mb-4">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                    {opportunity.title}
-                  </h3>
-                  
-                  {/* Tags */}
-                  {opportunity.tags && opportunity.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {opportunity.tags.map((tag: string, index: number) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200"
-                        >
-                          <Tag className="h-3 w-3 mr-1" />
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {/* Title */}
+                <h3 className="text-xl font-bold text-white leading-tight line-clamp-2 group-hover:text-amber-400 transition-colors duration-300">
+                  {opportunity.title}
+                </h3>
               </CardHeader>
               
-              <CardContent className="flex-1 flex flex-col pt-4 pb-4">
+              <CardContent className="flex-1 flex flex-col px-6 pb-6">
                 {/* Key Metrics */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <DollarSign className="h-4 w-4 text-gray-600" />
-                      <span className="text-lg font-bold text-gray-900">
-                        ${opportunity.currentPrice || opportunity.minimumBid}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  {/* Price */}
+                  <div className={`bg-gradient-to-br rounded-xl p-4 border transition-all duration-300 ${
+                    getPriceTrend(opportunity) === 'up' 
+                      ? 'from-green-500/20 to-emerald-600/20 border-green-400/40 shadow-green-500/20 shadow-lg'
+                      : getPriceTrend(opportunity) === 'down'
+                      ? 'from-red-500/20 to-red-600/20 border-red-400/40 shadow-red-500/20 shadow-lg'
+                      : 'from-green-500/10 to-emerald-600/10 border-green-400/20'
+                  }`}>
+                    <div className="flex items-start justify-between mb-2">
+                      <span className={`text-2xl font-bold transition-colors duration-300 ${
+                        getPriceTrend(opportunity) === 'up' ? 'text-green-300' :
+                        getPriceTrend(opportunity) === 'down' ? 'text-red-300' :
+                        'text-white'
+                      }`}>
+                        ${getLivePrice(opportunity)}
                       </span>
+                      {getPriceTrend(opportunity) !== 'stable' && (
+                        <div className={`flex items-center ${
+                          getPriceTrend(opportunity) === 'up' ? 'text-green-200' : 'text-red-200'
+                        }`}>
+                          {getPriceTrend(opportunity) === 'up' ? (
+                            <TrendingUp className="h-4 w-4" />
+                          ) : (
+                            <TrendingDown className="h-4 w-4" />
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">Current Price</p>
+                    <p className={`text-sm font-medium ${
+                      getPriceTrend(opportunity) === 'up' ? 'text-green-200' :
+                      getPriceTrend(opportunity) === 'down' ? 'text-red-200' :
+                      'text-green-300'
+                    }`}>
+                      Current Price
+                    </p>
                   </div>
                   
-                  <div className={`bg-gray-50 rounded-lg p-3 border ${
+                  {/* Deadline */}
+                  <div className={`rounded-xl p-4 border ${
                     new Date(opportunity.deadline) < new Date() 
-                      ? 'border-red-200 bg-red-50' 
-                      : 'border-gray-200'
+                      ? 'bg-gradient-to-br from-red-500/10 to-red-600/10 border-red-400/30' 
+                      : 'bg-gradient-to-br from-slate-500/10 to-slate-600/10 border-slate-400/20'
                   }`}>
-                    <div className="flex items-center justify-between">
-                      <Calendar className={`h-4 w-4 ${
+                    <div className="flex items-center justify-between mb-2">
+                      <Calendar className={`h-5 w-5 ${
                         new Date(opportunity.deadline) < new Date() 
-                          ? 'text-red-600' 
-                          : 'text-gray-600'
+                          ? 'text-red-400' 
+                          : 'text-slate-300'
                       }`} />
-                      <span className={`text-sm font-bold ${
+                      <span className={`text-2xl font-bold ${
                         new Date(opportunity.deadline) < new Date() 
-                          ? 'text-red-600' 
-                          : 'text-gray-900'
+                          ? 'text-red-400' 
+                          : 'text-white'
                       }`}>
                         {new Date(opportunity.deadline).toLocaleDateString('en-US', { 
                           month: 'short', 
@@ -862,38 +924,40 @@ export default function OpportunitiesManager() {
                         })}
                       </span>
                     </div>
-                    <p className={`text-xs mt-1 ${
+                    <p className={`text-sm font-medium ${
                       new Date(opportunity.deadline) < new Date() 
-                        ? 'text-red-500 font-medium' 
-                        : 'text-gray-600'
+                        ? 'text-red-300' 
+                        : 'text-slate-300'
                     }`}>
                       {new Date(opportunity.deadline) < new Date() ? 'EXPIRED' : 'Deadline'}
                     </p>
                   </div>
                 </div>
                 
-                {/* Pitch Statistics */}
-                <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
+                {/* Pitch Count */}
+                <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-xl p-4 border border-blue-400/20 mb-6">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-200">
-                        <MessageSquare className="h-5 w-5 text-gray-600" />
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
+                        <MessageSquare className="h-5 w-5 text-blue-400" />
                       </div>
-                      <div className="ml-3">
-                        <p className="text-lg font-bold text-gray-800">
+                      <div>
+                        <p className="text-2xl font-bold text-white">
                           {opportunity.pitchCount || 0}
                         </p>
-                        <p className="text-xs text-gray-600">Pitches</p>
+                        <p className="text-sm text-blue-300 font-medium">Pitches Received</p>
                       </div>
                     </div>
-                    <div className="text-right min-w-[60px]">
-                      <p className={`text-sm font-semibold text-gray-900 ${opportunity.highestBid > 0 ? '' : 'opacity-0'}`}>
-                        ${opportunity.highestBid || 0}
-                      </p>
-                      <p className={`text-xs text-gray-600 ${opportunity.highestBid > 0 ? '' : 'opacity-0'}`}>
-                        Highest
-                      </p>
-                    </div>
+                    {opportunity.highestBid > 0 && (
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-white">
+                          ${opportunity.highestBid}
+                        </p>
+                        <p className="text-sm text-slate-300">
+                          Highest
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -901,8 +965,8 @@ export default function OpportunitiesManager() {
                 <div className="flex-1"></div>
                 
                 {/* Action Buttons */}
-                <div className="space-y-3 mt-auto">
-                  <div className="flex gap-2">
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <Button
                       variant="default"
                       size="sm"
@@ -911,10 +975,10 @@ export default function OpportunitiesManager() {
                         e.stopPropagation();
                         setShowPitches(opportunity.id);
                       }}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                      className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold shadow-lg"
                     >
-                      <Eye className="h-4 w-4 mr-1.5" />
-                      View Pitches
+                      <Eye className="h-4 w-4 mr-2" />
+                      View
                     </Button>
                     <Button
                       variant="outline"
@@ -925,30 +989,11 @@ export default function OpportunitiesManager() {
                         setManagingOpportunity(opportunity);
                         setIsManageModalOpen(true);
                       }}
-                      className="flex-1 border border-gray-300 hover:bg-gray-50"
+                      className="bg-slate-800/80 border-2 border-white/20 hover:border-amber-400/50 hover:bg-amber-500/10 text-white hover:text-amber-400 font-semibold transition-all duration-200"
                     >
-                      <MoreHorizontal className="h-4 w-4 mr-1.5" />
+                      <MoreHorizontal className="h-4 w-4 mr-2" />
                       Manage
                     </Button>
-                  </div>
-                  
-                  {/* Footer Info */}
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                    <div className="flex items-center gap-2">
-                      {opportunity.requestType && (
-                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
-                          {opportunity.requestType}
-                        </span>
-                      )}
-                      {opportunity.mediaType && (
-                        <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
-                          {opportunity.mediaType}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-400 font-medium">
-                      #{opportunity.id}
-                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -956,18 +1001,18 @@ export default function OpportunitiesManager() {
           ))}
         </div>
       ) : (
-        <Card className="bg-gray-50 border border-gray-200">
+        <Card className="bg-slate-800/50 border border-white/10">
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-              <Newspaper className="h-10 w-10 text-gray-600" />
+            <div className="w-20 h-20 bg-slate-700/50 rounded-full flex items-center justify-center mb-6">
+              <Newspaper className="h-10 w-10 text-slate-300" />
             </div>
-            <p className="text-2xl font-bold text-gray-800 mb-2">No Opportunities Yet</p>
-            <p className="text-gray-600 mb-6 text-center max-w-md">
+            <p className="text-2xl font-bold text-white mb-2">No Opportunities Yet</p>
+            <p className="text-slate-300 mb-6 text-center max-w-md">
               Start creating PR opportunities to connect journalists with experts and grow your platform.
             </p>
             <Button 
               onClick={() => setIsCreateDialogOpen(true)} 
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-700 text-white"
             >
               <Plus className="mr-2 h-4 w-4" />
               Create Your First Opportunity
@@ -976,7 +1021,7 @@ export default function OpportunitiesManager() {
         </Card>
       )}
       
-      {/* Pitches Modal */}
+      {/* View Pitches Modal - Dark Theme */}
       {showPitches && (
         <Dialog 
           open={!!showPitches} 
@@ -990,32 +1035,34 @@ export default function OpportunitiesManager() {
             }
           }}
         >
-          <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
-            <DialogHeader className="pb-4 border-b">
-              <DialogTitle className="flex items-center text-xl">
-                <MessageSquare className="h-6 w-6 mr-3 text-blue-600" />
-                Pitches for: {finalOpportunities?.find((o: any) => o.id === showPitches)?.title}
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col bg-slate-900 border border-white/20 text-white shadow-2xl">
+            <DialogHeader className="pb-4 border-b border-white/10">
+              <DialogTitle className="flex items-center text-xl font-bold text-white">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
+                  <MessageSquare className="h-5 w-5 text-white" />
+                </div>
+                Pitches: {finalOpportunities?.find((o: any) => o.id === showPitches)?.title}
               </DialogTitle>
-              <DialogDescription className="text-base">
+              <DialogDescription className="text-slate-300 text-base mt-2">
                 {(() => {
                   const opportunity = finalOpportunities?.find((o: any) => o.id === showPitches);
                   const pitchCount = opportunity?.pitches?.length || 0;
                   const highestBid = opportunity?.highestBid || 0;
                   
                   return (
-                    <div className="flex items-center gap-6 mt-2">
-                      <span className="flex items-center">
-                        <span className="font-semibold text-gray-700">{pitchCount}</span>
-                        <span className="ml-1 text-gray-600">
-                          {pitchCount === 1 ? 'pitch submitted' : 'pitches submitted'}
+                    <div className="flex items-center gap-4 mt-3">
+                      <span className="flex items-center bg-gradient-to-r from-slate-700/50 to-slate-800/50 px-3 py-2 rounded-lg border border-white/10">
+                        <span className="font-bold text-blue-400 text-lg">{pitchCount}</span>
+                        <span className="ml-2 text-slate-300 font-medium">
+                          {pitchCount === 1 ? 'pitch' : 'pitches'}
                         </span>
                       </span>
                       {highestBid > 0 && (
-                        <span className="flex items-center">
-                          <span className="text-green-600 font-semibold">Highest bid: ${highestBid}</span>
+                        <span className="flex items-center bg-gradient-to-r from-green-500/10 to-emerald-500/10 px-3 py-2 rounded-lg border border-green-400/20">
+                          <span className="text-green-300 font-bold text-lg">Top: ${highestBid}</span>
                         </span>
                       )}
-                      <span className="text-blue-600">
+                      <span className="text-amber-400 font-semibold px-3 py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg border border-amber-400/20">
                         {opportunity?.publication?.name}
                       </span>
                     </div>
@@ -1048,11 +1095,11 @@ export default function OpportunitiesManager() {
                         .map((pitch: any, index: number) => (
                         <Card 
                           key={pitch.id} 
-                          className={`hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 ${
-                            pitch.status === 'successful' ? 'border-l-green-500 bg-green-50/30' :
-                            pitch.status === 'sent' ? 'border-l-blue-500 bg-blue-50/30' :
-                            pitch.status === 'pending' ? 'border-l-yellow-500 bg-yellow-50/30' :
-                            'border-l-gray-400 bg-gray-50/30'
+                          className={`hover:shadow-xl transition-all duration-300 cursor-pointer border-l-4 bg-slate-800/50 backdrop-blur-sm border border-white/10 hover:border-white/20 hover:bg-slate-800/70 ${
+                            pitch.status === 'successful' ? 'border-l-green-400 hover:shadow-green-500/20' :
+                            pitch.status === 'sent' ? 'border-l-blue-400 hover:shadow-blue-500/20' :
+                            pitch.status === 'pending' ? 'border-l-yellow-400 hover:shadow-yellow-500/20' :
+                            'border-l-gray-400 hover:shadow-gray-500/20'
                           }`}
                           onClick={(e) => {
                             e.preventDefault();
@@ -1065,7 +1112,7 @@ export default function OpportunitiesManager() {
                             }, 100);
                           }}
                         >
-                          <CardContent className="p-5">
+                          <CardContent className="p-6">
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex items-start space-x-4 flex-1 min-w-0">
                                 <div className="flex-shrink-0">
@@ -1073,44 +1120,46 @@ export default function OpportunitiesManager() {
                                     <img 
                                       src={pitch.user.avatar} 
                                       alt={pitch.user.fullName}
-                                      className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
+                                      className="w-14 h-14 rounded-full object-cover border-2 border-white/20 shadow-lg"
                                     />
                                   ) : (
-                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center border-2 border-white shadow-md">
-                                      <User className="w-6 h-6 text-gray-500" />
+                                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center border-2 border-white/20 shadow-lg">
+                                      <User className="w-7 h-7 text-slate-300" />
                                     </div>
                                   )}
                                 </div>
                                 
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between mb-3">
+                                  <div className="flex items-start justify-between mb-4">
                                     <div>
-                                      <h4 className="text-lg font-semibold text-gray-900 leading-tight">
+                                      <h4 className="text-xl font-bold text-white leading-tight">
                                         {pitch.user?.fullName || 'Unknown User'}
                                       </h4>
                                       <div className="flex items-center gap-2 mt-1">
-                                        <p className="text-sm text-gray-600">
+                                        <p className="text-sm text-slate-300 font-medium">
                                           {pitch.user?.title || 'Expert'}
-                                          {pitch.user?.company_name && ` • ${pitch.user.company_name}`}
+                                          {pitch.user?.company_name && (
+                                            <span className="text-slate-400"> • {pitch.user.company_name}</span>
+                                          )}
                                         </p>
                                       </div>
                                     </div>
                                     
-                                    <div className="flex items-center gap-3 flex-shrink-0">
+                                    <div className="flex items-center gap-4 flex-shrink-0">
                                       {pitch.bidAmount && (
-                                        <div className="text-right">
-                                          <p className="text-xs text-gray-500 uppercase tracking-wide">Bid Amount</p>
-                                          <span className="text-lg font-bold text-green-600">
+                                        <div className="text-right bg-gradient-to-r from-green-500/10 to-emerald-500/10 px-4 py-2 rounded-lg border border-green-400/20">
+                                          <p className="text-xs text-green-300 uppercase tracking-wide font-semibold">Bid Amount</p>
+                                          <span className="text-2xl font-bold text-green-300">
                                             ${pitch.bidAmount}
                                           </span>
                                         </div>
                                       )}
                                       <Badge 
-                                        className={`px-3 py-1 text-sm font-medium ${
-                                          pitch.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
-                                          pitch.status === 'sent' ? 'bg-blue-100 text-blue-800 border-blue-300' :
-                                          pitch.status === 'successful' ? 'bg-green-100 text-green-800 border-green-300' :
-                                          'bg-gray-100 text-gray-800 border-gray-300'
+                                        className={`px-4 py-2 text-sm font-bold ${
+                                          pitch.status === 'pending' ? 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border-yellow-400/30' :
+                                          pitch.status === 'sent' ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-blue-300 border-blue-400/30' :
+                                          pitch.status === 'successful' ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400/30' :
+                                          'bg-gradient-to-r from-slate-500/20 to-gray-500/20 text-slate-300 border-gray-400/30'
                                         }`}
                                         variant="outline"
                                       >
@@ -1123,33 +1172,35 @@ export default function OpportunitiesManager() {
                                   </div>
                                   
                                   {pitch.content && (
-                                    <div className="bg-white rounded-lg p-4 border border-gray-200 mb-3">
-                                      <p className="text-sm text-gray-700 line-clamp-4 leading-relaxed">
+                                    <div className="bg-slate-700/50 rounded-lg p-4 border border-white/10 mb-4">
+                                      <p className="text-sm text-slate-200 line-clamp-4 leading-relaxed">
                                         {pitch.content}
                                       </p>
                                     </div>
                                   )}
                                   
-                                  <div className="flex items-center justify-between text-xs text-gray-500">
-                                    <div className="flex items-center gap-4">
+                                  <div className="flex items-center justify-between text-xs">
+                                    <div className="flex items-center gap-6">
                                       {pitch.createdAt && (
-                                        <span className="flex items-center">
-                                          <Calendar className="w-3 h-3 mr-1" />
-                                          Submitted {new Date(pitch.createdAt).toLocaleDateString('en-US', { 
-                                            month: 'short', 
-                                            day: 'numeric',
-                                            year: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                          })}
+                                        <span className="flex items-center text-slate-400">
+                                          <Calendar className="w-4 h-4 mr-2" />
+                                          <span className="font-medium">
+                                            Submitted {new Date(pitch.createdAt).toLocaleDateString('en-US', { 
+                                              month: 'short', 
+                                              day: 'numeric',
+                                              year: 'numeric',
+                                              hour: '2-digit',
+                                              minute: '2-digit'
+                                            })}
+                                          </span>
                                         </span>
                                       )}
-                                      <span className="text-gray-400">ID: {pitch.id}</span>
+                                      <span className="text-slate-500 font-medium">ID: {pitch.id}</span>
                                     </div>
                                     
-                                    <div className="flex items-center text-blue-600 hover:text-blue-800 transition-colors">
-                                      <span className="text-xs font-medium">View Details</span>
-                                      <Eye className="w-3 h-3 ml-1" />
+                                    <div className="flex items-center text-blue-400 hover:text-blue-300 transition-colors font-medium">
+                                      <span className="text-sm">View Details</span>
+                                      <Eye className="w-4 h-4 ml-2" />
                                     </div>
                                   </div>
                                 </div>
@@ -1159,18 +1210,18 @@ export default function OpportunitiesManager() {
                         </Card>
                       ))}
                       
-                      <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                        <div className="flex items-start space-x-3">
+                      <div className="mt-6 p-6 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-lg border border-blue-400/20">
+                        <div className="flex items-start space-x-4">
                           <div className="flex-shrink-0">
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                              <MessageSquare className="w-4 h-4 text-blue-600" />
+                            <div className="w-10 h-10 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 rounded-full flex items-center justify-center border border-blue-400/30">
+                              <MessageSquare className="w-5 h-5 text-blue-400" />
                             </div>
                           </div>
                           <div>
-                            <h4 className="text-sm font-semibold text-blue-900 mb-1">
+                            <h4 className="text-base font-bold text-blue-300 mb-2 flex items-center">
                               💡 Managing Pitches
                             </h4>
-                            <p className="text-sm text-blue-800 leading-relaxed">
+                            <p className="text-sm text-blue-200 leading-relaxed">
                               Click on any pitch card to view full details, update status, or manage the pitch in the dedicated pitches manager. 
                               Successful pitches will automatically create billing entries for payment processing.
                             </p>
@@ -1183,19 +1234,27 @@ export default function OpportunitiesManager() {
                   return (
                     <div className="text-center py-16">
                       <div className="max-w-md mx-auto">
-                        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                          <MessageSquare className="h-10 w-10 text-gray-400" />
+                        <div className="w-24 h-24 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-8 border border-white/10">
+                          <MessageSquare className="h-12 w-12 text-slate-400" />
                         </div>
-                        <h3 className="text-xl font-semibold text-gray-600 mb-2">No Pitches Yet</h3>
-                        <p className="text-gray-600 leading-relaxed mb-6">
+                        <h3 className="text-2xl font-bold text-white mb-3">No Pitches Yet</h3>
+                        <p className="text-slate-300 leading-relaxed mb-8 text-base">
                           No pitches have been submitted for this opportunity yet. Once experts start bidding, 
                           their pitches will appear here for you to review and manage.
                         </p>
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                          <p className="text-sm text-yellow-800">
-                            <strong>Tip:</strong> You can promote this opportunity to attract more expert submissions, 
-                            or adjust the minimum bid if needed.
-                          </p>
+                        <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-400/30 rounded-lg p-6">
+                          <div className="flex items-start space-x-3">
+                            <div className="w-8 h-8 bg-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                              <div className="text-yellow-400 font-bold">💡</div>
+                            </div>
+                            <div className="text-left">
+                              <h4 className="text-sm font-semibold text-yellow-400 mb-1">Pro Tip</h4>
+                              <p className="text-sm text-yellow-200 leading-relaxed">
+                                You can promote this opportunity to attract more expert submissions, 
+                                or adjust the minimum bid if needed.
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1204,7 +1263,7 @@ export default function OpportunitiesManager() {
               })()}
             </div>
             
-            <DialogFooter className="pt-4 border-t bg-gray-50/50">
+            <DialogFooter className="pt-4 border-t border-white/10 bg-slate-800/50">
               <Button 
                 onClick={(e) => {
                   e.preventDefault();
@@ -1216,7 +1275,7 @@ export default function OpportunitiesManager() {
                   }, 100);
                 }}
                 variant="outline"
-                className="mr-3"
+                className="mr-3 bg-slate-700/50 border-2 border-white/20 hover:border-amber-400/50 hover:bg-amber-500/10 text-white hover:text-amber-400 font-semibold"
               >
                 Close
               </Button>
@@ -1231,7 +1290,7 @@ export default function OpportunitiesManager() {
                     setLocation(`/admin/pitches?opportunity=${pitchId}`);
                   }, 100);
                 }}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white shadow-lg font-semibold"
               >
                 <MessageSquare className="w-4 h-4 mr-2" />
                 Open in Pitches Manager
@@ -1241,16 +1300,18 @@ export default function OpportunitiesManager() {
         </Dialog>
       )}
       
-      {/* Create Opportunity Dialog - Clean, Scrollable Design */}
+      {/* Create Opportunity Dialog - Dark Theme */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0 bg-slate-900 border border-white/20 text-white shadow-2xl">
           {/* Header */}
-          <div className="sticky top-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b border-blue-200 p-8 z-10">
-            <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent flex items-center">
-              <Plus className="h-8 w-8 mr-3 text-blue-600" />
+          <div className="sticky top-0 bg-gradient-to-r from-slate-800/90 via-slate-900/90 to-slate-800/90 backdrop-blur-sm border-b border-white/10 p-8 z-10">
+            <DialogTitle className="text-3xl font-bold text-white flex items-center">
+              <div className="w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-600 rounded-lg flex items-center justify-center mr-4">
+                <Plus className="h-6 w-6 text-white" />
+              </div>
               Create New PR Opportunity
             </DialogTitle>
-            <DialogDescription className="text-gray-700 mt-3 text-lg font-medium">
+            <DialogDescription className="text-slate-300 mt-3 text-lg font-medium">
               Fill out the form below to create a new opportunity for experts to bid on.
             </DialogDescription>
           </div>
@@ -1263,8 +1324,8 @@ export default function OpportunitiesManager() {
                 {/* Publication */}
                 <div className="space-y-8">
                   <div className="text-center">
-                    <h3 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4">Publication & Outlet Selection</h3>
-                    <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
+                    <h3 className="text-3xl font-bold text-white mb-4">Publication & Outlet Selection</h3>
+                    <p className="text-slate-300 text-lg max-w-2xl mx-auto leading-relaxed">
                       Choose the tier first to filter publications, then select your target outlet
                     </p>
                   </div>
@@ -1307,11 +1368,11 @@ export default function OpportunitiesManager() {
                           className={`relative cursor-pointer rounded-xl p-6 border-2 transition-all duration-200 hover:shadow-xl transform hover:scale-105 ${
                             selectedPublicationTier === tierOption.tier
                               ? tierOption.color === 'emerald' 
-                                ? 'border-emerald-400 bg-gradient-to-br from-emerald-50 to-green-100 shadow-lg'
+                                ? 'border-emerald-400 bg-gradient-to-br from-emerald-500/20 to-green-600/20 shadow-lg shadow-emerald-500/20 backdrop-blur-sm'
                                 : tierOption.color === 'blue'
-                                ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-indigo-100 shadow-lg'
-                                : 'border-orange-400 bg-gradient-to-br from-orange-50 to-yellow-100 shadow-lg'
-                              : 'border-gray-200 bg-gradient-to-br from-white to-gray-50 hover:border-gray-300 hover:from-gray-50 hover:to-gray-100'
+                                ? 'border-blue-400 bg-gradient-to-br from-blue-500/20 to-indigo-600/20 shadow-lg shadow-blue-500/20 backdrop-blur-sm'
+                                : 'border-orange-400 bg-gradient-to-br from-orange-500/20 to-yellow-600/20 shadow-lg shadow-orange-500/20 backdrop-blur-sm'
+                              : 'border-white/20 bg-gradient-to-br from-slate-800/50 to-slate-700/50 hover:border-white/30 hover:from-slate-700/60 hover:to-slate-600/60 backdrop-blur-sm'
                           }`}
                         >
                           {/* Selection indicator */}
@@ -1329,9 +1390,9 @@ export default function OpportunitiesManager() {
                           
                           {/* Tier badge */}
                           <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-bold mb-4 shadow-sm ${
-                            tierOption.color === 'emerald' ? 'bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border border-emerald-200' :
-                            tierOption.color === 'blue' ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200' :
-                            'bg-gradient-to-r from-orange-100 to-yellow-100 text-orange-800 border border-orange-200'
+                            tierOption.color === 'emerald' ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-300 border border-emerald-400/30' :
+                            tierOption.color === 'blue' ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-blue-300 border border-blue-400/30' :
+                            'bg-gradient-to-r from-orange-500/20 to-yellow-500/20 text-orange-300 border border-orange-400/30'
                           }`}>
                             {tierOption.tier}
                           </div>
@@ -1339,41 +1400,41 @@ export default function OpportunitiesManager() {
                           {/* Content */}
                           <div className="space-y-4">
                             <div>
-                              <h5 className="text-lg font-semibold text-gray-900 mb-2">{tierOption.title}</h5>
-                              <p className="text-gray-600 text-sm leading-relaxed">{tierOption.description}</p>
+                              <h5 className="text-lg font-semibold text-white mb-2">{tierOption.title}</h5>
+                              <p className="text-slate-300 text-sm leading-relaxed">{tierOption.description}</p>
                             </div>
                             
                             {/* Price */}
                             <div className="flex items-center justify-between">
                               <span className={`text-3xl font-bold ${
-                                tierOption.color === 'emerald' ? 'text-emerald-700' :
-                                tierOption.color === 'blue' ? 'text-blue-700' :
-                                'text-orange-700'
+                                tierOption.color === 'emerald' ? 'text-emerald-300' :
+                                tierOption.color === 'blue' ? 'text-blue-300' :
+                                'text-orange-300'
                               }`}>{tierOption.price}</span>
                               <span className={`text-sm font-medium ${
-                                tierOption.color === 'emerald' ? 'text-emerald-600' :
-                                tierOption.color === 'blue' ? 'text-blue-600' :
-                                'text-orange-600'
+                                tierOption.color === 'emerald' ? 'text-emerald-400' :
+                                tierOption.color === 'blue' ? 'text-blue-400' :
+                                'text-orange-400'
                               }`}>min bid</span>
                             </div>
                             
                             {/* Examples */}
                             <div className={`pt-3 border-t ${
-                              tierOption.color === 'emerald' ? 'border-emerald-200' :
-                              tierOption.color === 'blue' ? 'border-blue-200' :
-                              'border-orange-200'
+                              tierOption.color === 'emerald' ? 'border-emerald-400/30' :
+                              tierOption.color === 'blue' ? 'border-blue-400/30' :
+                              'border-orange-400/30'
                             }`}>
                               <p className={`text-xs font-medium uppercase tracking-wide mb-2 ${
-                                tierOption.color === 'emerald' ? 'text-emerald-600' :
-                                tierOption.color === 'blue' ? 'text-blue-600' :
-                                'text-orange-600'
+                                tierOption.color === 'emerald' ? 'text-emerald-400' :
+                                tierOption.color === 'blue' ? 'text-blue-400' :
+                                'text-orange-400'
                               }`}>Examples</p>
                               <div className="flex flex-wrap gap-1">
                                 {tierOption.examples.map((example) => (
                                   <span key={example} className={`text-xs px-2 py-1 rounded-md font-medium ${
-                                    tierOption.color === 'emerald' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                                    tierOption.color === 'blue' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                                    'bg-orange-50 text-orange-700 border border-orange-200'
+                                    tierOption.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-400/20' :
+                                    tierOption.color === 'blue' ? 'bg-blue-500/10 text-blue-300 border border-blue-400/20' :
+                                    'bg-orange-500/10 text-orange-300 border border-orange-400/20'
                                   }`}>
                                     {example}
                                   </span>
@@ -1388,12 +1449,12 @@ export default function OpportunitiesManager() {
 
                   {/* Publication Selection */}
                   {selectedPublicationTier && (
-                    <div className="bg-white rounded-lg p-8 border border-gray-200">
+                    <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-8 border border-white/10">
                       <div className="text-center mb-8">
-                        <h4 className="text-xl font-semibold text-gray-900 mb-2">
+                        <h4 className="text-xl font-semibold text-white mb-2">
                           Step 2: Choose Your {selectedPublicationTier} Publication
                         </h4>
-                        <p className="text-gray-600">
+                        <p className="text-slate-300">
                           Select from available {selectedPublicationTier} publications or add a new one
                         </p>
                       </div>
@@ -1414,7 +1475,7 @@ export default function OpportunitiesManager() {
                               }}
                             >
                               <FormControl>
-                                <SelectTrigger className="h-16 text-base bg-white border border-gray-300 hover:border-blue-400 focus:border-blue-500 transition-colors rounded-lg">
+                                <SelectTrigger className="h-16 text-base bg-slate-700/50 border border-white/20 hover:border-amber-400/50 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:ring-offset-0 focus:outline-none text-white transition-colors rounded-lg">
                                   <SelectValue placeholder={`Choose a ${selectedPublicationTier} publication...`} />
                                   <style dangerouslySetInnerHTML={{
                                     __html: `
@@ -1425,24 +1486,24 @@ export default function OpportunitiesManager() {
                                   }} />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent className="max-w-2xl bg-white border border-gray-200 shadow-lg">
+                              <SelectContent className="max-w-2xl bg-slate-800 border border-white/20 text-white shadow-lg">
                                 {/* Create New Publication Option */}
-                                <SelectItem value="new" className="p-4 hover:bg-gray-50">
+                                <SelectItem value="new" className="p-4 hover:bg-slate-700 focus:bg-slate-700 focus:text-white">
                                   Create New Publication (Opens in new tab)
                                 </SelectItem>
                                 
                                 {/* Existing Publications */}
                                 {filteredPublications.length > 0 && (
                                   <>
-                                    <div className="border-t border-gray-200 my-3"></div>
-                                    <div className="px-4 py-3 bg-gray-50 rounded-lg mx-2 mb-3">
-                                      <p className="text-sm font-semibold text-gray-700 flex items-center">
+                                    <div className="border-t border-white/20 my-3"></div>
+                                    <div className="px-4 py-3 bg-slate-700/50 rounded-lg mx-2 mb-3">
+                                      <p className="text-sm font-semibold text-slate-300 flex items-center">
                                         <Building2 className="h-4 w-4 mr-2" />
                                         {selectedPublicationTier} Publications ({filteredPublications.length})
                                       </p>
                                     </div>
                                     {filteredPublications.map((pub: any) => (
-                                      <SelectItem key={pub.id} value={pub.id.toString()} className="p-4 hover:bg-gray-50">
+                                      <SelectItem key={pub.id} value={pub.id.toString()} className="p-4 hover:bg-slate-700 focus:bg-slate-700 focus:text-white">
                                         {pub.name}
                                       </SelectItem>
                                     ))}
@@ -1451,20 +1512,20 @@ export default function OpportunitiesManager() {
                                 
                                 {/* No Publications Available */}
                                 {filteredPublications.length === 0 && selectedPublicationTier && (
-                                  <div className="px-6 py-12 text-center bg-white">
-                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                      <Building2 className="h-8 w-8 text-gray-400" />
+                                  <div className="px-6 py-12 text-center bg-slate-800">
+                                    <div className="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                                      <Building2 className="h-8 w-8 text-slate-400" />
                                     </div>
-                                    <h5 className="text-lg font-medium text-gray-600 mb-2">
+                                    <h5 className="text-lg font-medium text-white mb-2">
                                       No {selectedPublicationTier} publications available
                                     </h5>
-                                    <p className="text-gray-500 mb-4">
+                                    <p className="text-slate-300 mb-4">
                                       Click "Create New Publication" to add your first {selectedPublicationTier} outlet
                                     </p>
                                     <button
                                       type="button"
                                       onClick={() => window.open('/admin/publications?create=true', '_blank')}
-                                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                                      className="inline-flex items-center px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors"
                                     >
                                       <Plus className="h-4 w-4 mr-2" />
                                       Add First {selectedPublicationTier} Publication
@@ -1483,11 +1544,11 @@ export default function OpportunitiesManager() {
                   {/* Instruction when no tier selected */}
                   {!selectedPublicationTier && (
                     <div className="text-center py-16">
-                      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Building2 className="h-10 w-10 text-gray-600" />
+                      <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
+                        <Building2 className="h-10 w-10 text-slate-400" />
                       </div>
-                      <h4 className="text-xl font-semibold text-gray-800 mb-3">Select a Publication Tier Above</h4>
-                      <p className="text-gray-600 leading-relaxed max-w-md mx-auto">
+                      <h4 className="text-xl font-semibold text-white mb-3">Select a Publication Tier Above</h4>
+                      <p className="text-slate-300 leading-relaxed max-w-md mx-auto">
                         Choose Tier 1, 2, or 3 to see available publications for that tier level. This helps organize your growing library of outlets.
                       </p>
                     </div>
@@ -1496,15 +1557,15 @@ export default function OpportunitiesManager() {
 
                 {/* Basic Details */}
                 <div className="space-y-6">
-                  <h3 className="text-xl font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent border-b border-purple-200 pb-3">Opportunity Details</h3>
+                  <h3 className="text-xl font-semibold text-white border-b border-white/20 pb-3">Opportunity Details</h3>
                   
                   <FormField
                     control={form.control}
                     name="title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">Opportunity Title *</FormLabel>
-                        <FormDescription className="text-sm text-gray-600">
+                        <FormLabel className="text-base font-medium text-white">Opportunity Title *</FormLabel>
+                        <FormDescription className="text-sm text-slate-400">
                           Create a descriptive title between 50-80 characters for consistent card display
                         </FormDescription>
                         <FormControl>
@@ -1512,17 +1573,17 @@ export default function OpportunitiesManager() {
                             <Input 
                               {...field} 
                               placeholder="e.g., Expert Commentary on AI Market Trends for TechCrunch Article"
-                              className="text-base h-12 pr-16"
+                              className="text-base h-12 pr-16 bg-slate-800/50 border border-white/20 focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/30 focus-visible:ring-offset-0 focus:outline-none focus-visible:outline-none text-white placeholder:text-slate-400"
                               maxLength={80}
                               minLength={50}
                             />
                             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm font-medium z-10">
                               <span className={`px-2 py-1 rounded-md ${
                                 field.value?.length < 50 
-                                  ? "bg-red-100 text-red-700 border border-red-300"
+                                  ? "bg-red-500/20 text-red-300 border border-red-400/30"
                                   : field.value?.length > 70 
-                                  ? "bg-orange-100 text-orange-700 border border-orange-300" 
-                                  : "bg-green-100 text-green-700 border border-green-300"
+                                  ? "bg-orange-500/20 text-orange-300 border border-orange-400/30" 
+                                  : "bg-green-500/20 text-green-300 border border-green-400/30"
                               }`}>
                                 {field.value?.length || 0}/80
                               </span>
@@ -1539,8 +1600,8 @@ export default function OpportunitiesManager() {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">Detailed Description *</FormLabel>
-                        <FormDescription className="text-sm text-gray-600">
+                        <FormLabel className="text-base font-medium text-white">Detailed Description *</FormLabel>
+                        <FormDescription className="text-sm text-slate-400">
                           Provide a concise summary of the story and expertise needed (500 chars max)
                         </FormDescription>
                         <FormControl>
@@ -1549,14 +1610,14 @@ export default function OpportunitiesManager() {
                               {...field} 
                               placeholder="Briefly describe the story context, angle, and type of expert commentary you need..."
                               rows={5}
-                              className="resize-none text-base pr-16"
+                              className="resize-none text-base pr-16 bg-slate-800/50 border border-white/20 focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/30 focus-visible:ring-offset-0 focus:outline-none focus-visible:outline-none text-white placeholder:text-slate-400"
                               maxLength={500}
                             />
                             <div className="absolute right-3 bottom-3 text-sm font-medium z-10">
                               <span className={`px-2 py-1 rounded-md ${
                                 field.value?.length > 480 
-                                  ? "bg-orange-100 text-orange-700 border border-orange-300" 
-                                  : "bg-gray-100 text-gray-700 border border-gray-300"
+                                  ? "bg-orange-500/20 text-orange-300 border border-orange-400/30" 
+                                  : "bg-slate-600/50 text-slate-300 border border-slate-500/30"
                               }`}>
                                 {field.value?.length || 0}/500
                               </span>
@@ -1574,16 +1635,16 @@ export default function OpportunitiesManager() {
                       name="requestType"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-medium">Request Type *</FormLabel>
+                          <FormLabel className="text-base font-medium text-white">Request Type *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger className="h-12">
+                              <SelectTrigger className="h-12 bg-slate-800/50 border border-white/20 hover:border-amber-400/30 focus:border-amber-500 focus:ring-0 focus:ring-offset-0 focus:outline-none text-white">
                                 <SelectValue placeholder="Select request type" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent className="bg-slate-800 border border-white/20 text-white">
                               {REQUEST_TYPES.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
+                                <SelectItem key={type.value} value={type.value} className="focus:bg-slate-700 focus:text-white">
                                   <div className="py-1">
                                     <p className="font-medium">{type.label}</p>
                                   </div>
@@ -1601,16 +1662,16 @@ export default function OpportunitiesManager() {
                       name="mediaType"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-medium">Media Type *</FormLabel>
+                          <FormLabel className="text-base font-medium text-white">Media Type *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger className="h-12">
+                              <SelectTrigger className="h-12 bg-slate-800/50 border border-white/20 hover:border-amber-400/30 focus:border-amber-500 focus:ring-0 focus:ring-offset-0 focus:outline-none text-white">
                                 <SelectValue placeholder="Select media type" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent className="bg-slate-800 border border-white/20 text-white">
                               {MEDIA_TYPES.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
+                                <SelectItem key={type.value} value={type.value} className="focus:bg-slate-700 focus:text-white">
                                   <div className="py-1">
                                     <p className="font-medium">{type.label}</p>
                                   </div>
@@ -1627,7 +1688,7 @@ export default function OpportunitiesManager() {
 
                 {/* Targeting */}
                 <div className="space-y-6">
-                  <h3 className="text-xl font-semibold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent border-b border-orange-200 pb-3">Expert Targeting</h3>
+                  <h3 className="text-xl font-semibold text-white border-b border-white/20 pb-3">Expert Targeting</h3>
                   
                   <div className="grid grid-cols-2 gap-6">
                     <FormField
@@ -1635,19 +1696,19 @@ export default function OpportunitiesManager() {
                       name="industry"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-medium">Primary Industry *</FormLabel>
-                          <FormDescription className="text-sm text-gray-600">
+                          <FormLabel className="text-base font-medium text-white">Primary Industry *</FormLabel>
+                          <FormDescription className="text-sm text-slate-400">
                             Main industry focus for this opportunity
                           </FormDescription>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger className="h-12">
+                              <SelectTrigger className="h-12 bg-slate-800/50 border border-white/20 hover:border-amber-400/30 focus:border-amber-500 focus:ring-0 focus:ring-offset-0 focus:outline-none text-white">
                                 <SelectValue placeholder="Select primary industry" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent className="bg-slate-800 border border-white/20 text-white">
                               {INDUSTRY_OPTIONS.map((industry) => (
-                                <SelectItem key={industry.value} value={industry.value}>
+                                <SelectItem key={industry.value} value={industry.value} className="focus:bg-slate-700 focus:text-white">
                                   <div className="py-1">
                                     <p className="font-medium">{industry.label}</p>
                                   </div>
@@ -1665,21 +1726,21 @@ export default function OpportunitiesManager() {
                       name="tags"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-medium">Industry Tags *</FormLabel>
-                          <FormDescription className="text-sm text-gray-600">
+                          <FormLabel className="text-base font-medium text-white">Industry Tags *</FormLabel>
+                          <FormDescription className="text-sm text-slate-400">
                             Add relevant industry tags to help experts find this opportunity
                           </FormDescription>
                           <div className="space-y-4">
                             {/* Add Tags */}
                             <div>
                               <Select onValueChange={(value) => onTagSelect(value)}>
-                                <SelectTrigger className="h-auto min-h-12 p-3">
+                                <SelectTrigger className="h-auto min-h-12 p-3 bg-slate-800/50 border border-white/20 hover:border-amber-400/30 focus:border-amber-500 focus:ring-0 focus:ring-offset-0 focus:outline-none text-white">
                                   {field.value?.length > 0 ? (
                                     <div className="flex flex-wrap gap-2 w-full">
                                       {field.value.map((tag: string) => (
                                         <span 
                                           key={tag} 
-                                          className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-md text-sm font-medium"
+                                          className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-400/30 rounded-md text-sm font-medium"
                                         >
                                           {tag}
                                           <button
@@ -1688,7 +1749,7 @@ export default function OpportunitiesManager() {
                                               e.stopPropagation();
                                               removeTag(tag);
                                             }}
-                                            className="ml-2 hover:bg-blue-200 rounded-full p-1 transition-colors"
+                                            className="ml-2 hover:bg-amber-400/20 rounded-full p-1 transition-colors"
                                           >
                                             <X className="h-3 w-3" />
                                           </button>
@@ -1699,11 +1760,11 @@ export default function OpportunitiesManager() {
                                     <SelectValue placeholder="Add industry tags..." />
                                   )}
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-slate-800 border border-white/20 text-white">
                                   {INDUSTRY_OPTIONS
                                     .filter((industry) => !field.value?.includes(industry.value))
                                     .map((industry) => (
-                                      <SelectItem key={industry.value} value={industry.value}>
+                                      <SelectItem key={industry.value} value={industry.value} className="focus:bg-slate-700 focus:text-white">
                                         <div className="py-1">
                                           <p className="font-medium">{industry.label}</p>
                                         </div>
@@ -1723,8 +1784,8 @@ export default function OpportunitiesManager() {
                 {/* Dynamic Pricing & Timeline */}
                 <div className="space-y-8">
                   <div className="text-center">
-                    <h3 className="text-3xl font-bold bg-gradient-to-r from-green-600 via-teal-600 to-blue-600 bg-clip-text text-transparent mb-4">Dynamic Pricing & Timeline</h3>
-                    <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
+                    <h3 className="text-3xl font-bold text-white mb-4">Dynamic Pricing & Timeline</h3>
+                    <p className="text-slate-300 text-lg max-w-2xl mx-auto leading-relaxed">
                       Automatic pricing based on publication tier and deadline selection
                     </p>
                   </div>
@@ -1733,29 +1794,29 @@ export default function OpportunitiesManager() {
                     {/* Automatic Minimum Bid Display */}
                     <div className="space-y-6 flex flex-col">
                       <div className="text-center lg:text-left">
-                        <h4 className="text-xl font-semibold text-gray-900 mb-2">Minimum Bid (Auto-Set)</h4>
-                        <p className="text-gray-600 leading-relaxed">
+                        <h4 className="text-xl font-semibold text-white mb-2">Minimum Bid (Auto-Set)</h4>
+                        <p className="text-slate-300 leading-relaxed">
                           Automatically determined by your selected publication's tier
                         </p>
                       </div>
                       
-                      <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-xl p-8 border border-green-200 flex-1 shadow-lg">
+                      <div className="bg-gradient-to-br from-green-500/10 via-emerald-500/10 to-teal-500/10 rounded-xl p-8 border border-green-400/20 flex-1 shadow-lg backdrop-blur-sm">
                         <div className="text-center space-y-4 h-full flex flex-col justify-center">
                           <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
                             <DollarSign className="h-8 w-8 text-white" />
                           </div>
                           
                           <div className="space-y-2">
-                            <p className="text-sm font-medium text-green-700 uppercase tracking-wide">Minimum Bid Amount</p>
-                            <div className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                            <p className="text-sm font-medium text-green-300 uppercase tracking-wide">Minimum Bid Amount</p>
+                            <div className="text-4xl font-bold text-green-300">
                               ${form.watch("minimumBid") || 225}
                             </div>
                           </div>
                           
                           {/* Status indicators */}
-                          <div className="space-y-3 pt-4 border-t border-green-200">
+                          <div className="space-y-3 pt-4 border-t border-green-400/20">
                             {!watchedPublicationId ? (
-                              <div className="flex items-center justify-center text-green-600">
+                              <div className="flex items-center justify-center text-green-400">
                                 <Clock className="h-4 w-4 mr-2" />
                                 <span className="text-sm font-medium">Select a publication above</span>
                               </div>
@@ -1763,8 +1824,8 @@ export default function OpportunitiesManager() {
                               watchedPublicationId && publications && (() => {
                                 const selectedPub = publications.find(pub => pub.id === watchedPublicationId);
                                 return selectedPub?.tier && (
-                                  <div className="flex items-center justify-center text-green-700">
-                                    <div className="w-2 h-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full mr-2"></div>
+                                  <div className="flex items-center justify-center text-green-300">
+                                    <div className="w-2 h-2 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full mr-2"></div>
                                     <span className="text-sm font-medium">
                                       {selectedPub.name} • {selectedPub.tier}
                                     </span>
@@ -1783,8 +1844,8 @@ export default function OpportunitiesManager() {
                     {/* Response Deadline */}
                     <div className="space-y-6 flex flex-col">
                       <div className="text-center lg:text-left">
-                        <h4 className="text-xl font-semibold text-gray-900 mb-2">Response Deadline</h4>
-                        <p className="text-gray-600 leading-relaxed">
+                        <h4 className="text-xl font-semibold text-white mb-2">Response Deadline</h4>
+                        <p className="text-slate-300 leading-relaxed">
                           Choose when you need expert responses by
                         </p>
                       </div>
@@ -1795,14 +1856,14 @@ export default function OpportunitiesManager() {
                         render={({ field }) => (
                           <FormItem className="flex-1">
                             <FormControl>
-                              <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-xl p-8 border border-blue-200 h-full shadow-lg">
+                              <div className="bg-gradient-to-br from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-xl p-8 border border-blue-400/20 h-full shadow-lg backdrop-blur-sm">
                                 <div className="text-center space-y-6 h-full flex flex-col justify-center">
                                   <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
                                     <CalendarIcon className="h-8 w-8 text-white" />
                                   </div>
                                   
                                   <div className="space-y-4">
-                                    <p className="text-sm font-medium text-blue-700 uppercase tracking-wide">Deadline Date</p>
+                                    <p className="text-sm font-medium text-blue-300 uppercase tracking-wide">Deadline Date</p>
                                     
                                     <div className="space-y-3">
                                       <input
@@ -1810,11 +1871,11 @@ export default function OpportunitiesManager() {
                                         value={field.value || ''}
                                         onChange={(e) => field.onChange(e.target.value)}
                                         min={new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0]}
-                                        className="w-full h-14 px-4 text-lg font-medium text-center bg-white border border-blue-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all shadow-sm"
+                                        className="w-full h-14 px-4 text-lg font-medium text-center bg-slate-800/50 border border-white/20 rounded-lg focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none transition-all shadow-sm text-white"
                                       />
                                       {field.value && (
-                                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 text-center border border-blue-200 shadow-sm">
-                                          <p className="text-sm text-blue-700 font-medium">
+                                        <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-lg p-3 text-center border border-blue-400/20 shadow-sm">
+                                          <p className="text-sm text-blue-300 font-medium">
                                             {format(new Date(field.value), "EEEE, MMMM do, yyyy")}
                                           </p>
                                         </div>
@@ -1836,7 +1897,7 @@ export default function OpportunitiesManager() {
           </div>
 
           {/* Footer */}
-          <div className="sticky bottom-0 bg-gradient-to-r from-gray-50 via-blue-50 to-indigo-50 border-t border-blue-200 p-8 z-10">
+          <div className="sticky bottom-0 bg-gradient-to-r from-slate-800/90 via-slate-900/90 to-slate-800/90 backdrop-blur-sm border-t border-white/10 p-8 z-10">
             <div className="flex gap-4">
               <Button
                 type="button"
@@ -1845,7 +1906,7 @@ export default function OpportunitiesManager() {
                   setIsCreateDialogOpen(false);
                   form.reset();
                 }}
-                className="flex-1 h-12 border-gray-300 hover:bg-gray-50"
+                className="flex-1 h-12 bg-slate-800/50 border-2 border-white/20 hover:border-amber-400/50 hover:bg-amber-500/10 text-white hover:text-amber-400 font-semibold transition-all duration-200"
                 disabled={createOpportunityMutation.isPending}
               >
                 Cancel
@@ -1853,7 +1914,7 @@ export default function OpportunitiesManager() {
               <Button
                 type="submit"
                 onClick={form.handleSubmit(onSubmit)}
-                className="flex-1 h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
+                className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-lg font-semibold"
                 disabled={createOpportunityMutation.isPending}
               >
                 {createOpportunityMutation.isPending ? (
@@ -1873,16 +1934,18 @@ export default function OpportunitiesManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Opportunity Dialog */}
+      {/* Edit Opportunity Dialog - Dark Theme */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 bg-slate-900 border border-white/20 text-white shadow-2xl">
           {/* Header */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
-            <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center">
-              <Edit className="h-6 w-6 mr-3 text-blue-600" />
+          <div className="sticky top-0 bg-gradient-to-r from-slate-800/90 to-slate-900/90 backdrop-blur-sm border-b border-white/10 p-6 z-10">
+            <DialogTitle className="text-2xl font-bold text-white flex items-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-600 rounded-lg flex items-center justify-center mr-3">
+                <Edit className="h-5 w-5 text-white" />
+              </div>
               Edit Opportunity
             </DialogTitle>
-            <DialogDescription className="text-gray-600 mt-2 text-base">
+            <DialogDescription className="text-slate-300 mt-2 text-base">
               Update the opportunity details below.
             </DialogDescription>
           </div>
@@ -1893,35 +1956,44 @@ export default function OpportunitiesManager() {
               <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-6">
                 
                 {/* Content Editing Only */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Content Editing</h3>
-                  <p className="text-sm text-gray-600">You can only edit content-based fields to protect pricing and deadline variables.</p>
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <h3 className="text-xl font-semibold text-white border-b border-white/20 pb-3 flex items-center">
+                      <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
+                        <Edit className="h-4 w-4 text-white" />
+                      </div>
+                      Content Editing
+                    </h3>
+                    <p className="text-slate-300 text-sm leading-relaxed">
+                      You can only edit content-based fields to protect pricing and deadline variables.
+                    </p>
+                  </div>
                   
                   <FormField
                     control={editForm.control}
                     name="title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">Opportunity Title *</FormLabel>
-                        <FormDescription className="text-sm text-gray-600">
+                        <FormLabel className="text-base font-medium text-white">Opportunity Title *</FormLabel>
+                        <FormDescription className="text-sm text-slate-400">
                           Update the title (50-80 characters for consistent card display)
                         </FormDescription>
                         <FormControl>
                           <div className="relative">
                             <Input 
                               {...field} 
-                              placeholder="e.g., Expert Commentary on AI Market Trends for TechCrunch Article"
-                              className="text-base h-12 pr-16"
+                              placeholder="e.g., Looking For Capital Market Experts For A Story on eVTOL Stocks"
+                              className="text-base h-12 pr-20 bg-slate-800/50 border border-white/20 focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/30 focus-visible:ring-offset-0 focus:outline-none focus-visible:outline-none text-white placeholder:text-slate-400"
                               maxLength={80}
                               minLength={50}
                             />
                             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm font-medium z-10">
                               <span className={`px-2 py-1 rounded-md ${
                                 field.value?.length < 50 
-                                  ? "bg-red-100 text-red-700 border border-red-300"
+                                  ? "bg-red-500/20 text-red-300 border border-red-400/30"
                                   : field.value?.length > 70 
-                                  ? "bg-orange-100 text-orange-700 border border-orange-300" 
-                                  : "bg-green-100 text-green-700 border border-green-300"
+                                  ? "bg-orange-500/20 text-orange-300 border border-orange-400/30" 
+                                  : "bg-green-500/20 text-green-300 border border-green-400/30"
                               }`}>
                                 {field.value?.length || 0}/80
                               </span>
@@ -1938,21 +2010,23 @@ export default function OpportunitiesManager() {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">Description * (500 chars max)</FormLabel>
+                        <FormLabel className="text-base font-medium text-white">Description * (500 chars max)</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Textarea 
                               {...field} 
-                              placeholder="Briefly describe the story context, angle, and type of expert commentary you need..."
-                              rows={4}
-                              className="resize-none text-base pr-16"
+                              placeholder="Stock Market Experts — The eVTOL sector is starting to heat up in the public equity market, questions needed are as followed:
+
+1. Do you think that in the future the eVTOL industry will do well?"
+                              rows={6}
+                              className="resize-none text-base pr-20 bg-slate-800/50 border border-white/20 focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/30 focus-visible:ring-offset-0 focus:outline-none focus-visible:outline-none text-white placeholder:text-slate-400"
                               maxLength={500}
                             />
                             <div className="absolute right-3 bottom-3 text-sm font-medium z-10">
                               <span className={`px-2 py-1 rounded-md ${
                                 field.value?.length > 480 
-                                  ? "bg-orange-100 text-orange-700 border border-orange-300" 
-                                  : "bg-gray-100 text-gray-700 border border-gray-300"
+                                  ? "bg-orange-500/20 text-orange-300 border border-orange-400/30" 
+                                  : "bg-slate-600/50 text-slate-300 border border-slate-500/30"
                               }`}>
                                 {field.value?.length || 0}/500
                               </span>
@@ -1969,17 +2043,20 @@ export default function OpportunitiesManager() {
                     name="tags"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">Industry Tags *</FormLabel>
-                        <div className="space-y-3">
+                        <FormLabel className="text-base font-medium text-white">Industry Tags *</FormLabel>
+                        <FormDescription className="text-sm text-slate-400">
+                          Add relevant industry tags to help experts find this opportunity
+                        </FormDescription>
+                        <div className="space-y-4">
                           <div>
                             <Select onValueChange={(value) => onEditTagSelect(value)}>
-                              <SelectTrigger className="h-auto min-h-12 p-3">
+                              <SelectTrigger className="h-auto min-h-12 p-3 bg-slate-800/50 border border-white/20 hover:border-amber-400/30 focus:border-amber-500 focus:ring-0 focus:ring-offset-0 focus:outline-none text-white">
                                 {field.value?.length > 0 ? (
                                   <div className="flex flex-wrap gap-2 w-full">
                                     {field.value.map((tag: string) => (
                                       <span 
                                         key={tag} 
-                                        className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-md text-sm font-medium"
+                                        className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-400/30 rounded-md text-sm font-medium"
                                       >
                                         {tag}
                                         <button
@@ -1988,7 +2065,7 @@ export default function OpportunitiesManager() {
                                             e.stopPropagation();
                                             removeEditTag(tag);
                                           }}
-                                          className="ml-2 hover:bg-blue-200 rounded-full p-1 transition-colors"
+                                          className="ml-2 hover:bg-amber-400/20 rounded-full p-1 transition-colors"
                                         >
                                           <X className="h-3 w-3" />
                                         </button>
@@ -1999,11 +2076,11 @@ export default function OpportunitiesManager() {
                                   <SelectValue placeholder="Add industry tags..." />
                                 )}
                               </SelectTrigger>
-                              <SelectContent>
+                              <SelectContent className="bg-slate-800 border border-white/20 text-white">
                                 {INDUSTRY_OPTIONS
                                   .filter((industry) => !field.value?.includes(industry.value))
                                   .map((industry) => (
-                                    <SelectItem key={industry.value} value={industry.value}>
+                                    <SelectItem key={industry.value} value={industry.value} className="focus:bg-slate-700 focus:text-white">
                                       {industry.label}
                                     </SelectItem>
                                   ))}
@@ -2018,16 +2095,25 @@ export default function OpportunitiesManager() {
                 </div>
 
                 {/* Protected Fields Info */}
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-yellow-800 mb-2">🔒 Protected Fields</h4>
-                  <p className="text-sm text-yellow-700">Publication, deadline, pricing, request type, and media type cannot be edited to protect pricing engine variables.</p>
+                <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-400/30 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 bg-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="text-yellow-400 font-bold text-sm">🔒</div>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-yellow-400 mb-2">Protected Fields</h4>
+                      <p className="text-sm text-yellow-200 leading-relaxed">
+                        Publication, deadline, pricing, request type, and media type cannot be edited to protect pricing engine variables.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </form>
             </Form>
           </div>
 
           {/* Footer */}
-          <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 z-10">
+          <div className="sticky bottom-0 bg-gradient-to-r from-slate-800/90 to-slate-900/90 backdrop-blur-sm border-t border-white/10 p-6 z-10">
             <div className="flex gap-4">
               <Button
                 type="button"
@@ -2037,7 +2123,7 @@ export default function OpportunitiesManager() {
                   setEditingOpportunity(null);
                   editForm.reset();
                 }}
-                className="flex-1 h-12"
+                className="flex-1 h-12 bg-slate-800/50 border-2 border-white/20 hover:border-amber-400/50 hover:bg-amber-500/10 text-white hover:text-amber-400 font-semibold transition-all duration-200"
                 disabled={updateOpportunityMutation.isPending}
               >
                 Cancel
@@ -2045,7 +2131,7 @@ export default function OpportunitiesManager() {
               <Button
                 type="submit"
                 onClick={editForm.handleSubmit(onEditSubmit)}
-                className="flex-1 h-12"
+                className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-lg font-semibold"
                 disabled={updateOpportunityMutation.isPending}
               >
                 {updateOpportunityMutation.isPending ? (
@@ -2065,114 +2151,283 @@ export default function OpportunitiesManager() {
         </DialogContent>
       </Dialog>
       
-      {/* Manage Opportunity Modal */}
+      {/* Manage Opportunity Modal - Compact & Optimized */}
       <Dialog open={isManageModalOpen} onOpenChange={setIsManageModalOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center">
-              <MoreHorizontal className="h-6 w-6 mr-3 text-blue-600" />
+        <DialogContent className="max-w-3xl bg-slate-900 border border-white/20 text-white shadow-2xl">
+          <DialogHeader className="border-b border-white/10 pb-4">
+            <DialogTitle className="text-xl font-bold flex items-center text-white">
+              <div className="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-600 rounded-lg flex items-center justify-center mr-3">
+                <MoreHorizontal className="h-5 w-5 text-white" />
+              </div>
               Manage Opportunity
             </DialogTitle>
-            <DialogDescription>
-              Manage settings and actions for this opportunity
+            <DialogDescription className="text-slate-300 text-base mt-1">
+              Quick management options for this opportunity
             </DialogDescription>
           </DialogHeader>
           
           {managingOpportunity && (
-            <div className="space-y-6">
-              {/* Opportunity Info */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold text-lg mb-2">{managingOpportunity.title}</h3>
-                <p className="text-sm text-gray-600 mb-3">{managingOpportunity.description}</p>
-                <div className="flex items-center gap-4 text-sm">
-                  <Badge variant={getOpportunityStatus(managingOpportunity) === 'open' ? 'default' : 'secondary'}>
-                    {getOpportunityStatus(managingOpportunity).toUpperCase()}
-                  </Badge>
-                  <span className="text-gray-500">
-                    {managingOpportunity.publication?.name} • {managingOpportunity.tier}
-                  </span>
+            <div className="space-y-4 pt-4">
+              {/* Opportunity Overview */}
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+                <h3 className="font-semibold text-lg text-white mb-2 leading-tight">{managingOpportunity.title}</h3>
+                <p className="text-slate-300 text-sm leading-relaxed mb-3">{managingOpportunity.description}</p>
+                
+                {/* Compact Info Grid */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-1">
+                      <Building2 className="h-4 w-4 text-amber-400 mr-1" />
+                      <span className="text-xs font-medium text-slate-400">Publication</span>
+                    </div>
+                    <p className="text-white text-sm font-semibold truncate">{managingOpportunity.publication?.name}</p>
+                    <p className="text-amber-400 text-xs">{managingOpportunity.tier}</p>
+                  </div>
+                  
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-1">
+                      <Calendar className="h-4 w-4 text-blue-400 mr-1" />
+                      <span className="text-xs font-medium text-slate-400">Deadline</span>
+                    </div>
+                    <p className="text-white text-sm font-semibold">
+                      {new Date(managingOpportunity.deadline).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric'
+                      })}
+                    </p>
+                    <p className="text-blue-400 text-xs">
+                      {new Date(managingOpportunity.deadline) > new Date() ? 'Active' : 'Expired'}
+                    </p>
+                  </div>
+                  
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-1">
+                      <div className={`w-2 h-2 rounded-full mr-1 ${
+                        getOpportunityStatus(managingOpportunity) === 'open' ? 'bg-green-400' : 'bg-gray-400'
+                      }`} />
+                      <span className="text-xs font-medium text-slate-400">Status</span>
+                    </div>
+                    <p className={`text-sm font-semibold capitalize ${
+                      getOpportunityStatus(managingOpportunity) === 'open' ? 'text-green-400' : 'text-gray-400'
+                    }`}>
+                      {getOpportunityStatus(managingOpportunity)}
+                    </p>
+                  </div>
                 </div>
               </div>
               
-              {/* Actions */}
-              <div className="space-y-3">
-                <h4 className="font-medium text-gray-700">Available Actions</h4>
+              {/* Stats & Actions Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Quick Stats */}
+                <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+                  <h4 className="font-semibold text-white text-sm mb-3 flex items-center">
+                    <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                    Statistics
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-lg p-3 border border-blue-400/20">
+                      <div className="flex items-center">
+                        <MessageSquare className="h-4 w-4 text-blue-400 mr-2" />
+                        <div>
+                          <p className="text-blue-200 text-xs font-medium">Pitches</p>
+                          <p className="text-xl font-bold text-white">{managingOpportunity.pitchCount || 0}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg p-3 border border-green-400/20">
+                      <div className="flex items-center">
+                        <DollarSign className="h-4 w-4 text-green-400 mr-2" />
+                        <div>
+                          <p className="text-green-200 text-xs font-medium">
+                            {managingOpportunity.highestBid && managingOpportunity.highestBid > (managingOpportunity.minimumBid || 0) 
+                              ? 'Highest' 
+                              : 'Min Bid'
+                            }
+                          </p>
+                          <p className="text-xl font-bold text-white">
+                            ${managingOpportunity.highestBid || managingOpportunity.minimumBid || 0}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 
-                {/* Edit Button */}
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    setIsManageModalOpen(false);
-                    handleEditOpportunity(managingOpportunity);
-                  }}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Opportunity Content
-                </Button>
-                
-                {/* Close Opportunity Button - Only shown if open */}
-                {getOpportunityStatus(managingOpportunity) === 'open' && (
-                  <Button
-                    variant="destructive"
-                    className="w-full justify-start"
-                    onClick={() => {
-                      updateStatusMutation.mutate({
-                        id: managingOpportunity.id,
-                        status: 'closed'
-                      });
-                      setIsManageModalOpen(false);
-                      setManagingOpportunity(null);
-                    }}
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Close Opportunity
-                  </Button>
-                )}
-                
-                {/* Notice for closed opportunities */}
-                {getOpportunityStatus(managingOpportunity) === 'closed' && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <p className="text-sm text-yellow-800">
-                      <strong>Note:</strong> This opportunity is closed. Opportunities are automatically closed when their deadline passes, or can be manually closed. Closed opportunities no longer accept new pitches.
-                    </p>
-                    {new Date(managingOpportunity.deadline) < new Date() && (
-                      <p className="text-xs text-red-600 mt-2 font-medium">
-                        ⏰ This opportunity was auto-closed because the deadline ({new Date(managingOpportunity.deadline).toLocaleDateString()}) has passed.
-                      </p>
+                {/* Quick Actions */}
+                <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+                  <h4 className="font-semibold text-white text-sm mb-3">Quick Actions</h4>
+                  
+                  <div className="space-y-2">
+                    {/* Edit Button */}
+                    <Button
+                      size="sm"
+                      className="w-full justify-start bg-amber-500/10 border border-amber-400/30 hover:bg-amber-500/20 text-amber-300 hover:text-amber-200 font-medium h-8"
+                      onClick={() => {
+                        setIsManageModalOpen(false);
+                        handleEditOpportunity(managingOpportunity);
+                      }}
+                    >
+                      <Edit className="h-3 w-3 mr-2" />
+                      Edit Content
+                    </Button>
+                    
+                    {/* View Pitches Button */}
+                    <Button
+                      size="sm"
+                      className="w-full justify-start bg-blue-500/10 border border-blue-400/30 hover:bg-blue-500/20 text-blue-300 hover:text-blue-200 font-medium h-8"
+                      onClick={() => {
+                        setIsManageModalOpen(false);
+                        setManagingOpportunity(null);
+                        setShowPitches(managingOpportunity.id);
+                      }}
+                    >
+                      <MessageSquare className="h-3 w-3 mr-2" />
+                      View Pitches ({managingOpportunity.pitchCount || 0})
+                    </Button>
+                    
+                    {/* Close Opportunity Button - Only shown if open */}
+                    {getOpportunityStatus(managingOpportunity) === 'open' && (
+                      <Button
+                        size="sm"
+                        className="w-full justify-start bg-red-500/10 border border-red-400/30 hover:bg-red-500/20 text-red-300 hover:text-red-200 font-medium h-8"
+                        onClick={() => {
+                          setShowCloseConfirmation(managingOpportunity.id);
+                          setIsManageModalOpen(false);
+                          setManagingOpportunity(null);
+                        }}
+                      >
+                        <X className="h-3 w-3 mr-2" />
+                        Close Opportunity
+                      </Button>
                     )}
                   </div>
-                )}
-              </div>
-              
-              {/* Stats */}
-              <div className="border-t pt-4">
-                <h4 className="font-medium text-gray-700 mb-3">Opportunity Stats</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <MessageSquare className="h-6 w-6 text-blue-600 mx-auto mb-1" />
-                    <p className="text-2xl font-bold">{managingOpportunity.pitchCount || 0}</p>
-                    <p className="text-sm text-gray-600">Total Pitches</p>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <DollarSign className="h-6 w-6 text-green-600 mx-auto mb-1" />
-                    <p className="text-2xl font-bold">${managingOpportunity.highestBid || managingOpportunity.minimumBid || 0}</p>
-                    <p className="text-sm text-gray-600">Highest Bid</p>
-                  </div>
                 </div>
               </div>
+              
+              {/* Notice for closed opportunities */}
+              {getOpportunityStatus(managingOpportunity) === 'closed' && (
+                <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-400/30 rounded-lg p-3">
+                  <div className="flex items-start space-x-2">
+                    <div className="w-6 h-6 bg-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                      <X className="h-3 w-3 text-yellow-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-yellow-400 font-semibold text-sm mb-1">Opportunity Closed</h4>
+                      <p className="text-yellow-200 text-xs leading-relaxed">
+                        This opportunity no longer accepts new pitches.
+                        {new Date(managingOpportunity.deadline) < new Date() && (
+                          <span className="block mt-1 text-red-300 font-medium">
+                            ⏰ Auto-closed on {new Date(managingOpportunity.deadline).toLocaleDateString()}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           
-          <DialogFooter>
+          <DialogFooter className="border-t border-white/10 pt-3 mt-4">
             <Button
-              variant="outline"
+              size="sm"
+              className="bg-slate-700/50 border border-white/20 hover:bg-slate-600/50 text-white hover:text-amber-300 font-medium px-6"
               onClick={() => {
                 setIsManageModalOpen(false);
                 setManagingOpportunity(null);
               }}
             >
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Close Opportunity Confirmation Modal */}
+      <Dialog open={!!showCloseConfirmation} onOpenChange={(open) => !open && setShowCloseConfirmation(null)}>
+        <DialogContent className="max-w-lg bg-slate-900 border border-white/20 text-white shadow-2xl">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-xl font-bold text-white flex items-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-red-600 rounded-lg flex items-center justify-center mr-3">
+                <X className="h-5 w-5 text-white" />
+              </div>
+              Close Opportunity?
+            </DialogTitle>
+            <DialogDescription className="text-slate-300 text-base leading-relaxed">
+              Are you sure you want to close this opportunity? This action will stop accepting new pitches and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {showCloseConfirmation && (() => {
+              const opportunity = finalOpportunities?.find((o: any) => o.id === showCloseConfirmation);
+              return opportunity ? (
+                <div className="bg-slate-800/50 rounded-lg p-4 border border-white/10">
+                  <h4 className="font-semibold text-white mb-2 leading-tight">{opportunity.title}</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-slate-400">Publication:</span>
+                      <p className="text-white font-medium">{opportunity.publication?.name}</p>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Pitches:</span>
+                      <p className="text-white font-medium">{opportunity.pitchCount || 0} received</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null;
+            })()}
+          </div>
+          
+          <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-400/30 rounded-lg p-4 mb-4">
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-red-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-red-400 font-bold text-sm">⚠️</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-red-400 mb-1">Important</h4>
+                <p className="text-sm text-red-200 leading-relaxed">
+                  Closing this opportunity will prevent new experts from submitting pitches. Existing pitches will remain available for review.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="pt-4 border-t border-white/10">
+            <Button
+              variant="outline"
+              onClick={() => setShowCloseConfirmation(null)}
+              className="bg-slate-800/50 border-2 border-white/20 hover:border-amber-400/50 hover:bg-amber-500/10 text-white hover:text-amber-400 font-semibold"
+              disabled={updatingStatus[showCloseConfirmation || 0]}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (showCloseConfirmation) {
+                  updateStatusMutation.mutate({
+                    id: showCloseConfirmation,
+                    status: 'closed'
+                  });
+                  setShowCloseConfirmation(null);
+                }
+              }}
+              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg font-semibold"
+              disabled={updatingStatus[showCloseConfirmation || 0]}
+            >
+              {updatingStatus[showCloseConfirmation || 0] ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Closing...
+                </>
+              ) : (
+                <>
+                  <X className="mr-2 h-4 w-4" />
+                  Yes, Close Opportunity
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -276,15 +276,15 @@ function Router() {
           
           return (
             <AdminLayout>
-              <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+              <div className="min-h-screen">
                 <div className="container mx-auto py-8 px-6">
                   
                   {/* Enhanced Header */}
                   <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-3">
+                    <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-slate-200 bg-clip-text text-transparent mb-3">
                       Admin Dashboard
                     </h1>
-                    <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                    <p className="text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
                       Comprehensive platform management and analytics at your fingertips
                     </p>
                   </div>
@@ -294,11 +294,11 @@ function Router() {
                     {/* Opportunities Card */}
                     <Link 
                       href="/admin/opportunities"
-                      className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-white/20"
+                      className="group bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-white/10 hover:border-white/20"
                     >
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
-                          <p className="text-gray-500 text-sm font-medium uppercase tracking-wide mb-3">Total Opportunities</p>
+                          <p className="text-slate-400 text-sm font-medium uppercase tracking-wide mb-3">Total Opportunities</p>
                           {(() => {
                             const OpportunityCount = () => {
                               const { data: opportunities, isLoading } = useQuery({
@@ -310,10 +310,10 @@ function Router() {
                                 },
                               });
                               
-                              if (isLoading) return <p className="text-4xl font-bold text-gray-900 leading-none">...</p>;
+                              if (isLoading) return <p className="text-4xl font-bold text-white leading-none">...</p>;
                               
                               return (
-                                <p className="text-4xl font-bold text-gray-900 leading-none">
+                                <p className="text-4xl font-bold text-white leading-none">
                                   {opportunities?.length || 0}
                                 </p>
                               );
@@ -328,8 +328,8 @@ function Router() {
                           </svg>
                         </div>
                       </div>
-                      <div className="border-t border-gray-200 pt-4">
-                        <p className="text-sm text-green-600 flex items-center font-medium group-hover:text-green-700 transition-colors">
+                      <div className="border-t border-white/10 pt-4">
+                        <p className="text-sm text-green-400 flex items-center font-medium group-hover:text-green-300 transition-colors">
                           <span>Manage opportunities</span>
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -341,11 +341,11 @@ function Router() {
                     {/* Pitches Card */}
                     <Link 
                       href="/admin/pitches"
-                      className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-white/20"
+                      className="group bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-white/10 hover:border-white/20"
                     >
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
-                          <p className="text-gray-500 text-sm font-medium uppercase tracking-wide mb-3">Active Pitches</p>
+                          <p className="text-slate-400 text-sm font-medium uppercase tracking-wide mb-3">Active Pitches</p>
                           {(() => {
                             const PitchesCount = () => {
                               const { data: pitches, isLoading } = useQuery({
@@ -357,10 +357,10 @@ function Router() {
                                 },
                               });
                               
-                              if (isLoading) return <p className="text-4xl font-bold text-gray-900 leading-none">...</p>;
+                              if (isLoading) return <p className="text-4xl font-bold text-white leading-none">...</p>;
                               
                               return (
-                                <p className="text-4xl font-bold text-gray-900 leading-none">
+                                <p className="text-4xl font-bold text-white leading-none">
                                   {pitches?.length || 0}
                                 </p>
                               );
@@ -375,8 +375,8 @@ function Router() {
                           </svg>
                         </div>
                       </div>
-                      <div className="border-t border-gray-200 pt-4">
-                        <p className="text-sm text-blue-600 flex items-center font-medium group-hover:text-blue-700 transition-colors">
+                      <div className="border-t border-white/10 pt-4">
+                        <p className="text-sm text-blue-400 flex items-center font-medium group-hover:text-blue-300 transition-colors">
                           <span>Review active pitches</span>
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -388,11 +388,11 @@ function Router() {
                     {/* User Activity Card */}
                     <Link 
                       href="/admin/analytics"
-                      className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-white/20"
+                      className="group bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-white/10 hover:border-white/20"
                     >
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
-                          <p className="text-gray-500 text-sm font-medium uppercase tracking-wide mb-3">User Activity</p>
+                          <p className="text-slate-400 text-sm font-medium uppercase tracking-wide mb-3">User Activity</p>
                           {(() => {
                             const UserActivity = () => {
                               const { data: activity, isLoading } = useQuery({
@@ -404,14 +404,14 @@ function Router() {
                                 },
                               });
                               
-                              if (isLoading) return <p className="text-4xl font-bold text-gray-900 leading-none">...</p>;
+                              if (isLoading) return <p className="text-4xl font-bold text-white leading-none">...</p>;
                               
                               return (
                                 <div className="flex items-baseline">
-                                  <p className="text-4xl font-bold text-gray-900 leading-none">
+                                  <p className="text-4xl font-bold text-white leading-none">
                                     {activity?.currentlyOnline || 0}
                                   </p>
-                                  <span className="text-lg text-purple-600 font-medium ml-2">online</span>
+                                  <span className="text-lg text-purple-400 font-medium ml-2">online</span>
                                 </div>
                               );
                             };
@@ -426,11 +426,11 @@ function Router() {
                           </svg>
                         </div>
                       </div>
-                      <div className="border-t border-gray-200 pt-4">
+                      <div className="border-t border-white/10 pt-4">
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <p className="text-purple-600 font-medium">Today:</p>
-                            <span className="text-gray-600 font-semibold">
+                            <p className="text-purple-400 font-medium">Today:</p>
+                            <span className="text-slate-300 font-semibold">
                               {(() => {
                                 const ActiveToday = () => {
                                   const { data } = useQuery({
@@ -450,8 +450,8 @@ function Router() {
                             </span>
                           </div>
                           <div>
-                            <p className="text-purple-600 font-medium">This week:</p>
-                            <span className="text-gray-600 font-semibold">
+                            <p className="text-purple-400 font-medium">This week:</p>
+                            <span className="text-slate-300 font-semibold">
                               {(() => {
                                 const ActiveWeek = () => {
                                   const { data } = useQuery({
@@ -477,11 +477,11 @@ function Router() {
                     {/* Users Card */}
                     <Link 
                       href="/admin/users"
-                      className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-white/20"
+                      className="group bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-white/10 hover:border-white/20"
                     >
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
-                          <p className="text-gray-500 text-sm font-medium uppercase tracking-wide mb-3">Users</p>
+                          <p className="text-slate-400 text-sm font-medium uppercase tracking-wide mb-3">Users</p>
                           {(() => {
                             const UserCount = () => {
                               const { data: users, isLoading } = useQuery({
@@ -493,10 +493,10 @@ function Router() {
                                 },
                               });
                               
-                              if (isLoading) return <p className="text-4xl font-bold text-gray-900 leading-none">...</p>;
+                              if (isLoading) return <p className="text-4xl font-bold text-white leading-none">...</p>;
                               
                               return (
-                                <p className="text-4xl font-bold text-gray-900 leading-none">
+                                <p className="text-4xl font-bold text-white leading-none">
                                   {users?.length || 0}
                                 </p>
                               );
@@ -511,8 +511,8 @@ function Router() {
                           </svg>
                         </div>
                       </div>
-                      <div className="border-t border-gray-200 pt-4">
-                        <p className="text-sm text-amber-600 flex items-center font-medium group-hover:text-amber-700 transition-colors">
+                      <div className="border-t border-white/10 pt-4">
+                        <p className="text-sm text-amber-400 flex items-center font-medium group-hover:text-amber-300 transition-colors">
                           <span>View and manage users</span>
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -584,11 +584,11 @@ function Router() {
                   </div>
                   
                   {/* Enhanced Quick Actions */}
-                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-white/20">
+                  <div className="bg-slate-800/50 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-white/10">
                     <div className="flex items-center justify-between mb-8">
                       <div>
-                        <h2 className="text-3xl font-bold text-gray-900 mb-2">Quick Actions</h2>
-                        <p className="text-gray-600 text-lg">Streamlined access to key administrative functions</p>
+                        <h2 className="text-3xl font-bold text-white mb-2">Quick Actions</h2>
+                        <p className="text-slate-300 text-lg">Streamlined access to key administrative functions</p>
                       </div>
                       <div className="hidden sm:flex w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -600,7 +600,7 @@ function Router() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <Link 
                         href="/admin/opportunities?create=true" 
-                        className="group flex items-center gap-4 p-6 rounded-2xl border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 transition-all duration-300 transform hover:-translate-y-1"
+                        className="group flex items-center gap-4 p-6 rounded-2xl border-2 border-white/10 hover:border-purple-400/50 hover:bg-purple-500/10 transition-all duration-300 transform hover:-translate-y-1"
                       >
                         <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-4 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -608,10 +608,10 @@ function Router() {
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-purple-700 transition-colors">Create New Opportunity</h3>
-                          <p className="text-gray-600 group-hover:text-purple-600 transition-colors">Add a new media opportunity to the platform</p>
+                          <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-purple-300 transition-colors">Create New Opportunity</h3>
+                          <p className="text-slate-400 group-hover:text-purple-400 transition-colors">Add a new media opportunity to the platform</p>
                         </div>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 group-hover:text-purple-500 transform group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400 group-hover:text-purple-400 transform group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </Link>
@@ -621,7 +621,7 @@ function Router() {
                           window.location.href = '/admin/publications';
                           setTimeout(() => window.scrollTo(0, 0), 100);
                         }}
-                        className="group flex items-center gap-4 p-6 rounded-2xl border-2 border-gray-200 hover:border-amber-300 hover:bg-amber-50/50 transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                        className="group flex items-center gap-4 p-6 rounded-2xl border-2 border-white/10 hover:border-amber-400/50 hover:bg-amber-500/10 transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
                       >
                         <div className="bg-gradient-to-r from-amber-500 to-yellow-500 p-4 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -629,10 +629,10 @@ function Router() {
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-amber-700 transition-colors">Manage Publications</h3>
-                          <p className="text-gray-600 group-hover:text-amber-600 transition-colors">Edit and organize platform publications</p>
+                          <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-amber-300 transition-colors">Manage Publications</h3>
+                          <p className="text-slate-400 group-hover:text-amber-400 transition-colors">Edit and organize platform publications</p>
                         </div>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 group-hover:text-amber-500 transform group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400 group-hover:text-amber-400 transform group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </div>
@@ -642,7 +642,7 @@ function Router() {
                           window.location.href = '/admin/users';
                           setTimeout(() => window.scrollTo(0, 0), 100);
                         }}
-                        className="group flex items-center gap-4 p-6 rounded-2xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                        className="group flex items-center gap-4 p-6 rounded-2xl border-2 border-white/10 hover:border-blue-400/50 hover:bg-blue-500/10 transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
                       >
                         <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-4 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -650,10 +650,10 @@ function Router() {
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-blue-700 transition-colors">Manage Users</h3>
-                          <p className="text-gray-600 group-hover:text-blue-600 transition-colors">View and manage all platform users</p>
+                          <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-blue-300 transition-colors">Manage Users</h3>
+                          <p className="text-slate-400 group-hover:text-blue-400 transition-colors">View and manage all platform users</p>
                         </div>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400 group-hover:text-blue-400 transform group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </div>
@@ -663,7 +663,7 @@ function Router() {
                           window.location.href = '/admin/analytics';
                           setTimeout(() => window.scrollTo(0, 0), 100);
                         }}
-                        className="group flex items-center gap-4 p-6 rounded-2xl border-2 border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/50 transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                        className="group flex items-center gap-4 p-6 rounded-2xl border-2 border-white/10 hover:border-emerald-400/50 hover:bg-emerald-500/10 transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
                       >
                         <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-4 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -671,10 +671,10 @@ function Router() {
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-emerald-700 transition-colors">Analytics & Reports</h3>
-                          <p className="text-gray-600 group-hover:text-emerald-600 transition-colors">View platform insights and analytics</p>
+                          <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-emerald-300 transition-colors">Analytics & Reports</h3>
+                          <p className="text-slate-400 group-hover:text-emerald-400 transition-colors">View platform insights and analytics</p>
                         </div>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 group-hover:text-emerald-500 transform group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400 group-hover:text-emerald-400 transform group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </div>
