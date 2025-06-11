@@ -14,6 +14,10 @@ import Stripe from "stripe";
 import { setupAuth } from "./auth";
 import { Resend } from 'resend';
 import { sendOpportunityNotification, sendPasswordResetEmail, sendUsernameReminderEmail, sendPricingNotificationEmail, sendNotificationEmail, sendWelcomeEmail, sendUserNotificationEmail } from './lib/email';
+import { render } from '@react-email/render';
+import WelcomeEmail from '../emails/templates/WelcomeEmail';
+import PriceDropAlert from '../emails/templates/PriceDropAlert';
+import NotificationEmail from '../emails/templates/NotificationEmail';
 
 // Initialize Resend if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -721,6 +725,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // to avoid redundant handlers after auth setup.
 
   // Password reset endpoints
+  app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+      
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: 'Please enter a valid email address' });
+      }
+      
+      // Check if user exists with this email
+      const user = await storage.getUserByEmail(email);
+      
+      // Always return success response for security (don't reveal if email exists)
+      // But only send email if user actually exists
+      if (user) {
+        // Generate a JWT reset token with 1 hour expiration
+        const resetToken = jwt.sign(
+          { 
+            userId: user.id, 
+            type: 'password-reset',
+            email: user.email 
+          },
+          process.env.JWT_SECRET || 'default-secret',
+          { expiresIn: '1h' }
+        );
+        
+        // Send the password reset email
+        try {
+          const success = await sendPasswordResetEmail(
+            user.email,
+            resetToken,
+            user.username
+          );
+          
+          if (!success) {
+            console.error('❌ Failed to send password reset email to:', user.email);
+          } else {
+            console.log('✅ Password reset email sent to:', user.email);
+          }
+        } catch (emailError) {
+          console.error('❌ Error sending password reset email:', emailError);
+        }
+      } else {
+        console.log(`🔍 Password reset requested for non-existent email: ${email}`);
+      }
+      
+      // Always return success to prevent email enumeration attacks
+      res.setHeader('Content-Type', 'application/json');
+      res.json({ 
+        success: true, 
+        message: 'If an account with that email exists, we\'ve sent a password reset link.' 
+      });
+    } catch (error: any) {
+      console.error('Error processing forgot password request:', error);
+      res.setHeader('Content-Type', 'application/json');
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.post('/api/auth/validate-reset-token', async (req: Request, res: Response) => {
     try {
       const { token } = req.body;
@@ -762,8 +830,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Token and new password are required' });
       }
       
-      if (newPassword.length < 8) {
-        return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+      // Comprehensive password validation
+      const passwordValidation = {
+        minLength: newPassword.length >= 8,
+        uppercase: /[A-Z]/.test(newPassword),
+        lowercase: /[a-z]/.test(newPassword),
+        number: /\d/.test(newPassword),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword),
+      };
+
+      const isValidPassword = Object.values(passwordValidation).every(Boolean);
+      
+      if (!isValidPassword) {
+        const missing = [];
+        if (!passwordValidation.minLength) missing.push('at least 8 characters');
+        if (!passwordValidation.uppercase) missing.push('one uppercase letter');
+        if (!passwordValidation.lowercase) missing.push('one lowercase letter');
+        if (!passwordValidation.number) missing.push('one number');
+        if (!passwordValidation.special) missing.push('one special character');
+        
+        return res.status(400).json({ 
+          message: `Password must contain ${missing.join(', ')}`
+        });
       }
       
       // Verify the JWT token
@@ -3244,6 +3332,483 @@ export async function registerRoutes(app: Express): Promise<Server> {
         details: error.response?.body || error.toString()
       });
     }
+  });
+
+  // ============ EMAIL PREVIEW ENDPOINTS (DEVELOPMENT) ============
+  
+  // Email Preview Routes for Development - ULTIMATE LIVE RELOAD
+  app.get("/api/email-preview/:template", async (req: Request, res: Response) => {
+    const { template } = req.params;
+    
+    // ULTIMATE CACHE DESTRUCTION
+    const reloadId = Date.now() + Math.random();
+    
+    console.log(`\n🚀 ======= EMAIL LIVE RELOAD START (${reloadId}) =======`);
+    
+    // DESTROY ALL CACHING - CLIENT AND SERVER
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0, private, no-transform');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '-1');
+    res.setHeader('Last-Modified', new Date().toUTCString());
+    res.setHeader('ETag', `"live-reload-${reloadId}"`);
+    res.setHeader('Vary', '*');
+    res.setHeader('X-Accel-Expires', '0');
+    res.setHeader('X-Live-Reload-ID', reloadId.toString());
+    res.setHeader('X-Force-Fresh', 'true');
+    
+    // ES MODULE LIVE RELOAD (no require.cache manipulation needed)
+    console.log('🔥 ES MODULE LIVE RELOAD - Using dynamic imports with cache busting');
+    console.log('⚡ Cache busting enabled via query parameters');
+    
+    // FORCE GARBAGE COLLECTION IF AVAILABLE
+    if (global.gc) {
+      console.log('🗑️ FORCING GARBAGE COLLECTION...');
+      global.gc();
+    }
+    
+    try {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
+      let emailHtml = '';
+      
+      switch (template) {
+        case 'welcome':
+          const liveTimestamp = new Date().toISOString();
+          const randomHash = Math.random().toString(36).substring(2, 15);
+          
+          console.log(`🔥 LIVE RENDERING WelcomeEmail - Time: ${liveTimestamp} Hash: ${randomHash}`);
+          
+          // DYNAMIC IMPORT WITH CACHE BYPASS (ES Module Compatible)
+          const cacheBustQuery = `?t=${liveTimestamp}&h=${randomHash}`;
+          const modulePath = `../emails/templates/WelcomeEmail.tsx${cacheBustQuery}`;
+          console.log(`📂 Dynamic import path: ${modulePath}`);
+          
+          // Fresh ES module import with cache busting
+          const FreshWelcomeModule = await import(modulePath);
+          const FreshWelcomeComponent = FreshWelcomeModule.default;
+          
+          console.log(`✅ Fresh WelcomeEmail component loaded`);
+          
+          // Render with live data
+          // Demo industries to showcase personalization
+          const demoIndustries = ['Technology', 'Finance', 'Healthcare', 'Real Estate', 'Energy', 'Crypto'];
+          const randomIndustry = demoIndustries[Math.floor(Math.random() * demoIndustries.length)];
+          
+          const renderProps = {
+            userFirstName: 'John',
+            username: 'john_doe',
+            frontendUrl,
+            industry: randomIndustry, // Random industry to showcase personalization
+          };
+          
+          console.log('🎨 RENDERING EMAIL WITH PROPS:', JSON.stringify(renderProps, null, 2));
+          
+          emailHtml = await render(FreshWelcomeComponent(renderProps));
+          
+          console.log(`🎨 EMAIL RENDERED! Length: ${emailHtml.length} chars`);
+          console.log(`🎨 HTML Preview: ${emailHtml.substring(0, 200)}...`);
+          break;
+          
+        case 'price-drop':
+          emailHtml = await render(PriceDropAlert({
+            opportunityTitle: 'Looking For Capital Market Experts For A Story on eVTOL Stocks',
+            oldPrice: 345,
+            newPrice: 275,
+            outlet: 'Yahoo Finance',
+            deadline: 'December 15, 2024 at 3:00 PM EST',
+            frontendUrl,
+            opportunityId: '17',
+          }));
+          break;
+          
+        case 'notification-opportunity':
+          emailHtml = await render(NotificationEmail({
+            type: 'opportunity',
+            title: 'New PR Opportunity Available',
+            message: 'A major tech publication is seeking expert commentary on emerging AI trends. This is a high-value opportunity with excellent exposure potential.',
+            userName: 'John',
+            linkUrl: `${frontendUrl}/opportunities`,
+            linkText: 'View Opportunities',
+          }));
+          break;
+          
+        case 'notification-pitch-status':
+          emailHtml = await render(NotificationEmail({
+            type: 'pitch_status',
+            title: 'Your Pitch Was Accepted!',
+            message: 'Congratulations! Your pitch for the Bloomberg AI story has been accepted. You will be featured in the upcoming article.',
+            userName: 'John',
+            linkUrl: `${frontendUrl}/my-pitches`,
+            linkText: 'View My Pitches',
+          }));
+          break;
+          
+        case 'notification-payment':
+          emailHtml = await render(NotificationEmail({
+            type: 'payment',
+            title: 'Payment Processed',
+            message: 'Your payment of $275 for the Yahoo Finance placement has been successfully processed. Thank you for using QuoteBid!',
+            userName: 'John',
+            linkUrl: `${frontendUrl}/billing`,
+            linkText: 'View Billing',
+          }));
+          break;
+          
+        case 'notification-media-coverage':
+          emailHtml = await render(NotificationEmail({
+            type: 'media_coverage',
+            title: 'Your Article is Live!',
+            message: 'Your expert commentary is now published! Check out your featured quote in the latest Yahoo Finance article.',
+            userName: 'John',
+            linkUrl: `${frontendUrl}/account?tab=media`,
+            linkText: 'View My Coverage',
+          }));
+          break;
+          
+        case 'password-reset':
+          // Inline HTML version from server/lib/email.ts
+          const resetToken = 'sample-jwt-token-for-preview';
+          const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+          emailHtml = `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="utf-8">
+                <title>Password Reset - QuoteBid</title>
+                <style>
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                  .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+                  .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+                  .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+                  .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="header">
+                    <h1>🔐 Password Reset Request</h1>
+                    <p>QuoteBid Security Team</p>
+                  </div>
+                  <div class="content">
+                    <p>Hello John,</p>
+                    <p>We received a request to reset your QuoteBid account password. If you made this request, click the button below to reset your password:</p>
+                    <p style="text-align: center; margin: 30px 0;">
+                      <a href="${resetUrl}" class="button">Reset My Password</a>
+                    </p>
+                    <p><strong>This link will expire in 1 hour for security reasons.</strong></p>
+                    <p>If you didn't request this password reset, please ignore this email. Your password will remain unchanged.</p>
+                    <p>For security, this reset link can only be used once.</p>
+                    <div class="footer">
+                      <p>Need help? Contact our support team at support@quotebid.co</p>
+                      <p>© 2024 QuoteBid. All rights reserved.</p>
+                    </div>
+                  </div>
+                </div>
+              </body>
+            </html>
+          `;
+          break;
+          
+        case 'username-reminder':
+          // Inline HTML version from server/lib/email.ts
+          emailHtml = `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="utf-8">
+                <title>Username Reminder - QuoteBid</title>
+                <style>
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                  .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+                  .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+                  .username { background: #667eea; color: white; padding: 15px; text-align: center; border-radius: 5px; font-size: 18px; font-weight: bold; }
+                  .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="header">
+                    <h1>👤 Username Reminder</h1>
+                    <p>QuoteBid Account Services</p>
+                  </div>
+                  <div class="content">
+                    <p>Hello,</p>
+                    <p>You requested a reminder of your QuoteBid username. Here it is:</p>
+                    <div class="username">john_doe</div>
+                    <p>You can use this username to log in to your QuoteBid account at <a href="${frontendUrl}">${frontendUrl}</a></p>
+                    <p>If you didn't request this reminder, please ignore this email.</p>
+                    <div class="footer">
+                      <p>Need help? Contact our support team at support@quotebid.co</p>
+                      <p>© 2024 QuoteBid. All rights reserved.</p>
+                    </div>
+                  </div>
+                </div>
+              </body>
+            </html>
+          `;
+          break;
+          
+        case 'price-drop-inline':
+          // Inline HTML version from server/lib/email.ts
+          emailHtml = `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="utf-8">
+                <title>Price Drop Alert - QuoteBid</title>
+                <style>
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                  .header { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+                  .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+                  .price-alert { background: #059669; color: white; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0; }
+                  .button { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; }
+                  .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="header">
+                    <h1>💰 Price Drop Alert!</h1>
+                    <p>QuoteBid Pricing Engine</p>
+                  </div>
+                  <div class="content">
+                    <p>Great news! The price has dropped on an opportunity you've shown interest in:</p>
+                    <div class="price-alert">
+                      <h3 style="margin: 0 0 10px 0;">Yahoo Finance eVTOL Story</h3>
+                      <p style="margin: 0; font-size: 18px;">
+                        <strong>New Price: $275</strong>
+                      </p>
+                    </div>
+                    <p>This could be a great opportunity to submit your pitch at a better price point.</p>
+                    <p style="text-align: center; margin: 30px 0;">
+                      <a href="${frontendUrl}" class="button">View Opportunity</a>
+                    </p>
+                    <div class="footer">
+                      <p>You're receiving this because you've previously shown interest in this opportunity.</p>
+                      <p>© 2024 QuoteBid. All rights reserved.</p>
+                    </div>
+                  </div>
+                </div>
+              </body>
+            </html>
+          `;
+          break;
+          
+        case 'last-call-inline':
+          // Inline HTML version from server/lib/email.ts
+          emailHtml = `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="utf-8">
+                <title>Last Call Alert - QuoteBid</title>
+                <style>
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                  .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+                  .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+                  .urgent-alert { background: #fef2f2; padding: 20px; border-left: 4px solid #dc2626; border-radius: 8px; margin: 20px 0; }
+                  .button { display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; }
+                  .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="header">
+                    <h1>⏰ Last Call!</h1>
+                    <p>QuoteBid Deadline Alert</p>
+                  </div>
+                  <div class="content">
+                    <p>Time is running out! An opportunity you're interested in is closing soon:</p>
+                    <div class="urgent-alert">
+                      <h3 style="margin: 0 0 10px 0; color: #1f2937;">Yahoo Finance eVTOL Story</h3>
+                      <p style="margin: 0; color: #dc2626;">
+                        <strong>Closing Soon - Current Price: $275</strong>
+                      </p>
+                    </div>
+                    <p>Don't miss out! Submit your pitch now before this opportunity expires.</p>
+                    <p style="text-align: center; margin: 30px 0;">
+                      <a href="${frontendUrl}" class="button">Submit Pitch Now</a>
+                    </p>
+                    <div class="footer">
+                      <p style="color: #dc2626; font-weight: bold;">Act fast - this opportunity may not be available much longer!</p>
+                      <p>© 2024 QuoteBid. All rights reserved.</p>
+                    </div>
+                  </div>
+                </div>
+              </body>
+            </html>
+          `;
+          break;
+          
+        case 'placement-success':
+          // Admin placement notification email
+          emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+                <h1 style="color: #4a5568; margin: 0;">QuoteBid</h1>
+              </div>
+              <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
+                <p style="font-size: 16px;">Congrats John!</p>
+                
+                <p style="font-size: 16px; margin-top: 20px;">Your bid of $275 secured your spot in this breaking story:</p>
+                
+                <p style="font-size: 16px; margin-top: 10px;">→ Yahoo Finance eVTOL Analysis – Yahoo Finance</p>
+                
+                <p style="font-size: 16px; margin-top: 10px;">→ <a href="https://finance.yahoo.com/sample-article" style="color: #4a5568;">https://finance.yahoo.com/sample-article</a></p>
+                
+                <p style="font-size: 16px; margin-top: 20px;">A receipt for $275 has been charged to your card on file.</p>
+                
+                <p style="font-size: 16px; margin-top: 10px;">Thank you for trusting our marketplace!</p>
+                
+                <div style="margin-top: 30px; text-align: center;">
+                  <p style="font-size: 14px; color: #718096;">QuoteBid - Connect with top publications</p>
+                </div>
+              </div>
+            </div>
+          `;
+          break;
+          
+        default:
+          return res.status(404).json({ error: 'Template not found' });
+      }
+      
+      res.setHeader('Content-Type', 'text/html');
+      res.send(emailHtml);
+    } catch (error) {
+      console.error('Error rendering email template:', error);
+      res.status(500).json({ error: 'Failed to render email template' });
+    }
+  });
+
+  // Email Preview Index Page
+  app.get("/api/email-preview", async (req: Request, res: Response) => {
+    // Disable caching to always show fresh content
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
+    const templates = [
+      { name: 'Welcome Email', path: 'welcome', description: 'Sent to new users after signup', type: 'react' },
+      { name: 'Price Drop Alert (React)', path: 'price-drop', description: 'React Email template for price drops', type: 'react' },
+      { name: 'Price Drop Alert (Inline)', path: 'price-drop-inline', description: 'Inline HTML template for price drops', type: 'inline' },
+      { name: 'Last Call Alert', path: 'last-call-inline', description: 'Inline HTML template for deadline alerts', type: 'inline' },
+      { name: 'Password Reset', path: 'password-reset', description: 'Password reset email', type: 'inline' },
+      { name: 'Username Reminder', path: 'username-reminder', description: 'Username reminder email', type: 'inline' },
+      { name: 'Notification - Opportunity', path: 'notification-opportunity', description: 'New opportunity notification', type: 'react' },
+      { name: 'Notification - Pitch Status', path: 'notification-pitch-status', description: 'Pitch acceptance notification', type: 'react' },
+      { name: 'Notification - Payment', path: 'notification-payment', description: 'Payment confirmation', type: 'react' },
+      { name: 'Notification - Media Coverage', path: 'notification-media-coverage', description: 'Article published notification', type: 'react' },
+      { name: 'Placement Success', path: 'placement-success', description: 'Admin placement notification', type: 'inline' },
+    ];
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>QuoteBid Email Templates - Preview</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+            .container { max-width: 1200px; margin: 0 auto; }
+            .header { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); color: white; padding: 40px; border-radius: 20px; margin-bottom: 30px; text-align: center; border: 1px solid rgba(255,255,255,0.2); }
+            .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+            .card { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 16px; padding: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.3); }
+            .card:hover { transform: translateY(-4px); box-shadow: 0 16px 64px rgba(0,0,0,0.15); }
+            .card h3 { margin: 0 0 12px 0; color: #2d3748; font-size: 18px; font-weight: 700; }
+            .card p { color: #4a5568; margin: 0 0 16px 0; font-size: 14px; line-height: 1.5; }
+            .btn { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 10px; font-weight: 600; transition: all 0.2s ease; font-size: 14px; }
+            .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); }
+            .status { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-left: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+            .react { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+            .inline { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
+            .stats { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); margin-top: 30px; padding: 30px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.3); }
+            .problem { color: #dc2626; font-weight: 600; }
+            .solution { color: #059669; font-weight: 600; }
+            ul { padding-left: 20px; }
+            li { margin: 8px 0; line-height: 1.5; }
+            .urgent { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 20px; border-radius: 12px; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0 0 16px 0; font-size: 2.5rem; font-weight: 800;">📧 QuoteBid Email Templates</h1>
+              <p style="margin: 0; font-size: 1.2rem; opacity: 0.9;">Preview all email templates that need design improvements</p>
+            </div>
+            
+            <div class="grid">
+              ${templates.map(template => `
+                <div class="card">
+                  <h3>
+                    ${template.name}
+                    <span class="status ${template.type}">
+                      ${template.type === 'react' ? '⚛️ React Email' : '📝 Inline HTML'}
+                    </span>
+                  </h3>
+                  <p>${template.description}</p>
+                  <a href="/api/email-preview/${template.path}" class="btn" target="_blank">
+                    👁️ Preview Email
+                  </a>
+                </div>
+              `).join('')}
+            </div>
+            
+            <div class="stats">
+              <h2 style="margin: 0 0 20px 0; color: #2d3748;">🎨 Email Design Status</h2>
+              
+              <div class="urgent">
+                <h3 style="margin: 0 0 12px 0;">🚨 URGENT: These emails look terrible!</h3>
+                <p style="margin: 0;">All email templates need immediate design overhaul to match your beautiful homepage theme.</p>
+              </div>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
+                <div>
+                  <h3 class="problem">🔴 Current Problems:</h3>
+                  <ul>
+                    <li>❌ Inconsistent design between React & inline HTML</li>
+                    <li>❌ No dark gradient theme like homepage</li>
+                    <li>❌ Poor typography and visual hierarchy</li>
+                    <li>❌ Outdated colors and layouts</li>
+                    <li>❌ No mobile optimization</li>
+                    <li>❌ Missing QuoteBid brand identity</li>
+                    <li>❌ Basic styling that looks unprofessional</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h3 class="solution">✅ Design Goals:</h3>
+                  <ul>
+                    <li>✅ Convert all to React Email components</li>
+                    <li>✅ Apply dark gradient theme (slate→purple→violet)</li>
+                    <li>✅ Modern typography and spacing</li>
+                    <li>✅ Animated gradient backgrounds</li>
+                    <li>✅ Perfect mobile responsiveness</li>
+                    <li>✅ Consistent QuoteBid branding</li>
+                    <li>✅ Professional, stunning visual design</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-top: 20px; border-left: 4px solid #3b82f6;">
+                <h4 style="margin: 0 0 10px 0; color: #1e40af;">📋 Next Steps:</h4>
+                <ol style="margin: 0; color: #374151;">
+                  <li>Review each email template above</li>
+                  <li>Start with the most critical templates (welcome, price drop)</li>
+                  <li>Apply unified dark gradient design system</li>
+                  <li>Test mobile responsiveness</li>
+                  <li>Deploy updated templates</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
   });
 
   // ============ USER PROFILE ENDPOINTS ============

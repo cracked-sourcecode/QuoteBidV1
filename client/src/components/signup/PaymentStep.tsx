@@ -157,114 +157,35 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
 
   if (!clientSecret && !errorMessage) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Setting up secure payment...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (errorMessage && !clientSecret) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center max-w-md">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-red-700 mb-2">Payment Setup Error</h3>
-          <p className="text-gray-600 mb-6">{errorMessage}</p>
-          <Button 
-            onClick={() => {
-              setErrorMessage(null);
-              const createSubscription = async () => {
-                if (!email) {
-                  setErrorMessage('Email not found. Please restart the signup process.');
-                  return;
-                }
-
-                try {
-                  const response = await apiRequest('POST', '/api/stripe/subscription', { email });
-                  
-                  if (!response.ok) {
-                    const errorData = await response.json();
-                    
-                    let errorMessage = 'Unable to set up payment. Please try again.';
-                    
-                    if (errorData.error === 'stripe_config_error') {
-                      errorMessage = 'Payment system is temporarily unavailable. Please try again later or contact support.';
-                    } else if (errorData.error === 'missing_price_id') {
-                      errorMessage = 'Payment configuration is incomplete. Please contact support.';
-                    } else if (errorData.error === 'customer_creation_error') {
-                      errorMessage = 'Unable to create payment profile. Please try again.';
-                    } else if (errorData.error === 'subscription_creation_error') {
-                      errorMessage = errorData.message || 'Unable to create subscription. Please try again.';
-                    } else if (errorData.message && !errorData.message.includes('Internal')) {
-                      errorMessage = errorData.message;
-                    }
-                    
-                    throw new Error(errorMessage);
-                  }
-                  
-                  const data = await response.json();
-
-                  if (data.clientSecret) {
-                    setClientSecret(data.clientSecret);
-                    setSubscriptionId(data.subscriptionId);
-                  } else {
-                    throw new Error('Unable to set up payment. Please try again.');
-                  }
-                } catch (error: any) {
-                  console.error('Error creating subscription:', error);
-                  setErrorMessage(error.message || 'Unable to set up payment. Please try again.');
-                }
-              };
-
-              createSubscription();
-            }}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            Try Again
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-[calc(100vh-240px)] flex items-center justify-center px-4 py-6">
-      <div className="w-full max-w-4xl">
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Complete Your Subscription</h2>
-          <p className="text-gray-600">Subscribe to QuoteBid Membership to access all media opportunities</p>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="grid md:grid-cols-2 gap-0">
+      <div className="flex items-center justify-center min-h-[80vh] px-6 py-8">
+        <div className="w-full max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
             {/* Left Column - Payment Form */}
-            <div className="p-6 lg:p-8">
-              <form onSubmit={handleSubmit}>
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-lg font-semibold text-gray-900">Payment Information</h3>
-                  <div className="flex items-center gap-1 text-green-600">
-                    <Lock className="h-3.5 w-3.5" />
-                    <span className="text-xs font-medium">Secure Payment</span>
+            <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-8 h-full">
+              <form onSubmit={handleSubmit} className="h-full flex flex-col">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-white">Payment Information</h3>
+                  <div className="flex items-center gap-2 text-green-400">
+                    <Lock className="h-4 w-4" />
+                    <span className="text-sm font-medium">Secure</span>
                   </div>
                 </div>
                   
-                <div className="space-y-4">
+                <div className="space-y-6 flex-grow">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    <label className="block text-sm font-medium text-gray-200 mb-3">
                       Credit Card Information
                     </label>
-                    <div className="border border-gray-300 rounded-lg bg-gray-50 p-3 transition-all hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
+                    <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
                       <CardNumberElement 
                         options={{
                           style: {
                             base: {
                               fontSize: '16px',
-                              color: '#374151',
+                              color: '#ffffff',
+                              fontWeight: '500',
                               '::placeholder': {
-                                color: '#9CA3AF'
+                                color: '#D1D5DB'
                               }
                             }
                           }
@@ -273,20 +194,21 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      <label className="block text-sm font-medium text-gray-200 mb-3">
                         Expiration
                       </label>
-                      <div className="border border-gray-300 rounded-lg bg-gray-50 p-3 transition-all hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
+                      <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
                         <CardExpiryElement 
                           options={{
                             style: {
                               base: {
                                 fontSize: '16px',
-                                color: '#374151',
+                                color: '#ffffff',
+                                fontWeight: '500',
                                 '::placeholder': {
-                                  color: '#9CA3AF'
+                                  color: '#D1D5DB'
                                 }
                               }
                             }
@@ -295,18 +217,19 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      <label className="block text-sm font-medium text-gray-200 mb-3">
                         CVC
                       </label>
-                      <div className="border border-gray-300 rounded-lg bg-gray-50 p-3 transition-all hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
+                      <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
                         <CardCvcElement 
                           options={{
                             style: {
                               base: {
                                 fontSize: '16px',
-                                color: '#374151',
+                                color: '#ffffff',
+                                fontWeight: '500',
                                 '::placeholder': {
-                                  color: '#9CA3AF'
+                                  color: '#D1D5DB'
                                 }
                               }
                             }
@@ -316,27 +239,27 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2.5 rounded-lg">
-                    <Lock className="h-3.5 w-3.5" />
-                    <p className="text-xs font-medium">Your card information is encrypted</p>
+                  <div className="flex items-center gap-2 text-green-400 bg-green-500/10 border border-green-400/30 px-4 py-3 rounded-xl">
+                    <Lock className="h-4 w-4" />
+                    <p className="text-sm font-medium">Your card information is encrypted</p>
                   </div>
                 </div>
               
                 {errorMessage && (
-                  <div className="mt-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2.5 rounded-lg">
+                  <div className="mt-4 bg-red-500/10 border border-red-400/30 text-red-400 px-4 py-3 rounded-xl">
                     <p className="text-sm">{errorMessage}</p>
                   </div>
                 )}
                 
-                <div className="mt-5">
-                  <p className="text-xs text-gray-500 mb-3">
-                    By completing your purchase, you agree to the <a href="/terms" className="text-blue-600 hover:underline">Terms of Service</a> and the <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a>.
+                <div className="mt-6">
+                  <p className="text-xs text-gray-300 mb-4">
+                    By completing your purchase, you agree to the <a href="/legal/terms" className="text-blue-400 hover:underline">Terms of Service</a> and the <a href="/legal/privacy" className="text-blue-400 hover:underline">Privacy Policy</a>.
                   </p>
                   
                   <Button
                     type="submit"
                     disabled={!stripe || isLoading}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-all transform hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-violet-700 text-white py-4 rounded-xl font-bold transition-all transform hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
                     {isLoading ? (
                       <>
@@ -352,66 +275,440 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
             </div>
           
             {/* Right Column - Membership Card */}
-            <div className="bg-gradient-to-br from-[#004684] to-[#003a70] p-6 lg:p-8 flex flex-col justify-center">
-              <div className="w-full">
+            <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-8 h-full">
+              <div className="w-full h-full flex flex-col">
                 <div className="mb-6">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h3 className="text-2xl font-bold text-white">QuoteBid</h3>
-                      <p className="text-blue-200 text-sm">Membership</p>
+                      <h3 className="text-xl font-bold text-white">QuoteBid</h3>
+                      <p className="text-blue-300 text-sm">Membership</p>
                     </div>
-                    <span className="bg-yellow-400 text-[#004684] text-xs font-bold px-2.5 py-1 rounded-full">
+                    <span className="bg-yellow-500 text-slate-900 text-xs font-bold px-3 py-1 rounded-full">
                       FULL ACCESS
                     </span>
                   </div>
                   
-                  <div className="flex items-baseline gap-1 mb-2">
+                  <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-4xl font-bold text-white">$99.99</span>
-                    <span className="text-lg text-blue-200">/month</span>
+                    <span className="text-lg text-blue-300">/month</span>
                   </div>
                   
-                  <p className="text-blue-200 text-sm">Cancel anytime</p>
+                  <p className="text-blue-300 text-sm">Cancel anytime</p>
                 </div>
                 
-                <div className="space-y-3">
-                  <h4 className="text-white font-semibold text-sm mb-3">What's included:</h4>
-                  <ul className="space-y-2.5">
-                    <li className="flex items-start gap-2.5">
+                <div className="space-y-3 flex-grow">
+                  <h4 className="text-white font-bold text-sm mb-4">What's included:</h4>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-3">
                       <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
                       <span className="text-white text-sm">Full access to all live media opportunities</span>
                     </li>
-                    <li className="flex items-start gap-2.5">
+                    <li className="flex items-start gap-3">
                       <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
                       <span className="text-white text-sm">Dynamic pricing — no retainers, no fixed fees</span>
                     </li>
-                    <li className="flex items-start gap-2.5">
+                    <li className="flex items-start gap-3">
                       <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
                       <span className="text-white text-sm">New opportunities added daily</span>
                     </li>
-                    <li className="flex items-start gap-2.5">
+                    <li className="flex items-start gap-3">
                       <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
                       <span className="text-white text-sm">Interactive market chart with live price updates</span>
                     </li>
-                    <li className="flex items-start gap-2.5">
+                    <li className="flex items-start gap-3">
                       <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
                       <span className="text-white text-sm">Track pitch status and history</span>
                     </li>
-                    <li className="flex items-start gap-2.5">
+                    <li className="flex items-start gap-3">
                       <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
                       <span className="text-white text-sm">Record and submit pitches with your voice</span>
                     </li>
-                    <li className="flex items-start gap-2.5">
+                    <li className="flex items-start gap-3">
                       <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
                       <span className="text-white text-sm">Fast, minimal UI built for professionals</span>
                     </li>
                   </ul>
                 </div>
                 
-                <div className="mt-6 pt-6 border-t border-white/20">
-                  <p className="text-blue-200 text-xs text-center">
+                <div className="mt-6 pt-4 border-t border-white/20">
+                  <p className="text-blue-300 text-sm text-center">
                     Join thousands of experts getting featured in top publications
                   </p>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (errorMessage && !clientSecret) {
+    return (
+      <div className="flex items-center justify-center min-h-[80vh] px-6 py-8">
+        <div className="w-full max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+            {/* Left Column - Payment Form */}
+            <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-8 h-full">
+              <form onSubmit={handleSubmit} className="h-full flex flex-col">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-white">Payment Information</h3>
+                  <div className="flex items-center gap-2 text-green-400">
+                    <Lock className="h-4 w-4" />
+                    <span className="text-sm font-medium">Secure</span>
+                  </div>
+                </div>
+                  
+                <div className="space-y-6 flex-grow">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-200 mb-3">
+                      Credit Card Information
+                    </label>
+                    <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
+                      <CardNumberElement 
+                        options={{
+                          style: {
+                            base: {
+                              fontSize: '16px',
+                              color: '#ffffff',
+                              fontWeight: '500',
+                              '::placeholder': {
+                                color: '#D1D5DB'
+                              }
+                            }
+                          }
+                        }} 
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-200 mb-3">
+                        Expiration
+                      </label>
+                      <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
+                        <CardExpiryElement 
+                          options={{
+                            style: {
+                              base: {
+                                fontSize: '16px',
+                                color: '#ffffff',
+                                fontWeight: '500',
+                                '::placeholder': {
+                                  color: '#D1D5DB'
+                                }
+                              }
+                            }
+                          }} 
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-200 mb-3">
+                        CVC
+                      </label>
+                      <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
+                        <CardCvcElement 
+                          options={{
+                            style: {
+                              base: {
+                                fontSize: '16px',
+                                color: '#ffffff',
+                                fontWeight: '500',
+                                '::placeholder': {
+                                  color: '#D1D5DB'
+                                }
+                              }
+                            }
+                          }} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-green-400 bg-green-500/10 border border-green-400/30 px-4 py-3 rounded-xl">
+                    <Lock className="h-4 w-4" />
+                    <p className="text-sm font-medium">Your card information is encrypted</p>
+                  </div>
+                </div>
+              
+                {errorMessage && (
+                  <div className="mt-4 bg-red-500/10 border border-red-400/30 text-red-400 px-4 py-3 rounded-xl">
+                    <p className="text-sm">{errorMessage}</p>
+                  </div>
+                )}
+                
+                <div className="mt-6">
+                  <p className="text-xs text-gray-300 mb-4">
+                    By completing your purchase, you agree to the <a href="/legal/terms" className="text-blue-400 hover:underline">Terms of Service</a> and the <a href="/legal/privacy" className="text-blue-400 hover:underline">Privacy Policy</a>.
+                  </p>
+                  
+                  <Button
+                    type="submit"
+                    disabled={!stripe || isLoading}
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-violet-700 text-white py-4 rounded-xl font-bold transition-all transform hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      'Continue to Profile'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          
+            {/* Right Column - Membership Card */}
+            <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-8 h-full">
+              <div className="w-full h-full flex flex-col">
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="text-xl font-bold text-white">QuoteBid</h3>
+                      <p className="text-blue-300 text-sm">Membership</p>
+                    </div>
+                    <span className="bg-yellow-500 text-slate-900 text-xs font-bold px-3 py-1 rounded-full">
+                      FULL ACCESS
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-4xl font-bold text-white">$99.99</span>
+                    <span className="text-lg text-blue-300">/month</span>
+                  </div>
+                  
+                  <p className="text-blue-300 text-sm">Cancel anytime</p>
+                </div>
+                
+                <div className="space-y-3 flex-grow">
+                  <h4 className="text-white font-bold text-sm mb-4">What's included:</h4>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-white text-sm">Full access to all live media opportunities</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-white text-sm">Dynamic pricing — no retainers, no fixed fees</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-white text-sm">New opportunities added daily</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-white text-sm">Interactive market chart with live price updates</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-white text-sm">Track pitch status and history</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-white text-sm">Record and submit pitches with your voice</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-white text-sm">Fast, minimal UI built for professionals</span>
+                    </li>
+                  </ul>
+                </div>
+                
+                <div className="mt-6 pt-4 border-t border-white/20">
+                  <p className="text-blue-300 text-sm text-center">
+                    Join thousands of experts getting featured in top publications
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-start justify-center min-h-[80vh] px-6 pt-4 pb-8">
+      <div className="w-full max-w-6xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+          {/* Left Column - Payment Form */}
+          <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-8 h-full">
+            <form onSubmit={handleSubmit} className="h-full flex flex-col">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-white">Payment Information</h3>
+                <div className="flex items-center gap-2 text-green-400">
+                  <Lock className="h-4 w-4" />
+                  <span className="text-sm font-medium">Secure</span>
+                </div>
+              </div>
+                
+              <div className="space-y-6 flex-grow">
+                <div>
+                  <label className="block text-sm font-medium text-gray-200 mb-3">
+                    Credit Card Information
+                  </label>
+                  <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
+                    <CardNumberElement 
+                      options={{
+                        style: {
+                          base: {
+                            fontSize: '16px',
+                            color: '#ffffff',
+                            fontWeight: '500',
+                            '::placeholder': {
+                              color: '#D1D5DB'
+                            }
+                          }
+                        }
+                      }} 
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-200 mb-3">
+                      Expiration
+                    </label>
+                    <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
+                      <CardExpiryElement 
+                        options={{
+                          style: {
+                            base: {
+                              fontSize: '16px',
+                              color: '#ffffff',
+                              fontWeight: '500',
+                              '::placeholder': {
+                                color: '#D1D5DB'
+                              }
+                            }
+                          }
+                        }} 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-200 mb-3">
+                      CVC
+                    </label>
+                    <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
+                      <CardCvcElement 
+                        options={{
+                          style: {
+                            base: {
+                              fontSize: '16px',
+                              color: '#ffffff',
+                              fontWeight: '500',
+                              '::placeholder': {
+                                color: '#D1D5DB'
+                              }
+                            }
+                          }
+                        }} 
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 text-green-400 bg-green-500/10 border border-green-400/30 px-4 py-3 rounded-xl">
+                  <Lock className="h-4 w-4" />
+                  <p className="text-sm font-medium">Your card information is encrypted</p>
+                </div>
+              </div>
+            
+              {errorMessage && (
+                <div className="mt-4 bg-red-500/10 border border-red-400/30 text-red-400 px-4 py-3 rounded-xl">
+                  <p className="text-sm">{errorMessage}</p>
+                </div>
+              )}
+              
+              <div className="mt-6">
+                <p className="text-xs text-gray-300 mb-4">
+                  By completing your purchase, you agree to the <a href="/legal/terms" className="text-blue-400 hover:underline">Terms of Service</a> and the <a href="/legal/privacy" className="text-blue-400 hover:underline">Privacy Policy</a>.
+                </p>
+                
+                <Button
+                  type="submit"
+                  disabled={!stripe || isLoading}
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-violet-700 text-white py-4 rounded-xl font-bold transition-all transform hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Continue to Profile'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        
+          {/* Right Column - Membership Card */}
+          <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-8 h-full">
+            <div className="w-full h-full flex flex-col">
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">QuoteBid</h3>
+                    <p className="text-blue-300 text-sm">Membership</p>
+                  </div>
+                  <span className="bg-yellow-500 text-slate-900 text-xs font-bold px-3 py-1 rounded-full">
+                    FULL ACCESS
+                  </span>
+                </div>
+                
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-4xl font-bold text-white">$99.99</span>
+                  <span className="text-lg text-blue-300">/month</span>
+                </div>
+                
+                <p className="text-blue-300 text-sm">Cancel anytime</p>
+              </div>
+              
+              <div className="space-y-3 flex-grow">
+                <h4 className="text-white font-bold text-sm mb-4">What's included:</h4>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-white text-sm">Full access to all live media opportunities</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-white text-sm">Dynamic pricing — no retainers, no fixed fees</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-white text-sm">New opportunities added daily</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-white text-sm">Interactive market chart with live price updates</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-white text-sm">Track pitch status and history</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-white text-sm">Record and submit pitches with your voice</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-white text-sm">Fast, minimal UI built for professionals</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="mt-6 pt-4 border-t border-white/20">
+                <p className="text-blue-300 text-sm text-center">
+                  Join thousands of experts getting featured in top publications
+                </p>
               </div>
             </div>
           </div>

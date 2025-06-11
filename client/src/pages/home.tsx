@@ -134,7 +134,7 @@ export default function Home() {
               QuoteBid's Dynamic Pricing Engine tracks live demand, inventory, and outlet yield data to
               price PR coverage in real time—<span className="text-white font-semibold">no retainers, no agencies, and no static prices</span>, 
               only pay if you're published.
-            </p>
+                </p>
 
             <div className="mt-12 flex flex-col sm:flex-row gap-6">
                   <Button 
@@ -154,7 +154,7 @@ export default function Home() {
                     .getElementById("how-it-works")
                     ?.scrollIntoView({ behavior: "smooth" })
                 }
-              >
+                  >
                 <span className="relative z-10">How It Works</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
                   </Button>
@@ -167,7 +167,7 @@ export default function Home() {
               {/* Premium ambient glow effects */}
               <div className="absolute -inset-8 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-violet-600/20 rounded-3xl blur-3xl animate-pulse"></div>
               <div className="absolute -inset-6 bg-gradient-to-r from-purple-500/15 via-pink-500/15 to-violet-500/15 rounded-3xl blur-2xl animate-pulse" style={{animationDelay: '1s'}}></div>
-              
+                  
               {/* Card deck with shuffle animation */}
               <div className="relative group" style={{height: '480px', width: '100%'}}>
                 
@@ -1089,7 +1089,7 @@ export default function Home() {
               {/* Left side: Benefits */}
             <div className="lg:w-1/2 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-10 lg:p-12">
               <h3 className="text-3xl font-bold mb-8 text-white">Reclaim Control of How You Get Covered</h3>
-              
+                
               <div className="space-y-8">
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0 h-12 w-12 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center">

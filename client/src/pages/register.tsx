@@ -5,6 +5,7 @@ import Field from '@/components/FormFieldWrapper';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
+import { CheckCircle, X } from 'lucide-react';
 
 // Add custom CSS for animations
 const customStyles = `
@@ -71,6 +72,34 @@ function debounce(fn: (...args: any[]) => void, delay: number) {
   };
 }
 
+// Password validation utility
+const validatePassword = (password: string) => {
+  const requirements = {
+    minLength: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /\d/.test(password),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+  };
+
+  const strength = Object.values(requirements).filter(Boolean).length;
+  const isValid = Object.values(requirements).every(Boolean);
+
+  return {
+    requirements,
+    strength,
+    isValid,
+    strengthText: strength === 0 ? '' : 
+                  strength <= 2 ? 'Weak' : 
+                  strength <= 3 ? 'Fair' : 
+                  strength === 4 ? 'Good' : 'Strong',
+    strengthColor: strength === 0 ? '' : 
+                   strength <= 2 ? 'text-red-400' : 
+                   strength <= 3 ? 'text-yellow-400' : 
+                   strength === 4 ? 'text-blue-400' : 'text-green-400'
+  };
+};
+
 export default function RegisterPage() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -127,6 +156,9 @@ export default function RegisterPage() {
   const [phoneChecking, setPhoneChecking] = useState(false);
   const [phoneValid, setPhoneValid] = useState(true);
   const [passwordsMatch, setPasswordsMatch] = useState(true);
+
+  // Password validation state
+  const passwordValidation = validatePassword(form.password);
 
   // Email validation regex
   const emailRegex = /^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$/;
@@ -244,7 +276,7 @@ export default function RegisterPage() {
     }
     
     if (!form.industry) errs.industry = 'Please select your industry.';
-    if (!form.password || form.password.length < 8) errs.password = 'Password must be at least 8 characters.';
+    if (!passwordValidation.isValid) errs.password = 'Password must meet all security requirements.';
     if (form.password !== form.confirmPassword) errs.confirmPassword = 'Passwords do not match.';
     if (!form.agreeTerms) errs.agreeTerms = 'You must agree to the terms.';
     return errs;
@@ -495,7 +527,7 @@ export default function RegisterPage() {
     !!form.companyName &&
     !!form.phone && phoneUnique && !phoneChecking && phoneValid &&
     !!form.industry &&
-    !!form.password && form.password.length >= 8 &&
+    passwordValidation.isValid &&
     !!form.confirmPassword && passwordsMatch &&
     form.agreeTerms;
 
@@ -715,7 +747,7 @@ export default function RegisterPage() {
                       className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" 
                     />
                     <div className="h-4 mt-1">
-                      {form.password && form.password.length < 8 && <div className="text-xs text-red-400">Password must be at least 8 characters.</div>}
+                      {form.password && !passwordValidation.isValid && <div className="text-xs text-red-400">Password must meet all security requirements.</div>}
                     </div>
                   </Field>
                   <Field error={errors.confirmPassword} className="col-span-1">
@@ -732,6 +764,65 @@ export default function RegisterPage() {
                     </div>
                   </Field>
                 </div>
+                
+                {/* Password strength indicator - shown below both password fields */}
+                {form.password && (
+                  <div className="mt-4 space-y-3">
+                    <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-white">Password Strength</span>
+                        {passwordValidation.strengthText && (
+                          <span className={`text-sm font-bold ${passwordValidation.strengthColor}`}>
+                            {passwordValidation.strengthText}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Strength bar */}
+                      <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
+                        <div 
+                          className={`h-2 rounded-full transition-all duration-300 ${
+                            passwordValidation.strength === 0 ? 'w-0' :
+                            passwordValidation.strength <= 2 ? 'w-2/5 bg-red-400' :
+                            passwordValidation.strength <= 3 ? 'w-3/5 bg-yellow-400' :
+                            passwordValidation.strength === 4 ? 'w-4/5 bg-blue-400' :
+                            'w-full bg-green-400'
+                          }`}
+                        />
+                      </div>
+
+                      {/* Requirements checklist */}
+                      <div className="space-y-2 text-sm">
+                        <div className={`flex items-center space-x-2 ${passwordValidation.requirements.minLength ? 'text-green-400' : 'text-gray-400'}`}>
+                          {passwordValidation.requirements.minLength ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                          <span>At least 8 characters</span>
+                        </div>
+                        <div className={`flex items-center space-x-2 ${passwordValidation.requirements.uppercase ? 'text-green-400' : 'text-gray-400'}`}>
+                          {passwordValidation.requirements.uppercase ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                          <span>At least one uppercase letter</span>
+                        </div>
+                        <div className={`flex items-center space-x-2 ${passwordValidation.requirements.lowercase ? 'text-green-400' : 'text-gray-400'}`}>
+                          {passwordValidation.requirements.lowercase ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                          <span>At least one lowercase letter</span>
+                        </div>
+                        <div className={`flex items-center space-x-2 ${passwordValidation.requirements.number ? 'text-green-400' : 'text-gray-400'}`}>
+                          {passwordValidation.requirements.number ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                          <span>At least one number</span>
+                        </div>
+                        <div className={`flex items-center space-x-2 ${passwordValidation.requirements.special ? 'text-green-400' : 'text-gray-400'}`}>
+                          {passwordValidation.requirements.special ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                          <span>At least one special character (!@#$%^&*)</span>
+                        </div>
+                        {form.confirmPassword && (
+                          <div className={`flex items-center space-x-2 ${passwordsMatch ? 'text-green-400' : 'text-red-400'}`}>
+                            {passwordsMatch ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                            <span>Passwords match</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="flex items-center mt-4 mb-4">
                   <input 

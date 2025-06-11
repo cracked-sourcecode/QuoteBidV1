@@ -4,7 +4,7 @@ import { SignupWizard as SignupWizardComponent } from '@/components/signup/Signu
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CheckCircle, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SignupWizardProvider, useSignupWizard } from '@/contexts/SignupWizardContext';
 import { PaymentStep } from '@/components/signup/PaymentStep';
@@ -13,6 +13,34 @@ import { post } from '@/lib/api';
 import { SignupStage, storeSignupEmail, storeSignupData } from '@/lib/signup-wizard';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
 import { queryClient } from '@/lib/queryClient';
+
+// Password validation utility
+const validatePassword = (password: string) => {
+  const requirements = {
+    minLength: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /\d/.test(password),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+  };
+
+  const strength = Object.values(requirements).filter(Boolean).length;
+  const isValid = Object.values(requirements).every(Boolean);
+
+  return {
+    requirements,
+    strength,
+    isValid,
+    strengthText: strength === 0 ? '' : 
+                  strength <= 2 ? 'Weak' : 
+                  strength <= 3 ? 'Fair' : 
+                  strength === 4 ? 'Good' : 'Strong',
+    strengthColor: strength === 0 ? '' : 
+                   strength <= 2 ? 'text-red-400' : 
+                   strength <= 3 ? 'text-yellow-400' : 
+                   strength === 4 ? 'text-blue-400' : 'text-green-400'
+  };
+};
 
 function SignupWizardContent() {
   const [, navigate] = useLocation();
@@ -33,6 +61,9 @@ function SignupWizardContent() {
   });
   const [isLoading, setIsLoading] = React.useState(false);
   const [redirecting, setRedirecting] = React.useState(false);
+
+  // Password validation state
+  const passwordValidation = validatePassword(password);
 
   // Map stage to step number (ready is not a step, just a completion state)
   const stageOrder: SignupStage[] = ['payment', 'profile', 'ready'];
@@ -216,6 +247,17 @@ function SignupWizardContent() {
       });
       return;
     }
+
+    // Validate password requirements
+    if (!passwordValidation.isValid) {
+      toast({
+        title: 'Password Requirements Not Met',
+        description: 'Please ensure your password meets all security requirements.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await post('/api/auth/signup/start', {
@@ -274,10 +316,10 @@ function SignupWizardContent() {
 
   if (redirecting) {
     return (
-      <div className="bg-white shadow-md rounded-lg p-8 mb-8 text-center">
-        <h1 className="text-2xl font-bold mb-4">Redirecting...</h1>
-        <p className="mb-6">Please wait while we redirect you to the correct step.</p>
-        <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+      <div className="bg-gradient-to-br from-blue-900 via-purple-900 to-violet-900 rounded-3xl shadow-2xl p-8 mb-8 text-center">
+        <h1 className="text-3xl font-black mb-4 text-white">Redirecting...</h1>
+        <p className="mb-6 text-blue-100 text-lg">Please wait while we redirect you to the correct step.</p>
+        <Loader2 className="h-10 w-10 animate-spin mx-auto text-blue-300" />
       </div>
     );
   }
@@ -285,23 +327,23 @@ function SignupWizardContent() {
   // If no email, show registration form
   if (!email && !savedEmail) {
     return (
-      <div className="bg-white shadow-md rounded-lg p-8 mb-8">
-        <h1 className="text-2xl font-bold mb-6">Start Your QuoteBid Journey</h1>
-        <div className="space-y-4">
+      <div className="bg-gradient-to-br from-blue-900 via-purple-900 to-violet-900 rounded-3xl shadow-2xl p-8 mb-8">
+        <h1 className="text-3xl font-black mb-6 text-white">Start Your QuoteBid Journey</h1>
+        <div className="space-y-6">
           <div>
-            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="fullName" className="block text-lg font-semibold text-white mb-3">
               Full Name
             </label>
-            <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} className="bg-white text-black border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" />
           </div>
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="username" className="block text-lg font-semibold text-white mb-3">
               Username
             </label>
-            <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} />
+            <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} className="bg-white text-black border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" />
           </div>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="email" className="block text-lg font-semibold text-white mb-3">
               Email Address
             </label>
             <Input
@@ -310,28 +352,83 @@ function SignupWizardContent() {
               value={inputEmail}
               onChange={(e) => setInputEmail(e.target.value)}
               placeholder="Enter your email"
+              className="bg-white text-black border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-lg font-semibold text-white mb-3">
               Password
             </label>
-            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-white text-black border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" />
+            
+            {/* Password strength indicator */}
+            {password && (
+              <div className="mt-4 space-y-3">
+                {/* Password strength indicator */}
+                <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium text-white">Password Strength</span>
+                    {passwordValidation.strengthText && (
+                      <span className={`text-sm font-bold ${passwordValidation.strengthColor}`}>
+                        {passwordValidation.strengthText}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Strength bar */}
+                  <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        passwordValidation.strength === 0 ? 'w-0' :
+                        passwordValidation.strength <= 2 ? 'w-2/5 bg-red-400' :
+                        passwordValidation.strength <= 3 ? 'w-3/5 bg-yellow-400' :
+                        passwordValidation.strength === 4 ? 'w-4/5 bg-blue-400' :
+                        'w-full bg-green-400'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Requirements checklist */}
+                  <div className="space-y-2 text-sm">
+                    <div className={`flex items-center space-x-2 ${passwordValidation.requirements.minLength ? 'text-green-400' : 'text-gray-400'}`}>
+                      {passwordValidation.requirements.minLength ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                      <span>At least 8 characters</span>
+                    </div>
+                    <div className={`flex items-center space-x-2 ${passwordValidation.requirements.uppercase ? 'text-green-400' : 'text-gray-400'}`}>
+                      {passwordValidation.requirements.uppercase ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                      <span>At least one uppercase letter</span>
+                    </div>
+                    <div className={`flex items-center space-x-2 ${passwordValidation.requirements.lowercase ? 'text-green-400' : 'text-gray-400'}`}>
+                      {passwordValidation.requirements.lowercase ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                      <span>At least one lowercase letter</span>
+                    </div>
+                    <div className={`flex items-center space-x-2 ${passwordValidation.requirements.number ? 'text-green-400' : 'text-gray-400'}`}>
+                      {passwordValidation.requirements.number ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                      <span>At least one number</span>
+                    </div>
+                    <div className={`flex items-center space-x-2 ${passwordValidation.requirements.special ? 'text-green-400' : 'text-gray-400'}`}>
+                      {passwordValidation.requirements.special ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                      <span>At least one special character (!@#$%^&*)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           <div>
-            <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="companyName" className="block text-lg font-semibold text-white mb-3">
               Company Name
             </label>
-            <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+            <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="bg-white text-black border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" />
           </div>
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="phone" className="block text-lg font-semibold text-white mb-3">
               Phone
             </label>
-            <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="bg-white text-black border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200" />
           </div>
           <div>
-            <label htmlFor="industry" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="industry" className="block text-lg font-semibold text-white mb-3">
               Industry
             </label>
             <Select value={industry} onValueChange={(v) => setIndustry(v)}>
@@ -347,8 +444,8 @@ function SignupWizardContent() {
           </div>
           <Button
             onClick={handleStartSignup}
-            disabled={isLoading}
-            className="w-full bg-[#004684] hover:bg-[#003a70]"
+            disabled={isLoading || !passwordValidation.isValid}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-blue-700 text-white py-4 rounded-xl text-lg font-bold shadow-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
           >
             {isLoading ? (
               <>
@@ -372,28 +469,28 @@ function SignupWizardContent() {
   } else if (currentStage === 'ready') {
     // The navigation is already handled in handleProfileComplete
     return (
-      <div className="bg-white shadow-md rounded-lg p-8 mb-8 text-center">
-        <div className="mb-6">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="bg-gradient-to-br from-blue-900 via-purple-900 to-violet-900 rounded-3xl shadow-2xl p-12 mb-8 text-center">
+        <div className="mb-8">
+          <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
+            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold mb-2 text-green-600">Welcome to QuoteBid!</h1>
-          <p className="text-lg text-gray-600 mb-4">Your account has been successfully created.</p>
-          <p className="text-gray-500">Redirecting you to opportunities in a moment...</p>
+          <h1 className="text-4xl font-black mb-4 text-white">Welcome to QuoteBid!</h1>
+          <p className="text-xl text-blue-100 mb-6 font-medium">Your account has been successfully created.</p>
+          <p className="text-blue-200">Redirecting you to opportunities in a moment...</p>
         </div>
-        <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" />
+        <Loader2 className="h-10 w-10 animate-spin mx-auto text-blue-300" />
       </div>
     );
   } else {
     // If the stage is missing or invalid, restart at payment step
     setStage('payment');
     return (
-      <div className="bg-white shadow-md rounded-lg p-8 mb-8 text-center">
-        <h1 className="text-2xl font-bold mb-4">Restarting Signup...</h1>
-        <p className="mb-6">We couldn't determine your current signup stage. Restarting at payment step.</p>
-        <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+      <div className="bg-gradient-to-br from-blue-900 via-purple-900 to-violet-900 rounded-3xl shadow-2xl p-8 mb-8 text-center">
+        <h1 className="text-3xl font-black mb-4 text-white">Restarting Signup...</h1>
+        <p className="mb-6 text-blue-100 text-lg">We couldn't determine your current signup stage. Restarting at payment step.</p>
+        <Loader2 className="h-10 w-10 animate-spin mx-auto text-blue-300" />
       </div>
     );
   }

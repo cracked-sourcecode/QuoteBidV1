@@ -43,6 +43,7 @@ import AdminAnalytics from "@/pages/admin/analytics";
 import AdminPricing from "@/pages/admin/pricing";
 import PublicationsManager from "@/pages/admin/publications-manager";
 import LoginPage from "@/pages/login-page";
+import ForgotPassword from "@/pages/forgot-password";
 import TermsOfService from "@/pages/TermsOfService";
 import ResetPassword from "@/pages/reset-password";
 import AdminLogin from "@/pages/admin/login";
@@ -131,6 +132,7 @@ function Router() {
           }}
         </Route>
         <Route path="/login" component={LoginPage} />
+        <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/register" component={RegisterPage} />
         <Route path="/auth">
           {() => <Redirect to="/login" />}

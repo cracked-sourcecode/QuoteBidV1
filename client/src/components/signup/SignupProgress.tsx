@@ -11,13 +11,13 @@ export function SignupProgress() {
   const percent = ((currentIndex) / (stages.length - 1)) * 100;
 
   return (
-    <div className="mb-10 w-full max-w-2xl mx-auto">
+    <div className="mb-3 w-full max-w-2xl mx-auto">
       <div className="relative h-4 flex items-center">
         {/* Background bar */}
-        <div className="absolute left-0 right-0 h-4 bg-gray-200 rounded-full" />
+        <div className="absolute left-0 right-0 h-4 bg-white/20 rounded-full backdrop-blur-sm" />
         {/* Filled bar */}
         <div
-          className="absolute left-0 h-4 bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-500"
+          className="absolute left-0 h-4 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full transition-all duration-500 shadow-lg"
           style={{ width: `${percent}%`, maxWidth: '100%' }}
         />
         {/* Step icons */}
@@ -33,21 +33,21 @@ export function SignupProgress() {
                 <div
                   className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
                     isActive
-                      ? 'border-green-600 bg-white text-green-600'
+                      ? 'border-blue-400 bg-white/90 backdrop-blur-sm text-blue-600 shadow-lg'
                       : isCompleted
-                      ? 'border-green-400 bg-green-400 text-white'
-                      : 'border-gray-300 bg-white text-gray-400'
-                  } font-bold text-lg transition-colors duration-200`}
+                      ? 'border-blue-400 bg-gradient-to-r from-blue-400 to-purple-500 text-white shadow-lg'
+                      : 'border-white/40 bg-white/10 backdrop-blur-sm text-white/60'
+                  } font-bold text-sm transition-all duration-300`}
                 >
                   {index + 1}
                 </div>
                 <span
-                  className={`mt-2 text-xs font-semibold ${
+                  className={`mt-2 text-sm font-semibold transition-colors duration-300 ${
                     isActive
-                      ? 'text-green-700'
+                      ? 'text-blue-300'
                       : isCompleted
-                      ? 'text-green-500'
-                      : 'text-gray-400'
+                      ? 'text-blue-200'
+                      : 'text-white/60'
                   }`}
                 >
                   {stage.label}
