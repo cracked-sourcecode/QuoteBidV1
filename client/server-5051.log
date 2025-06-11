@@ -1,0 +1,20 @@
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/bendeveran/Desktop/QuoteBid V1/client/server/index.ts' imported from /Users/bendeveran/Desktop/QuoteBid V1/client/
+    at finalizeResolution (node:internal/modules/esm/resolve:283:11)
+    at moduleResolve (node:internal/modules/esm/resolve:952:10)
+    at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+    at nextResolve (node:internal/modules/esm/hooks:864:28)
+    at resolveBase (file:///Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/tsx/dist/esm/index.mjs?1749681713458:2:3212)
+    at resolveDirectory (file:///Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/tsx/dist/esm/index.mjs?1749681713458:2:3584)
+    at resolveTsPaths (file:///Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/tsx/dist/esm/index.mjs?1749681713458:2:4073)
+    at resolve (file:///Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/tsx/dist/esm/index.mjs?1749681713458:2:4447)
+    at nextResolve (node:internal/modules/esm/hooks:864:28)
+    at Hooks.resolve (node:internal/modules/esm/hooks:306:30) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/bendeveran/Desktop/QuoteBid%20V1/client/server/index.ts'
+}
+
+Node.js v20.19.1
