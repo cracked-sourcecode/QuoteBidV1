@@ -21194,3 +21194,2241 @@ Development mode - allowing origin: http://192.168.1.121:5051
 ✅ Sending response: { isSaved: false }
 6:45:35 PM [express] GET /api/users/99/saved/8/status 304 in 174ms :: {"isSaved":false}
 6:45:35 PM [express] GET /api/opportunities/8/price-trend 304 in 225ms :: [{"t":"2025-05-04T18:59:23…
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@vite/client
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@react-refresh
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/main.tsx?v=EnPkiWiN9dPT8GzA1J0o7
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/react-dom_client.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/App.tsx?v=EnPkiWiN9dPT8GzA1J0o7
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/index.css?v=EnPkiWiN9dPT8GzA1J0o7
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-WOOG5QLI.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-QCHXOAYK.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/vite/dist/client/env.mjs
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/queryClient.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/wouter.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@tanstack_react-query.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/apiFetch.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/toaster.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/tooltip.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-toast.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/not-found.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/home.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/engine.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/legal/editorial-integrity.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/opportunities.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/saved-opportunities.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/opportunity-detail.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/my-pitches.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/pitch-history.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/subscribe.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/payment-success.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/subscription-success.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/profile-setup.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/SignupWizard.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/register.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/account.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/navbar.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-auth.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-admin-auth.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/protected-route.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/admin-protected-route.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/react.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/contexts/PriceContext.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/opportunities-manager-new.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/users-manager.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/support.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/pitches.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/billing-manager-new.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/analytics.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/pricing.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/publications-manager.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/login-page.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/forgot-password.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/TermsOfService.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/login.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/reset-password.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/create-admin.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/admin/AdminLayout.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/toast.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-KBTYAULA.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/utils.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/card.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/input.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/lucide-react.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/button.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/select.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/opportunity-card.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/constants.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/date-fns.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/pitch-edit-modal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/pitch-review-modal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/utils/pitchStage.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/resubscription-modal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/badge.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/separator.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/react-hook-form.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@hookform_resolvers_zod.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/zod.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/signup/SignupWizard.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/form.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/contexts/SignupWizardContext.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/textarea.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/signup/PaymentStep.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/avatar.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/signup/ProfileStep.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/api.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/signup-wizard.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/PriceTrendChart.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/FormFieldWrapper.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-notifications.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/socket__io-client.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/dropdown-menu.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/dialog.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/CancelRetentionModal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/tabs.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-current-user.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/PitchChatModal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/BillingTabContent.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/label.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/react-helmet.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/admin/admin-pitches-list-immersive.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/react-day-picker/dist/style.css
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/useLivePrice.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/recharts.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/admin/AdminNavbar.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@radix-ui_react-toast.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/class-variance-authority.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-AEDEI7QG.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-P2Q3PHAO.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-5LUAUUSS.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-UOTLCHXG.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-7Y4FL5OX.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-EQGEA3QH.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-IWFJIMEQ.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-LHPXHTGV.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-WYLF52TL.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-KO3EV6KN.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-E7IAXTU4.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-JDYSANEB.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-5Q5YC75F.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/clsx.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/tailwind-merge.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@radix-ui_react-slot.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/paywall-modal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/responsive-utils.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@radix-ui_react-select.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-subscription.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/pitch-progress-tracker.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@radix-ui_react-separator.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/alert.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/signup/SignupProgress.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-4ROUXF3S.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@stripe_react-stripe-js.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@stripe_stripe-js.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@radix-ui_react-avatar.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@radix-ui_react-dropdown-menu.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/radio-group.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/scroll-area.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@radix-ui_react-label.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-JZFGAL4V.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/admin/pitch-details-modal-redesigned.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/table.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-62OW3KDS.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-U7P2NEEE.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/PaymentModal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-43G6IMPT.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-6ZMM2PAV.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-KHAOS5BH.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-4RO2SXZU.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/chunk-RK2UGKVY.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@radix-ui_react-radio-group.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/.vite/deps/@radix-ui_react-scroll-area.js?v=f51751ac
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /api/admin/current
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+6:46:10 PM [express] GET /api/admin/current 401 in 2ms :: {"message":"Not authenticated as admin"}
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /api/user
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /api/user
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[ensureAuth] Checking authentication...
+[ensureAuth] req.user: missing
+[ensureAuth] Authorization header: undefined
+[ensureAuth] User not authenticated, returning 401
+6:46:10 PM [express] GET /api/user 401 in 1ms :: {"message":"Unauthorized"}
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /favicon.ico
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /register
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@vite/client
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@react-refresh
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/main.tsx?v=48A1LA3TcLbLPqVgjQi6s
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/vite/dist/client/env.mjs
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/App.tsx?v=48A1LA3TcLbLPqVgjQi6s
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/index.css?v=48A1LA3TcLbLPqVgjQi6s
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/apiFetch.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/queryClient.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/toaster.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/tooltip.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-toast.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/home.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/engine.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/opportunities.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/legal/editorial-integrity.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/not-found.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/saved-opportunities.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/opportunity-detail.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/my-pitches.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/pitch-history.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/subscribe.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/payment-success.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/subscription-success.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/profile-setup.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/SignupWizard.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/account.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/navbar.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-auth.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/register.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-admin-auth.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/protected-route.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/admin-protected-route.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/contexts/PriceContext.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/opportunities-manager-new.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/users-manager.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/support.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/pitches.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/billing-manager-new.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/analytics.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/pricing.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/publications-manager.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/login-page.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/forgot-password.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/TermsOfService.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/reset-password.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/login.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/create-admin.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/admin/AdminLayout.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/toast.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/utils.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/button.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/input.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/select.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/opportunity-card.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/resubscription-modal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/card.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/pitch-edit-modal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/constants.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/pitch-review-modal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/utils/pitchStage.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/badge.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/textarea.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/PriceTrendChart.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/separator.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/signup/SignupWizard.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/form.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/avatar.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/signup/PaymentStep.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/contexts/SignupWizardContext.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/signup/ProfileStep.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/api.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/signup-wizard.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-current-user.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/dialog.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/CancelRetentionModal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/tabs.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/PitchChatModal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/BillingTabContent.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-notifications.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/dropdown-menu.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/FormFieldWrapper.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/label.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/admin/admin-pitches-list-immersive.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/react-day-picker/dist/style.css
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/useLivePrice.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/admin/AdminNavbar.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-subscription.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/paywall-modal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/responsive-utils.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/alert.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/pitch-progress-tracker.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/signup/SignupProgress.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/radio-group.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/scroll-area.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/admin/pitch-details-modal-redesigned.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/table.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/PaymentModal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /api/admin/current
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+6:46:16 PM [express] GET /api/admin/current 401 in 1ms :: {"message":"Not authenticated as admin"}
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /api/user
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /api/user
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[ensureAuth] Checking authentication...
+[ensureAuth] req.user: missing
+[ensureAuth] Authorization header: undefined
+[ensureAuth] User not authenticated, returning 401
+6:46:16 PM [express] GET /api/user 401 in 1ms :: {"message":"Unauthorized"}
+► checkUnique hit { field: 'username', value: 'juanp' }
+► checkUnique hit { field: 'username', value: 'juanpchicaaa' }
+► checkUnique hit { field: 'username', value: 'juanpchicaaa' }
+► checkUnique hit { field: 'email', value: 'juan.chica4@gmail.com' }
+► checkUnique hit { field: 'username', value: 'juanpchicaaa' }
+► checkUnique hit { field: 'email', value: 'juan.chica4@gmail.co' }
+► checkUnique hit { field: 'username', value: 'juanpchicaaa' }
+► checkUnique hit { field: 'email', value: 'juan.chica4@gmail.com' }
+► checkUnique hit { field: 'username', value: 'juanp' }
+► checkUnique hit { field: 'email', value: 'juan.chica4@gmail.com' }
+► checkUnique hit { field: 'username', value: 'juan' }
+► checkUnique hit { field: 'email', value: 'juan.chica4@gmail.com' }
+► checkUnique hit { field: 'username', value: 'juanpablo' }
+► checkUnique hit { field: 'email', value: 'juan.chica4@gmail.com' }
+► checkUnique hit { field: 'username', value: 'juanpablo4' }
+► checkUnique hit { field: 'email', value: 'juan.chica4@gmail.com' }
+► checkUnique hit { field: 'username', value: 'juanpablo4' }
+► checkUnique hit { field: 'email', value: 'juan.chica4@gmail.com' }
+► checkUnique hit { field: 'username', value: 'juanpablo4' }
+► checkUnique hit { field: 'email', value: 'juan.chica4@gmail.com' }
+► checkUnique hit { field: 'username', value: 'juanpablo4' }
+► checkUnique hit { field: 'email', value: 'juan.chica4@gmail.com' }
+► checkUnique hit { field: 'username', value: 'juanpablo4' }
+► checkUnique hit { field: 'email', value: 'juan.chica4@gmail.com' }
+► checkUnique hit { field: 'phone', value: '+15712165753' }
+► checkUnique hit { field: 'username', value: 'juanpablo4' }
+► checkUnique hit { field: 'email', value: 'juan.chica4@gmail.com' }
+► checkUnique hit { field: 'username', value: 'juanpablo4' }
+► checkUnique hit { field: 'email', value: 'juan.chica4@gmail.com' }
+► checkUnique hit { field: 'phone', value: '+15712165757' }
+► checkUnique hit { field: 'username', value: 'juanpablo46' }
+► checkUnique hit { field: 'email', value: 'juan.chica4@gmail.com' }
+► checkUnique hit { field: 'phone', value: '+15712165757' }
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /register
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@vite/client
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@react-refresh
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/main.tsx?v=CI8DTd0cfwipF_cNtAgl4
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/vite/dist/client/env.mjs
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/App.tsx?v=CI8DTd0cfwipF_cNtAgl4
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/index.css?v=CI8DTd0cfwipF_cNtAgl4
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/apiFetch.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/queryClient.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/home.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/engine.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/toaster.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/tooltip.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-toast.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/not-found.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/opportunities.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/legal/editorial-integrity.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/saved-opportunities.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/opportunity-detail.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/my-pitches.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/pitch-history.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/subscribe.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/payment-success.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/subscription-success.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/profile-setup.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/SignupWizard.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/register.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/account.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/navbar.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-auth.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-admin-auth.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/protected-route.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/admin-protected-route.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/contexts/PriceContext.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/users-manager.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/support.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/pitches.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/opportunities-manager-new.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/billing-manager-new.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/analytics.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/pricing.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/publications-manager.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/login-page.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/forgot-password.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/TermsOfService.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/reset-password.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/create-admin.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/pages/admin/login.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/admin/AdminLayout.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/button.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/utils.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/card.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/toast.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/input.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/select.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/opportunity-card.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/resubscription-modal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/constants.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/badge.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/textarea.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/PriceTrendChart.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/pitch-edit-modal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/pitch-review-modal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/utils/pitchStage.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/separator.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/signup/SignupWizard.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/form.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/avatar.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/contexts/SignupWizardContext.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/signup/PaymentStep.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/signup/ProfileStep.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/api.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/signup-wizard.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/FormFieldWrapper.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-current-user.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/dialog.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/CancelRetentionModal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/tabs.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/PitchChatModal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/dropdown-menu.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/label.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/BillingTabContent.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-notifications.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/admin/admin-pitches-list-immersive.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /@fs/Users/bendeveran/Desktop/QuoteBid%20V1/node_modules/react-day-picker/dist/style.css
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/useLivePrice.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/admin/AdminNavbar.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/hooks/use-subscription.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/paywall-modal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/lib/responsive-utils.ts
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/alert.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/pitch-progress-tracker.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/signup/SignupProgress.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/radio-group.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/scroll-area.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/admin/pitch-details-modal-redesigned.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/ui/table.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+CORS check - Origin: http://192.168.1.121:5051 NODE_ENV: development
+Development mode - allowing origin: http://192.168.1.121:5051
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /src/components/PaymentModal.tsx
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /api/admin/current
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+6:48:58 PM [express] GET /api/admin/current 401 in 1ms :: {"message":"Not authenticated as admin"}
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /api/user
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[jwtAuth] Checking for JWT token...
+[jwtAuth] URL: /api/user
+[jwtAuth] Authorization header: undefined
+[jwtAuth] No token found, continuing without auth
+[ensureAuth] Checking authentication...
+[ensureAuth] req.user: missing
+[ensureAuth] Authorization header: undefined
+[ensureAuth] User not authenticated, returning 401
+6:48:58 PM [express] GET /api/user 401 in 0ms :: {"message":"Unauthorized"}
+► checkUnique hit { field: 'username', value: 'juan' }
+► checkUnique hit { field: 'username', value: 'juanp' }
+► checkUnique hit { field: 'username', value: 'juanpchica' }
+► checkUnique hit { field: 'username', value: 'juanpchicaf' }
+► checkUnique hit { field: 'username', value: 'juanpchicaf' }
+► checkUnique hit { field: 'username', value: 'juanpchicaf' }
+► checkUnique hit { field: 'username', value: 'juanpchicaf' }
+► checkUnique hit { field: 'username', value: 'juanpchicaf' }
+► checkUnique hit { field: 'username', value: 'juanpchicaf' }
+► checkUnique hit { field: 'email', value: 'juan.chica4@gmail.com' }
+Failed to prune sessions: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://ep-round-hill-a5f8zeix-pooler.us-east-2.aws.neon.tech/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: getaddrinfo ENOTFOUND ep-round-hill-a5f8zeix-pooler.us-east-2.aws.neon.tech
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'ep-round-hill-a5f8zeix-pooler.us-east-2.aws.neon.tech'
+  },
+  [Symbol(kMessage)]: 'getaddrinfo ENOTFOUND ep-round-hill-a5f8zeix-pooler.us-east-2.aws.neon.tech'
+}
