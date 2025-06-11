@@ -3112,10 +3112,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (type) {
         switch (type.toUpperCase()) {
           case 'WELCOME':
+            // For test emails, try to get the user's industry from the database
+            let userIndustry = undefined;
+            try {
+              const [testUser] = await getDb()
+                .select({ industry: users.industry })
+                .from(users)
+                .where(eq(users.email, email))
+                .limit(1);
+              userIndustry = testUser?.industry || undefined;
+            } catch (error) {
+              console.log('Could not fetch user industry for test email, using default');
+            }
+            
             const success = await sendWelcomeEmail(
               email, 
               username || 'TestUser', 
-              fullName
+              fullName,
+              userIndustry
             );
             
             if (success) {
@@ -3390,14 +3404,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Render with live data
           // Demo industries to showcase personalization
-          const demoIndustries = ['Technology', 'Finance', 'Healthcare', 'Real Estate', 'Energy', 'Crypto'];
+          const demoIndustries = ['Technology', 'Finance', 'Healthcare', 'Real Estate', 'Energy', 'Crypto', 'Capital Markets'];
           const randomIndustry = demoIndustries[Math.floor(Math.random() * demoIndustries.length)];
+          
+          // Try to fetch a real live opportunity for this industry
+          let liveOpportunity = null;
+          try {
+            const { getOpportunityForEmail, getStaticFallbackOpportunity } = await import('./lib/opportunityMatcher');
+            liveOpportunity = await getOpportunityForEmail(randomIndustry);
+            
+            // If no live opportunity found, use static fallback
+            if (!liveOpportunity) {
+              console.log(`📋 No live opportunity found for ${randomIndustry}, using static fallback`);
+              liveOpportunity = getStaticFallbackOpportunity(randomIndustry);
+            } else {
+              console.log(`🎯 Using live opportunity: ${liveOpportunity.title} for ${randomIndustry}`);
+            }
+          } catch (error) {
+            console.error('Error fetching live opportunity:', error);
+            // Use static fallback if database query fails
+                         const { getStaticFallbackOpportunity } = await import('./lib/opportunityMatcher');
+            liveOpportunity = getStaticFallbackOpportunity(randomIndustry);
+          }
           
           const renderProps = {
             userFirstName: 'John',
             username: 'john_doe',
             frontendUrl,
-            industry: randomIndustry, // Random industry to showcase personalization
+            industry: randomIndustry,
+            liveOpportunity,
           };
           
           console.log('🎨 RENDERING EMAIL WITH PROPS:', JSON.stringify(renderProps, null, 2));

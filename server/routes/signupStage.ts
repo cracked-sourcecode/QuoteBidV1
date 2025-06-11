@@ -603,8 +603,8 @@ router.post('/:email/complete', async (req: Request, res: Response) => {
     // Send welcome email to new user
     try {
       const { sendWelcomeEmail } = await import('../lib/email');
-      await sendWelcomeEmail(user.email, user.username, user.fullName || user.username);
-      console.log('✅ Welcome email sent to new user:', user.email);
+              await sendWelcomeEmail(user.email, user.username, user.fullName || user.username, user.industry || undefined);
+      console.log('✅ Welcome email sent to new user:', user.email, 'for industry:', user.industry);
     } catch (emailError) {
       console.error('❌ Failed to send welcome email to:', user.email, emailError);
       // Don't fail the signup if email fails - just log the error

@@ -9,11 +9,28 @@ import {
   Heading,
 } from '@react-email/components';
 
+interface LiveOpportunity {
+  id: number;
+  title: string;
+  description: string;
+  outlet: string;
+  logo: string;
+  bgColor: string;
+  tier: string;
+  category: string;
+  price: string;
+  trend: string;
+  timeLeft: string;
+  industry: string;
+  publicationId: number;
+}
+
 interface WelcomeEmailProps {
   userFirstName: string;
   username: string;
   frontendUrl: string;
   industry?: string;
+  liveOpportunity?: LiveOpportunity | null;
 }
 
 // Industry-specific opportunities
@@ -102,9 +119,11 @@ export default function WelcomeEmail({
   username,
   frontendUrl,
   industry,
+  liveOpportunity,
 }: WelcomeEmailProps) {
   
-  const opportunity = getIndustryOpportunity(industry);
+  // Use live opportunity if available, otherwise fall back to static example
+  const opportunity = liveOpportunity || getIndustryOpportunity(industry);
   
   return (
     <Html lang="en">
@@ -252,7 +271,7 @@ export default function WelcomeEmail({
                 
                 {/* Pitch Now Button */}
                 <div style={{marginBottom: '16px'}}>
-                  <a href={`${frontendUrl}/opportunities`} style={{
+                  <a href={liveOpportunity && liveOpportunity.id > 0 ? `${frontendUrl}/opportunities/${liveOpportunity.id}` : `${frontendUrl}/opportunities`} style={{
                     display: 'block',
                     background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)',
                     color: '#ffffff',

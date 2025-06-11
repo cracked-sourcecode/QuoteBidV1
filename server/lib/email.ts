@@ -530,7 +530,8 @@ export async function sendUserNotificationEmail(
 export async function sendWelcomeEmail(
   email: string,
   username: string,
-  fullName?: string
+  fullName?: string,
+  industry?: string
 ): Promise<boolean> {
   const resendInstance = getResendInstance();
   
@@ -543,11 +544,33 @@ export async function sendWelcomeEmail(
     const userFirstName = fullName?.split(' ')[0] || username;
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
     
+    // Try to fetch a real live opportunity for this user's industry
+    let liveOpportunity = null;
+    try {
+      const { getOpportunityForEmail, getStaticFallbackOpportunity } = await import('./opportunityMatcher');
+      liveOpportunity = await getOpportunityForEmail(industry);
+      
+      // If no live opportunity found, use static fallback
+      if (!liveOpportunity) {
+        console.log(`📋 No live opportunity found for ${industry}, using static fallback`);
+        liveOpportunity = getStaticFallbackOpportunity(industry);
+      } else {
+        console.log(`🎯 Using live opportunity: ${liveOpportunity.title} for ${industry}`);
+      }
+    } catch (error) {
+      console.error('Error fetching live opportunity for welcome email:', error);
+      // Use static fallback if database query fails
+      const { getStaticFallbackOpportunity } = await import('./opportunityMatcher');
+      liveOpportunity = getStaticFallbackOpportunity(industry);
+    }
+    
     // Render React Email template to HTML
     const emailHtml = await render(WelcomeEmail({
       userFirstName,
       username,
       frontendUrl,
+      industry,
+      liveOpportunity,
     }));
 
     console.log('📧 Sending welcome email to:', email);
