@@ -129,13 +129,13 @@ export default function Support() {
   
   if (!adminUser) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+      <div className="min-h-screen">
         <div className="flex justify-center items-center h-96">
-          <Card className="w-full max-w-md">
+          <Card className="w-full max-w-md bg-slate-800/50 backdrop-blur-lg border border-white/20">
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <Shield className="h-12 w-12 text-red-500 mb-4" />
-              <h2 className="text-2xl font-bold mb-2">Admin Access Required</h2>
-              <p className="text-muted-foreground text-center">Please log in as an admin to access this page.</p>
+              <Shield className="h-12 w-12 text-red-400 mb-4" />
+              <h2 className="text-2xl font-bold mb-2 text-white">Admin Access Required</h2>
+              <p className="text-slate-300 text-center">Please log in as an admin to access this page.</p>
             </CardContent>
           </Card>
         </div>
@@ -144,33 +144,33 @@ export default function Support() {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+    <div className="min-h-screen">
       <div className="max-w-6xl mx-auto p-6 space-y-8">
         {/* Header */}
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 p-8 mb-8">
           <div className="flex items-center justify-center mb-4">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
               <Shield className="h-8 w-8 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold text-white">
             Customer Support
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
             Advanced user management and support tools for administrators
           </p>
         </div>
 
         {/* User Search Section */}
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+        <Card className="bg-slate-800/50 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20">
           <CardHeader className="pb-6">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
                 <Users className="h-5 w-5 text-white" />
               </div>
               <div>
-                <CardTitle className="text-2xl text-gray-900">User Lookup</CardTitle>
-                <CardDescription className="text-base text-gray-600">
+                <CardTitle className="text-2xl text-white">User Lookup</CardTitle>
+                <CardDescription className="text-base text-slate-300">
                   Search and manage user accounts across the platform
                 </CardDescription>
               </div>
@@ -180,16 +180,16 @@ export default function Support() {
           <CardContent className="space-y-6">
             {/* Search Bar */}
             <div className="space-y-3">
-              <Label htmlFor="search-query" className="text-base font-medium text-gray-700">
+              <Label htmlFor="search-query" className="text-base font-medium text-white">
                 Search Query
               </Label>
               <div className="flex gap-3">
                 <div className="flex-1 relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
                   <Input
                     id="search-query"
                     placeholder="Enter name, username, or email address..."
-                    className="pl-12 h-14 text-base border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm"
+                    className="pl-12 h-14 text-base bg-slate-800/50 border-white/20 text-white placeholder-slate-400 focus:bg-slate-800/50 focus:border-blue-400 focus:ring-blue-400/20 rounded-xl shadow-sm"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleUserSearch()}
@@ -218,14 +218,14 @@ export default function Support() {
             {/* Search Results */}
             {showSearchResults && searchResults.length > 0 && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between border-b border-gray-200 pb-4">
-                  <h3 className="text-xl font-semibold text-gray-900">
+                <div className="flex items-center justify-between border-b border-white/20 pb-4">
+                  <h3 className="text-xl font-semibold text-white">
                     Search Results ({searchResults.length})
                   </h3>
                   <Button 
                     variant="outline" 
                     onClick={clearSelectedUser}
-                    className="text-gray-600 hover:text-gray-800"
+                    className="text-slate-300 hover:text-white border-white/20 hover:border-white/40 bg-transparent hover:bg-slate-700/30"
                   >
                     Clear Results
                   </Button>
@@ -235,13 +235,13 @@ export default function Support() {
                   {searchResults.map((user) => (
                     <Card
                       key={user.id}
-                      className="hover:shadow-lg cursor-pointer transition-all duration-200 border border-gray-200 hover:border-blue-300 bg-gradient-to-r from-white to-gray-50/50"
+                      className="hover:shadow-lg cursor-pointer transition-all duration-200 bg-slate-700/30 border border-white/10 hover:border-blue-400/50"
                       onClick={() => selectUser(user)}
                     >
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4">
-                            <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white shadow-md">
+                            <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-slate-600 shadow-md">
                               {user.avatar ? (
                                 <img 
                                   src={user.avatar} 
@@ -249,17 +249,17 @@ export default function Support() {
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                                  <User className="w-7 h-7 text-gray-500" />
+                                <div className="w-full h-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
+                                  <User className="w-7 h-7 text-slate-300" />
                                 </div>
                               )}
                             </div>
                             <div className="flex-1">
-                              <h4 className="text-lg font-semibold text-gray-900">
+                              <h4 className="text-lg font-semibold text-white">
                                 {user.fullName || user.username}
                               </h4>
-                              <p className="text-base text-gray-600">{user.email}</p>
-                              <p className="text-sm text-gray-500">@{user.username}</p>
+                              <p className="text-base text-slate-300">{user.email}</p>
+                              <p className="text-sm text-slate-400">@{user.username}</p>
                             </div>
                           </div>
                           <div className="flex items-center space-x-4">
@@ -268,8 +268,8 @@ export default function Support() {
                                 PREMIUM
                               </Badge>
                             )}
-                            <span className="text-sm text-gray-500 font-medium">ID: {user.id}</span>
-                            <ChevronLeft className="h-5 w-5 text-gray-400 transform rotate-180" />
+                            <span className="text-sm text-slate-400 font-medium">ID: {user.id}</span>
+                            <ChevronLeft className="h-5 w-5 text-slate-400 transform rotate-180" />
                           </div>
                         </div>
                       </CardContent>
@@ -282,58 +282,58 @@ export default function Support() {
             {/* User Details */}
             {showUserDetails && selectedUser && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+                <div className="flex items-center justify-between border-b border-white/20 pb-4">
                   <div className="flex items-center space-x-4">
                     {searchResults.length > 1 && (
                       <Button 
                         variant="outline" 
                         onClick={backToResults}
-                        className="text-blue-600 hover:text-blue-800 border-blue-200 hover:border-blue-300"
+                        className="text-blue-400 hover:text-blue-300 border-blue-500/30 hover:border-blue-400/50 bg-transparent hover:bg-blue-500/10"
                       >
                         <ChevronLeft className="h-4 w-4 mr-2" />
                         Back to Results
                       </Button>
                     )}
-                    <h3 className="text-2xl font-bold text-gray-900">
+                    <h3 className="text-2xl font-bold text-white">
                       {selectedUser.fullName || selectedUser.username}
                     </h3>
                   </div>
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="h-10 w-10 p-0 hover:bg-red-50 hover:text-red-600" 
+                    className="h-10 w-10 p-0 hover:bg-red-500/20 hover:text-red-400 text-slate-400" 
                     onClick={clearSelectedUser}
                   >
                     <X className="h-5 w-5" />
                   </Button>
                 </div>
 
-                <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200">
+                <Card className="bg-slate-700/30 border border-white/10">
                   <CardContent className="p-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-6">
                         <div>
-                          <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">User ID</p>
-                          <p className="text-lg font-semibold text-gray-900">{selectedUser.id}</p>
+                          <p className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-2">User ID</p>
+                          <p className="text-lg font-semibold text-white">{selectedUser.id}</p>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Username</p>
-                          <p className="text-lg font-semibold text-gray-900">@{selectedUser.username}</p>
+                          <p className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-2">Username</p>
+                          <p className="text-lg font-semibold text-white">@{selectedUser.username}</p>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Industry</p>
-                          <p className="text-lg font-semibold text-gray-900">{selectedUser.industry || "Not specified"}</p>
+                          <p className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-2">Industry</p>
+                          <p className="text-lg font-semibold text-white">{selectedUser.industry || "Not specified"}</p>
                         </div>
                       </div>
 
                       <div className="space-y-6">
                         <div>
-                          <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Email Address</p>
-                          <p className="text-lg font-semibold text-gray-900">{selectedUser.email}</p>
+                          <p className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-2">Email Address</p>
+                          <p className="text-lg font-semibold text-white">{selectedUser.email}</p>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Joined Date</p>
-                          <p className="text-lg font-semibold text-gray-900">
+                          <p className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-2">Joined Date</p>
+                          <p className="text-lg font-semibold text-white">
                             {new Date(selectedUser.createdAt).toLocaleDateString('en-US', { 
                               year: 'numeric', 
                               month: 'long', 
@@ -342,7 +342,7 @@ export default function Support() {
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Subscription Status</p>
+                          <p className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-2">Subscription Status</p>
                           <div className="mt-2">
                             {selectedUser.subscription_status === 'active' && (
                               <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 text-base font-medium">
@@ -355,7 +355,7 @@ export default function Support() {
                       </div>
                     </div>
                     
-                    <div className="flex gap-4 mt-8 pt-6 border-t border-blue-200">
+                    <div className="flex gap-4 mt-8 pt-6 border-t border-white/20">
                       <Button 
                         className="flex-1 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-lg"
                         onClick={() => {
@@ -367,7 +367,7 @@ export default function Support() {
                       </Button>
                       <Button 
                         variant="outline"
-                        className="flex-1 h-12 border-2 border-orange-200 text-orange-600 hover:bg-orange-50 hover:border-orange-300 font-medium rounded-lg"
+                        className="flex-1 h-12 border-2 border-orange-500/30 text-orange-400 hover:bg-orange-500/10 hover:border-orange-400/50 bg-transparent font-medium rounded-lg"
                         onClick={handlePasswordReset}
                         disabled={isPasswordResetting}
                       >

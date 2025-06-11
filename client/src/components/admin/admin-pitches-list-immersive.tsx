@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/apiFetch';
 import { useQuery } from '@tanstack/react-query';
 import { 
-  Loader2, FileText, Mic, Check, X, ChevronDown, List, LayoutGrid, Send, 
-  User, Calendar, Building2, Target, Eye, Clock, TrendingUp, AlertCircle,
-  MessageSquare, Mail, Phone, Linkedin, Globe, DollarSign, Search
+  Loader2, X, List, LayoutGrid, MessageSquare
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import PitchDetailsModal from './pitch-details-modal-redesigned';
@@ -225,58 +223,39 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
     }
   };
 
-  // Status configuration with colors and icons
+  // Status configuration with colors
   const statusConfig = {
     pending: { 
       label: 'Pending Review', 
-      color: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      icon: Clock,
-      description: 'Awaiting initial review'
+      color: 'bg-yellow-900/20 text-yellow-300 border-yellow-600/30'
     },
     sent_to_reporter: { 
       label: 'Sent to Reporter', 
-      color: 'bg-blue-50 text-blue-700 border-blue-200',
-      icon: Send,
-      description: 'Forwarded to journalist'
+      color: 'bg-blue-900/20 text-blue-300 border-blue-600/30'
     },
     interested: { 
       label: 'Reporter Interested', 
-      color: 'bg-green-50 text-green-700 border-green-200',
-      icon: TrendingUp,
-      description: 'Journalist expressed interest'
+      color: 'bg-green-900/20 text-green-300 border-green-600/30'
     },
     not_interested: { 
       label: 'Not Interested', 
-      color: 'bg-red-50 text-red-700 border-red-200',
-      icon: X,
-      description: 'Journalist declined'
+      color: 'bg-red-900/20 text-red-300 border-red-600/30'
     },
     successful: { 
       label: 'Successful Coverage', 
-      color: 'bg-purple-100 text-purple-700 border-purple-200',
-      icon: Check,
-      description: 'Published/aired'
-    },
-    draft: {
-      label: 'Draft',
-      color: 'bg-gray-50 text-gray-700 border-gray-200',
-      icon: FileText,
-      description: 'Draft pitch'
+      color: 'bg-purple-900/20 text-purple-300 border-purple-600/30'
     }
   };
 
-  // Enhanced Status Badge
+  // Clean Status Badge without vectors
   const StatusBadge = ({ status }: { status: string }) => {
     const config = statusConfig[status as keyof typeof statusConfig] || {
       label: status,
-      color: 'bg-gray-50 text-gray-700 border-gray-200',
-      icon: AlertCircle
+      color: 'bg-gray-900/20 text-gray-300 border-gray-600/30'
     };
-    const Icon = config.icon;
     
     return (
-      <Badge variant="outline" className={`${config.color} inline-flex items-center gap-1 px-2 py-1 min-w-fit`}>
-        <Icon className="h-2.5 w-2.5 flex-shrink-0" />
+      <Badge variant="outline" className={`${config.color} px-2 py-1 text-xs shrink-0 cursor-default`}>
         <span className="whitespace-nowrap text-xs font-medium">{config.label}</span>
       </Badge>
     );
@@ -295,186 +274,148 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
     }
   };
 
-  // Card view component for a single pitch
+    // Professional card design with proper alignment
   const PitchCard = ({ pitch }: { pitch: Pitch }) => {
     const dateInfo = formatDate(pitch.createdAt);
     const userInitials = pitch.user?.fullName
       ? pitch.user.fullName.split(' ').map(n => n[0]).join('').toUpperCase()
       : pitch.user?.username?.[0]?.toUpperCase() || 'U';
 
-    // Uniform content preview limits
-    const getContentPreview = (content: string | undefined, maxLength: number = 120) => {
+    // Content preview
+    const getContentPreview = (content: string | undefined, maxLength: number = 100) => {
       if (!content) return 'No content available';
       return content.length > maxLength ? content.substring(0, maxLength) + '...' : content;
     };
 
     return (
-      <Card className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer bg-gradient-to-br from-white to-gray-50/50 border-0 shadow-lg overflow-hidden h-full flex flex-col" 
+      <Card className="group hover:shadow-xl hover:scale-[1.01] transition-all duration-300 cursor-pointer bg-slate-800/60 backdrop-blur-sm border border-white/20 hover:border-amber-500/50 overflow-hidden h-full flex flex-col" 
             onClick={() => {
               setSelectedPitchId(pitch.id);
               setIsPitchDetailsModalOpen(true);
             }}>
         
-        {/* Enhanced Header with Better Status Layout */}
-        <CardHeader className="pb-4 bg-gradient-to-r from-gray-50/80 to-blue-50/30 border-b border-gray-100 flex-shrink-0">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <Avatar className="h-12 w-12 ring-2 ring-white shadow-md">
-                <AvatarImage src={pitch.user?.avatar || undefined} />
-                <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-600 text-white font-semibold">
+        {/* Compact Header */}
+        <CardHeader className="p-3 pb-2">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <Avatar className="h-10 w-10 ring-2 ring-white/30">
+                <AvatarImage src={pitch.user?.avatar || undefined} className="object-cover" />
+                <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-700 text-white font-medium text-sm">
                   {userInitials}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-gray-900 leading-tight text-base truncate">
+                <h3 className="font-medium text-white text-sm leading-tight truncate">
                   {pitch.user?.fullName || pitch.user?.username || `User #${pitch.userId}`}
                 </h3>
-                <p className="text-sm text-gray-500 truncate">{pitch.user?.email}</p>
+                <p className="text-xs text-slate-400 truncate">{pitch.user?.email}</p>
                 {pitch.user?.title && (
-                  <p className="text-xs text-gray-400 truncate mt-0.5">{pitch.user.title}</p>
+                  <p className="text-xs text-slate-500 truncate">{pitch.user.title}</p>
                 )}
               </div>
             </div>
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 self-start">
               <StatusBadge status={pitch.status} />
             </div>
           </div>
         </CardHeader>
         
-        {/* Enhanced Content Area - Flex grow to fill available space */}
-        <CardContent className="p-6 space-y-4 flex-1 flex flex-col">
+        {/* Compact Content Area */}
+        <CardContent className="px-3 pb-3 space-y-2 flex-1 flex flex-col">
+          
           {/* Opportunity Section */}
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-100/50 flex-shrink-0">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-1.5 bg-blue-500 rounded-lg">
-                <Target className="h-4 w-4 text-white" />
-              </div>
-              <span className="text-sm font-semibold text-blue-900">Pitching for:</span>
-            </div>
-            <h4 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2 mb-3">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Pitching for</span>
+            <h4 className="font-medium text-white text-sm leading-tight line-clamp-2">
               {pitch.opportunity?.title || `Opportunity #${pitch.opportunityId}`}
             </h4>
             {pitch.publication && (
-              <div className="flex items-center gap-2">
-                <div className="p-1 bg-gray-500 rounded">
-                  <Building2 className="h-3 w-3 text-white" />
-                </div>
-                <span className="text-sm text-gray-600 font-medium truncate">{pitch.publication.name}</span>
-              </div>
+              <p className="text-xs text-slate-300 font-medium">
+                {pitch.publication.name}
+              </p>
             )}
           </div>
 
-          {/* Pitch Content Section - Fixed height container */}
-          <div className="space-y-3 flex-1 flex flex-col">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {pitch.audioUrl ? (
-                <>
-                  <div className="p-1.5 bg-green-500 rounded-lg">
-                    <Mic className="h-4 w-4 text-white" />
-                  </div>
-                  <span className="text-sm font-semibold text-green-800">Audio Pitch</span>
-                </>
-              ) : (
-                <>
-                  <div className="p-1.5 bg-gray-500 rounded-lg">
-                    <FileText className="h-4 w-4 text-white" />
-                  </div>
-                  <span className="text-sm font-semibold text-gray-700">Written Pitch</span>
-                </>
+          {/* Pitch Content */}
+          <div className="space-y-1 flex-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                {pitch.audioUrl ? 'Audio Pitch' : 'Written Pitch'}
+              </span>
+              {pitch.audioUrl && (
+                <span className="text-xs text-green-400 bg-green-900/30 px-1.5 py-0.5 rounded-full">
+                  Audio
+                </span>
               )}
             </div>
             
-            {/* Content Preview - Fixed height */}
-            <div className="flex-1 min-h-[120px] max-h-[120px] overflow-hidden">
+            <div className="bg-slate-700/40 border border-white/10 rounded p-2 flex-1 min-h-[60px]">
               {pitch.audioUrl ? (
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100/50 h-full flex flex-col">
-                  <div className="flex-shrink-0 mb-3">
-                    <audio controls className="w-full h-8" onClick={(e) => e.stopPropagation()}>
-                      <source src={pitch.audioUrl} type="audio/mpeg" />
-                    </audio>
-                  </div>
+                <div className="space-y-2">
+                  <audio controls className="w-full h-8" onClick={(e) => e.stopPropagation()}>
+                    <source src={pitch.audioUrl} type="audio/mpeg" />
+                  </audio>
                   {pitch.transcript && (
-                    <div className="bg-white/60 rounded-lg p-3 flex-1 overflow-hidden">
-                      <p className="text-sm text-gray-700 line-clamp-3">
-                        {getContentPreview(pitch.transcript, 100)}
-                      </p>
-                    </div>
+                    <p className="text-xs text-slate-300 line-clamp-2 leading-snug">
+                      {getContentPreview(pitch.transcript, 80)}
+                    </p>
                   )}
                 </div>
               ) : (
-                <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100/50 h-full">
-                  <div className="bg-white/60 rounded-lg p-3 h-full flex flex-col justify-between">
-                    <p className="text-sm text-gray-700 line-clamp-4">
-                      {getContentPreview(pitch.content, 120)}
-                    </p>
-                    {pitch.user?.fullName && pitch.user?.title && (
-                      <p className="text-gray-500 italic text-xs mt-2 truncate flex-shrink-0">
-                        —{pitch.user.fullName}, {pitch.user.title}
-                      </p>
-                    )}
-                  </div>
-                </div>
+                <p className="text-xs text-slate-300 line-clamp-3 leading-snug">
+                  {getContentPreview(pitch.content, 100)}
+                </p>
               )}
             </div>
           </div>
 
-          {/* Enhanced Metadata - Fixed at bottom */}
-          <div className="flex items-center justify-between text-sm bg-gray-50/80 rounded-lg p-3 flex-shrink-0">
-            <div className="flex items-center gap-2 text-gray-600">
-              <Calendar className="h-4 w-4" />
-              <span className="font-medium">{dateInfo.relative}</span>
-            </div>
+          {/* Footer with Date and Amount */}
+          <div className="flex items-center justify-between pt-1 border-t border-white/20">
+            <span className="text-xs text-slate-400">{dateInfo.relative}</span>
             {pitch.bidAmount && (
-              <div className="flex items-center gap-2 text-green-700 bg-green-50 px-3 py-1 rounded-full">
-                <DollarSign className="h-4 w-4" />
-                <span className="font-semibold">{pitch.bidAmount}</span>
-              </div>
+              <span className="font-medium text-xs text-green-400 bg-green-900/30 px-2 py-0.5 rounded-full">
+                ${pitch.bidAmount}
+              </span>
             )}
           </div>
 
-          {/* Enhanced Action Buttons - Fixed at bottom */}
-          <div className="flex gap-3 pt-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+          {/* Compact Action Buttons */}
+          <div className="flex gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
             <Button 
-              size="sm" 
-              className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-md hover:shadow-lg transition-all"
+              size="sm"
+              className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white h-8"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedPitchId(pitch.id);
                 setIsPitchDetailsModalOpen(true);
               }}
             >
-              <Eye className="h-4 w-4 mr-2" />
               View Details
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
-                  size="sm" 
+                  size="sm"
                   variant="outline" 
-                  className="px-3 border-gray-300 hover:bg-gray-50 shadow-sm"
+                  className="px-2 bg-slate-700/50 border-white/20 hover:bg-slate-600/50 text-white h-8"
                 >
-                  <ChevronDown className="h-4 w-4" />
+                  ⋯
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <DropdownMenuContent align="end" className="w-48 bg-slate-800 border-white/20">
+                <DropdownMenuLabel className="text-sm font-semibold text-slate-300">
                   Update Status
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-white/10" />
                 {Object.entries(statusConfig).map(([key, config]) => {
-                  const Icon = config.icon;
                   return (
                     <DropdownMenuItem 
                       key={key}
                       onClick={() => updatePitchStatus(pitch.id, key)}
                       disabled={pitch.status === key}
-                      className="flex items-center gap-3 py-2.5"
+                      className="py-2.5 text-slate-300 hover:bg-slate-700/50"
                     >
-                      <Icon className="h-4 w-4 text-gray-600" />
-                      <div className="flex-1">
-                        <div className="font-medium">{config.label}</div>
-                        <div className="text-xs text-gray-500">{config.description}</div>
-                      </div>
+                      <span className="text-sm">{config.label}</span>
                     </DropdownMenuItem>
                   );
                 })}
@@ -489,8 +430,8 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-        <span className="ml-2 text-gray-600">Loading pitches...</span>
+        <Loader2 className="h-8 w-8 animate-spin text-amber-400" />
+        <span className="ml-2 text-slate-300">Loading pitches...</span>
       </div>
     );
   }
@@ -498,33 +439,74 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <X className="h-8 w-8 text-red-600 mb-2" />
-        <h3 className="text-gray-800 font-medium">Failed to load pitches</h3>
-        <p className="text-gray-600 mb-4">There was an error loading the pitch data.</p>
-        <Button onClick={() => refetch()}>Try Again</Button>
+        <X className="h-8 w-8 text-red-400 mb-2" />
+        <h3 className="text-white font-medium">Failed to load pitches</h3>
+        <p className="text-slate-300 mb-4">There was an error loading the pitch data.</p>
+        <Button onClick={() => refetch()} className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700">
+          Try Again
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Campaign Filter Menu Section */}
-      <div className="bg-gradient-to-r from-slate-50 to-blue-50/30 border border-gray-200 rounded-xl p-6 shadow-sm">
-        <div className="flex flex-col space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Target className="h-5 w-5 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Campaign Filters</h3>
-            <span className="text-sm text-gray-500">Focus on specific stories and outlets</span>
+            {/* Desktop-Optimized Campaign Filters */}
+      <div className="bg-slate-800/30 backdrop-blur-lg border border-white/20 rounded-2xl p-5 shadow-xl">
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-semibold text-white">Campaign Filters</h3>
+              <p className="text-sm text-slate-400 mt-0.5">Focus on specific stories and outlets</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-slate-300 bg-slate-700/50 px-4 py-2 rounded-lg border border-white/20">
+                <span className="font-semibold text-white">{filteredPitches.length}</span> 
+                <span className="ml-1">pitch{filteredPitches.length !== 1 ? 'es' : ''}</span>
+              </div>
+              <div className="flex items-center gap-1 bg-slate-700/30 p-1 rounded-lg border border-white/20">
+                <Button
+                  variant={viewMode === 'cards' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('cards')}
+                  className={viewMode === 'cards' 
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-600 h-8' 
+                    : 'text-slate-300 hover:text-white hover:bg-slate-600/50 h-8'
+                  }
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('table')}
+                  className={viewMode === 'table' 
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-600 h-8' 
+                    : 'text-slate-300 hover:text-white hover:bg-slate-600/50 h-8'
+                  }
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Filter Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Tier Filter */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Tier</label>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-300">Tier</label>
               <select
                 value={selectedTier}
                 onChange={(e) => setSelectedTier(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full px-4 py-3 pr-10 text-sm border border-white/20 rounded-lg bg-slate-700/50 text-white backdrop-blur-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all appearance-none cursor-pointer hover:bg-slate-600/50"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23A1A1AA' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                  backgroundPosition: 'right 12px center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '16px'
+                }}
               >
                 <option value="all">All Tiers</option>
                 {availableTiers.map((tier) => (
@@ -534,13 +516,19 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
             </div>
 
             {/* Outlet Filter */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Outlet</label>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-300">Outlet</label>
               <select
                 value={selectedOutlet}
                 onChange={(e) => setSelectedOutlet(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full px-4 py-3 pr-10 text-sm border border-white/20 rounded-lg bg-slate-700/50 text-white backdrop-blur-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all appearance-none cursor-pointer hover:bg-slate-600/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={selectedTier !== 'all' && availableOutlets.length === 0}
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23A1A1AA' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                  backgroundPosition: 'right 12px center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '16px'
+                }}
               >
                 <option value="all">All Outlets</option>
                 {availableOutlets.map((outlet) => (
@@ -550,13 +538,19 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
             </div>
 
             {/* Opportunity Filter */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Opportunity</label>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-300">Opportunity</label>
               <select
                 value={selectedOpportunity}
                 onChange={(e) => setSelectedOpportunity(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full px-4 py-3 pr-10 text-sm border border-white/20 rounded-lg bg-slate-700/50 text-white backdrop-blur-sm focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all appearance-none cursor-pointer hover:bg-slate-600/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={selectedOutlet === 'all'}
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23A1A1AA' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                  backgroundPosition: 'right 12px center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '16px'
+                }}
               >
                 <option value="all">All Stories</option>
                 {availableOpportunities.map((opp: any) => (
@@ -564,53 +558,24 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
                 ))}
               </select>
             </div>
-
-            {/* Results & View Mode */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">View</label>
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600 bg-white/70 px-3 py-2 rounded-lg border border-gray-200">
-                  <span className="font-medium">{filteredPitches.length}</span> pitch{filteredPitches.length !== 1 ? 'es' : ''}
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant={viewMode === 'cards' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setViewMode('cards')}
-                    className="shadow-sm"
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === 'table' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setViewMode('table')}
-                    className="shadow-sm"
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
           </div>
 
-          {/* Active Filters Summary */}
+          {/* Active Filters */}
           {(selectedTier !== 'all' || selectedOutlet !== 'all' || selectedOpportunity !== 'all') && (
-            <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
-              <span className="text-sm font-medium text-gray-700">Active filters:</span>
+            <div className="flex items-center gap-2 pt-3 border-t border-white/10">
+              <span className="text-sm font-medium text-slate-300">Active:</span>
               {selectedTier !== 'all' && (
-                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                <span className="px-2.5 py-1 bg-blue-900/30 text-blue-300 text-xs rounded-full border border-blue-600/30 font-medium">
                   {selectedTier}
                 </span>
               )}
               {selectedOutlet !== 'all' && (
-                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                <span className="px-2.5 py-1 bg-green-900/30 text-green-300 text-xs rounded-full border border-green-600/30 font-medium">
                   {selectedOutlet}
                 </span>
               )}
               {selectedOpportunity !== 'all' && (
-                <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                <span className="px-2.5 py-1 bg-purple-900/30 text-purple-300 text-xs rounded-full border border-purple-600/30 font-medium">
                   {availableOpportunities.find((opp: any) => opp.id?.toString() === selectedOpportunity)?.title}
                 </span>
               )}
@@ -622,55 +587,37 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
                   setSelectedOutlet('all');
                   setSelectedOpportunity('all');
                 }}
-                className="text-gray-500 hover:text-gray-700 ml-2"
+                className="text-slate-400 hover:text-white hover:bg-slate-700/50 ml-1 h-7 px-2 text-xs"
               >
-                <X className="h-4 w-4 mr-1" />
-                Clear all
+                <X className="h-3 w-3 mr-1" />
+                Clear
               </Button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Status Filter Tabs */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      {/* Dark Status Filter Tabs */}
+      <div className="bg-slate-800/30 backdrop-blur-lg rounded-2xl border border-white/20 shadow-xl overflow-hidden">
         <Tabs value={selectedStatus} onValueChange={setSelectedStatus} className="w-full">
-          <TabsList className="grid grid-cols-3 lg:grid-cols-6 w-full bg-gray-50/80 h-auto p-1">
-            <TabsTrigger value="pending" className="text-sm py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span>Pending</span>
-              </div>
+          <TabsList className="grid grid-cols-3 lg:grid-cols-6 w-full bg-slate-700/30 h-auto p-1">
+            <TabsTrigger value="pending" className="text-sm py-3 text-slate-300 data-[state=active]:bg-slate-600/50 data-[state=active]:text-white data-[state=active]:shadow-sm">
+              Pending
             </TabsTrigger>
-            <TabsTrigger value="sent_to_reporter" className="text-sm py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-              <div className="flex items-center gap-2">
-                <Send className="h-4 w-4" />
-                <span>Sent</span>
-              </div>
+            <TabsTrigger value="sent_to_reporter" className="text-sm py-3 text-slate-300 data-[state=active]:bg-slate-600/50 data-[state=active]:text-white data-[state=active]:shadow-sm">
+              Sent
             </TabsTrigger>
-            <TabsTrigger value="interested" className="text-sm py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                <span>Interested</span>
-              </div>
+            <TabsTrigger value="interested" className="text-sm py-3 text-slate-300 data-[state=active]:bg-slate-600/50 data-[state=active]:text-white data-[state=active]:shadow-sm">
+              Interested
             </TabsTrigger>
-            <TabsTrigger value="not_interested" className="text-sm py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-              <div className="flex items-center gap-2">
-                <X className="h-4 w-4" />
-                <span>Declined</span>
-              </div>
+            <TabsTrigger value="not_interested" className="text-sm py-3 text-slate-300 data-[state=active]:bg-slate-600/50 data-[state=active]:text-white data-[state=active]:shadow-sm">
+              Declined
             </TabsTrigger>
-            <TabsTrigger value="successful" className="text-sm py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-              <div className="flex items-center gap-2">
-                <Check className="h-4 w-4" />
-                <span>Successful</span>
-              </div>
+            <TabsTrigger value="successful" className="text-sm py-3 text-slate-300 data-[state=active]:bg-slate-600/50 data-[state=active]:text-white data-[state=active]:shadow-sm">
+              Successful
             </TabsTrigger>
-            <TabsTrigger value="all" className="text-sm py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                <span>All Pitches</span>
-              </div>
+            <TabsTrigger value="all" className="text-sm py-3 text-slate-300 data-[state=active]:bg-slate-600/50 data-[state=active]:text-white data-[state=active]:shadow-sm">
+              All Pitches
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -678,11 +625,11 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
 
       {/* Content */}
       {filteredPitches.length === 0 ? (
-        <Card className="p-12">
+        <Card className="p-12 bg-slate-800/30 backdrop-blur-lg border border-white/20">
           <div className="flex flex-col items-center justify-center text-center">
-            <MessageSquare className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No pitches found</h3>
-            <p className="text-gray-500 max-w-md">
+            <MessageSquare className="h-12 w-12 text-slate-400 mb-4" />
+            <h3 className="text-lg font-medium text-white mb-2">No pitches found</h3>
+            <p className="text-slate-300 max-w-md">
               {selectedTier !== 'all' || selectedOutlet !== 'all' || selectedOpportunity !== 'all'
                 ? "No pitches match your current filter selection. Try adjusting your filters."
                 : selectedStatus === 'all' 
@@ -692,31 +639,30 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
           </div>
         </Card>
       ) : viewMode === 'cards' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
           {filteredPitches.map((pitch: Pitch) => (
             <PitchCard key={pitch.id} pitch={pitch} />
           ))}
         </div>
       ) : (
-        <Card>
+        <Card className="bg-slate-800/30 backdrop-blur-lg border border-white/20">
           <ScrollArea className="w-full">
-            <Table>
+                        <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Expert</TableHead>
-                  <TableHead>Opportunity</TableHead>
-                  <TableHead>Publication</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead>Actions</TableHead>
+                <TableRow className="border-white/10">
+                  <TableHead className="text-slate-300">Expert</TableHead>
+                  <TableHead className="text-slate-300">Opportunity</TableHead>
+                  <TableHead className="text-slate-300">Publication</TableHead>
+                  <TableHead className="text-slate-300">Status</TableHead>
+                  <TableHead className="text-slate-300">Submitted</TableHead>
+                  <TableHead className="text-slate-300">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredPitches.map((pitch: Pitch) => {
                   const dateInfo = formatDate(pitch.createdAt);
                   return (
-                    <TableRow key={pitch.id} className="cursor-pointer hover:bg-gray-50"
+                    <TableRow key={pitch.id} className="cursor-pointer hover:bg-slate-700/50 border-white/10 text-white"
                               onClick={() => {
                                 setSelectedPitchId(pitch.id);
                                 setIsPitchDetailsModalOpen(true);
@@ -725,62 +671,55 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
                         <div className="flex items-center gap-2">
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={pitch.user?.avatar || undefined} />
-                            <AvatarFallback className="text-xs bg-purple-100 text-purple-700">
+                            <AvatarFallback className="text-xs bg-gradient-to-br from-amber-500 to-orange-600 text-white">
                               {pitch.user?.fullName?.[0] || pitch.user?.username?.[0] || 'U'}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-medium text-sm">
+                            <p className="font-medium text-sm text-white">
                               {pitch.user?.fullName || pitch.user?.username}
                             </p>
-                            <p className="text-xs text-gray-500">{pitch.user?.email}</p>
+                            <p className="text-xs text-slate-300">{pitch.user?.email}</p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <p className="font-medium text-sm line-clamp-1">
+                        <p className="font-medium text-sm line-clamp-1 text-white">
                           {pitch.opportunity?.title || `Opportunity #${pitch.opportunityId}`}
                         </p>
                       </TableCell>
                       <TableCell>
-                        <p className="text-sm">{pitch.publication?.name || 'N/A'}</p>
+                        <p className="text-sm text-slate-300">{pitch.publication?.name || 'N/A'}</p>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {pitch.audioUrl ? 'Audio' : 'Text'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <StatusBadge status={pitch.status} />
                       </TableCell>
                       <TableCell>
-                        <p className="text-sm">{dateInfo.relative}</p>
+                        <p className="text-sm text-slate-300">{dateInfo.relative}</p>
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <ChevronDown className="h-4 w-4" />
+                            <Button variant="ghost" size="sm" className="text-white hover:bg-slate-700/50">
+                              ⋯
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="bg-slate-800 border-white/20">
                             <DropdownMenuItem onClick={() => {
                               setSelectedPitchId(pitch.id);
                               setIsPitchDetailsModalOpen(true);
-                            }}>
-                              <Eye className="mr-2 h-4 w-4" />
+                            }} className="text-slate-300 hover:bg-slate-700/50">
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
+                            <DropdownMenuSeparator className="bg-white/10" />
                             {Object.entries(statusConfig).map(([key, config]) => {
-                              const Icon = config.icon;
                               return (
                                 <DropdownMenuItem 
                                   key={key}
                                   onClick={() => updatePitchStatus(pitch.id, key)}
                                   disabled={pitch.status === key}
+                                  className="text-slate-300 hover:bg-slate-700/50"
                                 >
-                                  <Icon className="mr-2 h-4 w-4" />
                                   {config.label}
                                 </DropdownMenuItem>
                               );

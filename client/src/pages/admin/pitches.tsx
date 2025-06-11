@@ -34,10 +34,10 @@ export default function AdminPitchesPage() {
 
   if (isAdminLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-indigo-950">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <span className="text-lg font-medium text-gray-700">Loading PR Management...</span>
+          <Loader2 className="h-12 w-12 animate-spin text-amber-400 mx-auto mb-4" />
+          <span className="text-lg font-medium text-white">Loading PR Management...</span>
         </div>
       </div>
     );
@@ -45,40 +45,37 @@ export default function AdminPitchesPage() {
 
   if (!isAdmin) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-        <div className="text-center max-w-md mx-auto p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20">
-          <Target className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600">You must be an administrator to view this page.</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-indigo-950">
+        <div className="text-center max-w-md mx-auto p-8 bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20">
+          <Target className="h-16 w-16 text-red-400 mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-white mb-4">Access Denied</h1>
+          <p className="text-slate-300">You must be an administrator to view this page.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-      <Helmet>
-        <title>PR Opportunities Management | QuoteBid Admin</title>
-      </Helmet>
-      
-      <div className="container mx-auto py-8 px-4 md:px-6 max-w-7xl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-indigo-950">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <Helmet>
+          <title>PR Opportunities Management | QuoteBid Admin</title>
+        </Helmet>
         {/* Enhanced Header Section */}
-        <div className="mb-10">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
-            <div className="mb-6 lg:mb-0">
-              <div className="flex items-center gap-4 mb-3">
-                <div className="p-3 bg-gradient-to-r from-purple-500 to-blue-600 rounded-xl shadow-lg">
-                  <MessageSquare className="h-8 w-8 text-white" />
+        <div className="bg-slate-800/30 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8 mb-8">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h1 className="text-3xl font-bold flex items-center mb-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl flex items-center justify-center mr-4 shadow-lg">
+                  <MessageSquare className="h-6 w-6 text-white" />
                 </div>
-                <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-purple-800 to-blue-800 bg-clip-text text-transparent">
-                    PR Opportunities Management
-                  </h1>
-                  <p className="text-lg text-gray-600 mt-1">
-                    Review and manage media pitch submissions from experts
-                  </p>
-                </div>
-              </div>
+                <span className="text-white">
+                  PR Opportunities Management
+                </span>
+              </h1>
+              <p className="text-slate-300 text-lg">
+                Review and manage media pitch submissions from experts
+              </p>
             </div>
           </div>
         </div>
@@ -163,17 +160,17 @@ export default function AdminPitchesPage() {
         </div>
 
         {/* Enhanced Main Content */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-          <div className="bg-gradient-to-r from-gray-50 to-blue-50/50 p-8 border-b border-gray-200/50">
+        <div className="bg-slate-800/30 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
+          <div className="bg-slate-700/50 p-8 border-b border-white/10">
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-600 rounded-lg">
+              <div className="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
                 <BarChart3 className="h-5 w-5 text-white" />
               </div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              <h2 className="text-2xl font-bold text-white">
                 All PR Pitch Submissions
               </h2>
             </div>
-            <p className="text-gray-600">
+            <p className="text-slate-300">
               Manage and review expert pitches for media opportunities with advanced filtering and status management
             </p>
           </div>

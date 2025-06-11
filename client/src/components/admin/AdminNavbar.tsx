@@ -17,6 +17,7 @@ import {
   Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -70,14 +71,31 @@ const navItems = [
 
 export default function AdminNavbar() {
   const [location] = useLocation();
-  const { adminUser } = useAdminAuth();
+  const { adminUser, adminLogoutMutation } = useAdminAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = React.useState(false);
 
   const isActive = (href: string, exact?: boolean) => {
     if (exact) {
       return location === href;
     }
     return location.startsWith(href);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await adminLogoutMutation.mutateAsync();
+      setShowLogoutDialog(false);
+      // The mutation will handle the redirect
+    } catch (error) {
+      console.error('Logout failed:', error);
+      setShowLogoutDialog(false);
+    }
+  };
+
+  const openLogoutDialog = () => {
+    setShowLogoutDialog(true);
+    setMobileMenuOpen(false); // Close mobile menu if open
   };
 
   return (
@@ -121,26 +139,17 @@ export default function AdminNavbar() {
           </div>
 
           {/* Right side - Admin info and Logout */}
-          <div className="flex items-center space-x-4">
-            {/* Admin User Info */}
-            {adminUser && (
-              <div className="hidden md:flex items-center text-slate-300 text-sm">
-                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-                {adminUser.username}
-              </div>
-            )}
-            
+          <div className="flex items-center gap-6">
             {/* Logout Button - Desktop */}
-            <Link href="/admin-logout" className="hidden md:block">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-400/50 transition-all duration-200"
-              >
-                <LogOut className="h-4 w-4 mr-1.5" />
-                Logout
-              </Button>
-            </Link>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={openLogoutDialog}
+              className="hidden md:flex bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-400/50 transition-all duration-200"
+            >
+              <LogOut className="h-4 w-4 mr-1.5" />
+              Logout
+            </Button>
 
             {/* Mobile menu button */}
             <button
@@ -186,25 +195,54 @@ export default function AdminNavbar() {
           
           {/* Mobile Admin Info and Logout */}
           <div className="border-t border-white/10 px-4 py-3">
-            {adminUser && (
-              <div className="flex items-center text-slate-300 text-sm mb-3">
-                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-                Logged in as: {adminUser.username}
-              </div>
-            )}
-            <Link href="/admin-logout" onClick={() => setMobileMenuOpen(false)}>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-400/50 transition-all duration-200"
-              >
-                <LogOut className="h-4 w-4 mr-1.5" />
-                Logout
-              </Button>
-            </Link>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={openLogoutDialog}
+              className="w-full bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-400/50 transition-all duration-200"
+            >
+              <LogOut className="h-4 w-4 mr-1.5" />
+              Logout
+            </Button>
           </div>
         </div>
       )}
+
+             {/* Logout Confirmation Dialog */}
+       <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+         <DialogContent className="sm:max-w-[425px] bg-slate-900 border border-white/20 text-white">
+           <DialogHeader>
+             <DialogTitle className="text-white flex items-center gap-3">
+               <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center">
+                 <LogOut className="h-5 w-5 text-red-400" />
+               </div>
+               Confirm Logout
+             </DialogTitle>
+           </DialogHeader>
+           <div className="py-4">
+             <p className="text-slate-300">
+               Are you sure you want to log out of the admin portal? You will need to sign in again to access admin features.
+             </p>
+           </div>
+           <DialogFooter className="gap-3">
+             <Button 
+               variant="outline" 
+               onClick={() => setShowLogoutDialog(false)}
+               className="bg-slate-800 border-white/20 text-white hover:bg-slate-700"
+             >
+               Cancel
+             </Button>
+             <Button 
+               variant="destructive" 
+               onClick={handleLogout}
+               disabled={adminLogoutMutation.isPending}
+               className="bg-red-600 hover:bg-red-700 text-white"
+             >
+               {adminLogoutMutation.isPending ? 'Logging out...' : 'Yes, Logout'}
+             </Button>
+           </DialogFooter>
+         </DialogContent>
+       </Dialog>
     </nav>
   );
 } 

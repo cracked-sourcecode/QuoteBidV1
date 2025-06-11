@@ -130,10 +130,6 @@ export default function BillingManagerNew() {
     },
   });
 
-
-
-
-
   // Fetch customer's Stripe details
   const { data: customerDetails, isLoading: customerDetailsLoading } = useQuery({
     queryKey: ["customer-stripe-details", selectedCustomer?.id],
@@ -152,8 +148,6 @@ export default function BillingManagerNew() {
       setSelectedPaymentMethod(customerDetails.paymentMethods[0].id);
     }
   }, [customerDetails, selectedPaymentMethod]);
-
-
 
   // Charge customer mutation
   const chargeMutation = useMutation({
@@ -213,8 +207,6 @@ export default function BillingManagerNew() {
     },
   });
 
-
-
   const handleChargeCustomer = (customer: any, pitch?: any) => {
     setSelectedCustomer(customer);
     setSelectedPlacement(pitch);
@@ -245,6 +237,15 @@ Note: QuoteBid is an independent platform. We are not affiliated with any media 
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!publicationLink.trim()) {
+      toast({
+        title: "Publication Link Required",
+        description: "Please provide the published article link before processing payment",
         variant: "destructive",
       });
       return;
@@ -283,10 +284,6 @@ Note: QuoteBid is an independent platform. We are not affiliated with any media 
     setPublicationLink("");
   };
 
-
-
-
-
   const filteredAR = arData?.filter((pitch: any) => 
     pitch.user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     pitch.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -303,335 +300,284 @@ Note: QuoteBid is an independent platform. We are not affiliated with any media 
   const pastDueCount = customersData?.filter((c: any) => c.subscription?.status === 'past_due').length || 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Dashboard Section - Always Visible */}
-      <div className="bg-gray-50 border-b border-gray-200">
-        <div className="px-6 py-6">
-          {/* Revenue Analytics Header */}
-          <div className="mb-6">
+    <div className="min-h-screen">
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        
+        {/* Header */}
+        <div className="bg-slate-800/30 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8 mb-8">
+          <div className="flex justify-between items-start mb-6">
             <div>
-              <h2 className="text-2xl font-semibold text-gray-900">Revenue Analytics</h2>
-              <p className="text-sm text-gray-600">Track your revenue performance and key metrics</p>
+              <h1 className="text-3xl font-bold flex items-center mb-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl flex items-center justify-center mr-4 shadow-lg">
+                  <DollarSign className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-white">Revenue Management</span>
+              </h1>
+              <p className="text-slate-300 text-lg">Track performance and manage billing for successful placements</p>
             </div>
           </div>
 
-          {/* MRR, A/R and Revenue Cards */}
-          <div className="grid grid-cols-3 gap-6 mb-6">
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100 text-sm font-medium">Monthly Recurring Revenue</p>
-                  <p className="text-3xl font-bold mt-1">
+          {/* Revenue Analytics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="group relative overflow-hidden bg-gradient-to-br from-purple-500 via-purple-600 to-blue-600 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+              <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <DollarSign className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-white">
                     ${customersData?.filter((c: any) => c.subscription?.status === 'active')
                       .reduce((sum: number, sub: any) => 
                         sum + ((sub.subscription?.items?.data[0]?.price?.unit_amount / 100) || 99), 0)
                       .toLocaleString() || '0'}
-                  </p>
-                  <p className="text-purple-200 text-xs mt-1">
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-1">Monthly Recurring Revenue</h3>
+                  <p className="text-purple-100 text-sm">
                     from {customersData?.filter((c: any) => c.subscription?.status === 'active').length || 0} active subscriptions
                   </p>
                 </div>
-                <DollarSign className="w-12 h-12 text-purple-200" />
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-6 text-white shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-orange-100 text-sm font-medium">Accounts Receivable</p>
-                  <p className="text-3xl font-bold mt-1">
-                    ${arData?.reduce((sum: number, pitch: any) => sum + (pitch.bidAmount || 0), 0).toLocaleString() || '0'}
-                  </p>
-                  <p className="text-orange-200 text-xs mt-1">
-                    {arData?.length || 0} pitches ready to bill
-                  </p>
+            <div className="group relative overflow-hidden bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+              <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <Clock className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-white">
+                      ${arData?.reduce((sum: number, pitch: any) => sum + (pitch.bidAmount || 0), 0).toLocaleString() || '0'}
+                    </div>
+                  </div>
                 </div>
-                <Clock className="w-12 h-12 text-orange-200" />
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-1">Accounts Receivable</h3>
+                  <p className="text-orange-100 text-sm">{arData?.length || 0} pitches ready to bill</p>
+                </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100 text-sm font-medium">Total Revenue Generated</p>
-                  <p className="text-3xl font-bold mt-1">
-                    ${successfulData?.reduce((sum: number, pitch: any) => sum + (pitch.bidAmount || 0), 0).toLocaleString() || '0'}
-                  </p>
-                  <p className="text-green-200 text-xs mt-1">
-                    from {successfulData?.length || 0} successful placements
-                  </p>
+            <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+              <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <CheckCircle className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-white">
+                      ${successfulData?.reduce((sum: number, pitch: any) => sum + (pitch.bidAmount || 0), 0).toLocaleString() || '0'}
+                    </div>
+                  </div>
                 </div>
-                <CheckCircle className="w-12 h-12 text-green-200" />
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-1">Total Revenue Generated</h3>
+                  <p className="text-green-100 text-sm">from {successfulData?.length || 0} successful placements</p>
+                </div>
               </div>
             </div>
           </div>
 
-
-
-          {/* Additional KPIs */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Key Metrics</h3>
-            <div className="grid grid-cols-4 gap-4">
-              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+          {/* Key Metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-white/10 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Total Customers</p>
-                    <p className="text-2xl font-semibold text-gray-900">{customersData?.length || 0}</p>
+                  <p className="text-slate-400 text-sm">Total Customers</p>
+                  <p className="text-2xl font-bold text-white">{customersData?.length || 0}</p>
                   </div>
-                  <Users className="w-8 h-8 text-blue-500" />
+                <Users className="h-8 w-8 text-blue-400" />
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-white/10 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Active Subscriptions</p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                  <p className="text-slate-400 text-sm">Active Subscriptions</p>
+                  <p className="text-2xl font-bold text-white">
                       {customersData?.filter((c: any) => c.subscription?.status === 'active').length || 0}
                     </p>
                   </div>
-                  <CreditCard className="w-8 h-8 text-green-500" />
+                <CreditCard className="h-8 w-8 text-green-400" />
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-white/10 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Past-due Subscriptions</p>
-                    <p className="text-2xl font-semibold text-gray-900">{pastDueCount}</p>
+                  <p className="text-slate-400 text-sm">Past-due Subscriptions</p>
+                  <p className="text-2xl font-bold text-white">{pastDueCount}</p>
                   </div>
-                  <AlertCircle className="w-8 h-8 text-orange-500" />
+                <AlertCircle className="h-8 w-8 text-orange-400" />
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-white/10 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Avg. A/R per Item</p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                  <p className="text-slate-400 text-sm">Avg. A/R per Item</p>
+                  <p className="text-2xl font-bold text-white">
                       ${arData?.length ? 
                         Math.round((arData.reduce((sum: number, pitch: any) => sum + (pitch.bidAmount || 0), 0) || 0) / arData.length)
                         .toLocaleString() : '0'}
                     </p>
                   </div>
-                  <ArrowUpRight className="w-8 h-8 text-purple-500" />
-                </div>
-              </div>
+                <ArrowUpRight className="h-8 w-8 text-purple-400" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="px-6 py-4">
+        {/* Main Content */}
+        <div className="bg-slate-800/30 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
+          <div className="bg-slate-700/50 p-6 border-b border-white/10">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">Billing Manager</h1>
-              <p className="text-sm text-gray-600">Manage billing for successful placements and track revenue</p>
-            </div>
-
-          </div>
-        </div>
+                <h2 className="text-2xl font-bold text-white mb-2">Billing Management</h2>
+                <p className="text-slate-300">Process payments and track successful placements</p>
       </div>
 
-      {/* Content Area */}
-      <div className="px-6 py-6">
         {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input 
-              className="pl-10 bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-              placeholder="Search customers, emails, or placements..."
+                  className="pl-10 bg-slate-800/50 border-white/20 text-white placeholder-slate-400 w-full max-w-md"
+                  placeholder="Search customers, emails..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+              </div>
           </div>
         </div>
 
+          <div className="p-6">
         {/* Billing Management Tabs */}
         <Tabs defaultValue="ready-to-bill" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="ready-to-bill" className="flex items-center gap-2">
+              <TabsList className="bg-slate-800/50 border border-white/20">
+                <TabsTrigger value="ready-to-bill" className="flex items-center gap-2 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
               <Clock className="w-4 h-4" />
               Ready to Bill ({arData?.length || 0})
             </TabsTrigger>
-            <TabsTrigger value="successful" className="flex items-center gap-2">
+                <TabsTrigger value="successful" className="flex items-center gap-2 data-[state=active]:bg-green-600 data-[state=active]:text-white">
               <CheckCircle className="w-4 h-4" />
               Successful Placements ({successfulData?.length || 0})
             </TabsTrigger>
           </TabsList>
 
           {/* Ready to Bill Tab */}
-          <TabsContent value="ready-to-bill" className="space-y-6">
-            {/* AR Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Ready to Bill</h2>
-                <p className="text-sm text-gray-600">Successful pitches ready to be billed</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Found {arData?.length || 0} pitches ready for billing
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600">Total amount to bill</p>
-                <p className="text-xl font-semibold text-gray-900">
-                  ${arData?.reduce((sum: number, pitch: any) => sum + (pitch.bidAmount || 0), 0).toLocaleString() || '0'}
-                </p>
-              </div>
-            </div>
-
-            {/* AR Cards */}
-            <div className="space-y-3">
+              <TabsContent value="ready-to-bill" className="space-y-4">
               {arLoading ? (
-                <div className="text-center py-12 text-gray-500">
-                  <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <div className="text-center py-12 text-slate-400">
+                    <div className="animate-spin w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full mx-auto mb-4"></div>
                   <p>Loading accounts receivable...</p>
                 </div>
               ) : filteredAR.length > 0 ? (
                 filteredAR.map((pitch: any) => (
-                  <div key={pitch.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors shadow-sm">
+                    <div key={pitch.id} className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-white/10 p-5 hover:border-amber-500/50 transition-all duration-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        {/* Status Icon */}
-                        <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center text-white">
-                          <Clock className="w-5 h-5" />
+                          <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                            <Clock className="w-6 h-6" />
                         </div>
                         
-                        {/* Pitch Info */}
                         <div>
-                          <h3 className="font-semibold text-gray-900">{pitch.opportunity?.title || 'Article Coverage'}</h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-sm text-gray-600">{pitch.user?.fullName}</span>
-                            <span className="text-gray-400">•</span>
-                            <span className="text-sm text-gray-600">{pitch.user?.email}</span>
-                            {pitch.user?.company_name && (
+                            <h3 className="font-semibold text-white text-lg mb-1">{pitch.opportunity?.title || 'Article Coverage'}</h3>
+                            <div className="flex items-center gap-3 text-sm text-slate-300">
+                              <span className="font-medium">{pitch.user?.fullName}</span>
+                              <span className="text-slate-500">•</span>
+                              <span>{pitch.user?.email}</span>
+                              {pitch.opportunity?.publication?.name && (
                               <>
-                                <span className="text-gray-400">•</span>
-                                <span className="text-sm text-gray-600">{pitch.user.company_name}</span>
+                                  <span className="text-slate-500">•</span>
+                                  <span className="text-amber-400">{pitch.opportunity.publication.name}</span>
                               </>
                             )}
                           </div>
-                          {pitch.opportunity?.publication?.name && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              Published in {pitch.opportunity.publication.name}
-                            </p>
-                          )}
-                          <div className="text-xs text-gray-500 mt-1">
-                            <Badge variant="default" className="text-xs bg-green-100 text-green-700 border-green-200">
+                            <Badge className="bg-green-500/20 text-green-400 border-green-500/30 mt-2 text-xs">
                               {pitch.status} ✓
                             </Badge>
-                          </div>
                         </div>
                       </div>
                       
-                      {/* Amount & Actions */}
-                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-6">
                         <div className="text-right">
-                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">AMOUNT TO BILL</p>
-                          <p className="text-lg font-semibold text-orange-600">
+                            <p className="text-xs text-slate-400 font-medium uppercase tracking-wide mb-1">Amount to Bill</p>
+                            <p className="text-2xl font-bold text-amber-400">
                             ${pitch.bidAmount?.toLocaleString() || '0'}
                           </p>
-                          <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700 border-orange-200 mt-1">
+                            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs mt-1">
                             Ready to bill
                           </Badge>
                         </div>
                         
-                        <div className="flex items-center">
                           <Button 
-                            size="sm" 
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-medium px-6"
                             onClick={() => handleChargeCustomer(pitch.user, pitch)}
                           >
-                            <DollarSign className="w-4 h-4 mr-1" />
+                            <DollarSign className="w-4 h-4 mr-2" />
                             Bill Customer
                           </Button>
-                        </div>
                       </div>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-12 text-gray-500">
-                  <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No successful pitches ready to bill</p>
+                  <div className="text-center py-12 text-slate-400">
+                    <Clock className="w-16 w-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">No pitches ready to bill</p>
                   <p className="text-sm">Successful pitches will appear here when ready for billing</p>
                 </div>
               )}
-            </div>
           </TabsContent>
 
           {/* Successful Placements Tab */}
-          <TabsContent value="successful" className="space-y-6">
-            {/* Successful Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Successful Placements</h2>
-                <p className="text-sm text-gray-600">Pitches that have been successfully billed</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Found {successfulData?.length || 0} successful placements
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600">Total revenue generated</p>
-                <p className="text-xl font-semibold text-green-600">
-                  ${successfulData?.reduce((sum: number, pitch: any) => sum + (pitch.bidAmount || 0), 0).toLocaleString() || '0'}
-                </p>
-              </div>
-            </div>
-
-            {/* Successful Placement Cards */}
-            <div className="space-y-3">
+              <TabsContent value="successful" className="space-y-4">
               {successfulLoading ? (
-                <div className="text-center py-12 text-gray-500">
+                  <div className="text-center py-12 text-slate-400">
                   <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
                   <p>Loading successful placements...</p>
                 </div>
               ) : filteredSuccessful.length > 0 ? (
                 filteredSuccessful.map((pitch: any) => (
-                  <div key={pitch.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors shadow-sm">
+                    <div key={pitch.id} className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-white/10 p-5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        {/* Status Icon */}
-                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center text-white">
-                          <CheckCircle className="w-5 h-5" />
+                          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                            <CheckCircle className="w-6 h-6" />
                         </div>
                         
-                        {/* Pitch Info */}
                         <div>
-                          <h3 className="font-semibold text-gray-900">{pitch.opportunity?.title || 'Article Coverage'}</h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-sm text-gray-600">{pitch.user?.fullName}</span>
-                            <span className="text-gray-400">•</span>
-                            <span className="text-sm text-gray-600">{pitch.user?.email}</span>
-                            {pitch.user?.company_name && (
+                            <h3 className="font-semibold text-white text-lg mb-1">{pitch.opportunity?.title || 'Article Coverage'}</h3>
+                            <div className="flex items-center gap-3 text-sm text-slate-300">
+                              <span className="font-medium">{pitch.user?.fullName}</span>
+                              <span className="text-slate-500">•</span>
+                              <span>{pitch.user?.email}</span>
+                              {pitch.opportunity?.publication?.name && (
                               <>
-                                <span className="text-gray-400">•</span>
-                                <span className="text-sm text-gray-600">{pitch.user.company_name}</span>
+                                  <span className="text-slate-500">•</span>
+                                  <span className="text-green-400">{pitch.opportunity.publication.name}</span>
                               </>
                             )}
                           </div>
-                          {pitch.opportunity?.publication?.name && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              Published in {pitch.opportunity.publication.name}
-                            </p>
-                          )}
-                          <div className="text-xs text-gray-500 mt-1">
-                            <Badge variant="default" className="text-xs bg-green-100 text-green-700 border-green-200">
+                            <Badge className="bg-green-500/20 text-green-400 border-green-500/30 mt-2 text-xs">
                               Billed on {new Date(pitch.billedAt).toLocaleDateString()}
                             </Badge>
-                          </div>
                         </div>
                       </div>
                       
-                                            {/* Amount */}
                       <div className="text-right">
-                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">AMOUNT BILLED</p>
-                        <p className="text-lg font-semibold text-green-600">
+                          <p className="text-xs text-slate-400 font-medium uppercase tracking-wide mb-1">Amount Billed</p>
+                          <p className="text-2xl font-bold text-green-400">
                           ${pitch.bidAmount?.toLocaleString() || '0'}
                         </p>
-                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-200 mt-1">
+                          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs mt-1">
                           Paid
                         </Badge>
                       </div>
@@ -639,59 +585,61 @@ Note: QuoteBid is an independent platform. We are not affiliated with any media 
                   </div>
                 ))
               ) : (
-                <div className="text-center py-12 text-gray-500">
-                  <CheckCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No successful placements yet</p>
+                  <div className="text-center py-12 text-slate-400">
+                    <CheckCircle className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">No successful placements yet</p>
                   <p className="text-sm">Billed placements will appear here after payment is processed</p>
                 </div>
               )}
-            </div>
           </TabsContent>
         </Tabs>
-                  
+          </div>
+        </div>
       </div>
 
       {/* Enhanced Invoice Modal */}
       <Dialog open={showPaymentModal} onOpenChange={closeModal}>
-        <DialogContent className="max-w-2xl bg-white">
-          <DialogHeader className="border-b pb-2 bg-blue-50 px-4 py-2">
+        <DialogContent className="max-w-lg bg-slate-900 border border-white/20">
+          <DialogHeader className="border-b border-white/10 pb-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-white" />
+              <div className="w-6 h-6 bg-gradient-to-r from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-white" />
               </div>
               <div>
-                <DialogTitle className="text-lg font-bold text-gray-900">Process Payment</DialogTitle>
-                <p className="text-xs text-gray-600">Charge customer for completed work</p>
+                <DialogTitle className="text-base font-bold text-white">Process Payment</DialogTitle>
+                <p className="text-xs text-slate-400">Charge customer for completed work</p>
               </div>
             </div>
           </DialogHeader>
           
           {/* Success State */}
           {paymentSuccess ? (
-            <div className="text-center space-y-6 py-8 px-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                <CheckCircle className="w-10 h-10 text-green-600"/>
+            <div className="text-center space-y-4 py-6 px-4">
+              <div className="w-12 h-12 bg-green-500/20 border border-green-500/30 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle className="w-8 h-8 text-green-400"/>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Payment Successful!</h3>
-                <p className="text-base text-gray-600">
-                  Charged <span className="font-semibold text-green-600">${paymentSuccess.amount.toFixed(2)}</span>
+                <h3 className="text-lg font-bold text-white">Payment Successful!</h3>
+                <p className="text-sm text-slate-300">
+                  Charged <span className="font-semibold text-green-400">${paymentSuccess.amount.toFixed(2)}</span>
                 </p>
               </div>
-              <div className="flex gap-3 justify-center">
+              <div className="flex gap-2 justify-center">
                 {paymentSuccess.receiptUrl && (
                   <Button 
                     onClick={() => window.open(paymentSuccess.receiptUrl, '_blank')} 
                     variant="outline"
-                    className="h-11"
+                    size="sm"
+                    className="bg-slate-800 border-white/20 text-white hover:bg-slate-700"
                   >
-                    <FileText className="w-4 h-4 mr-2" />
-                    View Receipt
+                    <FileText className="w-3 w-3 mr-1" />
+                    Receipt
                   </Button>
                 )}
                 <Button 
                   onClick={closeModal} 
-                  className="h-11 bg-green-600 hover:bg-green-700 text-white"
+                  size="sm"
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
                 >
                   Done
                 </Button>
@@ -699,92 +647,88 @@ Note: QuoteBid is an independent platform. We are not affiliated with any media 
             </div>
           ) : (
             <div className="space-y-3 px-4 py-3">
-              {/* Customer & Amount - Combined */}
+              {/* Customer & Amount */}
               <div className="grid grid-cols-2 gap-3">
-                {/* Customer Info */}
                 {selectedCustomer && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                  <div className="bg-slate-800/50 border border-white/10 rounded-lg p-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                      <div className="w-6 h-6 bg-gradient-to-r from-amber-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
                         {selectedCustomer.fullName?.charAt(0) || 'U'}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900 text-xs">{selectedCustomer.fullName}</p>
-                        <p className="text-blue-600 text-xs">{selectedCustomer.email}</p>
+                        <p className="font-medium text-white text-xs">{selectedCustomer.fullName}</p>
+                        <p className="text-amber-400 text-xs">{selectedCustomer.email}</p>
                       </div>
                     </div>
                   </div>
                 )}
                 
-                {/* Payment Amount */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-center">
-                  <p className="text-lg font-bold text-green-800">${paymentAmount}</p>
-                  <p className="text-green-600 text-xs">Final Amount</p>
+                <div className="bg-slate-800/50 border border-white/10 rounded-lg p-2 text-center">
+                  <p className="text-lg font-bold text-green-400">${paymentAmount}</p>
+                  <p className="text-slate-400 text-xs">Final Amount</p>
                 </div>
               </div>
               
-                              {/* Service & Payment Method - Combined */}
-              <div className="bg-white border border-gray-200 rounded-lg p-3">
-                {/* Service */}
-                <div className="mb-3">
-                  <h4 className="font-medium text-gray-900 mb-1 text-xs">Service</h4>
+              {/* Service Description */}
+              <div className="bg-slate-800/50 border border-white/10 rounded-lg p-3">
+                <h4 className="font-medium text-white mb-2 text-xs">Service Description</h4>
                   <Textarea 
                     value={paymentDescription}
                     onChange={(e) => setPaymentDescription(e.target.value)}
-                    className="resize-none text-xs"
-                    rows={2}
+                  className="bg-slate-900/50 border-white/20 text-white placeholder-slate-400 resize-none text-xs h-12"
+                  placeholder="QuoteBid - Publication - Article Title"
                   />
                 </div>
                 
                 {/* Payment Method */}
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-1 text-xs">Payment Method</h4>
+              <div className="bg-slate-800/50 border border-white/10 rounded-lg p-3">
+                <h4 className="font-medium text-white mb-2 text-xs">Payment Method</h4>
                   {customerDetailsLoading ? (
-                    <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">Loading...</div>
+                  <div className="text-xs text-slate-400 p-2 bg-slate-900/50 border border-white/10 rounded">Loading...</div>
                   ) : customerDetails?.paymentMethods?.length > 0 ? (
                     <Select value={selectedPaymentMethod} onValueChange={setSelectedPaymentMethod}>
-                      <SelectTrigger className="h-8">
+                    <SelectTrigger className="bg-slate-900/50 border-white/20 text-white h-8 text-xs">
                         <SelectValue placeholder="Select payment method" />
                       </SelectTrigger>
-                      <SelectContent>
+                    <SelectContent className="bg-slate-800 border-white/20">
                         {customerDetails.paymentMethods.map((pm: any) => (
-                          <SelectItem key={pm.id} value={pm.id}>
+                        <SelectItem key={pm.id} value={pm.id} className="text-white hover:bg-slate-700 text-xs">
                             <div className="flex items-center gap-2">
-                              <CreditCard className="w-3 h-3 text-blue-600" />
-                              <span className="font-medium text-xs">{pm.card.brand.toUpperCase()}</span>
-                              <span className="text-gray-500 text-xs">••••{pm.card.last4}</span>
-                              <span className="text-xs text-gray-400">{pm.card.exp_month}/{pm.card.exp_year}</span>
+                            <CreditCard className="w-3 h-3 text-amber-400" />
+                            <span className="font-medium">{pm.card.brand.toUpperCase()}</span>
+                            <span className="text-slate-400">••••{pm.card.last4}</span>
                             </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   ) : (
-                    <div className="text-xs text-red-600 p-2 bg-red-50 rounded">❌ No payment methods found</div>
+                  <div className="text-xs text-red-400 p-2 bg-red-500/10 border border-red-500/20 rounded">❌ No payment methods found</div>
                   )}
-                </div>
               </div>
               
-              {/* Publication Link (Deliverable) */}
-              <div className="bg-white border border-gray-200 rounded-lg p-3">
-                <h4 className="font-medium text-gray-900 mb-1 text-xs">Publication Link (Deliverable)</h4>
+              {/* Publication Link - Required */}
+              <div className="bg-slate-800/50 border border-white/10 rounded-lg p-3">
+                <h4 className="font-medium text-white mb-2 text-xs flex items-center gap-1">
+                  Publication Link <span className="text-red-400">*</span>
+                </h4>
                 <Input 
                   value={publicationLink}
                   onChange={(e) => setPublicationLink(e.target.value)}
-                  placeholder="https://example.com/article-link"
-                  className="text-xs h-7"
+                  placeholder="https://example.com/published-article"
+                  className="bg-slate-900/50 border-white/20 text-white placeholder-slate-400 h-8 text-xs"
+                  required
                 />
-                <p className="text-xs text-gray-500 mt-1">Link to the published article or content deliverable</p>
+                <p className="text-xs text-slate-400 mt-1">Required: Link to published article</p>
               </div>
               
-              {/* Invoice Notes */}
-              <div className="bg-white border border-gray-200 rounded-lg p-3">
-                <h4 className="font-medium text-gray-900 mb-1 text-xs">Invoice Footer</h4>
+              {/* Invoice Notes - Collapsed */}
+              <div className="bg-slate-800/50 border border-white/10 rounded-lg p-3">
+                <h4 className="font-medium text-white mb-2 text-xs">Invoice Footer</h4>
                 <Textarea 
                   value={invoiceNotes}
                   onChange={(e) => setInvoiceNotes(e.target.value)}
-                  className="resize-none text-xs"
-                  rows={2}
+                  className="bg-slate-900/50 border-white/20 text-white placeholder-slate-400 resize-none text-xs h-16"
                   placeholder="Invoice terms and conditions..."
                 />
               </div>
@@ -792,19 +736,21 @@ Note: QuoteBid is an independent platform. We are not affiliated with any media 
           )}
           
           {!paymentSuccess && (
-            <DialogFooter className="border-t pt-2 bg-gray-50 px-4 py-2">
+            <DialogFooter className="border-t border-white/10 pt-3 pb-2">
               <div className="flex gap-2 w-full">
                 <Button 
                   variant="outline" 
                   onClick={closeModal} 
-                  className="flex-1 h-8 text-xs"
+                  size="sm"
+                  className="flex-1 bg-slate-800 border-white/20 text-white hover:bg-slate-700 text-xs"
                 >
                   Cancel
                 </Button>
                 <Button 
                   onClick={processPayment}
-                  disabled={chargeMutation.isPending || !selectedPaymentMethod}
-                  className="flex-1 h-8 bg-green-600 hover:bg-green-700 text-white text-xs"
+                  disabled={chargeMutation.isPending || !selectedPaymentMethod || !publicationLink.trim()}
+                  size="sm"
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-xs"
                 >
                   {chargeMutation.isPending ? (
                     <>
@@ -823,7 +769,6 @@ Note: QuoteBid is an independent platform. We are not affiliated with any media 
           )}
         </DialogContent>
       </Dialog>
-
     </div>
   );
 } 
