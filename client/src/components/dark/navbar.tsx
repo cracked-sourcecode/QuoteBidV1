@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useContext } from "react";
 
-export default function Navbar() {
+export default function DarkNavbar() {
   const [location] = useLocation();
   const authContext = useContext(AuthContext);
   const { notifications, unreadCount, markAsRead, clearAllNotifications } = useNotifications();
@@ -38,7 +38,7 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+    <nav className="bg-slate-900 border-b border-white/20 shadow-sm sticky top-0 z-50">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
@@ -46,10 +46,10 @@ export default function Navbar() {
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="flex items-center">
                 <span className="font-black text-3xl tracking-tight">
-                  <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Quote</span>
-                  <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Bid</span>
+                  <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Quote</span>
+                  <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Bid</span>
                 </span>
-                <div className="ml-3 px-2 py-1 bg-blue-100 border border-blue-200 rounded text-blue-700 text-xs font-bold uppercase tracking-wider">
+                <div className="ml-3 px-2 py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
                   Beta
                 </div>
               </Link>
@@ -63,8 +63,8 @@ export default function Navbar() {
                   href={item.path}
                   className={`${
                     location === item.path
-                      ? "text-gray-900 font-bold uppercase text-sm px-3 py-2 border-b-2 border-blue-600"
-                      : "text-gray-600 hover:text-gray-900 font-semibold uppercase text-sm px-3 py-2 transition-all duration-300"
+                      ? "text-white font-bold uppercase text-sm px-3 py-2 border-b-2 border-blue-400"
+                      : "text-white/80 hover:text-white font-semibold uppercase text-sm px-3 py-2 transition-all duration-300"
                   }`}
                 >
                   {item.name}
@@ -78,10 +78,10 @@ export default function Navbar() {
             {/* Notifications Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 relative transition-all duration-300">
+                <button className="p-2 rounded-full hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 relative transition-all duration-300">
                   <svg 
                     xmlns="http://www.w3.org/2000/svg" 
-                    className="h-6 w-6 text-gray-600 hover:text-gray-900 transition-colors duration-300" 
+                    className="h-6 w-6 text-white/80 hover:text-white transition-colors duration-300" 
                     fill="none" 
                     viewBox="0 0 24 24" 
                     stroke="currentColor"
@@ -98,13 +98,13 @@ export default function Navbar() {
                   )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80 bg-white border border-gray-200 shadow-lg">
-                <div className="px-4 py-3 border-b border-gray-200">
-                  <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
+              <DropdownMenuContent align="end" className="w-80 bg-slate-900/95 border border-white/20 backdrop-blur-lg shadow-2xl">
+                <div className="px-4 py-3 border-b border-white/20">
+                  <h3 className="text-sm font-medium text-white">Notifications</h3>
                 </div>
                 <div className="max-h-80 overflow-y-auto">
                   {notifications.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-sm text-gray-500">
+                    <div className="px-4 py-6 text-center text-sm text-gray-300">
                       No notifications yet
                     </div>
                   ) : (
@@ -161,7 +161,7 @@ export default function Navbar() {
                       return (
                         <div 
                           key={notification.id} 
-                          className={`px-4 py-3 border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-all duration-300 ${!notification.isRead ? 'bg-blue-50' : ''}`}
+                          className={`px-4 py-3 border-b border-white/20 hover:bg-white/10 cursor-pointer transition-all duration-300 ${!notification.isRead ? 'bg-blue-500/20' : ''}`}
                           onClick={() => {
                             if (notification.linkUrl) {
                               // Mark as read and navigate
@@ -174,12 +174,12 @@ export default function Navbar() {
                           }}
                         >
                           <div className="flex items-start">
-                            <div className={`flex-shrink-0 rounded-full ${iconBgClass} p-2`}>
+                            <div className={`flex-shrink-0 rounded-full bg-white/20 p-2`}>
                               {icon}
                             </div>
                             <div className="ml-3 flex-1">
-                              <p className="text-sm font-medium text-gray-900">{notification.title}</p>
-                              <div className="text-xs text-gray-600 mt-1">
+                              <p className="text-sm font-medium text-white">{notification.title}</p>
+                              <div className="text-xs text-gray-300 mt-1">
                                 {notification.linkUrl && notification.message.includes('Click here') ? (
                                   <span>
                                     {notification.message.split('Click here')[0]}
@@ -200,13 +200,13 @@ export default function Navbar() {
                                   <span>{notification.message}</span>
                                 )}
                               </div>
-                              <p className="text-xs text-gray-500 mt-1">
+                              <p className="text-xs text-gray-400 mt-1">
                                 {notification.createdAt && formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                               </p>
                             </div>
                             {!notification.isRead && (
                               <div className="ml-2 flex-shrink-0">
-                                <span className="inline-block h-2 w-2 rounded-full bg-blue-600"></span>
+                                <span className="inline-block h-2 w-2 rounded-full bg-blue-400"></span>
                               </div>
                             )}
                           </div>
@@ -217,13 +217,13 @@ export default function Navbar() {
                 </div>
                 {/* Clear notifications button - only show if there are notifications */}
                 {notifications.length > 0 && (
-                  <div className="px-4 py-3 border-t border-gray-200">
+                  <div className="px-4 py-3 border-t border-white/20">
                     <button 
                       onClick={(e) => {
                         e.preventDefault();
                         clearAllNotifications();
                       }}
-                      className="w-full text-center py-2 px-4 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md border border-red-300 hover:border-red-400 transition-all duration-300"
+                      className="w-full text-center py-2 px-4 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-md border border-red-400/30 hover:border-red-300/50 transition-all duration-300"
                     >
                       Clear All Notifications
                     </button>
@@ -237,7 +237,7 @@ export default function Navbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div className="flex items-center cursor-pointer group">
-                    <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                    <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
                       {user?.avatar ? (
                         <img 
                           src={user.avatar.startsWith('http') ? user.avatar : `${window.location.origin}${user.avatar}`}
@@ -258,7 +258,7 @@ export default function Navbar() {
                       ) : null}
                       <svg 
                         xmlns="http://www.w3.org/2000/svg" 
-                        className={`h-5 w-5 text-gray-600 fallback-avatar ${user?.avatar ? 'hidden' : 'block'}`}
+                        className={`h-5 w-5 text-white/80 fallback-avatar ${user?.avatar ? 'hidden' : 'block'}`}
                         fill="none" 
                         viewBox="0 0 24 24" 
                         stroke="currentColor"
@@ -271,32 +271,32 @@ export default function Navbar() {
                         />
                       </svg>
                     </div>
-                    <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900 transition-colors duration-300">{user?.fullName || 'Account'}</span>
+                    <span className="ml-2 text-sm text-white/80 group-hover:text-white transition-colors duration-300">{user?.fullName || 'Account'}</span>
                     {isAdmin && (
-                      <div className="ml-1 bg-yellow-100 rounded-full p-1" title="Admin User">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                      <div className="ml-1 bg-yellow-500/20 rounded-full p-1" title="Admin User">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M9.664 1.319a.75.75 0 01.672 0 41.059 41.059 0 018.198 5.424.75.75 0 01-.254 1.285 31.372 31.372 0 00-7.86 3.83.75.75 0 01-.84 0 31.508 31.508 0 00-2.08-1.287V9.394c0-.244.116-.463.302-.592a35.504 35.504 0 013.305-2.033.75.75 0 00-.714-1.319 37 37 0 00-3.446 2.12A2.216 2.216 0 006 9.393v.38a31.293 31.293 0 00-4.28-1.746.75.75 0 01-.254-1.285 41.059 41.059 0 018.198-5.424zM6 11.459a29.848 29.848 0 00-2.455-1.158 41.029 41.029 0 00-.39 3.114.75.75 0 00.419.74c.528.256 1.046.53 1.554.82-.21-.899-.455-1.79-.728-2.516zM21 12.74a.75.75 0 00-.39-3.114 29.849 29.849 0 00-5.325 2.076L10 9.5l-5.285 2.202a29.849 29.849 0 00-5.325-2.076.75.75 0 00-.39 3.114 29.849 29.849 0 005.5 2.17L10 17.207l5.5-2.297a29.849 29.849 0 005.5-2.17z" clipRule="evenodd" />
                         </svg>
                       </div>
                     )}
                   </div>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-white border border-gray-200 shadow-lg">
+                <DropdownMenuContent align="end" className="w-56 bg-slate-900/95 border border-white/20 backdrop-blur-lg shadow-2xl">
                   <DropdownMenuItem asChild>
-                    <Link href="/account" className="cursor-pointer w-full text-gray-900 hover:bg-gray-50 focus:bg-gray-50 transition-all duration-300">
+                    <Link href="/account" className="cursor-pointer w-full text-white hover:bg-white/10 focus:bg-white/10 transition-all duration-300">
                       View Account
                     </Link>
                   </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem asChild>
-                      <Link href="/admin" className="cursor-pointer w-full text-gray-900 hover:bg-gray-50 focus:bg-gray-50 transition-all duration-300">
+                      <Link href="/admin" className="cursor-pointer w-full text-white hover:bg-white/10 focus:bg-white/10 transition-all duration-300">
                         Admin Dashboard
                       </Link>
                     </DropdownMenuItem>
                   )}
 
                   <DropdownMenuItem asChild>
-                    <Link href="/logout" className="cursor-pointer w-full text-red-600 hover:bg-red-50 focus:bg-red-50 transition-all duration-300">
+                    <Link href="/logout" className="cursor-pointer w-full text-red-400 hover:bg-red-500/20 focus:bg-red-500/20 transition-all duration-300">
                       Sign out
                     </Link>
                   </DropdownMenuItem>

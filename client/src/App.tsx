@@ -9,10 +9,10 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import PricingEngine from "@/pages/engine";
 import EditorialIntegrity from "@/pages/legal/editorial-integrity";
-import OpportunitiesPage from "@/pages/opportunities";
-import SavedOpportunitiesPage from "@/pages/saved-opportunities";
-import OpportunityDetail from "@/pages/opportunity-detail";
-import MyPitches from "@/pages/my-pitches";
+import OpportunitiesPage from "@/pages/opportunities-wrapper";
+import SavedOpportunitiesPage from "@/pages/saved-opportunities-wrapper";
+import OpportunityDetail from "@/pages/opportunity-detail-wrapper";
+import MyPitches from "@/pages/my-pitches-wrapper";
 import PitchHistory from "@/pages/pitch-history";
 import Subscribe from "@/pages/subscribe";
 import PaymentSuccess from "@/pages/payment-success"; 
@@ -21,12 +21,13 @@ import SubscriptionRedirect from "@/pages/subscription-redirect";
 import ProfileSetup from "@/pages/profile-setup";
 import SignupWizard from "@/pages/SignupWizard";
 import RegisterPage from "@/pages/register";
-import Account from "@/pages/account";
+import Account from "@/pages/account-wrapper";
 // Profile page removed as requested
 import Navbar from "@/components/navbar";
 import SubscriptionGuard from "@/components/subscription-guard";
 import { AuthProvider, useAuth, AuthContext } from "@/hooks/use-auth";
 import { AdminAuthProvider, useAdminAuth } from "@/hooks/use-admin-auth";
+import { ThemeProvider } from "@/hooks/use-theme";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { AdminProtectedRoute } from "@/lib/admin-protected-route";
 import { useEffect, useState, useContext } from "react";
@@ -155,41 +156,26 @@ function Router() {
         <ProtectedRoute path="/subscription-success" component={() => <SubscriptionSuccess />} />
         <ProtectedRoute path="/profile-setup" component={() => <ProfileSetup />} />
         <ProtectedRoute path="/account" component={() => (
-          <>
-            <Navbar />
             <Account />
-          </>
         )} />
         
         {/* Profile page route removed as requested */}
         
         {/* Protected routes that require authentication */}
         <ProtectedRoute path="/opportunities" component={() => (
-          <>
-            <Navbar />
             <OpportunitiesPage />
-          </>
         )} />
         
         <ProtectedRoute path="/saved" component={() => (
-          <>
-            <Navbar />
             <SavedOpportunitiesPage />
-          </>
         )} />
         
         <ProtectedRoute path="/opportunities/:id" component={() => (
-          <>
-            <Navbar />
             <OpportunityDetail />
-          </>
         )} />
         
         <ProtectedRoute path="/my-pitches" component={() => (
-          <>
-            <Navbar />
             <MyPitches />
-          </>
         )} />
         
         <ProtectedRoute path="/pitch-history" component={() => (
@@ -697,6 +683,7 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
       <AuthProvider>
         <AdminAuthProvider>
           <PriceProvider>
@@ -707,6 +694,7 @@ function App() {
           </PriceProvider>
         </AdminAuthProvider>
       </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

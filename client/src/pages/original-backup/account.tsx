@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, ChangeEvent, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useCurrentUser } from '@/hooks/use-current-user';
+import { useTheme } from '@/hooks/use-theme';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -127,6 +128,7 @@ const passwordChangeSchema = z.object({
 export default function AccountPage() {
   const { user } = useAuth();
   const { data: currentUser, isLoading, error } = useCurrentUser();
+  const { theme, toggleTheme } = useTheme();
   const [subscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancellingSubscription, setCancellingSubscription] = useState(false);
@@ -1190,13 +1192,34 @@ export default function AccountPage() {
                 </svg>
                 Subscription & Billing
               </button>
+
+              <button 
+                onClick={toggleTheme}
+                className="flex w-full items-center py-2 px-3 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                {theme === 'light' ? (
+                  <>
+                    <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                    Dark Mode
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    Light Mode
+                  </>
+                )}
+              </button>
               
               <button 
                 className="flex w-full items-center py-2 px-3 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50"
                 onClick={() => setPasswordModalOpen(true)}
               >
                 <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1721 9z" />
                 </svg>
                 Change Password
               </button>
@@ -1752,9 +1775,9 @@ export default function AccountPage() {
                   <div>
                     <h3 className="text-sm font-medium text-gray-500 mb-1">Website</h3>
                     {user.website ? (
-                      <a href={user.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        {user.website.replace(/^https?:\/\//, '').replace(/^www\./, '')}
-                      </a>
+                      <p className="text-gray-700">
+                        Website (<a href={user.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)
+                      </p>
                     ) : (
                       <p className="text-gray-400 italic">Not specified</p>
                     )}
@@ -1768,7 +1791,7 @@ export default function AccountPage() {
                     {user.doFollowLink && user.doFollowLink !== 'none' ? (
                       <p className="text-gray-700">
                         {user.doFollowLink === 'website' && user.website ? (
-                          <>Website (<a href={user.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{user.website.replace(/^https?:\/\//, '').replace(/^www\./, '')}</a>)</>
+                          <>Website (<a href={user.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>
                         ) : user.doFollowLink === 'linkedIn' && user.linkedIn ? (
                           <>LinkedIn (<a href={user.linkedIn} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>
                         ) : user.doFollowLink === 'twitter' && user.twitter ? (
@@ -1778,7 +1801,7 @@ export default function AccountPage() {
                         ) : user.doFollowLink === 'other' && user.otherProfileUrl ? (
                           <>Website (<a href={user.otherProfileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>                  
                         ) : user.doFollowLink.startsWith('http') ? (
-                          <>Custom URL (<a href={user.doFollowLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{user.doFollowLink.replace(/^https?:\/\//, '').replace(/^www\./, '')}</a>)</>
+                          <>Custom URL (<a href={user.doFollowLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>
                         ) : (
                           'Not properly configured'
                         )}

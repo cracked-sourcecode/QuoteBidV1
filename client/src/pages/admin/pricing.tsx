@@ -435,26 +435,26 @@ export default function AdminPricing() {
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header with Step 8 Navigation */}
         <div className="bg-slate-800/50 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8 mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
                 <Settings className="h-6 w-6 text-white" />
-              </div>
-              <div>
+            </div>
+            <div>
                 <h1 className="text-3xl font-bold text-white">Pricing Control v2</h1>
                 <p className="text-slate-300 text-lg">Post-Deploy Monitoring & Tuning</p>
-              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <SyncStatusIndicator />
-              <Button 
-                onClick={saveAllChanges}
-                disabled={!hasUnsavedChanges || isSaving}
+          </div>
+          <div className="flex items-center gap-4">
+            <SyncStatusIndicator />
+            <Button 
+              onClick={saveAllChanges}
+              disabled={!hasUnsavedChanges || isSaving}
                 className={hasUnsavedChanges ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white" : "bg-slate-600 text-slate-300"}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {isSaving ? "Saving..." : hasUnsavedChanges ? "Save Changes" : "No Changes"}
-              </Button>
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {isSaving ? "Saving..." : hasUnsavedChanges ? "Save Changes" : "No Changes"}
+            </Button>
             </div>
           </div>
         </div>
@@ -462,38 +462,38 @@ export default function AdminPricing() {
         {/* Step 8: Navigation Tabs */}
         <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 p-6 mb-8">
           <div className="flex space-x-1">
-            {[
-              { key: 'weights', label: 'Weight Configuration', icon: Settings },
-              { key: 'tuning', label: 'Tuning Guide', icon: Target }
-            ].map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => setMonitoringView(key as any)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg flex items-center gap-2 transition-colors ${
-                  monitoringView === key
+              {[
+                { key: 'weights', label: 'Weight Configuration', icon: Settings },
+                { key: 'tuning', label: 'Tuning Guide', icon: Target }
+              ].map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setMonitoringView(key as any)}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg flex items-center gap-2 transition-colors ${
+                    monitoringView === key
                     ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg'
                     : 'text-slate-300 hover:text-white hover:bg-slate-700'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </button>
-            ))}
-          </div>
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </button>
+              ))}
+            </div>
         </div>
 
         {/* Unsaved Changes Alert */}
         {hasUnsavedChanges && (
           <div className="p-4 bg-orange-500/20 border border-orange-500/30 rounded-lg">
             <div className="flex items-center gap-2 text-orange-300">
-              <AlertCircle className="h-4 w-4" />
-              <span className="text-sm font-medium">
-                You have unsaved changes. Click "Save Changes" to apply them to the pricing engine.
-              </span>
-            </div>
-          </div>
-        )}
-
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  You have unsaved changes. Click "Save Changes" to apply them to the pricing engine.
+                </span>
+              </div>
+                </div>
+              )}
+              
 
 
         {/* Step 8-B: Weight Tuning Guide */}
@@ -702,43 +702,43 @@ export default function AdminPricing() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {V2_WEIGHT_KEYS.map((weight) => {
-                      const hasChanges = (pendingConfigChanges as any)[weight.key] !== undefined;
-                      
-                      return (
+                        {V2_WEIGHT_KEYS.map((weight) => {
+                          const hasChanges = (pendingConfigChanges as any)[weight.key] !== undefined;
+                          
+                          return (
                         <div key={weight.key} className={`bg-slate-700/20 rounded-lg p-4 border border-white/10 hover:border-purple-500/30 transition-colors ${hasChanges ? 'border-orange-500/30 bg-orange-500/10' : ''}`}>
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
                             <div className="font-medium text-white">
-                              <div className="flex items-center gap-2">
-                                {weight.label}
-                                {hasChanges && (
+                                <div className="flex items-center gap-2">
+                                  {weight.label}
+                                  {hasChanges && (
                                   <Badge variant="outline" className="text-xs bg-orange-500/20 text-orange-300 border-orange-500/30">
-                                    Modified
-                                  </Badge>
-                                )}
-                              </div>
+                                      Modified
+                                    </Badge>
+                                  )}
+                                </div>
                             </div>
                             <div>
-                              <Input
-                                type="number"
-                                min={weight.min}
-                                max={weight.max}
-                                step={weight.step}
-                                value={getCurrentV2WeightValue(weight.key)}
-                                onChange={(e) => handleV2WeightChange(weight.key, parseFloat(e.target.value) || 0)}
+                                <Input
+                                  type="number"
+                                  min={weight.min}
+                                  max={weight.max}
+                                  step={weight.step}
+                                  value={getCurrentV2WeightValue(weight.key)}
+                                  onChange={(e) => handleV2WeightChange(weight.key, parseFloat(e.target.value) || 0)}
                                 className="w-24 text-center bg-slate-600/50 border-slate-500 text-white focus:border-purple-400 focus:ring-purple-400"
-                              />
+                                />
                             </div>
                             <div className="text-slate-300 text-sm">
-                              {weight.description}
+                                {weight.description}
                             </div>
                             <div className="text-sm text-slate-400">
-                              {config?.updated_at ? new Date(config.updated_at).toLocaleString() : 'Never'}
+                                {config?.updated_at ? new Date(config.updated_at).toLocaleString() : 'Never'}
                             </div>
                           </div>
                         </div>
-                      );
-                    })}
+                          );
+                        })}
                   </div>
                 )}
               </CardContent>
@@ -766,58 +766,58 @@ export default function AdminPricing() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {Array.isArray(variables) ? variables.map((variable: any) => {
-                      const hasChanges = pendingVariableChanges[variable.var_name];
-                      
-                      return (
+                        {Array.isArray(variables) ? variables.map((variable: any) => {
+                          const hasChanges = pendingVariableChanges[variable.var_name];
+                          
+                          return (
                         <div key={variable.var_name || `var-${Math.random()}`} className={`bg-slate-700/20 rounded-lg p-4 border border-white/10 hover:border-purple-500/30 transition-colors ${hasChanges ? 'border-orange-500/30 bg-orange-500/10' : ''}`}>
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
                             <div className="font-medium text-white">
-                              <div className="flex items-center gap-2">
-                                {variable.var_name || 'Unknown'}
-                                {hasChanges && (
+                                <div className="flex items-center gap-2">
+                                  {variable.var_name || 'Unknown'}
+                                  {hasChanges && (
                                   <Badge variant="outline" className="text-xs bg-orange-500/20 text-orange-300 border-orange-500/30">
-                                    Modified
-                                  </Badge>
-                                )}
-                              </div>
+                                      Modified
+                                    </Badge>
+                                  )}
+                                </div>
                             </div>
                             <div>
-                              <Input
-                                type="number"
-                                step="0.1"
-                                min="-10"
-                                max="10"
-                                value={getCurrentVariableValue(variable.var_name, 'weight')}
-                                onChange={(e) => handleWeightChange(variable.var_name, parseFloat(e.target.value) || 0)}
+                                <Input
+                                  type="number"
+                                  step="0.1"
+                                  min="-10"
+                                  max="10"
+                                  value={getCurrentVariableValue(variable.var_name, 'weight')}
+                                  onChange={(e) => handleWeightChange(variable.var_name, parseFloat(e.target.value) || 0)}
                                 className="w-24 text-center bg-slate-600/50 border-slate-500 text-white focus:border-purple-400 focus:ring-purple-400"
-                              />
+                                />
                             </div>
                             <div>
-                              <Select
-                                value={getCurrentVariableValue(variable.var_name, 'nonlinear_fn')}
-                                onValueChange={(value) => handleNonlinearFnChange(variable.var_name, value)}
-                              >
+                                <Select
+                                  value={getCurrentVariableValue(variable.var_name, 'nonlinear_fn')}
+                                  onValueChange={(value) => handleNonlinearFnChange(variable.var_name, value)}
+                                >
                                 <SelectTrigger className="w-32 bg-slate-600/50 border-slate-500 text-white focus:border-purple-400">
-                                  <SelectValue />
-                                </SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
                                 <SelectContent className="bg-slate-800 border-slate-600">
                                   <SelectItem value="none" className="text-white hover:bg-slate-700">none</SelectItem>
                                   <SelectItem value="decay24h" className="text-white hover:bg-slate-700">decay24h</SelectItem>
-                                </SelectContent>
-                              </Select>
+                                  </SelectContent>
+                                </Select>
                             </div>
                             <div className="text-sm text-slate-400">
-                              {variable.updated_at ? new Date(variable.updated_at).toLocaleString() : 'Never'}
+                                {variable.updated_at ? new Date(variable.updated_at).toLocaleString() : 'Never'}
                             </div>
                           </div>
                         </div>
-                      );
-                    }) : (
+                          );
+                        }) : (
                       <div className="text-center text-slate-400 py-8">
-                        No variables data available
+                              No variables data available
                       </div>
-                    )}
+                        )}
                   </div>
                 )}
               </CardContent>

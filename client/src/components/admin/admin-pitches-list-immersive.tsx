@@ -352,19 +352,19 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
             <div className="bg-slate-700/40 border border-white/10 rounded p-2 flex-1 min-h-[60px]">
               {pitch.audioUrl ? (
                 <div className="space-y-2">
-                  <audio controls className="w-full h-8" onClick={(e) => e.stopPropagation()}>
-                    <source src={pitch.audioUrl} type="audio/mpeg" />
-                  </audio>
+                    <audio controls className="w-full h-8" onClick={(e) => e.stopPropagation()}>
+                      <source src={pitch.audioUrl} type="audio/mpeg" />
+                    </audio>
                   {pitch.transcript && (
                     <p className="text-xs text-slate-300 line-clamp-2 leading-snug">
                       {getContentPreview(pitch.transcript, 80)}
-                    </p>
+                      </p>
                   )}
                 </div>
               ) : (
                 <p className="text-xs text-slate-300 line-clamp-3 leading-snug">
                   {getContentPreview(pitch.content, 100)}
-                </p>
+                    </p>
               )}
             </div>
           </div>
@@ -382,7 +382,7 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
           {/* Compact Action Buttons */}
           <div className="flex gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
             <Button 
-              size="sm"
+              size="sm" 
               className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white h-8"
               onClick={(e) => {
                 e.stopPropagation();
@@ -395,7 +395,7 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
-                  size="sm"
+                  size="sm" 
                   variant="outline" 
                   className="px-2 bg-slate-700/50 border-white/20 hover:bg-slate-600/50 text-white h-8"
                 >
@@ -647,7 +647,7 @@ export default function AdminPitchesListImmersive({ filter = 'all' }: AdminPitch
       ) : (
         <Card className="bg-slate-800/30 backdrop-blur-lg border border-white/20">
           <ScrollArea className="w-full">
-                        <Table>
+            <Table>
               <TableHeader>
                 <TableRow className="border-white/10">
                   <TableHead className="text-slate-300">Expert</TableHead>

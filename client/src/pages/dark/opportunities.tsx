@@ -1,0 +1,459 @@
+import { useState, useEffect } from 'react';
+import { apiFetch } from '@/lib/apiFetch';
+import { useLocation } from 'wouter';
+import { Search, Filter, SlidersHorizontal, Loader2, Bookmark } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import OpportunityCard from '@/components/opportunity-card';
+import ResubscriptionModal from '@/components/resubscription-modal';
+import { sampleOpportunities } from '@/lib/fixtures/opportunities';
+import { Opportunity } from '@shared/types/opportunity';
+import { useAuth } from '@/hooks/use-auth';
+import { apiRequest } from '@/lib/queryClient';
+import { INDUSTRY_OPTIONS } from '@/lib/constants';
+
+export default function OpportunitiesPage() {
+  const [, setLocation] = useLocation();
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [filteredOpportunities, setFilteredOpportunities] = useState<Opportunity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [tierFilter, setTierFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('open');
+  const [industryFilter, setIndustryFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('posted');
+  const [showResubscribeModal, setShowResubscribeModal] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string>('');
+  const [subscriptionExpiry, setSubscriptionExpiry] = useState<Date | null>(null);
+  const { user } = useAuth();
+  
+  // Fetch opportunities from the API
+  useEffect(() => {
+    const fetchOpportunities = async () => {
+      try {
+        const response = await apiFetch('/api/opportunities');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch opportunities');
+        }
+        
+        const data = await response.json();
+        console.log('Raw API data:', data);
+        
+        // Map API response to match the Opportunity type format
+        const formattedOpportunities = data.map((item: any) => {
+          // Handle API response with either OpportunityWithPublication format or direct Opportunity format
+          const opp = item.opportunity || item;
+          const pub = item.publication || {};
+          
+          return {
+            id: opp.id,
+            title: opp.title || '',
+            outlet: pub.name || opp.outlet || '',
+            outletLogo: pub.logo || opp.outletLogo || '',
+            tier: opp.tier ? (typeof opp.tier === 'string' && opp.tier.startsWith('Tier ') ? parseInt(opp.tier.split('Tier ')[1]) : Number(opp.tier)) : 1,
+            status: opp.status || 'open',
+            summary: opp.description || opp.summary || '',
+            topicTags: Array.isArray(opp.tags) ? opp.tags : 
+                     (opp.topicTags || []).map((tag: any) => 
+                       typeof tag === 'string' ? tag : (tag.name || '')),
+            slotsTotal: opp.slotsTotal || 1,
+            slotsRemaining: opp.slotsRemaining || 1,
+            basePrice: opp.minimumBid || opp.basePrice || 0,
+            currentPrice: opp.currentPrice || opp.minimumBid || 0,
+            increment: opp.increment || 50,
+            floorPrice: opp.floorPrice || opp.minimumBid || 0,
+            cutoffPrice: opp.cutoffPrice || (opp.minimumBid ? opp.minimumBid * 2 : 0),
+            deadline: opp.deadline || new Date().toISOString(),
+            postedAt: opp.createdAt || new Date().toISOString(),
+            createdAt: opp.createdAt || new Date().toISOString(),
+            updatedAt: opp.updatedAt || new Date().toISOString(),
+            publicationId: opp.publicationId || pub.id || 0,
+            industry: opp.industry || ''
+          } as Opportunity & { industry?: string };
+        });
+        
+        console.log('Formatted opportunities:', formattedOpportunities);
+        setOpportunities(formattedOpportunities);
+      } catch (error) {
+        console.error('Error fetching opportunities:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchOpportunities();
+  }, []);
+  
+  // Check subscription status
+  useEffect(() => {
+    const checkSubscription = async () => {
+      if (!user) return;
+      
+      try {
+        const res = await apiRequest("GET", `/api/user/${user.id}/subscription`);
+        const data = await res.json();
+        
+        // Check if subscription is expired or past due
+        if (data.status === 'past_due' || data.status === 'canceled' || data.status === 'unpaid') {
+          setSubscriptionStatus(data.status);
+          setShowResubscribeModal(true);
+        }
+        
+        // Also check expiry date
+        if (data.expiresAt) {
+          const expiryDate = new Date(data.expiresAt);
+          setSubscriptionExpiry(expiryDate);
+          
+          // If expired, show the modal
+          if (expiryDate < new Date()) {
+            setShowResubscribeModal(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking subscription status:', error);
+      }
+    };
+    
+    checkSubscription();
+  }, [user]);
+
+  // Apply filters
+  useEffect(() => {
+    let filtered = [...opportunities];
+    
+    // Apply search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        opp => 
+          opp.title.toLowerCase().includes(query) ||
+          opp.outlet.toLowerCase().includes(query) ||
+          opp.topicTags.some(tag => tag.toLowerCase().includes(query))
+      );
+    }
+    
+    // Apply tier filter
+    if (tierFilter !== 'all') {
+      filtered = filtered.filter(opp => opp.tier === parseInt(tierFilter));
+    }
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(opp => opp.status === statusFilter);
+    }
+    
+    // Apply industry filter
+    if (industryFilter !== 'all') {
+      filtered = filtered.filter(opp => {
+        const oppWithIndustry = opp as Opportunity & { industry?: string };
+        return oppWithIndustry.industry === industryFilter;
+      });
+    }
+    
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'price-low':
+          return a.currentPrice - b.currentPrice;
+        case 'price-high':
+          return b.currentPrice - a.currentPrice;
+        case 'deadline':
+          return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+        case 'posted':
+          return new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime();
+        default:
+          // When no specific sort is selected or as a fallback, sort by creation date (newest first)
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
+    
+    setFilteredOpportunities(filtered);
+  }, [opportunities, searchQuery, tierFilter, statusFilter, industryFilter, sortBy]);
+  
+  // Handle opportunity click
+  const handleOpportunityClick = (opportunityId: number) => {
+    setLocation(`/opportunities/${opportunityId}`);
+  };
+  
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen relative overflow-hidden">
+        {/* Premium dark gradient backdrop - darker with more blue like home.tsx */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900" />
+        {/* Additional depth layers */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/20" />
+        
+        <div className="relative z-10 container max-w-7xl py-10 flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center">
+            <Loader2 className="h-10 w-10 animate-spin text-white mb-4" />
+            <p className="text-lg text-blue-300">Loading opportunities...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Premium dark gradient backdrop - darker with more blue like home.tsx */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900" />
+      {/* Additional depth layers */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20" />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/20" />
+      
+      {/* Resubscription Modal */}
+      <ResubscriptionModal 
+        open={showResubscribeModal} 
+        onOpenChange={setShowResubscribeModal}
+        subscriptionStatus={subscriptionStatus}
+        expiryDate={subscriptionExpiry}
+      />
+      
+      <div className="relative z-10">
+        {/* Header */}
+        <div className="px-4 sm:px-6 lg:px-8 py-8 border-b border-white/20">
+        <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Media Opportunities</h1>
+            <p className="text-gray-300 text-base">
+            Browse open opportunities from top publications and lock in your bid before prices increase. Our marketplace connects you with premium media outlets to showcase your expertise.
+          </p>
+        </div>
+      </div>
+      
+
+      
+        {/* Search and filters - Premium dark theme matching home page */}
+        <div className="relative">
+          {/* Matching home page gradient effects */}
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/20"></div>
+          
+          <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8 border-b border-white/20">
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              {/* Search with better visibility */}
+              <div className="relative w-full sm:w-auto sm:flex-grow">
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
+                    <Search className="h-3 w-3 text-blue-300" />
+                  </div>
+                  <Input
+                    placeholder="Search by title, outlet, or tag"
+                    className="pl-12 pr-4 h-12 bg-slate-800/80 border border-slate-600/60 text-white placeholder:text-slate-300 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-500/30 rounded-xl font-medium transition-all duration-300 hover:bg-slate-800/90"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
+          
+              {/* Filters with better visibility */}
+              <div className="flex flex-wrap gap-4 w-full sm:w-auto">
+                <Select value={tierFilter} onValueChange={setTierFilter}>
+                  <SelectTrigger className="w-full sm:w-[160px] h-12 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 rounded-xl font-medium transition-all duration-300">
+                    <SelectValue placeholder="All Tiers" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
+                    <SelectGroup>
+                      <SelectItem value="all" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">All Tiers</SelectItem>
+                      <SelectItem value="1" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Tier 1</SelectItem>
+                      <SelectItem value="2" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Tier 2</SelectItem>
+                      <SelectItem value="3" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Tier 3</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-[160px] h-12 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 rounded-xl font-medium transition-all duration-300">
+                    <SelectValue placeholder="Open" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
+                    <SelectGroup>
+                      <SelectItem value="all" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">All Status</SelectItem>
+                      <SelectItem value="open" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Open</SelectItem>
+                      <SelectItem value="closed" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Closed</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={industryFilter} onValueChange={setIndustryFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px] h-12 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 rounded-xl font-medium transition-all duration-300">
+                    <SelectValue placeholder="All Industries" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
+                    <SelectGroup>
+                      <SelectItem value="all" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">All Industries</SelectItem>
+                      {INDUSTRY_OPTIONS.map((industry) => (
+                        <SelectItem key={industry.value} value={industry.value} className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">
+                          {industry.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* Active filters - original style but better visibility */}
+            {(tierFilter !== 'all' || statusFilter !== 'all' || industryFilter !== 'all' || searchQuery) && (
+              <div className="mt-4 relative">
+                <div className="relative bg-slate-800/80 backdrop-blur-2xl rounded-xl border border-slate-600/60 py-3 px-4 shadow-xl">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center">
+                      <div className="p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg mr-2 border border-blue-400/30">
+                        <Filter className="h-3 w-3 text-blue-300" />
+                      </div>
+                      <span className="text-white font-medium text-sm">Active Filters</span>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-1.5">
+                      {tierFilter !== 'all' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-6 px-2 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-lg font-medium transition-all duration-300" 
+                          onClick={() => setTierFilter('all')}
+                        >
+                          Tier: {tierFilter}
+                          <span className="ml-1 text-sm">×</span>
+                        </Button>
+                      )}
+                      
+                      {statusFilter !== 'all' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-6 px-2 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-lg font-medium transition-all duration-300" 
+                          onClick={() => setStatusFilter('all')}
+                        >
+                          Status: {statusFilter}
+                          <span className="ml-1 text-sm">×</span>
+                        </Button>
+                      )}
+                      
+                      {industryFilter !== 'all' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-6 px-2 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-lg font-medium transition-all duration-300" 
+                          onClick={() => setIndustryFilter('all')}
+                        >
+                          Industry: {industryFilter}
+                          <span className="ml-1 text-sm">×</span>
+                        </Button>
+                      )}
+                      
+                      {searchQuery && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-6 px-2 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-lg font-medium transition-all duration-300" 
+                          onClick={() => setSearchQuery('')}
+                        >
+                          Search: "{searchQuery}"
+                          <span className="ml-1 text-sm">×</span>
+                        </Button>
+                      )}
+                    </div>
+            
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto h-6 px-2 text-xs text-slate-300 hover:text-white hover:bg-slate-700/80 rounded-lg font-medium transition-all duration-300"
+                      onClick={() => {
+                        setTierFilter('all');
+                        setStatusFilter('open');
+                        setIndustryFilter('all');
+                        setSearchQuery('');
+                      }}
+                    >
+                      Clear All
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Results count and sort controls - original layout */}
+            <div className="mt-4 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <p className="text-white font-medium">
+                  {filteredOpportunities.length} {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'} found
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
+                    <SlidersHorizontal className="h-3 w-3 text-blue-300" />
+                  </div>
+                  <span className="text-white font-medium">Sort by:</span>
+                </div>
+                
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-[170px] h-10 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 rounded-xl font-medium transition-all duration-300">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
+                    <SelectGroup>
+                      <SelectItem value="deadline" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Deadline (Soonest)</SelectItem>
+                      <SelectItem value="posted" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Recently Posted</SelectItem>
+                      <SelectItem value="price-low" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Price (Low to High)</SelectItem>
+                      <SelectItem value="price-high" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Price (High to Low)</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </div>
+      
+
+      
+        {/* Opportunities grid */}
+        <div className="px-4 sm:px-6 lg:px-8 py-8 border-t border-white/10">
+        {filteredOpportunities.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredOpportunities.map((opportunity) => (
+              <OpportunityCard
+                key={opportunity.id}
+                opportunity={opportunity}
+              />
+            ))}
+          </div>
+        ) : (
+            <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 text-center my-6">
+              <h3 className="text-lg font-semibold mb-2 text-white">No opportunities found</h3>
+              <p className="text-slate-300 mb-4">
+                Try adjusting your filters or search criteria to find more opportunities.
+              </p>
+              <Button 
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-violet-700 text-white border-0 transition-all duration-300"
+                onClick={() => {
+                  setTierFilter('all');
+                  setStatusFilter('open');
+                  setIndustryFilter('all');
+                  setSearchQuery('');
+                }}
+              >
+                Clear Filters
+              </Button>
+            </div>
+        )}
+        </div>
+      </div>
+    </div>
+  );
+}

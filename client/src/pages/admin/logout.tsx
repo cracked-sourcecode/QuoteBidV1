@@ -12,16 +12,16 @@ export default function AdminLogout() {
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    try {
-      await adminLogoutMutation.mutateAsync();
-      // Redirect to admin login after logout
-      setLocation('/admin-login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-      // Still redirect even if logout fails
-      setLocation('/admin-login');
-    }
-  };
+      try {
+        await adminLogoutMutation.mutateAsync();
+        // Redirect to admin login after logout
+        setLocation('/admin-login');
+      } catch (error) {
+        console.error('Logout failed:', error);
+        // Still redirect even if logout fails
+        setLocation('/admin-login');
+      }
+    };
 
   const handleCancel = () => {
     setLocation('/admin');
@@ -37,7 +37,7 @@ export default function AdminLogout() {
           <CardTitle className="text-2xl font-bold text-white">Confirm Logout</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="text-center">
+      <div className="text-center">
             <p className="text-slate-300 text-lg mb-2">
               Are you sure you want to log out of the admin portal?
             </p>
@@ -83,7 +83,7 @@ export default function AdminLogout() {
                 </>
               )}
             </Button>
-          </div>
+      </div>
         </CardContent>
       </Card>
     </div>

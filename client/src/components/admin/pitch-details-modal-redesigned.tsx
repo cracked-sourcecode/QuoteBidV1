@@ -137,7 +137,7 @@ export default function PitchDetailsModalRedesigned({ isOpen, onClose, pitchId }
     
     const quote = `"${pitch.content.trim().replace(/\n+/g, ' ')}" —${pitch.user?.fullName || 'Anonymous'}${pitch.user?.title ? `, ${pitch.user.title}` : ''}`;
     
-    navigator.clipboard.writeText(quote).then(() => {
+      navigator.clipboard.writeText(quote).then(() => {
       toast({
         title: "Copied!",
         description: "Quote copied to clipboard",
@@ -199,14 +199,14 @@ export default function PitchDetailsModalRedesigned({ isOpen, onClose, pitchId }
               
               <div className="flex items-center gap-2">
                 <StatusBadge status={pitch.status} />
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={onClose} 
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
                   className="h-7 w-7 p-0 text-slate-400 hover:text-white hover:bg-white/10"
-                >
+              >
                   <X className="h-4 w-4" />
-                </Button>
+              </Button>
               </div>
             </div>
 
@@ -231,23 +231,23 @@ export default function PitchDetailsModalRedesigned({ isOpen, onClose, pitchId }
                       </AvatarFallback>
                     </Avatar>
                     
-                    <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-white text-lg mb-1">
                         {pitch.user?.fullName || 'Unknown Expert'}
                       </h4>
                       {pitch.user?.title && (
                         <p className="text-amber-400 font-medium text-base mb-4">{pitch.user.title}</p>
-                      )}
+                          )}
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm mb-4">
                         {pitch.user?.industry && (
-                          <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2">
                             <Briefcase className="h-4 w-4 text-slate-400" />
                             <span className="text-slate-300 font-medium">{pitch.user.industry}</span>
-                          </div>
-                        )}
+                              </div>
+                            )}
                         {pitch.user?.location && (
-                          <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-slate-400" />
                             <span className="text-slate-300">{pitch.user.location}</span>
                           </div>
@@ -257,7 +257,7 @@ export default function PitchDetailsModalRedesigned({ isOpen, onClose, pitchId }
                           <span className="text-slate-300 truncate">{pitch.user?.email}</span>
                         </div>
                       </div>
-                      
+
                       {pitch.user?.bio && (
                         <div className="mb-4">
                           <p className="text-slate-300 text-sm leading-relaxed">{pitch.user.bio}</p>
@@ -267,27 +267,27 @@ export default function PitchDetailsModalRedesigned({ isOpen, onClose, pitchId }
                       {/* Social Links */}
                       {(pitch.user?.linkedIn || pitch.user?.twitter || pitch.user?.website) && (
                         <div className="flex items-center gap-3">
-                          {pitch.user.linkedIn && (
+                            {pitch.user.linkedIn && (
                             <a href={pitch.user.linkedIn} target="_blank" rel="noopener noreferrer" 
                                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                              <Linkedin className="h-4 w-4" />
+                                <Linkedin className="h-4 w-4" />
                               LinkedIn
-                            </a>
-                          )}
-                          {pitch.user.twitter && (
+                              </a>
+                            )}
+                            {pitch.user.twitter && (
                             <a href={pitch.user.twitter} target="_blank" rel="noopener noreferrer"
                                className="flex items-center gap-2 px-3 py-2 bg-sky-500 text-white rounded-lg text-sm font-medium hover:bg-sky-600 transition-colors">
-                              <Twitter className="h-4 w-4" />
+                                <Twitter className="h-4 w-4" />
                               Twitter
-                            </a>
-                          )}
-                          {pitch.user.website && (
+                              </a>
+                            )}
+                            {pitch.user.website && (
                             <a href={pitch.user.website} target="_blank" rel="noopener noreferrer"
                                className="flex items-center gap-2 px-3 py-2 bg-slate-600 text-white rounded-lg text-sm font-medium hover:bg-slate-700 transition-colors">
                               <ExternalLink className="h-4 w-4" />
                               Website
-                            </a>
-                          )}
+                              </a>
+                            )}
                         </div>
                       )}
                     </div>
@@ -346,24 +346,24 @@ export default function PitchDetailsModalRedesigned({ isOpen, onClose, pitchId }
 
             {/* Footer */}
             <div className="border-t border-white/10 px-5 py-3 bg-slate-800/30">
-              <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-400">Pitch #{pitch.id}</span>
                 <Select value={pitch.status} onValueChange={updatePitchStatus} disabled={updatingStatus}>
                   <SelectTrigger className="w-40 h-8 bg-slate-800 border-white/20 text-white text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                   <SelectContent className="bg-slate-800 border-white/20">
-                    {Object.entries(statusConfig).map(([key, config]) => (
+                        {Object.entries(statusConfig).map(([key, config]) => (
                       <SelectItem key={key} value={key} className="text-white hover:bg-slate-700 text-xs">
                         <div className="flex items-center gap-1.5">
                           <config.icon className="h-3 w-3" />
-                          {config.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                              {config.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
             </div>
           </div>
         ) : (

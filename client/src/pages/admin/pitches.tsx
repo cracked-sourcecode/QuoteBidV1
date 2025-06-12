@@ -58,9 +58,9 @@ export default function AdminPitchesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-indigo-950">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <Helmet>
-          <title>PR Opportunities Management | QuoteBid Admin</title>
-        </Helmet>
+      <Helmet>
+        <title>PR Opportunities Management | QuoteBid Admin</title>
+      </Helmet>
         {/* Enhanced Header Section */}
         <div className="bg-slate-800/30 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8 mb-8">
           <div className="flex justify-between items-start mb-6">
@@ -70,12 +70,12 @@ export default function AdminPitchesPage() {
                   <MessageSquare className="h-6 w-6 text-white" />
                 </div>
                 <span className="text-white">
-                  PR Opportunities Management
+                    PR Opportunities Management
                 </span>
-              </h1>
+                  </h1>
               <p className="text-slate-300 text-lg">
-                Review and manage media pitch submissions from experts
-              </p>
+                    Review and manage media pitch submissions from experts
+                  </p>
             </div>
           </div>
         </div>

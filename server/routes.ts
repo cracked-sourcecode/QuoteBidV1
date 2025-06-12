@@ -7658,7 +7658,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { password, ...userWithoutPassword } = req.user as any;
     res.json(userWithoutPassword);
   });
-
+  
   // Get user's email preferences
   app.get("/api/users/:userId/email-preferences", jwtAuth, async (req, res) => {
     try {

@@ -1185,13 +1185,13 @@ export default function OpportunitiesManager() {
                                         <span className="flex items-center text-slate-400">
                                           <Calendar className="w-4 h-4 mr-2" />
                                           <span className="font-medium">
-                                            Submitted {new Date(pitch.createdAt).toLocaleDateString('en-US', { 
-                                              month: 'short', 
-                                              day: 'numeric',
-                                              year: 'numeric',
-                                              hour: '2-digit',
-                                              minute: '2-digit'
-                                            })}
+                                          Submitted {new Date(pitch.createdAt).toLocaleDateString('en-US', { 
+                                            month: 'short', 
+                                            day: 'numeric',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                          })}
                                           </span>
                                         </span>
                                       )}
@@ -1251,8 +1251,8 @@ export default function OpportunitiesManager() {
                               <h4 className="text-sm font-semibold text-yellow-400 mb-1">Pro Tip</h4>
                               <p className="text-sm text-yellow-200 leading-relaxed">
                                 You can promote this opportunity to attract more expert submissions, 
-                                or adjust the minimum bid if needed.
-                              </p>
+                            or adjust the minimum bid if needed.
+                          </p>
                             </div>
                           </div>
                         </div>

@@ -135,24 +135,24 @@ export default function UsersManager() {
     <div className="min-h-screen p-4">
       <div className="min-h-[calc(100vh-32px)] bg-gradient-to-br from-slate-900 via-purple-950 to-indigo-950 rounded-3xl border border-white/20 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Header */}
+      {/* Header */}
         <div className="bg-slate-800/30 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8 mb-8">
-                  <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold flex items-center mb-3">
                 <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl flex items-center justify-center mr-4 shadow-lg">
                   <UserIcon className="h-6 w-6 text-white" />
                 </div>
                 <span className="text-white">
-                  Manage Users
+              Manage Users
                 </span>
-              </h1>
+            </h1>
               <p className="text-slate-300 text-lg">View and manage user accounts and subscriptions</p>
-            </div>
           </div>
+        </div>
       </div>
       
-        {/* Search and Filter Bar */}
+      {/* Search and Filter Bar */}
         <div className="mb-6">
         <Card className="bg-slate-800/30 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20">
           <CardContent className="p-6">
@@ -203,7 +203,7 @@ export default function UsersManager() {
         </Card>
       </div>
       
-        {/* User Cards */}
+      {/* User Cards */}
         <div>
         {loadingUsers ? (
           <div className="flex justify-center py-12">
@@ -221,30 +221,30 @@ export default function UsersManager() {
                 return (
                   <Card key={user.id} className="bg-slate-800/40 backdrop-blur-lg border border-white/10 hover:border-white/30 hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-300 transform hover:-translate-y-1 overflow-hidden flex flex-col h-full rounded-2xl">
                     <CardContent className="p-0 flex flex-col h-full">
-                                              {/* User Header */}
+                      {/* User Header */}
                         <div className="bg-gradient-to-br from-slate-700/50 to-slate-800/50 p-4 border-b border-white/10">
                         <div className="flex items-start justify-between mb-3">
                                                       <Avatar className="h-12 w-12 ring-2 ring-amber-400/30 shadow-lg">
-                              <AvatarImage 
-                                src={user.avatar || undefined} 
-                                alt={user.fullName || user.username}
-                                className="object-cover"
-                              />
+                            <AvatarImage 
+                              src={user.avatar || undefined} 
+                              alt={user.fullName || user.username}
+                              className="object-cover"
+                            />
                               <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-amber-500 to-orange-600 text-white">
-                                {getInitials(user.fullName || user.username)}
-                              </AvatarFallback>
-                            </Avatar>
+                              {getInitials(user.fullName || user.username)}
+                            </AvatarFallback>
+                          </Avatar>
                           
-                                                      <div className="flex gap-1.5">
-                              {user.isAdmin && (
+                          <div className="flex gap-1.5">
+                            {user.isAdmin && (
                                 <Badge className="bg-purple-500/20 text-purple-300 border-purple-400/30 text-xs px-2 py-0.5">ADMIN</Badge>
-                              )}
-                              {isPremium ? (
+                            )}
+                            {isPremium ? (
                                 <Badge className="bg-green-500/20 text-green-300 border-green-400/30 text-xs px-2 py-0.5">ACTIVE</Badge>
-                              ) : (
+                            ) : (
                                 <Badge className="bg-red-500/20 text-red-300 border-red-400/30 text-xs px-2 py-0.5">PAST DUE</Badge>
-                              )}
-                            </div>
+                            )}
+                          </div>
                         </div>
                         
                         <div>
@@ -417,26 +417,26 @@ export default function UsersManager() {
                 Detailed information about {selectedUser.fullName || selectedUser.username}, including account status, contact information, and administrative actions.
               </DialogDescription>
             </DialogHeader>
-                        
+              
             <div className="space-y-6">
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage src={selectedUser.avatar || undefined} alt={selectedUser.fullName || selectedUser.username} />
+                    <AvatarImage src={selectedUser.avatar || undefined} alt={selectedUser.fullName || selectedUser.username} />
                   <AvatarFallback className="bg-amber-500 text-white font-bold">
-                    {getInitials(selectedUser.fullName || selectedUser.username)}
-                  </AvatarFallback>
-                </Avatar>
+                      {getInitials(selectedUser.fullName || selectedUser.username)}
+                    </AvatarFallback>
+                  </Avatar>
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <h2 className="text-2xl font-bold">{selectedUser.fullName || selectedUser.username}</h2>
-                    {selectedUser.isAdmin && (
+                  {selectedUser.isAdmin && (
                       <Badge className="bg-purple-500">ADMIN</Badge>
-                    )}
-                    {getBillingStatus(selectedUser) ? (
+                  )}
+                  {getBillingStatus(selectedUser) ? (
                       <Badge className="bg-green-500">ACTIVE</Badge>
-                    ) : (
+                  ) : (
                       <Badge className="bg-red-500">PAST DUE</Badge>
-                    )}
+                  )}
                   </div>
                   <p className="text-slate-300">{selectedUser.email}</p>
                 </div>
@@ -444,14 +444,14 @@ export default function UsersManager() {
               
                             <div className="grid grid-cols-2 gap-10">
                 {/* Left Column */}
-                <div className="space-y-4">
+                    <div className="space-y-4">
                   <div className="text-base"><span className="font-semibold text-slate-300">Username:</span> <span className="ml-2">{selectedUser.username}</span></div>
                   <div className="text-base"><span className="font-semibold text-slate-300">Industry:</span> <span className="ml-2">{selectedUser.industry || 'Not specified'}</span></div>
                   <div className="text-base"><span className="font-semibold text-slate-300">Location:</span> <span className="ml-2">{selectedUser.location || 'Not specified'}</span></div>
                   <div className="text-base"><span className="font-semibold text-slate-300">Joined:</span> <span className="ml-2">{new Date(selectedUser.createdAt).toLocaleDateString()}</span></div>
                   <div className="text-base"><span className="font-semibold text-slate-300">Subscription:</span> <span className="ml-2">{getBillingStatus(selectedUser) ? 'Active Subscriber ($99.99/month Premium)' : 'Not Subscribed'}</span></div>
-                </div>
-                
+                    </div>
+                    
                 {/* Right Column */}
                 <div className="space-y-5">
                   {selectedUser.bio && (
@@ -496,54 +496,54 @@ export default function UsersManager() {
               </div>
               
               <div className="pt-6 border-t border-slate-700">
-                <Button
-                  onClick={async () => {
-                    setIsResetPasswordLoading(true);
-                    try {
-                      const res = await apiRequest('POST', '/api/admin/reset-password', {
-                        userId: selectedUser.id,
-                        email: selectedUser.email
-                      });
-                      
-                      if (!res.ok) {
-                        const error = await res.json();
-                        throw new Error(error.message || 'Failed to send password reset');
+                  <Button
+                    onClick={async () => {
+                      setIsResetPasswordLoading(true);
+                      try {
+                        const res = await apiRequest('POST', '/api/admin/reset-password', {
+                          userId: selectedUser.id,
+                          email: selectedUser.email
+                        });
+                        
+                        if (!res.ok) {
+                          const error = await res.json();
+                          throw new Error(error.message || 'Failed to send password reset');
+                        }
+                        
+                        toast({
+                          title: "Password reset email sent",
+                          description: `Reset link sent to ${selectedUser.email}`,
+                        });
+                      } catch (error: any) {
+                        toast({
+                          title: "Failed to send password reset",
+                          description: error.message,
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIsResetPasswordLoading(false);
                       }
-                      
-                      toast({
-                        title: "Password reset email sent",
-                        description: `Reset link sent to ${selectedUser.email}`,
-                      });
-                    } catch (error: any) {
-                      toast({
-                        title: "Failed to send password reset",
-                        description: error.message,
-                        variant: "destructive",
-                      });
-                    } finally {
-                      setIsResetPasswordLoading(false);
-                    }
-                  }}
-                  disabled={isResetPasswordLoading}
+                    }}
+                    disabled={isResetPasswordLoading}
                   className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white px-6 py-3 text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
-                >
-                  {isResetPasswordLoading ? (
-                    <>
+                  >
+                    {isResetPasswordLoading ? (
+                      <>
                       <RefreshCw className="h-5 w-5 mr-3 animate-spin" />
-                      Sending Reset Email...
-                    </>
-                  ) : (
-                    <>
+                        Sending Reset Email...
+                      </>
+                    ) : (
+                      <>
                       <Mail className="h-5 w-5 mr-3" />
                       Reset Password
-                    </>
-                  )}
-                </Button>
+                      </>
+                    )}
+                  </Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
-              )}
+      )}
         </div>
       </div>
     </div>
