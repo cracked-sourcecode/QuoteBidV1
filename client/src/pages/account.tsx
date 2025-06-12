@@ -12,11 +12,12 @@ import { apiFetch } from '@/lib/apiFetch';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
 import { format } from 'date-fns';
 import { Link } from 'wouter';
-import { Loader2, CreditCard, CheckCircle, CalendarIcon, ExternalLink, Newspaper, Upload, Trash2, Brain } from 'lucide-react';
+import { Loader2, CreditCard, CheckCircle, CalendarIcon, ExternalLink, Newspaper, Upload, Trash2, Brain, Mail } from 'lucide-react';
 
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Logo } from '@/components/common/Logo';
+import { EmailPreferences } from '@/components/EmailPreferences';
 
 // UI Components
 import { 
@@ -1697,7 +1698,7 @@ export default function AccountPage() {
               
               {/* Tabs */}
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsList className="grid w-full grid-cols-3 mb-6">
                   <TabsTrigger value="info" className="flex items-center gap-2">
                     <User className="h-4 w-4" />
                     Profile
@@ -1705,6 +1706,10 @@ export default function AccountPage() {
                   <TabsTrigger value="billing" className="flex items-center gap-2">
                     <CreditCard className="h-4 w-4" />
                     Billing
+                  </TabsTrigger>
+                  <TabsTrigger value="email-preferences" className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Email Preferences
                   </TabsTrigger>
                 </TabsList>
 
@@ -2065,6 +2070,11 @@ export default function AccountPage() {
                     isLoadingSubscription={isLoadingSubscription}
                     onOpenSubscriptionModal={() => setSubscriptionModalOpen(true)}
                   />
+                </TabsContent>
+
+                {/* Email Preferences Tab */}
+                <TabsContent value="email-preferences" className="space-y-6">
+                  <EmailPreferences />
                 </TabsContent>
               </Tabs>
             </>

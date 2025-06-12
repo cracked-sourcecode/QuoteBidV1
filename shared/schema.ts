@@ -61,6 +61,14 @@ export const users = pgTable("users", {
   subscription_status: text("subscription_status").default("inactive"),
   isPaid: boolean("is_paid").default(false),
   hasAgreedToTerms: boolean("has_agreed_to_terms").default(false),
+  emailPreferences: jsonb("email_preferences").default({
+    priceAlerts: true,
+    opportunityNotifications: true,
+    pitchStatusUpdates: true,
+    paymentConfirmations: true,
+    mediaCoverageUpdates: true,
+    placementSuccess: true
+  }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

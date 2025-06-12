@@ -7658,6 +7658,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { password, ...userWithoutPassword } = req.user as any;
     res.json(userWithoutPassword);
   });
+
+  // Get user's email preferences
+  app.get("/api/users/:userId/email-preferences", jwtAuth, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (!req.user || req.user.id !== userId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      const user = await getDb().select().from(users).where(eq(users.id, userId)).limit(1);
+      
+      if (user.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Return email preferences or defaults if not set
+      const preferences = user[0].emailPreferences || {
+        priceAlerts: true,
+        opportunityNotifications: true,
+        pitchStatusUpdates: true,
+        paymentConfirmations: true,
+        mediaCoverageUpdates: true,
+        placementSuccess: true
+      };
+
+      res.json(preferences);
+    } catch (error) {
+      console.error('Error fetching email preferences:', error);
+      res.status(500).json({ error: 'Failed to fetch email preferences' });
+    }
+  });
+
+  // Update user's email preferences
+  app.patch("/api/users/:userId/email-preferences", jwtAuth, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (!req.user || req.user.id !== userId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      const { 
+        priceAlerts, 
+        opportunityNotifications, 
+        pitchStatusUpdates, 
+        paymentConfirmations, 
+        mediaCoverageUpdates, 
+        placementSuccess 
+      } = req.body;
+
+      // Validate that all fields are boolean
+      const preferences = {
+        priceAlerts: Boolean(priceAlerts),
+        opportunityNotifications: Boolean(opportunityNotifications),
+        pitchStatusUpdates: Boolean(pitchStatusUpdates),
+        paymentConfirmations: Boolean(paymentConfirmations),
+        mediaCoverageUpdates: Boolean(mediaCoverageUpdates),
+        placementSuccess: Boolean(placementSuccess)
+      };
+
+      await getDb().update(users)
+        .set({ emailPreferences: preferences })
+        .where(eq(users.id, userId));
+
+      res.json({ 
+        message: 'Email preferences updated successfully',
+        preferences 
+      });
+    } catch (error) {
+      console.error('Error updating email preferences:', error);
+      res.status(500).json({ error: 'Failed to update email preferences' });
+    }
+  });
   
   // Debug endpoint to check pitch data integrity
   app.get("/api/admin/debug/pitch-users", requireAdminAuth, async (req: Request, res: Response) => {

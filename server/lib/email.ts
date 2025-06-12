@@ -5,24 +5,59 @@ import { render } from '@react-email/render';
 import WelcomeEmail from '../../emails/templates/WelcomeEmail';
 import PriceDropAlert from '../../emails/templates/PriceDropAlert';
 import NotificationEmail from '../../emails/templates/NotificationEmail';
+import { users } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
 console.log('📦 Initializing email system...');
 
-// Initialize Resend lazily to ensure environment variables are loaded
-let resend: Resend | null = null;
+// Initialize Resend - moved to function to handle dynamic imports
+let resendInstance: Resend | null = null;
 
 function getResendInstance(): Resend | null {
-  if (!resend && process.env.RESEND_API_KEY) {
-    try {
-      console.log('🔧 Creating Resend instance...');
-      resend = new Resend(process.env.RESEND_API_KEY);
-      console.log('✅ Resend initialized successfully');
-    } catch (error) {
-      console.error('❌ Failed to initialize Resend:', error);
-      resend = null;
-    }
+  if (!resendInstance && process.env.RESEND_API_KEY) {
+    resendInstance = new Resend(process.env.RESEND_API_KEY);
   }
-  return resend;
+  return resendInstance;
+}
+
+/**
+ * Helper function to check if user wants to receive a specific type of email
+ */
+async function checkUserEmailPreference(
+  email: string, 
+  preferenceType: 'priceAlerts' | 'opportunityNotifications' | 'pitchStatusUpdates' | 'paymentConfirmations' | 'mediaCoverageUpdates' | 'placementSuccess'
+): Promise<boolean> {
+  try {
+    const { getDb } = await import('../db');
+    const db = getDb();
+    
+    const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    
+    if (user.length === 0) {
+      console.log(`⚠️ User not found for email ${email}, allowing email by default`);
+      return true; // Default to allowing if user not found
+    }
+
+    const defaultPreferences = {
+      priceAlerts: true,
+      opportunityNotifications: true,
+      pitchStatusUpdates: true,
+      paymentConfirmations: true,
+      mediaCoverageUpdates: true,
+      placementSuccess: true
+    };
+
+    const preferences = user[0].emailPreferences ? 
+      { ...defaultPreferences, ...user[0].emailPreferences } : 
+      defaultPreferences;
+
+    const allowed = preferences[preferenceType] !== false;
+    console.log(`📧 Email preference check for ${email}: ${preferenceType} = ${allowed}`);
+    return allowed;
+  } catch (error) {
+    console.error('Error checking email preference:', error);
+    return true; // Default to allowing on error
+  }
 }
 
 /**
@@ -225,6 +260,22 @@ export async function sendPricingNotificationEmail(
     return false;
   }
 
+  // Filter emails based on user preferences
+  const allowedEmails = [];
+  for (const email of emails) {
+    const allowed = await checkUserEmailPreference(email, 'priceAlerts');
+    if (allowed) {
+      allowedEmails.push(email);
+    } else {
+      console.log(`📧 Skipping ${template} email to ${email} due to preferences`);
+    }
+  }
+
+  if (allowedEmails.length === 0) {
+    console.log(`📧 No users want ${template} emails, skipping send`);
+    return true; // Return true since this isn't an error
+  }
+
   const emailConfig = {
     PRICE_DROP: {
       subject: "🔥 Price dropped on an opportunity you're interested in",
@@ -323,11 +374,11 @@ export async function sendPricingNotificationEmail(
   try {
     const { subject, html } = emailConfig[template];
     
-    console.log(`📧 Sending ${template} pricing notification to ${emails.length} users`);
+    console.log(`📧 Sending ${template} pricing notification to ${allowedEmails.length} users (${emails.length - allowedEmails.length} opted out)`);
     
     const { data, error } = await resendInstance.emails.send({
       from: process.env.EMAIL_FROM || 'QuoteBid <ben@rubiconprgroup.com>',
-      to: emails,
+      to: allowedEmails,
       subject,
       html,
     });
@@ -432,6 +483,25 @@ export async function sendUserNotificationEmail(
     linkUrl,
     linkText
   });
+
+  // Map notification types to preference keys
+  const preferenceMap: Record<string, 'priceAlerts' | 'opportunityNotifications' | 'pitchStatusUpdates' | 'paymentConfirmations' | 'mediaCoverageUpdates' | 'placementSuccess'> = {
+    'opportunity': 'opportunityNotifications',
+    'pitch_status': 'pitchStatusUpdates', 
+    'payment': 'paymentConfirmations',
+    'media_coverage': 'mediaCoverageUpdates',
+    'system': 'opportunityNotifications' // Default for system notifications
+  };
+
+  // Check user preferences (skip for security-related emails)
+  const preferenceType = preferenceMap[notificationType];
+  if (preferenceType) {
+    const allowed = await checkUserEmailPreference(email, preferenceType);
+    if (!allowed) {
+      console.log(`📧 Skipping ${notificationType} email to ${email} due to user preferences`);
+      return true; // Return true since this isn't an error
+    }
+  }
 
   const resendInstance = getResendInstance();
   
