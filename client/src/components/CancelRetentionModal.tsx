@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useTheme } from '@/hooks/use-theme';
 import { Loader2, Heart, DollarSign, Calendar, Phone, AlertTriangle, Star, CheckCircle } from 'lucide-react';
 
 interface CancelRetentionModalProps {
@@ -37,6 +38,7 @@ export function CancelRetentionModal({
   onConfirmCancel, 
   isLoading 
 }: CancelRetentionModalProps) {
+  const { theme } = useTheme();
   const [step, setStep] = useState<'reason' | 'offer' | 'final'>('reason');
   const [cancelReason, setCancelReason] = useState<CancelReason | ''>('');
   const [otherReason, setOtherReason] = useState('');
@@ -119,11 +121,15 @@ export function CancelRetentionModal({
         return (
           <>
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+              <DialogTitle className={`flex items-center gap-2 ${
+                theme === 'light' ? 'text-gray-900' : 'text-slate-100'
+              }`}>
                 <Heart className="h-5 w-5 text-red-500" />
                 We're sorry to see you go
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className={
+                theme === 'light' ? 'text-gray-600' : 'text-slate-300'
+              }>
                 Help us understand what's not working so we can make QuoteBid better for everyone.
               </DialogDescription>
             </DialogHeader>
@@ -132,9 +138,15 @@ export function CancelRetentionModal({
               <RadioGroup value={cancelReason} onValueChange={(value) => setCancelReason(value as CancelReason)}>
                 <div className="space-y-3">
                   {reasonOptions.map((option) => (
-                    <div key={option.value} className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors">
+                    <div key={option.value} className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors ${
+                      theme === 'light' 
+                        ? 'border-gray-200 hover:bg-gray-50' 
+                        : 'border-slate-600 hover:bg-slate-700'
+                    }`}>
                       <RadioGroupItem value={option.value} id={option.value} />
-                      <Label htmlFor={option.value} className="flex items-center gap-3 cursor-pointer flex-1">
+                      <Label htmlFor={option.value} className={`flex items-center gap-3 cursor-pointer flex-1 ${
+                        theme === 'light' ? 'text-gray-900' : 'text-slate-200'
+                      }`}>
                         {option.icon}
                         <span>{option.label}</span>
                       </Label>
@@ -145,13 +157,19 @@ export function CancelRetentionModal({
               
               {cancelReason === 'other' && (
                 <div className="mt-4">
-                  <Label htmlFor="other-reason">Please tell us more:</Label>
+                  <Label htmlFor="other-reason" className={
+                    theme === 'light' ? 'text-gray-700' : 'text-slate-200'
+                  }>Please tell us more:</Label>
                   <Textarea
                     id="other-reason"
                     placeholder="What could we have done better?"
                     value={otherReason}
                     onChange={(e) => setOtherReason(e.target.value)}
-                    className="mt-2"
+                    className={`mt-2 ${
+                      theme === 'light' 
+                        ? 'bg-white border-gray-300 text-gray-900 placeholder-gray-500' 
+                        : 'bg-slate-800 border-slate-600 text-slate-200 placeholder-slate-400'
+                    }`}
                   />
                 </div>
               )}
@@ -178,8 +196,12 @@ export function CancelRetentionModal({
         return (
           <>
             <DialogHeader>
-              <DialogTitle>Wait! We have something for you</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className={
+                theme === 'light' ? 'text-gray-900' : 'text-slate-100'
+              }>Wait! We have something for you</DialogTitle>
+              <DialogDescription className={
+                theme === 'light' ? 'text-gray-600' : 'text-slate-300'
+              }>
                 Based on your feedback, here are some options that might help:
               </DialogDescription>
             </DialogHeader>
@@ -190,20 +212,37 @@ export function CancelRetentionModal({
                   key={offer.id}
                   className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
                     offer.highlight 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? (theme === 'light' 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-blue-400 bg-blue-900/20'
+                        )
+                      : (theme === 'light' 
+                          ? 'border-gray-200 hover:border-gray-300' 
+                          : 'border-slate-600 hover:border-slate-500'
+                        )
                   }`}
                   onClick={() => handleOfferAction(offer.id)}
                 >
                   <div className="flex items-start gap-3">
                     {offer.icon}
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 mb-1">{offer.title}</h3>
-                      <p className="text-sm text-gray-600 mb-3">{offer.description}</p>
+                      <h3 className={`font-semibold mb-1 ${
+                        theme === 'light' ? 'text-gray-900' : 'text-slate-100'
+                      }`}>{offer.title}</h3>
+                      <p className={`text-sm mb-3 ${
+                        theme === 'light' ? 'text-gray-600' : 'text-slate-300'
+                      }`}>{offer.description}</p>
                       <Button 
                         size="sm" 
                         variant={offer.highlight ? "default" : "outline"}
-                        className="w-full"
+                        className={`w-full ${
+                          offer.highlight 
+                            ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0'
+                            : (theme === 'light' 
+                                ? 'border-gray-300 text-gray-700 hover:bg-gray-50 bg-white' 
+                                : 'border-slate-500 text-slate-100 hover:bg-slate-600 bg-slate-700 hover:text-white'
+                              )
+                        }`}
                       >
                         {offer.action}
                       </Button>
@@ -219,7 +258,11 @@ export function CancelRetentionModal({
               </Button>
               <button 
                 onClick={() => setStep('final')} 
-                className="text-xs text-gray-400 hover:text-gray-500 underline transition-colors"
+                className={`text-xs underline transition-colors ${
+                  theme === 'light' 
+                    ? 'text-gray-400 hover:text-gray-500' 
+                    : 'text-slate-400 hover:text-slate-300'
+                }`}
               >
                 No thanks, I still want to cancel
               </button>
@@ -232,39 +275,69 @@ export function CancelRetentionModal({
         return (
           <>
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+              <DialogTitle className={`flex items-center gap-2 ${
+                theme === 'light' ? 'text-gray-900' : 'text-slate-100'
+              }`}>
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
                 Final confirmation
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className={
+                theme === 'light' ? 'text-gray-600' : 'text-slate-300'
+              }>
                 This action will cancel your subscription. You'll lose access to:
               </DialogDescription>
             </DialogHeader>
             
             <div className="py-6">
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className={`rounded-lg p-4 ${
+                theme === 'light' 
+                  ? 'bg-amber-50 border border-amber-200' 
+                  : 'bg-amber-900/20 border border-amber-600/30'
+              }`}>
                 <ul className="space-y-2">
-                  <li className="flex items-center gap-2 text-sm">
-                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <li className={`flex items-center gap-2 text-sm ${
+                    theme === 'light' ? 'text-amber-800' : 'text-amber-200'
+                  }`}>
+                    <AlertTriangle className={`h-4 w-4 ${
+                      theme === 'light' ? 'text-amber-600' : 'text-amber-400'
+                    }`} />
                     All premium media opportunities
                   </li>
-                  <li className="flex items-center gap-2 text-sm">
-                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <li className={`flex items-center gap-2 text-sm ${
+                    theme === 'light' ? 'text-amber-800' : 'text-amber-200'
+                  }`}>
+                    <AlertTriangle className={`h-4 w-4 ${
+                      theme === 'light' ? 'text-amber-600' : 'text-amber-400'
+                    }`} />
                     Priority journalist matching
                   </li>
-                  <li className="flex items-center gap-2 text-sm">
-                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <li className={`flex items-center gap-2 text-sm ${
+                    theme === 'light' ? 'text-amber-800' : 'text-amber-200'
+                  }`}>
+                    <AlertTriangle className={`h-4 w-4 ${
+                      theme === 'light' ? 'text-amber-600' : 'text-amber-400'
+                    }`} />
                     Advanced profile features
                   </li>
-                  <li className="flex items-center gap-2 text-sm">
-                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <li className={`flex items-center gap-2 text-sm ${
+                    theme === 'light' ? 'text-amber-800' : 'text-amber-200'
+                  }`}>
+                    <AlertTriangle className={`h-4 w-4 ${
+                      theme === 'light' ? 'text-amber-600' : 'text-amber-400'
+                    }`} />
                     Your current momentum and relationships
                   </li>
                 </ul>
               </div>
               
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
+              <div className={`mt-4 p-4 rounded-lg ${
+                theme === 'light' 
+                  ? 'bg-blue-50 border border-blue-200' 
+                  : 'bg-blue-900/20 border border-blue-600/30'
+              }`}>
+                <p className={`text-sm ${
+                  theme === 'light' ? 'text-blue-800' : 'text-blue-200'
+                }`}>
                   <strong>Last chance:</strong> Your subscription will remain active until the end of your billing period. 
                   You can still change your mind before then!
                 </p>
@@ -278,7 +351,11 @@ export function CancelRetentionModal({
               <button 
                 onClick={handleFinalCancel}
                 disabled={isLoading}
-                className="text-xs text-gray-400 hover:text-red-500 underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`text-xs underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  theme === 'light' 
+                    ? 'text-gray-400 hover:text-red-500' 
+                    : 'text-slate-400 hover:text-red-400'
+                }`}
               >
                 {isLoading ? (
                   <span className="flex items-center">
@@ -330,7 +407,11 @@ export function CancelRetentionModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className={`sm:max-w-2xl ${
+        theme === 'light' 
+          ? 'bg-white border-gray-200' 
+          : 'bg-slate-900 border-slate-700'
+      }`}>
         {renderCurrentStep()}
       </DialogContent>
     </Dialog>
