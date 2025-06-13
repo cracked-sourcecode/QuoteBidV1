@@ -34,7 +34,7 @@ const customStyles = `
   }
 `;
 
-// Country codes list - Most commonly used countries (reduced for better mobile UX)
+// Country codes list - Most commonly used countries
 const COUNTRY_CODES = [
   { code: '+1', country: 'US/Canada', flag: '🇺🇸' },
   { code: '+44', country: 'UK', flag: '🇬🇧' },
@@ -47,7 +47,20 @@ const COUNTRY_CODES = [
   { code: '+91', country: 'India', flag: '🇮🇳' },
   { code: '+86', country: 'China', flag: '🇨🇳' },
   { code: '+81', country: 'Japan', flag: '🇯🇵' },
+  { code: '+82', country: 'South Korea', flag: '🇰🇷' },
   { code: '+55', country: 'Brazil', flag: '🇧🇷' },
+  { code: '+52', country: 'Mexico', flag: '🇲🇽' },
+  { code: '+7', country: 'Russia', flag: '🇷🇺' },
+  { code: '+46', country: 'Sweden', flag: '🇸🇪' },
+  { code: '+47', country: 'Norway', flag: '🇳🇴' },
+  { code: '+45', country: 'Denmark', flag: '🇩🇰' },
+  { code: '+41', country: 'Switzerland', flag: '🇨🇭' },
+  { code: '+43', country: 'Austria', flag: '🇦🇹' },
+  { code: '+32', country: 'Belgium', flag: '🇧🇪' },
+  { code: '+353', country: 'Ireland', flag: '🇮🇪' },
+  { code: '+351', country: 'Portugal', flag: '🇵🇹' },
+  { code: '+64', country: 'New Zealand', flag: '🇳🇿' },
+  { code: '+65', country: 'Singapore', flag: '🇸🇬' },
 ];
 
 // Debounce helper
@@ -492,16 +505,10 @@ export default function RegisterPage() {
           }
           
           localStorage.setItem('signup_email', form.email);
-          
-          // Only show toast on desktop, not mobile
-          const isMobile = window.innerWidth < 768; // md breakpoint
-          if (!isMobile) {
-            toast({ title: 'Account created!', description: 'Continue to payment...', variant: 'default' });
-          }
-          
+          toast({ title: 'Account created!', description: 'Continue to payment...', variant: 'default' });
           setTimeout(() => {
             navigate('/signup-wizard');
-          }, isMobile ? 300 : 1200); // Faster redirect on mobile
+          }, 1200);
         } else {
           const data = await res.json();
           toast({ title: 'Signup Error', description: data.message || 'Failed to create account', variant: 'destructive' });
@@ -564,62 +571,58 @@ export default function RegisterPage() {
           </div>
         </header>
 
-        <div className="relative z-20 flex flex-col lg:flex-row min-h-screen pt-16 lg:pt-24">
+        <div className="relative z-20 flex flex-col lg:flex-row min-h-screen pt-24">
           {/* Mobile Header - Show on small screens */}
-          <div className="lg:hidden px-6 pt-4 pb-4 text-left relative z-10">
+          <div className="lg:hidden px-6 pt-8 pb-4 text-center relative z-10">
             <h1 className="text-4xl font-black leading-tight mb-4 text-white">
-              World's First <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-purple-500 bg-clip-text text-transparent">PR</span><br />Pricing Engine
+              Get Featured in <span className="text-yellow-400">Top</span><br />Media Outlets
             </h1>
-            <p className="text-lg text-gray-300 max-w-md">
-              The first live marketplace for earned media. Built for experts — not PR agencies.
+            <p className="text-lg text-gray-300 max-w-md mx-auto">
+              Join thousands of experts connecting with journalists at top publications.
             </p>
           </div>
 
           {/* Left: Hero Panel - Desktop only */}
           <div className="hidden lg:flex flex-col justify-center items-start w-1/2 pl-24 pr-6 xl:pl-28 xl:pr-8 relative z-10">
             <div className="max-w-2xl w-full">
-              <h1 className="text-5xl xl:text-6xl font-black leading-tight mb-6 text-white" style={{letterSpacing: '-0.01em'}}>
-                World's First <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-purple-500 bg-clip-text text-transparent">PR</span><br />Pricing Engine
+              <h1 className="text-5xl xl:text-6xl font-black leading-tight mb-8 text-white" style={{letterSpacing: '-0.01em'}}>
+                Get Featured in <span className="text-yellow-400">Top</span><br />Media Outlets
               </h1>
-              <p className="mb-4 text-xl xl:text-2xl max-w-xl text-gray-300">
-                The first live marketplace for earned media<br />
-                Built for experts — not PR agencies.
+              <p className="mb-12 text-xl xl:text-2xl max-w-xl text-gray-300">
+                Join thousands of experts connecting with journalists at <span className="font-semibold text-white">Forbes</span>, <span className="font-semibold text-white">Bloomberg</span>, <span className="font-semibold text-white">TechCrunch</span>, and more.
               </p>
-              <p className="mb-8 text-base xl:text-lg max-w-xl text-gray-400">
-                QuoteBid's Pricing Engine tracks demand, deadlines, and outlet yield in real time. No retainers. No static fees. Only pay if you're published.
-              </p>
-              <ul className="space-y-6 xl:space-y-8 text-base xl:text-lg">
+              <ul className="space-y-8 xl:space-y-10 text-base xl:text-lg">
                 <li className="flex items-start gap-6">
                   <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center">
                     <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h2m5 0h2a2 2 0 002-2V7a2 2 0 00-2-2h-2m-5 4h6m-6 4h6m-6-8h6" />
                     </svg>
                   </div>
-                                      <div>
-                    <div className="font-bold text-white text-xl">Bid on real stories in real time</div>
-                    <div className="text-gray-300 mt-1">Every pitch is a bid — prices rise and fall with demand.</div>
+                  <div>
+                    <div className="font-bold text-white text-lg">Bid on Premium Opportunities</div>
+                    <div className="text-gray-300 mt-1">Set your price and only pay when published</div>
                   </div>
                 </li>
                 <li className="flex items-start gap-6">
                   <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center">
                     <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                     </svg>
                   </div>
                   <div>
-                    <div className="font-bold text-white text-xl">Track live market pricing</div>
-                    <div className="text-gray-300 mt-1">Our engine moves with outlet yield, deadlines, and user interest.</div>
+                    <div className="font-bold text-white text-lg">AI-Powered Voice Pitches</div>
+                    <div className="text-gray-300 mt-1">Record a pitch – we transcribe & attach it automatically</div>
                   </div>
                 </li>
                 <li className="flex items-start gap-6">
                   <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-green-500/20 border border-green-400/30 flex items-center justify-center">
                     <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                   </div>
                   <div>
-                    <div className="font-bold text-white text-xl">Only pay if you're quoted</div>
-                    <div className="text-gray-300 mt-1">No retainers. No upfront fees. You only pay when you're published</div>
+                    <div className="font-bold text-white text-lg">Verified Media Requests</div>
+                    <div className="text-gray-300 mt-1">Every opportunity vetted by our editorial team</div>
                   </div>
                 </li>
               </ul>
@@ -627,48 +630,38 @@ export default function RegisterPage() {
           </div>
           
           {/* Right: Signup Card */}
-          <div className="flex flex-col justify-center items-center w-full lg:w-1/2 px-4 py-4 lg:px-8 relative z-10">
-                          <div className="w-full max-w-[480px] lg:max-w-[640px] bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 rounded-3xl shadow-2xl p-4 lg:p-8">
-              <div className="text-center mb-4">
-                <div className="flex items-center justify-center mb-1">
-                  <span className="text-white font-black text-2xl lg:text-3xl tracking-tight">
-                    <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Quote</span>
-                    <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Bid</span>
-                  </span>
-                  <div className="ml-2 lg:ml-3 px-1.5 py-0.5 lg:px-2 lg:py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
-                    Beta
-                  </div>
-                </div>
-                <p className="text-gray-300 text-sm lg:text-base">Built for Experts, Not PR Agencies</p>
+          <div className="flex flex-col justify-center items-center w-full lg:w-1/2 px-4 py-8 lg:px-8 relative z-10">
+            <div className="w-full max-w-[480px] lg:max-w-[560px] bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-5 lg:p-7">
+              <div className="text-center mb-5">
+                <h2 className="text-2xl lg:text-3xl font-black mb-2 text-white">Join QuoteBid</h2>
+                <p className="text-gray-300 text-sm lg:text-base">Start connecting with top journalists today</p>
               </div>
               
-              <form onSubmit={handleSubmit} className="space-y-2.5 lg:space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 lg:gap-4">
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
                   <Field error={errors.fullName} className="col-span-1">
                     <input 
                       name="fullName" 
                       value={form.fullName} 
                       onChange={handleChange} 
                       placeholder="Full Name" 
-                      className="rounded-xl border border-slate-600 bg-slate-700 px-4 py-2.5 w-full text-sm text-white placeholder-gray-400 transition-all hover:border-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30" 
+                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" 
                     />
-                    <div className="h-2 lg:h-3"></div>
                   </Field>
                   <Field error={errors.username} className="col-span-1">
                     <input
                       name="username"
                       value={form.username}
                       onChange={e => {
-                        // Allow uppercase letters but convert to lowercase automatically
-                        // This prevents blocking mobile autocap and provides better UX
-                        const value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+                        // Prevent uppercase and spaces
+                        const value = e.target.value.replace(/[^a-z0-9_-]/g, '').toLowerCase();
                         setForm(f => ({ ...f, username: value }));
                       }}
                       onBlur={() => handleBlur('username')}
                       placeholder="Username"
-                      className="rounded-xl border border-slate-600 bg-slate-700 px-4 py-2.5 w-full text-sm text-white placeholder-gray-400 transition-all hover:border-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
                     />
-                    <div className="h-2 lg:h-3">
+                    <div className="h-4 mt-1">
                       {usernameChecking && <div className="text-xs text-gray-300">Checking username...</div>}
                       {!usernameChecking && !usernameUnique && <div className="text-xs text-red-400">Username is already taken.</div>}
                     </div>
@@ -677,12 +670,12 @@ export default function RegisterPage() {
                     <input
                       name="email"
                       value={form.email}
-                      onChange={(e) => setForm(f => ({ ...f, email: e.target.value.toLowerCase() }))}
+                      onChange={handleChange}
                       onBlur={() => handleBlur('email')}
                       placeholder="Email"
-                      className="rounded-xl border border-slate-600 bg-slate-700 px-4 py-2.5 w-full text-sm text-white placeholder-gray-400 transition-all hover:border-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
                     />
-                    <div className="h-2 lg:h-3">
+                    <div className="h-4 mt-1">
                       {emailChecking && <div className="text-xs text-gray-300">Checking email...</div>}
                       {!emailChecking && !emailValid && <div className="text-xs text-red-400">Please enter a valid email address.</div>}
                       {!emailChecking && emailValid && !emailUnique && <div className="text-xs text-red-400">Email is already in use.</div>}
@@ -694,40 +687,33 @@ export default function RegisterPage() {
                       value={form.companyName} 
                       onChange={handleChange} 
                       placeholder="Company Name" 
-                      className="rounded-xl border border-slate-600 bg-slate-700 px-4 py-2.5 w-full text-sm text-white placeholder-gray-400 transition-all hover:border-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30" 
+                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" 
                     />
-                    <div className="h-2 lg:h-3"></div>
                   </Field>
                   <Field error={errors.phone} className="col-span-1 sm:col-span-2">
-                    <div className="flex gap-2">
-                      <div className="relative">
-                        <select
-                          value={countryCode}
-                          onChange={(e) => setCountryCode(e.target.value)}
-                          className="rounded-xl border border-slate-600 bg-slate-700 px-1.5 py-2.5 w-12 sm:w-16 text-sm text-white transition-all hover:border-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 appearance-none pr-4 sm:pr-5"
-                          style={{ maxHeight: '200px' }}
-                        >
-                          {COUNTRY_CODES.map(({ code, country, flag }) => (
-                            <option key={code} value={code} className="bg-slate-800 text-white">
-                              {code}
-                            </option>
-                          ))}
-                        </select>
-                        <svg className="pointer-events-none absolute right-0.5 sm:right-1 top-1/2 transform -translate-y-1/2 h-3 w-3 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
+                    <div className="flex gap-3">
+                      <select
+                        value={countryCode}
+                        onChange={(e) => setCountryCode(e.target.value)}
+                        className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-2 py-2.5 w-18 lg:w-20 text-sm lg:text-base text-white transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                      >
+                        {COUNTRY_CODES.map(({ code, country, flag }) => (
+                          <option key={code} value={code} className="bg-slate-800 text-white">
+                            {flag} {code}
+                          </option>
+                        ))}
+                      </select>
                       <input
                         name="phone"
                         value={form.phone}
                         onChange={handleChange}
                         onBlur={() => handleBlur('phone')}
                         placeholder="Phone number"
-                        className="rounded-xl border border-slate-600 bg-slate-700 px-4 py-2.5 w-full text-sm text-white placeholder-gray-400 transition-all hover:border-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                        className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
                         required
                       />
                     </div>
-                    <div className="h-2 lg:h-3">
+                    <div className="h-4 mt-1">
                       {phoneChecking && <div className="text-xs text-gray-300">Checking phone number...</div>}
                       {!phoneChecking && !phoneValid && <div className="text-xs text-red-400">Please enter a valid phone number.</div>}
                       {!phoneChecking && phoneValid && !phoneUnique && <div className="text-xs text-red-400">Phone number is already in use.</div>}
@@ -739,7 +725,7 @@ export default function RegisterPage() {
                         name="industry"
                         value={form.industry}
                         onChange={handleChange}
-                        className="w-full rounded-xl px-4 py-2.5 text-sm font-medium text-white bg-slate-700 border border-slate-600 transition-all hover:border-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 appearance-none"
+                        className="w-full rounded-xl px-4 py-2.5 text-sm lg:text-base font-medium text-white bg-white/10 backdrop-blur-md border border-white/20 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 appearance-none"
                       >
                         <option value="" disabled className="bg-slate-800 text-gray-300">Select your industry</option>
                         {INDUSTRY_OPTIONS.map(opt => (
@@ -750,7 +736,6 @@ export default function RegisterPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
-                    <div className="h-2 lg:h-3"></div>
                   </Field>
                   <Field error={errors.password} className="col-span-1">
                     <input 
@@ -759,9 +744,9 @@ export default function RegisterPage() {
                       value={form.password} 
                       onChange={handleChange} 
                       placeholder="Create password" 
-                      className="rounded-xl border border-slate-600 bg-slate-700 px-4 py-2.5 w-full text-sm text-white placeholder-gray-400 transition-all hover:border-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30" 
+                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" 
                     />
-                    <div className="h-2 lg:h-3">
+                    <div className="h-4 mt-1">
                       {form.password && !passwordValidation.isValid && <div className="text-xs text-red-400">Password must meet all security requirements.</div>}
                     </div>
                   </Field>
@@ -772,9 +757,9 @@ export default function RegisterPage() {
                       value={form.confirmPassword} 
                       onChange={handleChange} 
                       placeholder="Confirm password" 
-                      className="rounded-xl border border-slate-600 bg-slate-700 px-4 py-2.5 w-full text-sm text-white placeholder-gray-400 transition-all hover:border-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30" 
+                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" 
                     />
-                    <div className="h-2 lg:h-3">
+                    <div className="h-4 mt-1">
                       {form.confirmPassword && !passwordsMatch && <div className="text-xs text-red-400">Passwords do not match.</div>}
                     </div>
                   </Field>
@@ -782,8 +767,8 @@ export default function RegisterPage() {
                 
                 {/* Password strength indicator - shown below both password fields */}
                 {form.password && (
-                  <div className="mt-3.5 lg:mt-5 space-y-2.5 lg:space-y-3">
-                    <div className="bg-slate-700 rounded-xl p-3.5 lg:p-5 border border-slate-600">
+                  <div className="mt-4 space-y-3">
+                    <div className="bg-white/10 rounded-xl p-4 border border-white/20">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-white">Password Strength</span>
                         {passwordValidation.strengthText && (
@@ -839,7 +824,7 @@ export default function RegisterPage() {
                   </div>
                 )}
                 
-                <div className="flex items-center mt-3.5 lg:mt-5 mb-3.5 lg:mb-5">
+                <div className="flex items-center mt-4 mb-4">
                   <input 
                     type="checkbox" 
                     name="agreeTerms" 
@@ -848,14 +833,14 @@ export default function RegisterPage() {
                     className="accent-blue-500 w-5 h-5 border-2 border-white/30 rounded transition-all duration-150 mr-3 outline-none focus:outline-none cursor-pointer" 
                     required 
                   />
-                  <label htmlFor="terms" className="text-sm font-medium text-gray-300 select-none cursor-pointer">
+                  <label htmlFor="terms" className="text-sm lg:text-base font-medium text-gray-300 select-none cursor-pointer">
                     I agree to the <Link href="/legal/terms" className="text-blue-400 underline font-semibold hover:text-blue-300 transition-colors">Terms of Service</Link>
                   </label>
                 </div>
                 
                 <Button 
                   type="submit" 
-                  className="w-full py-2.5 text-sm font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-all duration-300 shadow-xl hover:shadow-2xl" 
+                  className="w-full py-2.5 text-sm lg:text-base font-semibold rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-violet-700 text-white transition-all duration-300 shadow-xl hover:shadow-2xl" 
                   disabled={!isFormComplete}
                 >
                   Create Account
@@ -864,62 +849,6 @@ export default function RegisterPage() {
             </div>
           </div>
         </div>
-
-        {/* ——— FOOTER ——— */}
-        <footer className="relative z-20 py-16">
-          {/* Background effects */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob"></div>
-            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob animation-delay-2000"></div>
-          </div>
-          
-          <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
-            <div className="mb-8">
-              <Link href="/" className="inline-flex items-center group">
-                <span className="text-white font-black text-4xl tracking-tight">
-                  <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Quote</span>
-                  <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Bid</span>
-                </span>
-                <div className="ml-3 px-2 py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
-                  Beta
-                </div>
-              </Link>
-              <p className="text-gray-400 mt-4 text-lg">
-                The World's First Live Marketplace for Earned Media
-              </p>
-            </div>
-            
-            <div className="flex flex-wrap justify-center gap-8 mb-8">
-              <Link 
-                href="/legal/terms" 
-                className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
-              >
-                Terms of Use
-              </Link>
-              <Link 
-                href="/legal/privacy" 
-                className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
-              >
-                Privacy
-              </Link>
-              <Link 
-                href="/legal/editorial-integrity" 
-                className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
-              >
-                Editorial Integrity
-              </Link>
-            </div>
-            
-            <div className="border-t border-white/20 pt-8">
-              <p className="text-gray-400 text-lg">
-                &copy; {new Date().getFullYear()} QuoteBid Inc. All rights reserved.
-              </p>
-              <p className="text-gray-500 text-sm mt-2">
-                Built for Experts, Not PR Agencies.
-              </p>
-            </div>
-          </div>
-        </footer>
       </div>
     </>
   );

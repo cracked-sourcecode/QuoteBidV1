@@ -58,7 +58,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-purple-900 to-violet-900 relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-violet-900 relative overflow-hidden">
       {/* Animated mesh gradient */}
       <div className="absolute inset-0 opacity-30">
         <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
@@ -66,8 +66,7 @@ export default function LoginPage() {
         <div className="absolute -bottom-8 left-20 w-72 h-72 bg-violet-400 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{animationDelay: '4s'}}></div>
       </div>
       
-      <div className="flex items-center justify-center min-h-screen py-20">
-        <div className="w-full max-w-md bg-gradient-to-br from-blue-900 via-purple-900 to-violet-900 shadow-2xl rounded-3xl border border-white/20 relative z-10">
+      <div className="w-full max-w-md bg-gradient-to-br from-blue-900 via-purple-900 to-violet-900 shadow-2xl rounded-3xl border border-white/20 relative z-10">
         <div className="p-8 lg:p-12">
           <h2 className="text-4xl font-black text-center text-white mb-2">
             QuoteBid
@@ -143,64 +142,7 @@ export default function LoginPage() {
             Don&apos;t have an account? <Link href="/register" className="font-medium text-blue-300 hover:text-white hover:underline">Create one here</Link>
           </p>
         </div>
-        </div>
       </div>
-
-      {/* ——— FOOTER ——— */}
-      <footer className="relative z-20 py-16">
-        {/* Background effects */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob"></div>
-          <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob animation-delay-2000"></div>
-        </div>
-        
-        <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
-          <div className="mb-8">
-            <Link href="/" className="inline-flex items-center group">
-              <span className="text-white font-black text-4xl tracking-tight">
-                <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Quote</span>
-                <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Bid</span>
-              </span>
-              <div className="ml-3 px-2 py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
-                Beta
-              </div>
-            </Link>
-            <p className="text-gray-400 mt-4 text-lg">
-                              The World's First Live Marketplace for Earned Media
-            </p>
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-8 mb-8">
-            <Link 
-              href="/legal/terms" 
-              className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
-            >
-              Terms of Use
-            </Link>
-            <Link 
-              href="/legal/privacy" 
-              className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
-            >
-              Privacy
-            </Link>
-            <Link 
-              href="/legal/editorial-integrity" 
-              className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
-            >
-              Editorial Integrity
-            </Link>
-          </div>
-          
-          <div className="border-t border-white/20 pt-8">
-            <p className="text-gray-400 text-lg">
-              &copy; {new Date().getFullYear()} QuoteBid Inc. All rights reserved.
-            </p>
-            <p className="text-gray-500 text-sm mt-2">
-                              Built for Experts, Not PR Agencies.
-            </p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 } 

@@ -82,41 +82,41 @@ export function SignupWizard({ children }: SignupWizardProps) {
         </div>
 
         {/* ——— PREMIUM NAVBAR WITH SIGNUP BANNER ——— */}
-        <header className="relative z-30 py-3 md:py-6 px-4 md:px-8 flex-shrink-0">
+        <header className="relative z-30 py-6 px-6 md:px-8 flex-shrink-0">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             {/* Left: QuoteBid logo */}
             <div className="flex items-center cursor-default">
-              <span className="text-white font-black text-2xl md:text-3xl tracking-tight">
+              <span className="text-white font-black text-3xl tracking-tight">
                 <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Quote</span>
                 <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Bid</span>
               </span>
-              <div className="ml-2 md:ml-3 px-1.5 md:px-2 py-0.5 md:py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm flex items-center">
+              <div className="ml-3 px-2 py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm flex items-center">
                 Beta
               </div>
             </div>
             
-            {/* Center: Signup banner - Hidden on mobile, shown on desktop */}
-            <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
+            {/* Center: Signup banner */}
+            <div className="absolute left-1/2 transform -translate-x-1/2">
               <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-full text-blue-300 text-base font-bold uppercase tracking-wide backdrop-blur-sm">
                 <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
                 QuoteBid Signup
               </div>
             </div>
 
-            {/* Right: Space for balance - smaller on mobile */}
-            <div className="w-16 md:w-32"></div>
+            {/* Right: Space for balance */}
+            <div className="w-32"></div>
           </div>
         </header>
 
         {/* ——— SIGNUP PROGRESS ——— */}
-        <div className="relative z-20 pb-4 md:pb-8 px-4 md:px-6 flex-shrink-0">
+        <div className="relative z-20 pb-8 px-6 flex-shrink-0">
           <div className="max-w-7xl mx-auto text-center">
-            <p className="text-white text-base md:text-lg lg:text-xl font-bold mb-4 md:mb-8">
+            <p className="text-white text-lg md:text-xl font-bold mb-8">
               {stepText}
             </p>
             
           {/* Interactive Progress Bar */}
-            <div className="w-full max-w-lg mx-auto mb-2 md:mb-4">
+            <div className="w-full max-w-lg mx-auto mb-4">
             <SignupProgress />
             </div>
           </div>
@@ -130,42 +130,42 @@ export function SignupWizard({ children }: SignupWizardProps) {
       </main>
 
         {/* ——— FOOTER ——— */}
-        <footer className="relative z-20 py-8 md:py-12 opacity-100">
+        <footer className="relative z-20 py-12 opacity-100">
           
-          <div className="max-w-7xl mx-auto px-4 md:px-8 text-center relative z-10">
-            <div className="mb-4 md:mb-6">
-              <div className="inline-flex items-center cursor-default mb-3 md:mb-4">
-                <span className="text-white font-black text-2xl md:text-3xl tracking-tight">
+          <div className="max-w-7xl mx-auto px-8 text-center relative z-10">
+            <div className="mb-6">
+              <div className="inline-flex items-center cursor-default mb-4">
+                <span className="text-white font-black text-3xl tracking-tight">
                   <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Quote</span>
                   <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Bid</span>
                 </span>
-                <div className="ml-2 md:ml-3 px-1.5 md:px-2 py-0.5 md:py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm flex items-center">
+                <div className="ml-3 px-2 py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm flex items-center">
                   Beta
                 </div>
               </div>
-              <p className="text-gray-400 text-sm md:text-base">
-                The World's First Live Marketplace for Earned Media
+              <p className="text-gray-400 text-base">
+                The world's first live marketplace for earned media
               </p>
             </div>
             
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 md:gap-8 mb-6 md:mb-8">
-              <span className="text-gray-300 text-sm md:text-lg font-medium cursor-default">
+            <div className="flex flex-wrap justify-center gap-8 mb-8">
+              <span className="text-gray-300 text-lg font-medium cursor-default">
                 Terms of Use
               </span>
-              <span className="text-gray-300 text-sm md:text-lg font-medium cursor-default">
+              <span className="text-gray-300 text-lg font-medium cursor-default">
                 Privacy
               </span>
-              <span className="text-gray-300 text-sm md:text-lg font-medium cursor-default">
+              <span className="text-gray-300 text-lg font-medium cursor-default">
                 Editorial Integrity
               </span>
             </div>
             
-            <div className={`pt-6 md:pt-8 ${shouldShowBorder ? 'border-t border-white/20' : ''}`}>
-              <p className="text-gray-400 text-base md:text-lg">
+            <div className={`pt-8 ${shouldShowBorder ? 'border-t border-white/20' : ''}`}>
+              <p className="text-gray-400 text-lg">
                 &copy; {new Date().getFullYear()} QuoteBid Inc. All rights reserved.
               </p>
-              <p className="text-gray-500 text-xs md:text-sm mt-2">
-                Built for Experts, Not PR Agencies.
+              <p className="text-gray-500 text-sm mt-2">
+                Built for experts, not PR agencies.
               </p>
           </div>
         </div>

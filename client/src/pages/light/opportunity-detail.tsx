@@ -1258,7 +1258,7 @@ export default function OpportunityDetail() {
                       : 'bg-gradient-to-r from-red-50 to-red-100 border border-red-200/50'
                   }`}>
                     {priceIncrease >= 0 ? (
-                      <TrendingUp className="h-5 w-5 text-green-600" />
+                    <TrendingUp className="h-5 w-5 text-green-600" />
                     ) : (
                       <TrendingDown className="h-5 w-5 text-red-600" />
                     )}
@@ -1275,8 +1275,8 @@ export default function OpportunityDetail() {
                     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
                     return pitchDate > oneHourAgo;
                   }).length > 0 && (
-                    <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-cyan-50 px-4 py-2 rounded-xl border border-blue-200/50 shadow-md">
-                      <Flame className="h-5 w-5 text-blue-600" />
+                  <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-cyan-50 px-4 py-2 rounded-xl border border-blue-200/50 shadow-md">
+                    <Flame className="h-5 w-5 text-blue-600" />
                       <span className="text-sm font-semibold text-blue-700">
                         {pitches.filter(pitch => {
                           const pitchDate = new Date(pitch.createdAt);
@@ -1284,7 +1284,7 @@ export default function OpportunityDetail() {
                           return pitchDate > oneHourAgo;
                         }).length} pitches (last hour)
                       </span>
-                    </div>
+                  </div>
                   )}
                   
                   <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-50 to-amber-50 px-4 py-2 rounded-xl border border-orange-200/50 shadow-md">
@@ -1541,7 +1541,7 @@ export default function OpportunityDetail() {
                         <>
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center space-x-3">
-                              <label className="text-gray-700 font-semibold text-lg">Craft your pitch</label>
+                            <label className="text-gray-700 font-semibold text-lg">Craft your pitch</label>
                               {draftId && (
                                 <div className="flex items-center space-x-1 text-xs">
                                   {isAutoSaving ? (
