@@ -67,54 +67,51 @@ export default function Home() {
       </div>
 
       {/* ——— PREMIUM NAVBAR ——— */}
-      <header className="relative z-30 py-4 sm:py-6 px-4 sm:px-6 md:px-8">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Left: QuoteBid logo */}
-          <div className="flex items-center">
-            <span className="text-white font-black text-2xl sm:text-3xl tracking-tight">
+      <header className="absolute top-0 w-full z-30 py-3 px-4 md:py-6 md:px-8">
+          <div className="max-w-7xl mx-auto flex items-center justify-end md:justify-between">
+          <Link href="/" className="flex items-center group mr-auto md:mr-0 scale-102 md:scale-100">
+            <span className="text-white font-black text-xl sm:text-2xl md:text-3xl tracking-tight">
               <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Quote</span>
               <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Bid</span>
-            </span>
-            <div className="ml-2 sm:ml-3 px-1.5 sm:px-2 py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
+              </span>
+            <div className="ml-2 md:ml-3 px-1.5 py-0.5 md:px-2 md:py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
               Beta
             </div>
-          </div>
-
-          {/* Right: Login/Signup */}
-          {!user && (
-            <div className="flex items-center gap-2 sm:gap-4">
-              <Button
+            </Link>
+            
+          <div className="flex items-center space-x-2 md:space-x-3 ml-4 md:ml-0 scale-102 md:scale-100">
+              <Button 
+                variant="ghost" 
+              className="text-white/80 hover:text-white hover:bg-white/10 font-semibold px-3 py-2 sm:px-4 sm:py-2.5 md:px-6 md:py-3 rounded-xl transition-all duration-300"
                 onClick={handleLogin}
-                variant="ghost"
-                className="text-white hover:text-blue-300 hover:bg-white/10 text-sm sm:text-base px-3 sm:px-4 py-2 transition-colors duration-300"
               >
-                Login
+                Log In
               </Button>
-              <Button
+              <Button 
+              className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold hover:from-purple-600 hover:to-violet-700 px-3 py-2 sm:px-4 sm:py-2.5 md:px-6 md:py-3 rounded-xl transition-all duration-300 shadow-lg"
                 onClick={handleSignup}
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-blue-700 text-white text-sm sm:text-base px-4 sm:px-6 py-2 rounded-xl font-bold shadow-xl transition-all duration-300 hover:scale-105"
               >
-                Start Free
+                Sign Up
               </Button>
             </div>
-          )}
-        </div>
-      </header>
+          </div>
+        </header>
       
-      {/* ——— HERO SECTION ——— */}
-      <section className="relative z-20 pt-20 sm:pt-32 md:pt-40 pb-16 sm:pb-20 md:pb-24 px-4 sm:px-6 overflow-hidden">
+      {/* ——— HERO ——— */}
+      <section className="relative z-20 pt-24 md:pt-40 pb-24 px-6 overflow-hidden">
+
         
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-8 sm:gap-12 md:gap-16 relative z-10">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16 relative z-10">
           {/* Copy */}
-          <div className="md:w-1/2 text-center md:text-left">
-            <div className="mb-4 sm:mb-6">
-              <div className="inline-flex items-center px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-full text-blue-300 text-xs sm:text-sm font-semibold uppercase tracking-wide backdrop-blur-sm">
+          <div className="md:w-1/2">
+            <div className="mb-6">
+              <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-full text-blue-300 text-sm font-semibold uppercase tracking-wide backdrop-blur-sm">
                 <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
                 World's First PR Pricing Engine
               </div>
           </div>
           
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-[0.9] tracking-tight mb-6 sm:mb-8">
+            <h1 className="text-6xl md:text-7xl font-black text-white leading-[0.9] tracking-tight">
               <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
                 The First Live
               </span>
@@ -128,183 +125,220 @@ export default function Home() {
               </span>
                 </h1>
             
-            <p className="text-blue-300 text-lg sm:text-xl font-bold tracking-wide mb-4 sm:mb-6">
+            <p className="mt-8 text-blue-300 text-xl font-bold tracking-wide">
               Built for experts, not PR agencies.
             </p>
             
-            <p className="text-gray-300 text-base sm:text-lg md:text-xl max-w-2xl leading-relaxed mb-8 sm:mb-12 mx-auto md:mx-0">
+            <p className="mt-6 text-gray-300 text-xl max-w-2xl leading-relaxed">
               QuoteBid's Dynamic Pricing Engine tracks live demand, inventory, and outlet yield data to
               price PR coverage in real time—<span className="text-white font-semibold">no retainers, no agencies, and no static prices</span>, 
               only pay if you're published.
                 </p>
-            
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 max-w-md mx-auto md:mx-0">
-              <Button
-                onClick={handleSignup}
-                className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-violet-700 text-white py-3 sm:py-4 px-6 sm:px-8 rounded-2xl text-base sm:text-lg font-bold shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl"
-              >
-                Start Free Trial
-              </Button>
-              <Button
-                onClick={handleLogin}
-                variant="outline"
-                className="w-full sm:w-auto border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/50 py-3 sm:py-4 px-6 sm:px-8 rounded-2xl text-base sm:text-lg font-semibold transition-all duration-300 backdrop-blur-sm"
-              >
-                Sign In
-              </Button>
-            </div>
-          </div>
 
-              <div className="md:w-1/2 flex justify-center md:justify-end mt-8 md:mt-0">
-                <div className="relative w-full max-w-sm sm:max-w-md">
+            <div className="mt-12 flex flex-col sm:flex-row gap-6">
+                  <Button 
+                    size="lg" 
+                className="group relative overflow-hidden bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold px-10 py-7 rounded-2xl shadow-2xl transform transition-all duration-300 hover:scale-105"
+                    onClick={handleSignup}
+                  >
+                <span className="relative z-10 text-lg">Create an Account</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-violet-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                className="group relative border-2 border-white/50 text-white hover:border-white px-10 py-7 rounded-2xl bg-white/5 backdrop-blur-md font-semibold text-lg transition-all duration-300 hover:bg-white/10 hover:scale-105"
+                onClick={() =>
+                  document
+                    .getElementById("how-it-works")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+                  >
+                <span className="relative z-10">How It Works</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+                  </Button>
+                </div>
+              </div>
+              
+          {/* Interactive card stack */}
+              <div className="hidden md:flex md:w-1/2 justify-center md:justify-end">
+                <div className="relative w-full max-w-md">
               {/* Premium ambient glow effects */}
-              <div className="absolute -inset-4 sm:-inset-8 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-violet-600/20 rounded-3xl blur-3xl animate-pulse"></div>
-              <div className="absolute -inset-3 sm:-inset-6 bg-gradient-to-r from-purple-500/15 via-pink-500/15 to-violet-500/15 rounded-3xl blur-2xl animate-pulse" style={{animationDelay: '1s'}}></div>
+              <div className="absolute -inset-8 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-violet-600/20 rounded-3xl blur-3xl animate-pulse"></div>
+              <div className="absolute -inset-6 bg-gradient-to-r from-purple-500/15 via-pink-500/15 to-violet-500/15 rounded-3xl blur-2xl animate-pulse" style={{animationDelay: '1s'}}></div>
                   
               {/* Card deck with shuffle animation */}
-              <div className="relative group" style={{height: '400px', width: '100%'}}>
+              <div className="relative group" style={{height: '480px', width: '100%'}}>
                 
                 {/* Card 1 - Bloomberg (top of stack) */}
-                <div className="absolute inset-0 bg-white/15 backdrop-blur-2xl border border-white/20 rounded-2xl p-4 sm:p-6 shadow-2xl transition-all duration-700 ease-in-out z-30 group-hover:-rotate-12 group-hover:-translate-x-20 group-hover:translate-y-8 group-hover:scale-95">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <div className="flex items-center space-x-2 sm:space-x-3">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-xs sm:text-sm">B</span>
+                <div className="absolute inset-0 bg-white/15 backdrop-blur-2xl border border-white/20 rounded-2xl p-6 shadow-2xl transition-all duration-700 ease-in-out z-30 group-hover:-rotate-12 group-hover:-translate-x-20 group-hover:translate-y-8 group-hover:scale-95">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">B</span>
                         </div>
                       <div>
-                        <h3 className="text-white font-bold text-base sm:text-lg">Bloomberg</h3>
+                        <h3 className="text-white font-bold text-lg">Bloomberg</h3>
                         <p className="text-blue-200 text-xs">Expert Request</p>
                         </div>
                       </div>
-                    <div className="px-2 sm:px-3 py-1 bg-blue-500 rounded-full">
+                    <div className="px-3 py-1 bg-blue-500 rounded-full">
                       <span className="text-white font-bold text-xs">Tier 1</span>
                     </div>
                     </div>
                     
-                  <div className="mb-3 sm:mb-4">
+                  <div className="mb-4">
                     <span className="text-blue-200 text-xs font-semibold uppercase tracking-wide">
                       Expert Request
                     </span>
                   </div>
                   
-                  <h4 className="text-base sm:text-lg font-bold text-white mb-2 sm:mb-3 leading-tight">
-                    Finance Experts For a Story on S&P 500 Market Outlook
+                  <h4 className="text-lg font-bold text-white mb-3 leading-tight">
+                    Looking For Banking Experts To Answer Questions Regarding The Next FOMC Meeting
                   </h4>
                   
-                  <p className="text-xs sm:text-sm text-blue-100 leading-relaxed mb-3 sm:mb-4">
-                    Bloomberg is seeking finance experts for exclusive commentary on current S&P 500 trends...
+                  <p className="text-sm text-blue-100 leading-relaxed mb-4">
+                    Banking Experts: 1. Do you think the next FOMC meeting will result in a rate hike or cut? 2. Do you think that core C...
                   </p>
                   
-                  <div className="inline-block px-2 sm:px-3 py-1 bg-blue-500/30 text-blue-200 rounded-full text-xs mb-3 sm:mb-4">
+                  <div className="inline-block px-3 py-1 bg-blue-500/30 text-blue-200 rounded-full text-sm mb-4">
                     • Capital Markets
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="text-left">
-                      <div className="text-xl sm:text-2xl font-black text-white">$245</div>
-                      <div className="text-xs text-blue-200">Current Price</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-green-300 font-semibold">Active</div>
-                      <div className="text-xs text-blue-200">Deadline: Dec 15</div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Card 2 - WSJ (middle) */}
-                <div className="absolute inset-0 bg-white/15 backdrop-blur-2xl border border-white/20 rounded-2xl p-4 sm:p-6 shadow-2xl transition-all duration-700 ease-in-out transform translate-x-2 translate-y-2 scale-98 z-20 group-hover:rotate-6 group-hover:translate-x-10 group-hover:translate-y-4 group-hover:scale-95">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <div className="flex items-center space-x-2 sm:space-x-3">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-600 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-xs sm:text-sm">W</span>
                       </div>
-                      <div>
-                        <h3 className="text-white font-bold text-base sm:text-lg">Wall Street Journal</h3>
-                        <p className="text-blue-200 text-xs">Expert Commentary</p>
-                      </div>
-                    </div>
-                    <div className="px-2 sm:px-3 py-1 bg-orange-500 rounded-full">
-                      <span className="text-white font-bold text-xs">Tier 1</span>
-                    </div>
-                  </div>
 
-                  <div className="mb-3 sm:mb-4">
+                  <div className="bg-white/10 rounded-xl p-4 mb-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-200 text-xs">Current Price</p>
+                        <p className="text-white text-2xl font-bold">$207</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-red-300 text-xs">📈 $4 past hour</span>
+                      </div>
+                    </div>
+                    </div>
+                    
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center space-x-2 text-blue-200">
+                      <span>⏰ 3 days left</span>
+                      <span className="px-2 py-1 bg-yellow-500/20 rounded">🔒 Premium</span>
+                    </div>
+                    <span className="px-2 py-1 bg-blue-500/20 rounded text-blue-200">📌 Saved</span>
+                  </div>
+                    </div>
+                    
+                {/* Card 2 - Investopedia (middle) */}
+                <div className="absolute inset-0 bg-white/15 backdrop-blur-2xl border border-white/20 rounded-2xl p-6 shadow-2xl transition-all duration-700 ease-in-out transform translate-x-2 translate-y-2 scale-98 z-20 group-hover:rotate-6 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:scale-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">I</span>
+                          </div>
+                      <div>
+                        <h3 className="text-white font-bold text-lg">Investopedia</h3>
+                        <p className="text-blue-200 text-xs">Market Analysis</p>
+                          </div>
+                        </div>
+                    <div className="px-3 py-1 bg-green-500 rounded-full">
+                      <span className="text-white font-bold text-xs">Tier 2</span>
+                      </div>
+                    </div>
+
+                  <div className="mb-4">
                     <span className="text-blue-200 text-xs font-semibold uppercase tracking-wide">
                       Expert Request
                     </span>
                   </div>
                   
-                  <h4 className="text-base sm:text-lg font-bold text-white mb-2 sm:mb-3 leading-tight">
-                    Tech Industry Analysis on AI Regulation Impact
+                  <h4 className="text-lg font-bold text-white mb-3 leading-tight">
+                    Real Estate Experts For Commercial Market Story
                   </h4>
                   
-                  <p className="text-xs sm:text-sm text-blue-100 leading-relaxed mb-3 sm:mb-4">
-                    WSJ needs tech industry experts to provide insights on emerging AI regulations...
+                  <p className="text-sm text-blue-100 leading-relaxed mb-4">
+                    Looking for commercial real estate market analysis and trends...
                   </p>
                   
-                  <div className="inline-block px-2 sm:px-3 py-1 bg-orange-500/30 text-orange-200 rounded-full text-xs mb-3 sm:mb-4">
-                    • Technology
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="text-left">
-                      <div className="text-xl sm:text-2xl font-black text-white">$189</div>
-                      <div className="text-xs text-blue-200">Current Price</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-green-300 font-semibold">Active</div>
-                      <div className="text-xs text-blue-200">Deadline: Dec 18</div>
-                    </div>
-                  </div>
+                  <div className="inline-block px-3 py-1 bg-green-500/30 text-green-200 rounded-full text-sm mb-4">
+                    • Real Estate
                 </div>
-                
+
+                  <div className="bg-white/10 rounded-xl p-4 mb-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-200 text-xs">Current Price</p>
+                        <p className="text-white text-2xl font-bold">$355</p>
+              </div>
+                      <div className="text-right">
+                        <span className="text-green-300 text-xs">📈 $12 past hour</span>
+            </div>
+          </div>
+        </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center space-x-2 text-blue-200">
+                      <span>⏰ 2 days left</span>
+                      <span className="px-2 py-1 bg-orange-500/20 rounded">🔥 Hot</span>
+                    </div>
+                    <span className="px-2 py-1 bg-blue-500/20 rounded text-blue-200">📌 Saved</span>
+                  </div>
+            </div>
+
                 {/* Card 3 - Yahoo Finance (bottom) */}
-                <div className="absolute inset-0 bg-white/15 backdrop-blur-2xl border border-white/20 rounded-2xl p-4 sm:p-6 shadow-2xl transition-all duration-700 ease-in-out transform translate-x-4 translate-y-4 scale-96 z-10 group-hover:rotate-12 group-hover:translate-x-20 group-hover:translate-y-8 group-hover:scale-95">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <div className="flex items-center space-x-2 sm:space-x-3">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-600 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-xs sm:text-sm">Y</span>
+                <div className="absolute inset-0 bg-white/15 backdrop-blur-2xl border border-white/20 rounded-2xl p-6 shadow-2xl transition-all duration-700 ease-in-out transform translate-x-4 translate-y-4 scale-96 z-10 group-hover:rotate-12 group-hover:translate-x-20 group-hover:translate-y-8 group-hover:scale-95">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">Y</span>
                       </div>
                       <div>
-                        <h3 className="text-white font-bold text-base sm:text-lg">Yahoo Finance</h3>
+                        <h3 className="text-white font-bold text-lg">Yahoo Finance</h3>
                         <p className="text-blue-200 text-xs">Market Coverage</p>
                       </div>
                     </div>
-                    <div className="px-2 sm:px-3 py-1 bg-purple-500 rounded-full">
+                    <div className="px-3 py-1 bg-purple-500 rounded-full">
                       <span className="text-white font-bold text-xs">Tier 1</span>
                     </div>
                   </div>
 
-                  <div className="mb-3 sm:mb-4">
+                  <div className="mb-4">
                     <span className="text-blue-200 text-xs font-semibold uppercase tracking-wide">
                       Expert Request
                     </span>
                   </div>
                   
-                  <h4 className="text-base sm:text-lg font-bold text-white mb-2 sm:mb-3 leading-tight">
+                  <h4 className="text-lg font-bold text-white mb-3 leading-tight">
                     Capital Market Experts For eVTOL Stocks Story
                   </h4>
                   
-                  <p className="text-xs sm:text-sm text-blue-100 leading-relaxed mb-3 sm:mb-4">
+                  <p className="text-sm text-blue-100 leading-relaxed mb-4">
                     The eVTOL sector is heating up in public equity markets...
                   </p>
                   
-                  <div className="inline-block px-2 sm:px-3 py-1 bg-purple-500/30 text-purple-200 rounded-full text-xs mb-3 sm:mb-4">
+                  <div className="inline-block px-3 py-1 bg-purple-500/30 text-purple-200 rounded-full text-sm mb-4">
                     • Capital Markets
                   </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="text-left">
-                      <div className="text-xl sm:text-2xl font-black text-white">$312</div>
-                      <div className="text-xs text-blue-200">Current Price</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-yellow-300 font-semibold">Rising</div>
-                      <div className="text-xs text-blue-200">Deadline: Dec 20</div>
+
+                  <div className="bg-white/10 rounded-xl p-4 mb-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-200 text-xs">Current Price</p>
+                        <p className="text-white text-2xl font-bold">$224</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-green-300 text-xs">📈 $25 past hour</span>
+                      </div>
                     </div>
                   </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center space-x-2 text-blue-200">
+                      <span>⏰ 8 days left</span>
+                      <span className="px-2 py-1 bg-green-500/20 rounded">📈 Trending</span>
+                    </div>
+                    <span className="px-2 py-1 bg-gray-500/20 rounded text-gray-200">Save</span>
+                  </div>
                 </div>
+
+
               </div>
             </div>
           </div>
@@ -312,7 +346,7 @@ export default function Home() {
       </section>
 
       {/* ——— HOW THIS WORKS NOW ——— */}
-      <section id="benefits" className="relative z-20 bg-gradient-to-b from-slate-900 to-purple-900 py-16">
+      <section id="benefits" className="relative z-20 bg-gradient-to-b from-slate-900 to-purple-900 py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <div className="mb-8">
             <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-full text-blue-300 text-sm font-semibold uppercase tracking-wide backdrop-blur-sm mb-6">
@@ -360,189 +394,417 @@ export default function Home() {
       </section>
 
       {/* ——— HOW IT WORKS ——— */}
-      <section id="how-it-works" className="relative z-20 bg-gradient-to-b from-slate-900 to-purple-900 py-16 sm:py-20 md:py-24 overflow-hidden">
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-full h-full" style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0)`,
-            backgroundSize: '40px 40px'
-          }}></div>
+      <section
+        id="how-it-works"
+        className="relative z-20 bg-gradient-to-b from-purple-900 via-slate-900 to-purple-900 py-8 md:py-16"
+      >
+        {/* Background effects */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-10 left-10 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob"></div>
+          <div className="absolute bottom-10 right-10 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob animation-delay-2000"></div>
         </div>
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-12 sm:mb-16 md:mb-20">
-            
-            <div className="inline-flex items-center px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-full text-blue-300 text-xs sm:text-sm font-semibold uppercase tracking-wide backdrop-blur-sm mb-6 sm:mb-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
+          <div className="text-center mb-12 md:mb-20">
+            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-full text-blue-300 text-sm font-semibold uppercase tracking-wide backdrop-blur-sm mb-6 md:mb-8">
               <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
-              How QuoteBid Works
+              The Process
             </div>
-
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 sm:mb-6 leading-tight">
-              Get Your Expertise <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-purple-500 bg-clip-text text-transparent">Recognized</span>
+            <h2 className="text-4xl md:text-6xl font-black text-white mb-4 md:mb-6">
+              How It <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-purple-500 bg-clip-text text-transparent">Works</span>
             </h2>
-            <p className="text-gray-300 text-base sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-              QuoteBid connects you directly with journalists from top-tier publications. No intermediaries, no retainers—just you, your expertise, and the media coverage you deserve.
+            <p className="text-gray-300 text-lg md:text-xl max-w-3xl mx-auto px-4">
+              Four simple steps to revolutionize your media strategy
             </p>
           </div>
 
-          <ol className="space-y-16 sm:space-y-20 md:space-y-24">
+          <ol className="space-y-16 md:space-y-24">
             {[
-              { 
-                step: '1', 
-                title: 'Browse Open Opportunities', 
-                copy: 'See live opportunities from premium publications. Our pricing engine shows real-time demand so you know exactly what coverage costs.' 
+              {
+                step: "1",
+                title: "Browse Live Editorial Opportunities",
+                copy: "A real-time dashboard of active story requests — curated by industry, priced by demand, and driven by deadline.",
               },
-              { 
-                step: '2', 
-                title: 'Submit Your Expert Pitch', 
-                copy: 'Respond directly to journalists with your unique insights. No intermediaries, no PR agencies—just you and your expertise.' 
+              {
+                step: "2",
+                title: "Place Your Bid to Pitch",
+                copy: "Submit your pitch — by voice or text — at the current market rate. By bidding, you agree to pay that price only if you're quoted. Journalists review directly, retain full editorial control, and are never compensated or affiliated with our platform.",
               },
-              { 
-                step: '3', 
-                title: 'Get Published & Pay Only If Featured', 
-                copy: 'If selected, you\'re featured in the article and charged only upon successful publication. No upfront costs, no retainers.' 
-              }
+              {
+                step: "3",
+                title: "We Turned Media Into a Market — And Let the Market Set the Price",
+                copy: "We don't set the price — the market does. Our Dynamic Pricing Engine brings true price discovery to PR. It tracks live demand, deadline pressure, and outlet yield to reveal what each story is actually worth to the end consumer — in real time.",
+              },
+              {
+                step: "4",
+                title: "Only Pay if You're Published",
+                copy: "No retainers. No upfront fees. You're only charged if your pitch is selected and published at the accepted market rate. If you're not quoted — you pay nothing.",
+              },
             ].map((s, i) => (
               <li
                 key={s.step}
-                className={`flex flex-col lg:flex-row ${
-                  i % 2 ? "lg:flex-row-reverse" : ""
-                } items-center gap-8 sm:gap-12 lg:gap-16`}
+                className={`flex flex-col ${
+                  i % 2 ? "md:flex-row-reverse" : "md:flex-row"
+                } items-center gap-8 md:gap-16`}
               >
-                <div className="lg:w-1/2 text-center lg:text-left">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 text-white flex items-center justify-center text-2xl sm:text-3xl font-black mb-4 sm:mb-6 shadow-2xl mx-auto lg:mx-0">
+                <div className="w-full md:w-1/2">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 text-white flex items-center justify-center text-2xl md:text-3xl font-black mb-4 md:mb-6 shadow-2xl mx-auto md:mx-0">
                     {s.step}
                   </div>
-                  <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 sm:mb-4 leading-tight">{s.title}</h3>
-                  <p className="text-gray-300 text-base sm:text-lg leading-relaxed max-w-lg mx-auto lg:mx-0">{s.copy}</p>
+                  <h3 className="text-2xl md:text-3xl font-black text-white mb-3 md:mb-4 leading-tight text-center md:text-left">{s.title}</h3>
+                  <p className="text-gray-300 text-base md:text-lg leading-relaxed text-center md:text-left px-4 md:px-0">{s.copy}</p>
                 </div>
-                <div className="lg:w-1/2 w-full max-w-md sm:max-w-lg lg:max-w-none">
+                <div className="w-full md:w-1/2 flex justify-center">
                   {i === 0 ? (
                     // App Preview for Step 1 - Matching actual app layout
-                    <div className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-white/20 shadow-2xl overflow-hidden hover:scale-105 transition-all duration-300">
+                    <div className="bg-gradient-to-br from-white/10 to-white/3 backdrop-blur-2xl rounded-2xl md:rounded-3xl border border-white/15 shadow-2xl overflow-hidden hover:scale-105 transition-all duration-300 w-full max-w-sm md:max-w-md">
                       {/* App Header */}
-                      <div className="bg-white/10 border-b border-white/20 p-3 sm:p-4">
-                        <h3 className="text-white font-bold text-base sm:text-lg mb-2">Media Opportunities</h3>
-                        <p className="text-gray-300 text-xs sm:text-sm">Browse open opportunities from top publications and lock in your bid before prices increase.</p>
+                      <div className="bg-white/5 border-b border-white/10 p-3 md:p-4">
+                        <h3 className="text-white font-bold text-base md:text-lg mb-2">Media Opportunities</h3>
+                        <p className="text-gray-300 text-xs md:text-sm">Browse open opportunities from top publications and lock in your bid before prices increase.</p>
                       </div>
                       
                       {/* Single Large Card Preview - Yahoo Finance */}
-                      <div className="p-4 sm:p-6">
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-3 sm:p-4 hover:bg-white/20 transition-all duration-300">
+                      <div className="p-3 md:p-4">
+                        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl md:rounded-2xl p-4 md:p-6 hover:bg-white/8 transition-all">
                           {/* Card Header */}
-                          <div className="flex items-center justify-between mb-3 sm:mb-4">
-                            <div className="flex items-center space-x-2 sm:space-x-3">
-                              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-600 rounded-lg flex items-center justify-center">
-                                <span className="text-white font-bold text-xs sm:text-sm">Y</span>
+                          <div className="flex items-center justify-between mb-3 md:mb-4">
+                            <div className="flex items-center space-x-2 md:space-x-3">
+                              <div className="w-6 h-6 md:w-8 md:h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                                <span className="text-white font-bold text-xs md:text-sm">Y</span>
                               </div>
-                              <div>
-                                <h4 className="text-white font-bold text-sm sm:text-base">Yahoo Finance</h4>
-                                <p className="text-blue-200 text-xs">Live Opportunity</p>
-                              </div>
+                              <span className="text-white font-bold text-sm md:text-base">Yahoo Finance</span>
                             </div>
-                            <div className="px-2 py-1 bg-purple-500 rounded-full">
-                              <span className="text-white font-bold text-xs">Tier 1</span>
-                            </div>
+                            <div className="px-2 py-1 md:px-3 md:py-1 bg-blue-500 rounded-full text-white text-xs md:text-sm font-medium">Tier 1</div>
                           </div>
                           
-                          {/* Title */}
-                          <h5 className="text-white font-bold text-sm sm:text-base mb-2 sm:mb-3 leading-tight">
-                            Capital Market Experts For eVTOL Stocks Story
-                          </h5>
+                          {/* Expert Request Label */}
+                          <div className="mb-2 md:mb-3">
+                            <span className="text-blue-400 text-xs md:text-sm font-bold uppercase tracking-wide">EXPERT REQUEST</span>
+                          </div>
                           
-                          {/* Description */}
-                          <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4 leading-relaxed">
-                            Looking for experts to provide insights on the emerging eVTOL market and its impact on aviation stocks...
+                          {/* Story Title */}
+                          <h4 className="text-white text-sm md:text-lg font-bold mb-2 md:mb-3 leading-tight">
+                            Looking For Capital Market Experts For A Story on eVTOL Stocks
+                          </h4>
+                          
+                          {/* Story Description */}
+                          <p className="text-gray-300 text-xs md:text-sm mb-3 md:mb-4 leading-relaxed">
+                            Stock Market Experts — The eVTOL sector is starting to heat up in the public equity market, questions needed are as foll...
                           </p>
                           
-                          {/* Tags */}
-                          <div className="flex flex-wrap gap-1 sm:gap-2 mb-3 sm:mb-4">
-                            <span className="px-2 py-1 bg-purple-500/30 text-purple-200 rounded-full text-xs">Capital Markets</span>
-                            <span className="px-2 py-1 bg-blue-500/30 text-blue-200 rounded-full text-xs">Aviation</span>
+                          {/* Tag */}
+                          <div className="mb-3 md:mb-4">
+                            <span className="inline-block px-2 py-1 md:px-3 md:py-1 bg-blue-500/15 text-blue-300 rounded-full text-xs md:text-sm border border-blue-400/20">
+                              • Capital Markets
+                            </span>
                           </div>
                           
-                          {/* Price and Action */}
-                          <div className="flex items-center justify-between">
+                          {/* Price Section */}
+                          <div className="flex items-center justify-between mb-3 md:mb-4">
                             <div>
-                              <div className="text-white text-lg sm:text-xl font-black">$312</div>
-                              <div className="text-blue-200 text-xs">Current Price</div>
+                              <p className="text-gray-400 text-xs md:text-sm">Current Price</p>
+                              <p className="text-white text-xl md:text-3xl font-bold">$202</p>
                             </div>
-                            <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-2 rounded-lg hover:scale-105 transition-all duration-200">
-                              Submit Pitch
-                            </button>
+                            <div className="text-right">
+                              <span className="text-green-400 text-xs md:text-sm font-medium">📈 +$2 past hour</span>
+                            </div>
                           </div>
+                          
+                          {/* Status Row */}
+                          <div className="flex items-center justify-between mb-3 md:mb-4">
+                            <div className="flex items-center space-x-2 md:space-x-3 text-xs md:text-sm">
+                              <span className="text-gray-300">⏰ 8 days left</span>
+                              <span className="px-1.5 py-0.5 md:px-2 md:py-1 bg-blue-500/15 text-blue-300 rounded border border-blue-400/20">🔒 Premium</span>
+                            </div>
+                            <span className="px-2 py-1 md:px-3 md:py-1 bg-white/5 text-white rounded text-xs md:text-sm border border-white/10">Save Opportunity</span>
+                          </div>
+                          
+                          {/* View Details Button */}
+                          <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 md:py-3 rounded-lg md:rounded-xl transition-colors text-sm md:text-base">
+                            View Details
+                          </button>
                         </div>
                       </div>
                     </div>
                   ) : i === 1 ? (
-                    // Pitch interface mockup for Step 2
-                    <div className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-white/20 shadow-2xl overflow-hidden hover:scale-105 transition-all duration-300">
-                      <div className="bg-white/10 border-b border-white/20 p-3 sm:p-4">
-                        <h3 className="text-white font-bold text-base sm:text-lg mb-2">Submit Your Pitch</h3>
-                        <p className="text-gray-300 text-xs sm:text-sm">Craft your response directly to the journalist.</p>
-                      </div>
-                      
-                      <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-                        <div>
-                          <label className="text-white text-xs sm:text-sm font-semibold mb-2 block">Your Expert Response</label>
-                          <div className="bg-white/10 border border-white/20 rounded-lg p-3 sm:p-4 min-h-[80px] sm:min-h-[100px]">
-                            <p className="text-gray-300 text-xs sm:text-sm">
-                              "As a capital markets analyst with 15 years of experience, I see the eVTOL sector as a transformational opportunity. The recent IPO activity in companies like Joby Aviation demonstrates strong investor confidence..."
-                            </p>
+                    // App Preview for Step 2 - Bidding Interface
+                    <div className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-2xl md:rounded-3xl border border-white/20 shadow-2xl overflow-hidden hover:scale-105 transition-all duration-300 w-full max-w-sm md:max-w-md">
+                      {/* Price History Section */}
+                      <div className="bg-white/10 border-b border-white/20 p-3 md:p-4">
+                        <div className="flex items-center justify-between mb-2 md:mb-3">
+                          <h3 className="text-white font-bold text-base md:text-lg">Price History</h3>
+                          <div className="flex items-center space-x-1 md:space-x-2">
+                            <span className="text-green-400 text-xs md:text-sm font-bold">+$120 (+53.3%)</span>
+                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                            <span className="text-green-300 text-xs">Live Updates</span>
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                          <div>
-                            <label className="text-white text-xs font-semibold mb-1 block">Your Bid</label>
-                            <div className="bg-white/10 border border-white/20 rounded-lg p-2 sm:p-3 text-center">
-                              <span className="text-white font-bold text-sm sm:text-base">$285</span>
-                            </div>
+                        {/* Enhanced Price Chart */}
+                        <div className="h-16 md:h-24 relative mb-2 md:mb-3 bg-white/5 rounded-lg p-2">
+                          <svg className="w-full h-full" viewBox="0 0 300 80">
+                            <defs>
+                              <linearGradient id="priceChart" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stopColor="rgba(34, 197, 94, 0.4)" />
+                                <stop offset="50%" stopColor="rgba(34, 197, 94, 0.2)" />
+                                <stop offset="100%" stopColor="rgba(34, 197, 94, 0.0)" />
+                              </linearGradient>
+                              <filter id="glow">
+                                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                                <feMerge> 
+                                  <feMergeNode in="coloredBlur"/>
+                                  <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                              </filter>
+                            </defs>
+                            
+                            {/* Grid lines */}
+                            <defs>
+                              <pattern id="grid" width="30" height="20" patternUnits="userSpaceOnUse">
+                                <path d="M 30 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5"/>
+                              </pattern>
+                            </defs>
+                            <rect width="100%" height="100%" fill="url(#grid)" />
+                            
+                            {/* Price line with smooth curves */}
+                            <path
+                              d="M0,65 Q20,60 40,55 T80,45 Q100,42 120,38 T160,35 Q180,32 200,25 T240,20 Q260,18 280,15 L300,13"
+                              fill="none"
+                              stroke="#22c55e"
+                              strokeWidth="2.5"
+                              filter="url(#glow)"
+                            />
+                            
+                            {/* Filled area under curve */}
+                            <path
+                              d="M0,65 Q20,60 40,55 T80,45 Q100,42 120,38 T160,35 Q180,32 200,25 T240,20 Q260,18 280,15 L300,13 L300,80 L0,80 Z"
+                              fill="url(#priceChart)"
+                            />
+                            
+                            {/* Data points */}
+                            <circle cx="0" cy="65" r="2" fill="#22c55e" opacity="0.8"/>
+                            <circle cx="80" cy="45" r="2" fill="#22c55e" opacity="0.8"/>
+                            <circle cx="160" cy="35" r="2" fill="#22c55e" opacity="0.8"/>
+                            <circle cx="240" cy="20" r="2" fill="#22c55e" opacity="0.8"/>
+                            <circle cx="300" cy="13" r="3" fill="#22c55e" className="animate-pulse"/>
+                            
+                            {/* Current price indicator */}
+                            <line x1="300" y1="0" x2="300" y2="80" stroke="#22c55e" strokeWidth="1" strokeDasharray="3,3" opacity="0.6"/>
+                  </svg>
+                          
+                          {/* Price labels */}
+                          <div className="absolute top-1 left-2 text-green-300 text-xs font-mono">$536</div>
+                          <div className="absolute bottom-1 left-2 text-green-300 text-xs font-mono">$144</div>
+                          <div className="absolute bottom-1 right-2 text-red-300 text-xs font-mono">$500</div>
+                          <div className="absolute top-1 right-2 text-blue-400 text-xs font-bold">NOW: $345</div>
+                </div>
+                        
+                        {/* Time Filters */}
+                        <div className="flex space-x-2">
+                          <button className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs border border-blue-400/30">1D</button>
+                          <button className="px-2 py-1 bg-white/10 text-gray-300 rounded text-xs">3D</button>
+                          <button className="px-2 py-1 bg-white/10 text-gray-300 rounded text-xs">1W</button>
+                        </div>
+              </div>
+              
+                      {/* Current Price & Bidding */}
+                      <div className="p-3 md:p-4">
+                        <div className="mb-3 md:mb-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-gray-300 text-xs md:text-sm">Current Price</span>
+                            <span className="text-green-400 text-xs md:text-sm">53% above list price</span>
                           </div>
-                          <div>
-                            <label className="text-white text-xs font-semibold mb-1 block">Status</label>
-                            <div className="bg-green-500/20 border border-green-400/30 rounded-lg p-2 sm:p-3 text-center">
-                              <span className="text-green-300 font-semibold text-xs sm:text-sm">Submitted</span>
-                            </div>
+                          <div className="flex items-center space-x-2 mb-1">
+                            <span className="text-blue-400 text-2xl md:text-4xl font-bold">$345</span>
+                            <span className="text-green-400 text-sm md:text-lg">📈 +$120</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <span className="text-gray-300 text-xs">Dynamic pricing active</span>
                           </div>
                         </div>
+                        
+                        {/* Pitch Section */}
+                        <div className="bg-white/5 rounded-lg md:rounded-xl p-2 md:p-3 mb-3 md:mb-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-white text-xs md:text-sm font-medium">Craft your pitch</span>
+                            <span className="text-gray-400 text-xs">2000 characters remaining</span>
+                          </div>
+                          <div className="bg-white/10 rounded-lg p-2 md:p-3 text-gray-400 text-xs leading-relaxed mb-2">
+                            Share your expertise, credentials, and unique perspective that would make you perfect for this story...
+                          </div>
+                          <button className="flex items-center space-x-2 text-red-400 text-xs md:text-sm">
+                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <span>Record Pitch</span>
+                          </button>
+                        </div>
+                        
+                        {/* Submit Button */}
+                        <button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-2 md:py-3 rounded-lg md:rounded-xl transition-all mb-2 text-sm md:text-base">
+                          🔒 Secure Pitch at $345 Live Price
+                        </button>
+                        <p className="text-gray-400 text-xs text-center">
+                          By pitching, you agree to pay the accepted market rate—only if you're included.
+                        </p>
                       </div>
                     </div>
-                  ) : (
-                    // Success/Analytics dashboard for Step 3
-                    <div className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-white/20 shadow-2xl overflow-hidden hover:scale-105 transition-all duration-300">
-                      <div className="bg-white/10 border-b border-white/20 p-3 sm:p-4">
-                        <h3 className="text-white font-bold text-base sm:text-lg mb-2">Your Success Dashboard</h3>
-                        <p className="text-gray-300 text-xs sm:text-sm">Track your published articles and earnings.</p>
+                  ) : i === 2 ? (
+                    // App Preview for Step 3 - Pricing Engine Dashboard
+                    <div className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-2xl md:rounded-3xl border border-white/20 shadow-2xl overflow-hidden hover:scale-105 transition-all duration-300 relative w-full max-w-sm md:max-w-md">
+                      
+                      {/* Header */}
+                      <div className="bg-white/10 border-b border-white/20 px-4 md:px-6 py-3 md:py-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-white font-bold text-base md:text-lg">Engine Analysis</h3>
+                            <div className="text-gray-400 text-xs md:text-sm">Real-time pricing computation</div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                            <span className="text-green-400 text-xs md:text-sm">Live</span>
+                          </div>
+                        </div>
                       </div>
                       
-                      <div className="p-4 sm:p-6">
-                        {/* Featured Article */}
-                        <div className="bg-green-500/20 border border-green-400/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                              <span className="text-white text-xs">✓</span>
-                            </div>
-                            <span className="text-green-300 font-semibold text-xs sm:text-sm">Published Successfully</span>
-                          </div>
-                          <h4 className="text-white font-bold text-xs sm:text-sm mb-1">
-                            "eVTOL Stocks Soar as Industry Takes Flight"
-                          </h4>
-                          <p className="text-gray-300 text-xs">Yahoo Finance • 2 days ago</p>
-                        </div>
+                      {/* Main content */}
+                      <div className="p-4 md:p-6">
                         
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                        {/* Price evolution chart */}
+                        <div className="mb-4 md:mb-6">
+                          <div className="flex items-center justify-between mb-2 md:mb-3">
+                            <span className="text-white text-xs md:text-sm font-medium">Price Discovery</span>
+                            <div className="text-green-400 text-xs md:text-sm">+$65 (+36%)</div>
+                          </div>
+                          
+                          <div className="h-12 md:h-16 bg-white/5 rounded-lg p-2 md:p-3 relative overflow-hidden">
+                            <svg width="100%" height="100%" viewBox="0 0 200 40" className="absolute inset-0">
+                              <defs>
+                                <linearGradient id="priceEvolution" x1="0%" y1="0%" x2="100%" y2="0%">
+                                  <stop offset="0%" stopColor="#EF4444" stopOpacity="0.8"/>
+                                  <stop offset="50%" stopColor="#F59E0B" stopOpacity="0.8"/>
+                                  <stop offset="100%" stopColor="#10B981" stopOpacity="0.8"/>
+                                </linearGradient>
+                                <linearGradient id="chartFill" x1="0%" y1="0%" x2="0%" y2="100%">
+                                  <stop offset="0%" stopColor="#10B981" stopOpacity="0.3"/>
+                                  <stop offset="100%" stopColor="#10B981" stopOpacity="0.0"/>
+                                </linearGradient>
+                              </defs>
+                              
+                              {/* Chart area fill */}
+                              <path d="M10 35 L50 28 L90 22 L130 18 L170 12 L190 8 L190 40 L10 40 Z" fill="url(#chartFill)"/>
+                              
+                              {/* Price line */}
+                              <path d="M10 35 L50 28 L90 22 L130 18 L170 12 L190 8" 
+                                    stroke="url(#priceEvolution)" 
+                                    strokeWidth="2" 
+                                    fill="none"/>
+                              
+                              {/* Data points */}
+                              <circle cx="10" cy="35" r="2" fill="#EF4444"/>
+                              <circle cx="90" cy="22" r="2" fill="#F59E0B"/>
+                              <circle cx="190" cy="8" r="3" fill="#10B981"/>
+                  </svg>
+                            
+                            {/* Price labels */}
+                            <div className="absolute bottom-1 left-2 text-xs text-red-400">$180</div>
+                            <div className="absolute top-1 right-2 text-xs text-green-400 font-bold">$245</div>
+                </div>
+              </div>
+                        
+                        {/* Current metrics */}
+                        <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-6">
+                          <div className="bg-white/5 rounded-lg p-3 md:p-4">
+                            <div className="text-gray-400 text-xs mb-1">Hours Remaining</div>
+                            <div className="text-white text-base md:text-lg font-bold">47.8</div>
+                            <div className="text-orange-400 text-xs">Decay active</div>
+            </div>
+                          <div className="bg-white/5 rounded-lg p-3 md:p-4">
+                            <div className="text-gray-400 text-xs mb-1">Outlet Success Rate</div>
+                            <div className="text-white text-base md:text-lg font-bold">84%</div>
+                            <div className="text-blue-400 text-xs">Historical avg</div>
+          </div>
+        </div>
+
+                        {/* Engine output */}
+                        <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 border border-green-400/30 rounded-lg p-3 md:p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-gray-300 text-xs md:text-sm mb-1">Engine Output</div>
+                              <div className="text-white text-xl md:text-2xl font-bold">$245</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-gray-300 text-xs">Confidence</div>
+                              <div className="text-green-400 text-base md:text-lg font-bold">94%</div>
+                            </div>
+                          </div>
+            </div>
+
+                </div>
+                    </div>
+                  ) : (
+                    // App Preview for Step 4 - Success Dashboard
+                    <div className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-2xl md:rounded-3xl border border-white/20 shadow-2xl overflow-hidden hover:scale-105 transition-all duration-300 relative w-full max-w-sm md:max-w-md">
+                      
+                      {/* Header */}
+                      <div className="bg-white/10 border-b border-white/20 px-4 md:px-6 py-3 md:py-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-white font-bold text-base md:text-lg">Media Coverage</h3>
+                            <div className="text-gray-400 text-xs md:text-sm">Your published articles</div>
+                          </div>
+                          <div className="px-2 py-1 md:px-3 md:py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">
+                            8 Published
+                          </div>
+                            </div>
+                          </div>
+                          
+                      {/* Success notification */}
+                      <div className="p-4 md:p-6">
+                        <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-3 md:p-4 mb-3 md:mb-4">
+                          <div className="flex items-center space-x-2 md:space-x-3">
+                            <div className="w-6 h-6 md:w-8 md:h-8 bg-green-500 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 md:w-5 md:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                              </svg>
+                            </div>
+                            <div>
+                              <div className="text-green-400 font-medium text-sm md:text-base">Article Published! 🎉</div>
+                              <div className="text-gray-300 text-xs md:text-sm">Payment processed: $245</div>
+                            </div>
+                              </div>
+                            </div>
+                            
+                        {/* Published article */}
+                        <div className="bg-white/5 rounded-lg p-3 md:p-4 mb-3 md:mb-4">
+                          <div className="flex items-start space-x-2 md:space-x-3">
+                            <div className="w-6 h-6 md:w-8 md:h-8 bg-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">F</div>
+                              <div className="flex-1">
+                              <div className="text-white font-medium mb-1 text-sm md:text-base">Forbes - Capital Market Analysis</div>
+                              <div className="text-gray-400 text-xs md:text-sm mb-2">Your expertise on S&P market trends</div>
+                              <div className="flex items-center space-x-3 md:space-x-4">
+                                <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs">Featured</span>
+                                <span className="text-blue-400 text-xs md:text-sm font-medium">$245 paid</span>
+                              </div>
+                            </div>
+                            <button className="px-2 py-1 md:px-3 md:py-1 bg-white/10 text-white rounded text-xs hover:bg-white/20">
+                              View Article
+                            </button>
+                              </div>
+                            </div>
+                            
+                        {/* Stats */}
+                        <div className="grid grid-cols-3 gap-3 md:gap-4">
                           <div className="text-center">
-                            <div className="text-white text-lg sm:text-xl font-bold">8</div>
+                            <div className="text-white text-lg md:text-xl font-bold">8</div>
                             <div className="text-gray-400 text-xs">Published</div>
                               </div>
                           <div className="text-center">
-                            <div className="text-white text-lg sm:text-xl font-bold">$1,847</div>
-                            <div className="text-gray-400 text-xs">Total Earned</div>
+                            <div className="text-white text-lg md:text-xl font-bold">$1,847</div>
+                            <div className="text-gray-400 text-xs">Total Spent</div>
                             </div>
                           <div className="text-center">
-                            <div className="text-white text-lg sm:text-xl font-bold">92%</div>
+                            <div className="text-white text-lg md:text-xl font-bold">92%</div>
                             <div className="text-gray-400 text-xs">Success Rate</div>
                           </div>
                         </div>
@@ -831,7 +1093,7 @@ export default function Home() {
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0 h-12 w-12 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center">
                     <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h2m5 0h2a2 2 0 002-2V7a2 2 0 00-2-2h-2m-5 4h6m-6 4h6m-6-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h2m5 0h2a2 2 0 002-2V7a2 2 0 00-2-2h-2m-5 4h6m-6 4h6m-6-8h6" />
                       </svg>
                     </div>
                     <div>
@@ -966,43 +1228,57 @@ export default function Home() {
       </section>
 
       {/* ——— FOOTER ——— */}
-      <footer className="relative z-20 bg-gradient-to-b from-purple-900 to-slate-900 py-12 sm:py-16">
+      <footer className="relative z-20 bg-gradient-to-b from-purple-900 to-slate-900 py-16">
         {/* Background effects */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-1/4 w-48 sm:w-64 h-48 sm:h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob"></div>
-          <div className="absolute bottom-0 right-1/4 w-48 sm:w-64 h-48 sm:h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob animation-delay-2000"></div>
+          <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob"></div>
+          <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob animation-delay-2000"></div>
         </div>
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <div className="mb-6 sm:mb-8">
+        <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
+          <div className="mb-8">
             <Link href="/" className="inline-flex items-center group">
-              <span className="text-white font-black text-3xl sm:text-4xl tracking-tight">
+              <span className="text-white font-black text-4xl tracking-tight">
                 <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Quote</span>
                 <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Bid</span>
               </span>
-              <div className="ml-2 sm:ml-3 px-2 py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
+              <div className="ml-3 px-2 py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
                 Beta
       </div>
             </Link>
-            <p className="text-gray-400 mt-3 sm:mt-4 text-base sm:text-lg">
+            <p className="text-gray-400 mt-4 text-lg">
               The world's first live marketplace for earned media
             </p>
-          </div>
+    </div>
           
-          <div className="flex flex-wrap justify-center gap-6 sm:gap-8 mb-6 sm:mb-8">
-            <Link href="/legal/terms" className="text-gray-300 text-base sm:text-lg font-medium hover:text-white transition-colors duration-300">
+          <div className="flex flex-wrap justify-center gap-8 mb-8">
+            <Link 
+              href="/legal/terms" 
+              className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
+            >
               Terms of Use
             </Link>
-            <Link href="/privacy" className="text-gray-300 text-base sm:text-lg font-medium hover:text-white transition-colors duration-300">
+            <Link 
+              href="/legal/privacy" 
+              className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
+            >
               Privacy
             </Link>
-            <Link href="/legal/editorial-integrity" className="text-gray-300 text-base sm:text-lg font-medium hover:text-white transition-colors duration-300">
+            <Link 
+              href="/legal/editorial-integrity" 
+              className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
+            >
               Editorial Integrity
             </Link>
           </div>
           
-          <div className="text-gray-500 text-sm sm:text-base">
-            © 2024 QuoteBid. All rights reserved.
+          <div className="border-t border-white/20 pt-8">
+            <p className="text-gray-400 text-lg">
+              &copy; {new Date().getFullYear()} QuoteBid Inc. All rights reserved.
+            </p>
+            <p className="text-gray-500 text-sm mt-2">
+              Built for experts, not PR agencies.
+            </p>
           </div>
         </div>
       </footer>

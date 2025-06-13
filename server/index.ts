@@ -50,6 +50,9 @@ app.use(cors({
     // In production, use specific allowed origins
     const allowedOrigins = [
       'http://localhost:5050', // Default API port
+      'http://localhost:5051', // Mobile API port
+      'http://192.168.1.121:5050', // Network IP default port
+      'http://192.168.1.121:5051', // Network IP mobile port
       'http://localhost:5173', // Vite default port
       'http://localhost:5174', // Vite alternative port
       'http://localhost:3000', // Common React port

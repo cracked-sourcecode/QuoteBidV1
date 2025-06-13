@@ -57,7 +57,7 @@ export function getStage(pitch: PitchDTO): PitchStatus {
   // CRITICAL FIX: Respect the actual status from the database
   // If status is 'draft', it should remain 'draft' regardless of having an ID
   // The previous logic was incorrectly forcing drafts to 'pending' status
-  if (pitch.status === 'draft') {
+    if (pitch.status === 'draft') {
     return 'draft';
   }
   

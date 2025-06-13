@@ -447,19 +447,19 @@ export default function OpportunitiesPage() {
       <div className="px-4 sm:px-6 lg:px-8 py-8 bg-white">
         {filteredOpportunities.length > 0 ? (
           <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {displayedOpportunities.map((opportunity, index) => (
                 <div 
                   key={opportunity.id}
                   className="opacity-0 animate-[fadeInUp_0.6s_ease-out_forwards]"
                   style={{ animationDelay: `${(index % OPPORTUNITIES_PER_BATCH) * 0.1}s` }}
                 >
-                  <OpportunityCard
-                    opportunity={opportunity}
+              <OpportunityCard
+                opportunity={opportunity}
                     isPriority={index < 6} // First 6 cards are above-the-fold priority
-                  />
+              />
                 </div>
-              ))}
+            ))}
             </div>
 
             {/* Infinite Scroll Sentinel */}

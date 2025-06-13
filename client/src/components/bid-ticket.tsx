@@ -386,7 +386,7 @@ export default function BidTicket({
   // Auto-save state
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-
+  
   // Auto-save draft debouncer
   useEffect(() => {
     // Save if we have a draft ID and pitch is started
