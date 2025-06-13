@@ -28,6 +28,7 @@ import { setupAdminAuth, requireAdminAuth } from "./admin-auth-middleware";
 import { enforceOnboarding } from "./middleware/enforceOnboarding";
 import { jwtAuth } from "./middleware/jwtAuth";
 import { ensureAuth } from "./middleware/ensureAuth";
+import { updatePrices } from './jobs/updatePrices';
 
 import upload from './middleware/upload';
 import pdfUpload from './middleware/pdfUpload';
@@ -2876,12 +2877,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Draft pitch updated:", result);
       
       // Create notification for significant draft progress (e.g., first substantial content)
-      // Only notify if this is the first time the user adds substantial content (50+ characters)
-      // and the previous content was very short (< 20 characters)
+      // Only notify if this is the first time the user adds any content (1+ characters)
+      // and the previous content was empty (0 characters)
       const oldContentLength = (existingPitch.content || '').length;
       const newContentLength = content.length;
       
-      if (result && oldContentLength < 20 && newContentLength >= 50) {
+      if (result && oldContentLength === 0 && newContentLength >= 1) {
         try {
           // Get opportunity details for the notification
           const opportunity = await storage.getOpportunity(existingPitch.opportunityId);
@@ -9765,6 +9766,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============ ADMIN PRICING CONTROL ENDPOINTS ============
+  
+  // Test endpoint to manually trigger pricing update with draft counting
+  app.post("/api/test-pricing-update", async (req: Request, res: Response) => {
+    try {
+      console.log("🧪 Manual pricing update triggered...");
+      await updatePrices();
+      console.log("✅ Manual pricing update completed");
+      res.json({ ok: true, message: "Pricing update triggered successfully" });
+    } catch (error) {
+      console.error("❌ Manual pricing update failed:", error);
+      res.status(500).json({ error: "Pricing update failed", message: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Diagnostic endpoint to check draft counting
+  app.get("/api/test-draft-counts", async (req: Request, res: Response) => {
+    try {
+      console.log("🧪 Checking draft counts...");
+      
+      // Get all pitches and count drafts vs submitted
+      const allPitches = await getDb().select().from(pitches);
+      const submittedPitches = allPitches.filter(pitch => !pitch.isDraft);
+      const draftPitches = allPitches.filter(pitch => pitch.isDraft);
+      
+      // Group by opportunity
+      const opCounters: Record<number, { submitted: number, drafts: number }> = {};
+      
+      allPitches.forEach(pitch => {
+        const oppId = pitch.opportunityId;
+        if (!opCounters[oppId]) {
+          opCounters[oppId] = { submitted: 0, drafts: 0 };
+        }
+        
+        if (pitch.isDraft) {
+          opCounters[oppId].drafts++;
+        } else {
+          opCounters[oppId].submitted++;
+        }
+      });
+      
+      const result = {
+        totalPitches: allPitches.length,
+        submittedPitches: submittedPitches.length,
+        draftPitches: draftPitches.length,
+        opportunityBreakdown: opCounters,
+        sampleDrafts: draftPitches.slice(0, 3).map(p => ({
+          id: p.id,
+          opportunityId: p.opportunityId,
+          isDraft: p.isDraft,
+          content: p.content?.substring(0, 50) + "...",
+          createdAt: p.createdAt
+        }))
+      };
+      
+      console.log("📊 Draft counting results:", result);
+      res.json(result);
+    } catch (error) {
+      console.error("❌ Draft count check failed:", error);
+      res.status(500).json({ error: "Draft count check failed", message: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
   
   // GET /api/admin/variables - returns all rows from variable_registry
   app.get("/api/admin/variables", requireAdminAuth, async (req: Request, res: Response) => {

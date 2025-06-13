@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSubscription } from '@/hooks/use-subscription';
 import PaywallModal from '@/components/paywall-modal';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getLogoContainerClasses, getDeviceOptimizedClasses } from '@/lib/responsive-utils';
 import { useAuth } from '@/hooks/use-auth';
 import { apiFetch } from '@/lib/apiFetch';
@@ -25,6 +25,12 @@ const tierLabels: Record<OutletTier, string> = {
 };
 
 export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
+  // EFFICIENT LOGO LOADING STRATEGY FOR LIVE FEED:
+  // - No bulk preloading (wasteful for dynamic content with daily new opportunities)
+  // - Use native lazy loading to only load logos when cards become visible
+  // - Let browser handle caching and optimization naturally
+  // - Significantly reduces bandwidth usage and improves initial page load
+  
   const { hasActiveSubscription } = useSubscription();
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -131,28 +137,25 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
       if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
         setLogoLoaded(true);
         setLogoFailed(false);
-        console.log(`✅ Logo loaded successfully for ${outlet}: ${img.naturalWidth}x${img.naturalHeight}`);
       } else {
-        console.log(`❌ Logo failed dimension check for ${outlet}: ${img.naturalWidth}x${img.naturalHeight}`);
         setLogoFailed(true);
       }
     }, 100);
   };
 
   const handleLogoError = () => {
-    console.log(`❌ Logo failed to load for ${outlet}: ${outletLogo}`);
     setLogoFailed(true);
     setLogoLoaded(false);
   };
 
-  // Get logo URL using the new system
-  const logoUrl = outletLogo && outletLogo.trim() && outletLogo !== 'null' && outletLogo !== 'undefined' 
-    ? (outletLogo.startsWith('http') || outletLogo.startsWith('data:') 
-        ? outletLogo 
-        : `${window.location.origin}${outletLogo}`)
-    : '';
-
-  console.log(`OpportunityCard - ${outlet}: logo URL = ${logoUrl}, original = ${outletLogo}`);
+  // Get logo URL using memoization for performance
+  const logoUrl = useMemo(() => {
+    return outletLogo && outletLogo.trim() && outletLogo !== 'null' && outletLogo !== 'undefined' 
+      ? (outletLogo.startsWith('http') || outletLogo.startsWith('data:') 
+          ? outletLogo 
+          : `${window.location.origin}${outletLogo}`)
+      : '';
+  }, [outletLogo]);
 
   // Fetch admin-configured tick interval
   useEffect(() => {
@@ -180,23 +183,6 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     
     return () => clearInterval(configInterval);
   }, []);
-
-  // Preload logo image for faster loading
-  useEffect(() => {
-    if (logoUrl && logoUrl.trim() && !logoFailed) {
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'image';
-      link.href = logoUrl;
-      document.head.appendChild(link);
-      
-      return () => {
-        if (document.head.contains(link)) {
-          document.head.removeChild(link);
-        }
-      };
-    }
-  }, [logoUrl, logoFailed]);
 
   // Calculate price changes and trends using bulk data from opportunities API
   const priceIncrease = currentPriceState > basePrice
@@ -251,19 +237,18 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
       if (!user?.id) return;
       
       try {
-        console.log(`🔍 Checking saved status for opportunity ${id} for user ${user.id}`);
+
         const response = await apiFetch(`/api/users/${user.id}/saved/${id}/status`);
         if (response.ok) {
           const data = await response.json();
-          console.log(`📊 Saved status for opportunity ${id}: ${data.isSaved}`);
           setIsSaved(data.isSaved);
         } else {
-          console.error(`❌ Failed to check saved status for opportunity ${id}:`, response.status);
+
           // Default to false if we can't check
           setIsSaved(false);
         }
       } catch (error) {
-        console.error('💥 Error checking saved status:', error);
+
         // Default to false if there's an error
         setIsSaved(false);
       }
@@ -273,7 +258,6 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     
     // Listen for refresh events from the saved page
     const handleRefreshSavedStatus = () => {
-      console.log(`🔄 Received refresh event for opportunity ${id}`);
       checkSavedStatus();
     };
     
@@ -291,22 +275,18 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     if (isLoading) return;
     
     setIsLoading(true);
-    console.log(`🔄 Save button clicked for opportunity ${id}, current isSaved state: ${isSaved}`);
     
     try {
       if (isSaved) {
         // Unsave the opportunity
-        console.log(`🗑️ Attempting to unsave opportunity ${id}`);
         const response = await apiFetch(`/api/users/${user.id}/saved/${id}`, {
           method: 'DELETE'
         });
         
         if (response.ok) {
           setIsSaved(false);
-          console.log(`✅ Successfully unsaved opportunity ${id}`);
         } else {
           const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-          console.error(`❌ Failed to unsave opportunity ${id}:`, response.status, errorData);
         }
       } else {
         // Save the opportunity
@@ -381,8 +361,8 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
                       "w-full h-full object-contain rounded",
                       theme === 'dark' ? "bg-white/90 p-1" : ""
                     )}
-                    loading="eager"
-                    fetchPriority="high"
+                    loading="lazy"
+                    decoding="async"
                     onLoad={handleLogoLoad}
                     onError={handleLogoError}
                   />

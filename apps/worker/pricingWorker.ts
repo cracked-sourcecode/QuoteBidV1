@@ -225,13 +225,27 @@ async function fetchLiveOpportunities(): Promise<Array<Opportunity & {
   // Get metrics for each opportunity
   const oppsWithMetrics = await Promise.all(
     liveOpps.map(async (opp) => {
-      // Count pitches for this opportunity
+      // Count submitted pitches for this opportunity (excludes drafts)
       const pitchCountResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(pitches)
-        .where(eq(pitches.opportunityId, opp.id));
+        .where(and(
+          eq(pitches.opportunityId, opp.id),
+          eq(pitches.isDraft, false)
+        ));
       
       const pitchCount = Number(pitchCountResult[0]?.count || 0);
+      
+      // Count drafts for this opportunity (separate from submitted pitches)
+      const draftCountResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(pitches)
+        .where(and(
+          eq(pitches.opportunityId, opp.id),
+          eq(pitches.isDraft, true)
+        ));
+      
+      const draftCount = Number(draftCountResult[0]?.count || 0);
       
       // Count saves for this opportunity
       const saveCountResult = await db
@@ -241,14 +255,12 @@ async function fetchLiveOpportunities(): Promise<Array<Opportunity & {
       
       const saveCount = Number(saveCountResult[0]?.count || 0);
       
-      // For now, set other metrics to 0 - these can be implemented later
-      // when we have click/save/draft tracking in place
       return {
         ...opp,
         pitchCount,
         clickCount: 0, // TODO: Implement click tracking
         saveCount,     // ✅ Now tracking actual saves!
-        draftCount: 0, // TODO: Implement draft tracking
+        draftCount,    // ✅ Now tracking actual drafts!
       };
     })
   );
@@ -387,7 +399,8 @@ async function processPricingTick(): Promise<void> {
       if (newPrice !== currentPrice) {
         // 🐛 DEBUG: Log pricing decision details
         console.log(`🧮 PRICING CALC OPP ${opp.id}:`);
-        console.log(`   📊 Metrics: ${snapshot.pitches} pitches, ${snapshot.clicks} clicks, ${snapshot.saves} saves, ${snapshot.drafts} drafts, ${snapshot.emailClicks1h} email clicks`);
+        console.log(`   📊 Metrics: ${snapshot.pitches} submitted pitches, ${snapshot.drafts} drafts, ${snapshot.clicks} clicks, ${snapshot.saves} saves, ${snapshot.emailClicks1h} email clicks`);
+        console.log(`   📊 Total Activity: ${snapshot.pitches + snapshot.drafts} total pitch activity (${snapshot.pitches} submitted + ${snapshot.drafts} drafts)`);
         console.log(`   ⏱️  Time: ${snapshot.hoursRemaining.toFixed(1)} hours remaining`);
         console.log(`   💰 Price: $${currentPrice} → $${newPrice} (Δ${priceDelta > 0 ? '+' : ''}$${priceDelta})`);
         

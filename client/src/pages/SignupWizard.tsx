@@ -316,7 +316,7 @@ function SignupWizardContent() {
 
   if (redirecting) {
     return (
-      <div className="bg-gradient-to-br from-blue-900 via-purple-900 to-violet-900 rounded-3xl shadow-2xl p-8 mb-8 text-center">
+      <div className="p-8 mb-8 text-center">
         <h1 className="text-3xl font-black mb-4 text-white">Redirecting...</h1>
         <p className="mb-6 text-blue-100 text-lg">Please wait while we redirect you to the correct step.</p>
         <Loader2 className="h-10 w-10 animate-spin mx-auto text-blue-300" />
@@ -469,7 +469,7 @@ function SignupWizardContent() {
   } else if (currentStage === 'ready') {
     // The navigation is already handled in handleProfileComplete
     return (
-      <div className="bg-gradient-to-br from-blue-900 via-purple-900 to-violet-900 rounded-3xl shadow-2xl p-12 mb-8 text-center">
+      <div className="p-12 mb-8 text-center">
         <div className="mb-8">
           <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
             <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -487,7 +487,7 @@ function SignupWizardContent() {
     // If the stage is missing or invalid, restart at payment step
     setStage('payment');
     return (
-      <div className="bg-gradient-to-br from-blue-900 via-purple-900 to-violet-900 rounded-3xl shadow-2xl p-8 mb-8 text-center">
+      <div className="p-8 mb-8 text-center">
         <h1 className="text-3xl font-black mb-4 text-white">Restarting Signup...</h1>
         <p className="mb-6 text-blue-100 text-lg">We couldn't determine your current signup stage. Restarting at payment step.</p>
         <Loader2 className="h-10 w-10 animate-spin mx-auto text-blue-300" />

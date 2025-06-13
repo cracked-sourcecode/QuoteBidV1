@@ -685,10 +685,10 @@ export default function OpportunityDetail() {
         return;
       }
       
-      if (pitchContent.length < 50) {
+      if (pitchContent.trim().length < 1) {
         toast({
           title: "Pitch Too Short",
-          description: "Please provide a more detailed pitch (minimum 50 characters).",
+          description: "Please provide a pitch (minimum 1 character).",
           variant: "destructive"
         });
         return;

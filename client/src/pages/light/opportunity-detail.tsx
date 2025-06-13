@@ -582,17 +582,17 @@ export default function OpportunityDetail() {
     const autoSaveTimer = setTimeout(async () => {
       console.log('🔥 Auto-save triggered:', { pitchContent: pitchContent.length, draftId, hasSubmitted: userPitchStatus?.hasSubmitted });
       
-      if (!draftId && pitchContent.trim().length > 0) {
-        // Create draft if user starts typing
+      if (!draftId && pitchContent.trim().length >= 1) {
+        // Create draft if user starts typing (minimum 1 character)
         console.log('🔥 Creating draft...');
         const newDraft = await createDraft();
         console.log('🔥 Draft creation result:', newDraft);
-      } else if (draftId && pitchContent.trim().length > 0) {
-        // Save existing draft
+      } else if (draftId && pitchContent.trim().length >= 1) {
+        // Save existing draft (minimum 1 character)
         console.log('🔥 Saving existing draft:', draftId);
         await saveDraft();
       }
-    }, 2000); // Wait 2 seconds after user stops typing
+    }, 500); // Wait 500ms after user stops typing for faster response
     
     return () => clearTimeout(autoSaveTimer);
   }, [pitchContent, draftId, userPitchStatus?.hasSubmitted, createDraft, saveDraft]);
@@ -827,10 +827,10 @@ export default function OpportunityDetail() {
         return;
       }
       
-      if (pitchContent.length < 50) {
+      if (pitchContent.trim().length < 1) {
         toast({
           title: "Pitch Too Short",
-          description: "Please provide a more detailed pitch (minimum 50 characters).",
+          description: "Please provide a pitch (minimum 1 character).",
           variant: "destructive"
         });
         return;
@@ -1137,6 +1137,7 @@ export default function OpportunityDetail() {
                         onError={handleLogoError}
                         onLoad={handleLogoLoad}
                         loading="lazy"
+                        decoding="async"
                       />
                     </div>
                   ) : (
@@ -1491,40 +1492,40 @@ export default function OpportunityDetail() {
                             </div>
                             
                             {/* Title */}
-                            <h3 className="text-2xl font-bold text-green-800 mb-4">
+                            <h3 className="text-xl font-bold text-green-800 mb-3">
                               Pitch Already Submitted!
                             </h3>
                             
                             {/* Message */}
-                            <p className="text-green-700 text-lg mb-6 leading-relaxed">
+                            <p className="text-green-700 text-base mb-4 leading-relaxed">
                               You've already submitted a pitch for this opportunity. Each user can only submit one pitch per opportunity.
                             </p>
                             
                             {/* Bid Amount Display */}
                             {userPitchStatus.pitch?.bidAmount && (
-                              <div className="bg-white/60 rounded-xl p-4 mb-6 border border-green-200/50">
+                              <div className="bg-white/60 rounded-lg p-3 mb-4 border border-green-200/50">
                                 <div className="text-sm font-medium text-green-600 mb-1">Your bid amount:</div>
-                                <div className="text-3xl font-bold text-green-800">
+                                <div className="text-2xl font-bold text-green-800">
                                   ${userPitchStatus.pitch.bidAmount}
                                 </div>
                               </div>
                             )}
                             
                             {/* Action Buttons */}
-                            <div className="space-y-3">
+                            <div className="space-y-2">
                               <Link href="/opportunities">
-                                <Button className="w-full bg-white hover:bg-gray-50 text-green-700 border border-green-200 font-semibold py-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+                                <Button className="w-full bg-white hover:bg-gray-50 text-green-700 border border-green-200 font-semibold py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
                                   <div className="flex items-center justify-center space-x-2">
-                                    <ChevronLeft className="h-5 w-5 rotate-180" />
+                                    <ChevronLeft className="h-4 w-4 rotate-180" />
                                     <span>Browse Other Opportunities</span>
                                   </div>
                                 </Button>
                               </Link>
                               
                               <Link href="/my-pitches">
-                                <Button variant="outline" className="w-full bg-white/80 hover:bg-white text-green-700 border border-green-200 font-semibold py-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+                                <Button variant="outline" className="w-full bg-white/80 hover:bg-white text-green-700 border border-green-200 font-semibold py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
                                   <div className="flex items-center justify-center space-x-2">
-                                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                     </svg>
                                     <span>View My Pitches</span>

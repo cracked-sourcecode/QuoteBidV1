@@ -104,13 +104,27 @@ async function fetchLiveOpportunities(): Promise<Array<Opportunity & {
   // Get metrics for each opportunity
   const oppsWithMetrics = await Promise.all(
     liveOpps.map(async (opp) => {
-      // Count pitches for this opportunity
+      // Count submitted pitches for this opportunity (excludes drafts)
       const pitchCountResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(pitches)
-        .where(eq(pitches.opportunityId, opp.id));
+        .where(and(
+          eq(pitches.opportunityId, opp.id),
+          eq(pitches.isDraft, false)
+        ));
       
       const pitchCount = Number(pitchCountResult[0]?.count || 0);
+      
+      // Count drafts for this opportunity (separate from submitted pitches)
+      const draftCountResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(pitches)
+        .where(and(
+          eq(pitches.opportunityId, opp.id),
+          eq(pitches.isDraft, true)
+        ));
+      
+      const draftCount = Number(draftCountResult[0]?.count || 0);
       
       // Count saves for this opportunity
       const saveCountResult = await db
@@ -125,7 +139,7 @@ async function fetchLiveOpportunities(): Promise<Array<Opportunity & {
         pitchCount,
         clickCount: 0, // Placeholder - will wire in Step 2
         saveCount,
-        draftCount: 0, // Placeholder - will wire in Step 2
+        draftCount,    // ✅ Now tracking actual drafts!
       };
     })
   );

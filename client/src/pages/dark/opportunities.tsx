@@ -84,6 +84,8 @@ export default function OpportunitiesPage() {
         
         console.log('Formatted opportunities:', formattedOpportunities);
         setOpportunities(formattedOpportunities);
+        
+        // Remove inefficient bulk logo preloading - let individual cards handle their own logos lazily
       } catch (error) {
         console.error('Error fetching opportunities:', error);
       } finally {

@@ -335,6 +335,17 @@ export default function MyPitches() {
           
           {/* Enhanced Stats Row */}
           <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="bg-gradient-to-br from-amber-900/40 to-amber-800/30 rounded-xl p-3 border border-amber-700/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-amber-300 mb-1">Drafts</p>
+                  <p className="text-xl font-bold text-amber-100">{stats.drafts}</p>
+                </div>
+                <div className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center">
+                  <Save className="h-4 w-4 text-white" />
+                </div>
+              </div>
+            </div>
             <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/30 rounded-xl p-3 border border-blue-700/50">
               <div className="flex items-center justify-between">
                 <div>
@@ -354,17 +365,6 @@ export default function MyPitches() {
                 </div>
                 <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
                   <Award className="h-4 w-4 text-white" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-amber-900/40 to-amber-800/30 rounded-xl p-3 border border-amber-700/50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-amber-300 mb-1">Drafts</p>
-                  <p className="text-xl font-bold text-amber-100">{stats.drafts}</p>
-                </div>
-                <div className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center">
-                  <Save className="h-4 w-4 text-white" />
                 </div>
               </div>
             </div>

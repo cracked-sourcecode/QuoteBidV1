@@ -52,10 +52,19 @@ export function SignupWizard({ children }: SignupWizardProps) {
     ? `Step ${currentStep} of 2: ${STAGE_LABELS[currentIndex].label}`
     : '';
 
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const handleLogin = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     window.location.href = "/login";
   };
+
+  // Determine footer visibility based on current stage
+  const isFooterFaded = currentStage === 'payment' || currentStage === 'profile';
+  const shouldShowBorder = currentStage === 'ready' || (!currentStage || currentStage === 'legacy');
 
   return (
     <>
@@ -121,12 +130,7 @@ export function SignupWizard({ children }: SignupWizardProps) {
       </main>
 
         {/* ——— FOOTER ——— */}
-        <footer className="relative z-20 bg-gradient-to-b from-violet-900 via-purple-900 to-slate-900 py-12">
-          {/* Background effects */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob"></div>
-            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob animation-delay-2000"></div>
-          </div>
+        <footer className="relative z-20 py-12 opacity-100">
           
           <div className="max-w-7xl mx-auto px-8 text-center relative z-10">
             <div className="mb-6">
@@ -156,7 +160,7 @@ export function SignupWizard({ children }: SignupWizardProps) {
               </span>
             </div>
             
-            <div className="border-t border-white/20 pt-8">
+            <div className={`pt-8 ${shouldShowBorder ? 'border-t border-white/20' : ''}`}>
               <p className="text-gray-400 text-lg">
                 &copy; {new Date().getFullYear()} QuoteBid Inc. All rights reserved.
               </p>
