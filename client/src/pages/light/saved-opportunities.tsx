@@ -19,11 +19,16 @@ import { Opportunity } from '@shared/types/opportunity';
 import { useAuth } from '@/hooks/use-auth';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
 
+const OPPORTUNITIES_PER_BATCH = 9; // 3 rows of 3 opportunities each
+
 export default function SavedOpportunitiesPage() {
   const [, setLocation] = useLocation();
   const [savedOpportunities, setSavedOpportunities] = useState<Opportunity[]>([]);
   const [filteredOpportunities, setFilteredOpportunities] = useState<Opportunity[]>([]);
+  const [displayedOpportunities, setDisplayedOpportunities] = useState<Opportunity[]>([]);
+  const [currentBatch, setCurrentBatch] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('open');
@@ -169,11 +174,60 @@ export default function SavedOpportunitiesPage() {
     
     setFilteredOpportunities(filtered);
   }, [savedOpportunities, searchQuery, tierFilter, statusFilter, industryFilter, sortBy]);
+
+  // Update displayed opportunities when filtered opportunities change
+  useEffect(() => {
+    const startIndex = 0;
+    const endIndex = currentBatch * OPPORTUNITIES_PER_BATCH;
+    const newDisplayed = filteredOpportunities.slice(startIndex, endIndex);
+    setDisplayedOpportunities(newDisplayed);
+  }, [filteredOpportunities, currentBatch]);
+
+  // Reset to first batch when filters change
+  useEffect(() => {
+    setCurrentBatch(1);
+  }, [searchQuery, tierFilter, statusFilter, industryFilter, sortBy]);
   
   // Handle opportunity click
   const handleOpportunityClick = (opportunityId: number) => {
     setLocation(`/opportunities/${opportunityId}`);
   };
+
+  // Infinite scroll logic
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && !isLoadingMore && displayedOpportunities.length < filteredOpportunities.length) {
+          setIsLoadingMore(true);
+          
+          // Small delay for smooth loading
+          setTimeout(() => {
+            setCurrentBatch(prev => prev + 1);
+            setIsLoadingMore(false);
+          }, 300);
+        }
+      },
+      {
+        root: null,
+        rootMargin: '100px',
+        threshold: 0.1,
+      }
+    );
+
+    const sentinel = document.getElementById('scroll-sentinel');
+    if (sentinel) {
+      observer.observe(sentinel);
+    }
+
+    return () => {
+      if (sentinel) {
+        observer.unobserve(sentinel);
+      }
+    };
+  }, [isLoadingMore, displayedOpportunities.length, filteredOpportunities.length]);
+
+  const hasMoreOpportunities = displayedOpportunities.length < filteredOpportunities.length;
   
   // Loading state
   if (isLoading) {
@@ -264,7 +318,7 @@ export default function SavedOpportunitiesPage() {
       {savedOpportunities.length > 0 && (
         <div className="px-4 sm:px-6 lg:px-8 py-3 bg-white border-b border-gray-200 flex justify-between items-center">
           <p className="text-xs text-gray-600">
-            {filteredOpportunities.length} saved {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'} found
+            Showing {displayedOpportunities.length} of {filteredOpportunities.length} saved {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
           </p>
           
           <div className="flex items-center gap-2">
@@ -294,13 +348,35 @@ export default function SavedOpportunitiesPage() {
       <div className="px-4 sm:px-6 lg:px-8 py-8 bg-white">
         {savedOpportunities.length > 0 ? (
           filteredOpportunities.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredOpportunities.map((opportunity) => (
-                <OpportunityCard
-                  key={opportunity.id}
-                  opportunity={opportunity}
-                />
-              ))}
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {displayedOpportunities.map((opportunity, index) => (
+                  <div 
+                    key={opportunity.id}
+                    className="fadeIn"
+                    style={{ animationDelay: `${(index % OPPORTUNITIES_PER_BATCH) * 0.1}s` }}
+                  >
+                    <OpportunityCard
+                      opportunity={opportunity}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Infinite Scroll Sentinel */}
+              {hasMoreOpportunities && (
+                <div 
+                  id="scroll-sentinel" 
+                  className="flex items-center justify-center py-8"
+                >
+                  {isLoadingMore && (
+                    <div className="flex items-center space-x-3 text-gray-600 text-sm">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>Loading more saved opportunities...</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="bg-white rounded-lg border border-gray-200 p-8 text-center my-6">

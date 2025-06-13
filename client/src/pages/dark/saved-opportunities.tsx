@@ -19,11 +19,16 @@ import { Opportunity } from '@shared/types/opportunity';
 import { useAuth } from '@/hooks/use-auth';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
 
+const OPPORTUNITIES_PER_BATCH = 9; // 3 rows of 3 opportunities each
+
 export default function SavedOpportunitiesPage() {
   const [, setLocation] = useLocation();
   const [savedOpportunities, setSavedOpportunities] = useState<Opportunity[]>([]);
   const [filteredOpportunities, setFilteredOpportunities] = useState<Opportunity[]>([]);
+  const [displayedOpportunities, setDisplayedOpportunities] = useState<Opportunity[]>([]);
+  const [currentBatch, setCurrentBatch] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('open');
@@ -169,6 +174,53 @@ export default function SavedOpportunitiesPage() {
     
     setFilteredOpportunities(filtered);
   }, [savedOpportunities, searchQuery, tierFilter, statusFilter, industryFilter, sortBy]);
+
+  // Update displayed opportunities when filtered opportunities change
+  useEffect(() => {
+    const startIndex = 0;
+    const endIndex = currentBatch * OPPORTUNITIES_PER_BATCH;
+    const newDisplayed = filteredOpportunities.slice(startIndex, endIndex);
+    setDisplayedOpportunities(newDisplayed);
+  }, [filteredOpportunities, currentBatch]);
+
+  // Reset to first batch when filters change
+  useEffect(() => {
+    setCurrentBatch(1);
+  }, [searchQuery, tierFilter, statusFilter, industryFilter, sortBy]);
+
+  // Infinite scroll logic
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && !isLoadingMore && displayedOpportunities.length < filteredOpportunities.length) {
+          setIsLoadingMore(true);
+          
+          // Small delay for smooth loading
+          setTimeout(() => {
+            setCurrentBatch(prev => prev + 1);
+            setIsLoadingMore(false);
+          }, 300);
+        }
+      },
+      {
+        root: null,
+        rootMargin: '100px',
+        threshold: 0.1
+      }
+    );
+
+    const scrollTrigger = document.getElementById('scroll-trigger');
+    if (scrollTrigger) {
+      observer.observe(scrollTrigger);
+    }
+
+    return () => {
+      if (scrollTrigger) {
+        observer.unobserve(scrollTrigger);
+      }
+    };
+  }, [isLoadingMore, displayedOpportunities.length, filteredOpportunities.length]);
   
   // Handle opportunity click
   const handleOpportunityClick = (opportunityId: number) => {
@@ -348,7 +400,7 @@ export default function SavedOpportunitiesPage() {
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
               <p className="text-white font-medium">
-                {filteredOpportunities.length} saved {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'} found
+                Showing {displayedOpportunities.length} of {filteredOpportunities.length} saved {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
               </p>
             </div>
             
@@ -383,13 +435,31 @@ export default function SavedOpportunitiesPage() {
       <div className="px-4 sm:px-6 lg:px-8 py-8">
         {savedOpportunities.length > 0 ? (
           filteredOpportunities.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredOpportunities.map((opportunity) => (
-                <OpportunityCard
-                  key={opportunity.id}
-                  opportunity={opportunity}
-                />
-              ))}
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {displayedOpportunities.map((opportunity, index) => (
+                  <div 
+                    key={opportunity.id}
+                    className="animate-fadeIn"
+                    style={{ 
+                      animationDelay: `${(index % OPPORTUNITIES_PER_BATCH) * 0.1}s`,
+                      animationFillMode: 'both'
+                    }}
+                  >
+                    <OpportunityCard opportunity={opportunity} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Infinite scroll trigger */}
+              <div id="scroll-trigger" className="h-10 flex items-center justify-center">
+                {isLoadingMore && (
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm">Loading more saved opportunities...</span>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 text-center my-6">
