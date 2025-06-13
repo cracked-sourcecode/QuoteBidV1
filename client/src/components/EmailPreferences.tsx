@@ -169,10 +169,10 @@ export function EmailPreferences() {
   if (isLoading || !localPreferences) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-64 bg-gray-200 rounded animate-pulse" />
+        <div className="h-8 w-64 bg-slate-700 rounded animate-pulse" />
         <div className="space-y-4">
           {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="h-24 bg-gray-200 rounded animate-pulse" />
+            <div key={i} className="h-24 bg-slate-700 rounded animate-pulse" />
           ))}
         </div>
       </div>
@@ -183,10 +183,10 @@ export function EmailPreferences() {
     return (
       <div className="space-y-6">
         <div className="text-center py-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load email preferences</h3>
-          <p className="text-gray-600 mb-4">Error: {error.message}</p>
-          <p className="text-gray-600 mb-4">There was an error loading your email preferences. Please try refreshing the page.</p>
-          <Button onClick={() => window.location.reload()} variant="outline">
+          <h3 className="text-lg font-medium text-slate-100 mb-2">Failed to load email preferences</h3>
+          <p className="text-slate-400 mb-4">Error: {error.message}</p>
+          <p className="text-slate-400 mb-4">There was an error loading your email preferences. Please try refreshing the page.</p>
+          <Button onClick={() => window.location.reload()} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100">
             Refresh Page
           </Button>
         </div>
@@ -198,20 +198,20 @@ export function EmailPreferences() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Email Preferences</h2>
-        <p className="text-gray-600">
+        <h2 className="text-2xl font-bold text-slate-100 mb-2">Email Preferences</h2>
+        <p className="text-slate-400">
           Control which email notifications you receive from QuoteBid. You can always change these settings.
         </p>
       </div>
 
       {/* Optional Email Preferences */}
-      <Card className="bg-white border-gray-200 shadow-sm">
+      <Card className="bg-slate-800 border-slate-700 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-gray-900 flex items-center gap-2">
-            <Bell className="h-5 w-5 text-blue-600" />
+          <CardTitle className="text-slate-100 flex items-center gap-2">
+            <Bell className="h-5 w-5 text-blue-400" />
             Notification Preferences
           </CardTitle>
-          <CardDescription className="text-gray-600">
+          <CardDescription className="text-slate-400">
             Choose which types of email updates you'd like to receive
           </CardDescription>
         </CardHeader>
@@ -222,31 +222,31 @@ export function EmailPreferences() {
             
             return (
               <div key={category.id} className="group">
-                <div className="flex items-start justify-between p-4 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-all duration-200">
+                <div className="flex items-start justify-between p-4 rounded-xl border border-slate-600 bg-slate-700 hover:bg-slate-600 transition-all duration-200">
                   <div className="flex gap-4 flex-1">
                     {/* Icon */}
-                    <div className={`w-12 h-12 rounded-xl ${category.bgColor} flex items-center justify-center flex-shrink-0`}>
-                      <Icon className={`h-6 w-6 ${category.color}`} />
+                    <div className={`w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0`}>
+                      <Icon className={`h-6 w-6 ${category.color.replace('text-red-600', 'text-red-400').replace('text-blue-600', 'text-blue-400').replace('text-yellow-600', 'text-yellow-400').replace('text-green-600', 'text-green-400').replace('text-purple-600', 'text-purple-400').replace('text-emerald-600', 'text-emerald-400')}`} />
                     </div>
                     
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-gray-900">{category.title}</h3>
+                        <h3 className="font-semibold text-slate-100">{category.title}</h3>
                         <Badge 
                           variant={isEnabled ? "default" : "secondary"}
-                          className={isEnabled ? "bg-green-100 text-green-700 border-green-200" : "bg-gray-100 text-gray-600 border-gray-200"}
+                          className={isEnabled ? "bg-green-800 text-green-200 border-green-700" : "bg-slate-600 text-slate-300 border-slate-500"}
                         >
                           {isEnabled ? "On" : "Off"}
                         </Badge>
                       </div>
-                      <p className="text-gray-600 text-sm mb-3">{category.description}</p>
+                      <p className="text-slate-300 text-sm mb-3">{category.description}</p>
                       
                       {/* Examples */}
                       <div className="space-y-1">
-                        <p className="text-xs text-gray-500 font-medium">Examples:</p>
+                        <p className="text-xs text-slate-400 font-medium">Examples:</p>
                         {category.examples.map((example, idx) => (
-                          <p key={idx} className="text-xs text-gray-500 pl-2 border-l-2 border-gray-300">
+                          <p key={idx} className="text-xs text-slate-400 pl-2 border-l-2 border-slate-500">
                             "{example}"
                           </p>
                         ))}
@@ -273,26 +273,26 @@ export function EmailPreferences() {
 
       {/* Save Status */}
       {updatePreferencesMutation.isPending && (
-        <div className="flex items-center justify-center p-4 bg-blue-50 border border-blue-200 rounded-xl">
-          <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full mr-3" />
-          <span className="text-blue-700 text-sm">Saving preferences...</span>
+        <div className="flex items-center justify-center p-4 bg-slate-800 border border-slate-600 rounded-xl">
+          <div className="animate-spin w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full mr-3" />
+          <span className="text-slate-200 text-sm">Saving preferences...</span>
         </div>
       )}
 
       {/* Save/Reset Buttons */}
       {hasChanges && !updatePreferencesMutation.isPending && (
-        <Card className="bg-white border-gray-200 shadow-sm">
+        <Card className="bg-slate-800 border-slate-700 shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-medium text-gray-900 mb-1">Unsaved Changes</h3>
-                <p className="text-sm text-gray-600">You have unsaved changes to your email preferences.</p>
+                <h3 className="font-medium text-slate-100 mb-1">Unsaved Changes</h3>
+                <p className="text-sm text-slate-400">You have unsaved changes to your email preferences.</p>
               </div>
               <div className="flex gap-3">
                 <Button 
                   variant="outline" 
                   onClick={handleReset}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="!bg-slate-800 !border-slate-600 !text-slate-300 hover:!bg-slate-700 hover:!text-slate-100"
                 >
                   Reset
                 </Button>

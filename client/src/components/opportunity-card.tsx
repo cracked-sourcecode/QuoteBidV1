@@ -317,7 +317,7 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
         className={cn(
           "backdrop-blur-xl rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-1 group",
           theme === 'dark' 
-            ? "bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-purple-900/20 border border-slate-600/50 hover:shadow-blue-500/10 hover:border-blue-500/40 hover:bg-gradient-to-br hover:from-slate-900/98 hover:via-slate-800/95 hover:to-purple-900/25"
+            ? "bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-700/30 border border-slate-600/50 hover:shadow-blue-500/10 hover:border-blue-500/40 hover:bg-gradient-to-br hover:from-slate-900/98 hover:via-slate-800/95 hover:to-slate-700/40"
             : "bg-white border border-gray-200 hover:shadow-lg"
         )}
         onClick={handleCardClick}
@@ -380,10 +380,10 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
                 "font-bold text-xs sm:text-xs md:text-xs lg:text-sm xl:text-sm px-2 py-0.5 sm:px-2.5 sm:py-1 md:px-3 md:py-1 rounded-full flex-shrink-0 ml-3", 
                 theme === 'dark' 
                   ? tier === 1 ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white border border-blue-500/50" : 
-                    tier === 2 ? "bg-gradient-to-r from-purple-600 to-purple-700 text-white border border-purple-500/50" : 
+                    tier === 2 ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white border border-indigo-500/50" : 
                     "bg-gradient-to-r from-slate-600 to-slate-700 text-white border border-slate-500/50"
                   : tier === 1 ? "bg-blue-600 text-white" : 
-                    tier === 2 ? "bg-purple-600 text-white" : 
+                    tier === 2 ? "bg-indigo-600 text-white" : 
                     "bg-gray-600 text-white"
               )}
             >
@@ -395,7 +395,7 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
           <div className={cn(
             "text-xs sm:text-xs md:text-xs lg:text-sm xl:text-sm font-semibold uppercase tracking-wide",
             theme === 'dark' 
-              ? "bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent"
+              ? "bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-transparent"
               : "text-blue-600"
           )}>EXPERT REQUEST</div>
         </div>
@@ -424,13 +424,13 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
               <span className={cn(
                 "inline-flex items-center px-2 py-1 sm:px-2.5 sm:py-1.5 md:px-3 md:py-1.5 text-xs sm:text-xs md:text-xs lg:text-sm xl:text-sm font-semibold rounded-lg shadow-sm",
                 theme === 'dark' 
-                  ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-300 border border-blue-500/40 backdrop-blur-sm"
+                  ? "bg-gradient-to-r from-blue-600/20 to-blue-700/25 text-blue-300 border border-blue-500/40 backdrop-blur-sm"
                   : "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200"
               )}>
                 <span className={cn(
                   "w-1.5 h-1.5 rounded-full mr-1.5",
                   theme === 'dark' 
-                    ? "bg-gradient-to-r from-blue-500 to-purple-500"
+                    ? "bg-gradient-to-r from-blue-500 to-blue-600"
                     : "bg-blue-500"
                 )}></span>
                 {topicTags[0]}
@@ -458,10 +458,10 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
             "mb-3 p-3 sm:p-3.5 md:p-4 lg:p-4 xl:p-5 rounded-xl shadow-lg transition-all duration-500",
             theme === 'dark' 
               ? priceJustUpdated
-                ? "bg-gradient-to-br from-blue-600/30 via-purple-600/25 to-slate-700/60 border border-blue-500/50 backdrop-blur-sm"
-                : "bg-gradient-to-br from-blue-600/25 via-purple-600/20 to-slate-700/60 border border-blue-500/40 backdrop-blur-sm"
+                ? "bg-gradient-to-br from-blue-600/30 via-blue-700/25 to-slate-700/60 border border-blue-500/50 backdrop-blur-sm"
+                : "bg-gradient-to-br from-blue-600/25 via-blue-700/20 to-slate-700/60 border border-blue-500/40 backdrop-blur-sm"
               : priceJustUpdated
-                ? "bg-gradient-to-r from-blue-100/60 to-purple-100/40 border border-blue-300/70"
+                ? "bg-gradient-to-r from-blue-100/60 to-blue-200/40 border border-blue-300/70"
                 : "bg-gradient-to-r from-gray-50/50 to-blue-50/30 border border-gray-100"
           )}>
             <div className="flex items-center justify-between">
@@ -553,12 +553,12 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
               <Badge className={cn(
                 "flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5",
                 theme === 'dark' 
-                  ? "bg-gradient-to-r from-purple-600 to-purple-700 text-white border border-purple-500/50"
-                  : "bg-purple-100 text-purple-700"
+                  ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white border border-blue-500/50"
+                  : "bg-blue-100 text-blue-700"
               )}>
                 <span className={cn(
                   "w-1.5 h-1.5 rounded-full",
-                  theme === 'dark' ? "bg-purple-300" : "bg-purple-500"
+                  theme === 'dark' ? "bg-blue-300" : "bg-blue-500"
                 )}></span> 
                 New
               </Badge>
@@ -592,7 +592,7 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
                 "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed",
                 theme === 'dark' 
                   ? isSaved 
-                    ? 'bg-gradient-to-r from-blue-600/25 to-purple-600/25 text-blue-200 hover:from-blue-600/35 hover:to-purple-600/35 border border-blue-500/50 shadow-md' 
+                    ? 'bg-gradient-to-r from-blue-600/25 to-blue-700/25 text-blue-200 hover:from-blue-600/35 hover:to-blue-700/35 border border-blue-500/50 shadow-md' 
                     : 'bg-gradient-to-r from-slate-700/60 to-slate-600/60 text-slate-300 hover:from-slate-700/80 hover:to-slate-600/80 border border-slate-500/60 shadow-md'
                   : isSaved 
                     ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' 
@@ -614,7 +614,7 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
             className={cn(
               "w-full text-white font-medium py-3 rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.01]",
               theme === 'dark' 
-                ? "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                ? "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
                 : "bg-blue-600 hover:bg-blue-700"
             )}
             size="sm"

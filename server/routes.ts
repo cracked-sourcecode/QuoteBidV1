@@ -2775,7 +2775,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Insert draft pitch
+      // Check if a draft already exists for this user and opportunity
+      const existingDraft = await getDb().select()
+        .from(pitches)
+        .where(
+          and(
+            eq(pitches.userId, userId),
+            eq(pitches.opportunityId, opportunityId),
+            eq(pitches.status, 'draft'),
+            eq(pitches.isDraft, true)
+          )
+        )
+        .limit(1);
+      
+      if (existingDraft.length > 0) {
+        // Update existing draft instead of creating a new one
+        const updateData = {
+          content,
+          audioUrl,
+          transcript,
+          bidAmount: bidAmount || null,
+          pitchType,
+          updatedAt: new Date()
+        };
+        
+        const result = await storage.updatePitch({
+          id: existingDraft[0].id,
+          ...updateData
+        });
+        
+        console.log("Updated existing draft pitch:", result);
+        
+        // Create notification for draft progress if content was added
+        if (result && content && content.trim().length > 0) {
+          try {
+            const opportunity = await storage.getOpportunity(opportunityId);
+            if (opportunity) {
+              await notificationService.createNotification({
+                userId,
+                type: 'pitch_status',
+                title: '✏️ Draft Updated',
+                message: `You've updated your draft for "${opportunity.title}". Continue crafting your pitch to submit your bid.`,
+                linkUrl: `/opportunities/${opportunityId}#pitch-section`,
+                relatedId: result.id,
+                relatedType: 'pitch',
+                icon: 'edit',
+                iconColor: 'blue',
+              });
+              console.log(`Created draft update notification for user ${userId} and opportunity ${opportunityId}`);
+            }
+          } catch (notificationError) {
+            console.error('Error creating draft update notification:', notificationError);
+          }
+        }
+        
+        return res.status(200).json(result);
+      }
+      
+      // Insert new draft pitch only if none exists
       const pitchData = {
         opportunityId,
         userId,
@@ -4116,6 +4173,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Helper function to clean up duplicate drafts for a user
+  async function cleanupDuplicateDrafts(userId: number) {
+    try {
+      console.log(`🧹 Cleaning up duplicate drafts for user ${userId}`);
+      
+      // Get all draft pitches for the user
+      const allDrafts = await getDb().select()
+        .from(pitches)
+        .where(
+          and(
+            eq(pitches.userId, userId),
+            eq(pitches.status, 'draft'),
+            eq(pitches.isDraft, true)
+          )
+        )
+        .orderBy(desc(pitches.createdAt));
+      
+      if (allDrafts.length <= 1) {
+        console.log(`✅ No duplicate drafts found for user ${userId}`);
+        return;
+      }
+      
+      // Group drafts by opportunity ID
+      const draftsByOpportunity = allDrafts.reduce((acc, draft) => {
+        const key = draft.opportunityId || 'no-opportunity';
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push(draft);
+        return acc;
+      }, {} as Record<string, typeof allDrafts>);
+      
+      // For each opportunity, keep only the most recent draft
+      let deletedCount = 0;
+      for (const [opportunityId, drafts] of Object.entries(draftsByOpportunity)) {
+        if (drafts.length > 1) {
+          // Sort by creation date (newest first)
+          const sortedDrafts = drafts.sort((a, b) => 
+            new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+          );
+          
+          // Keep the first (newest) and delete the rest
+          const toDelete = sortedDrafts.slice(1);
+          
+          for (const draft of toDelete) {
+            await getDb().delete(pitches).where(eq(pitches.id, draft.id));
+            deletedCount++;
+            console.log(`🗑️ Deleted duplicate draft ${draft.id} for opportunity ${opportunityId}`);
+          }
+        }
+      }
+      
+      console.log(`✅ Cleanup complete for user ${userId}: deleted ${deletedCount} duplicate drafts`);
+    } catch (error: any) {
+      console.error(`❌ Error cleaning up drafts for user ${userId}:`, error);
+    }
+  }
+  
   // Get user's successful placements with full details
   app.get("/api/users/:userId/pitches", async (req: Request, res: Response) => {
     try {
@@ -4126,6 +4241,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Fetching pitches for user ID: ${userId}`);
       
+      // Clean up duplicate drafts before returning results
+      await cleanupDuplicateDrafts(userId);
+      
       // Try to get pitches with full relations first
       try {
         const pitchesWithRelations = await getDb().select()
@@ -4133,13 +4251,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .where(eq(pitches.userId, userId))
           .orderBy(desc(pitches.createdAt));
           
+        // Remove duplicates based on opportunity ID and status for drafts
+        const uniquePitches = pitchesWithRelations.reduce((acc, pitch) => {
+          const key = `${pitch.opportunityId}-${pitch.status}`;
+          
+          // For drafts, only keep the most recent one per opportunity
+          if (pitch.status === 'draft' && pitch.isDraft) {
+            const existing = acc.find(p => 
+              p.opportunityId === pitch.opportunityId && 
+              p.status === 'draft' && 
+              p.isDraft
+            );
+            
+            if (existing) {
+              // Keep the more recent one
+              const pitchDate = pitch.createdAt ? new Date(pitch.createdAt).getTime() : 0;
+              const existingDate = existing.createdAt ? new Date(existing.createdAt).getTime() : 0;
+              
+              if (pitchDate > existingDate) {
+                const index = acc.indexOf(existing);
+                acc[index] = pitch;
+              }
+              // Skip this pitch if existing is newer
+            } else {
+              acc.push(pitch);
+            }
+          } else {
+            // For non-drafts, include all
+            acc.push(pitch);
+          }
+          
+          return acc;
+        }, [] as typeof pitchesWithRelations);
+          
         // If we have pitches, enrich them with relations (opportunity, publication)
-        if (pitchesWithRelations.length > 0) {
-          console.log(`Found ${pitchesWithRelations.length} pitches for user ${userId}`);
+        if (uniquePitches.length > 0) {
+          console.log(`Found ${uniquePitches.length} unique pitches for user ${userId} (${pitchesWithRelations.length} total before deduplication)`);
           
           // Get all related data in parallel
           const enrichedPitches = await Promise.all(
-            pitchesWithRelations.map(async (pitch) => {
+            uniquePitches.map(async (pitch) => {
               try {
                 // Get opportunity
                 const [opportunity] = pitch.opportunityId 
@@ -4178,7 +4329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
                 
                 // Debug logging for first pitch
-                if (pitch.id === pitchesWithRelations[0].id) {
+                if (pitch.id === uniquePitches[0].id) {
                   console.log(`[DEBUG] First pitch structure:`, {
                     pitchId: pitch.id,
                     hasOpportunity: !!opportunity,

@@ -1036,11 +1036,11 @@ export default function AccountPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 relative overflow-hidden">
+    <div className="flex min-h-screen bg-slate-950 relative overflow-hidden">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div 
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-30 z-30"
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
           onClick={() => setSidebarOpen(false)} 
           aria-hidden="true"
         />
@@ -1048,11 +1048,11 @@ export default function AccountPage() {
       {/* Mobile Sidebar Toggle */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-white shadow-md"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-slate-800 border border-slate-700 shadow-lg"
         aria-label="Toggle sidebar"
       >
         <svg
-          className="h-5 w-5 text-gray-600"
+          className="h-5 w-5 text-slate-300"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -1067,14 +1067,14 @@ export default function AccountPage() {
 
       {/* Sidebar - Fixed width */}
       <div 
-        className={`w-72 min-h-screen bg-white border-r border-gray-200 p-6 fixed overflow-y-auto transition-transform duration-300 ease-in-out z-40 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`} 
+        className={`w-72 min-h-screen bg-slate-900 border-r border-slate-700 p-6 fixed overflow-y-auto transition-transform duration-300 ease-in-out z-40 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`} 
         style={{ maxHeight: '100vh' }}
       >
         <div className="space-y-6">
           {/* Profile Avatar & Basic Info */}
           <div className="flex flex-col items-center text-center">
             <div 
-              className="w-32 h-32 rounded-full bg-gray-100 mb-4 relative group cursor-pointer"
+              className="w-32 h-32 rounded-full bg-slate-800 mb-4 relative group cursor-pointer border-2 border-slate-700"
               onClick={() => isEditing && handleAvatarClick()}
             >
               <>
@@ -1099,12 +1099,12 @@ export default function AccountPage() {
                     }}
                   />
                 )}
-                <div className="flex items-center justify-center w-full h-full rounded-full bg-gray-200 text-gray-600 font-bold text-4xl fallback-avatar" style={{display: (user.avatar || avatarPreview) ? 'none' : 'flex'}}>
+                <div className="flex items-center justify-center w-full h-full rounded-full bg-slate-700 text-slate-300 font-bold text-4xl fallback-avatar" style={{display: (user.avatar || avatarPreview) ? 'none' : 'flex'}}>
                   {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
                 </div>
               </>
               {isEditing && (
-                <div className="absolute inset-0 rounded-full bg-black/0 flex items-center justify-center transition-all duration-200 group-hover:bg-black/30">
+                <div className="absolute inset-0 rounded-full bg-black/0 flex items-center justify-center transition-all duration-200 group-hover:bg-black/40">
                   <span className="text-white opacity-0 group-hover:opacity-100 text-sm font-medium transition-opacity duration-200">
                     Change Photo
                   </span>
@@ -1118,17 +1118,17 @@ export default function AccountPage() {
               className="hidden"
               accept="image/*"
             />
-            <h2 className="text-xl font-bold">{user.fullName}</h2>
-            <p className="text-sm text-gray-500">@{user.username}</p>
+            <h2 className="text-xl font-bold text-slate-100">{user.fullName}</h2>
+            <p className="text-sm text-slate-400">@{user.username}</p>
             {user.location && (
-              <p className="text-sm text-gray-500 mt-1">{user.location}</p>
+              <p className="text-sm text-slate-400 mt-1">{user.location}</p>
             )}
             
             {/* Edit Profile Button */}
             <Button 
               variant="outline" 
               size="sm" 
-              className="mt-4 w-full bg-white hover:bg-gray-50 text-gray-700 border-gray-300"
+              className="mt-4 w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-slate-500"
               onClick={() => {
                 console.log('Edit profile button clicked, setting isEditing to true');
                 setIsEditing(true);
@@ -1148,11 +1148,11 @@ export default function AccountPage() {
 
           {/* Navigation Menu */}
           <div className="pt-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Navigation</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Navigation</h3>
             <nav className="space-y-1">
               <a 
                 href="/account" 
-                className="flex items-center py-2 px-3 text-sm font-medium rounded-md bg-blue-50 text-blue-700"
+                className="flex items-center py-2 px-3 text-sm font-medium rounded-md bg-blue-600 text-blue-100 shadow-lg"
               >
                 <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -1162,7 +1162,7 @@ export default function AccountPage() {
               
               <a 
                 href="/opportunities" 
-                className="flex items-center py-2 px-3 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50"
+                className="flex items-center py-2 px-3 text-sm font-medium rounded-md text-slate-300 hover:bg-slate-800 hover:text-slate-100 transition-colors"
               >
                 <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
@@ -1172,7 +1172,7 @@ export default function AccountPage() {
               
               <a 
                 href="/my-pitches" 
-                className="flex items-center py-2 px-3 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50"
+                className="flex items-center py-2 px-3 text-sm font-medium rounded-md text-slate-300 hover:bg-slate-800 hover:text-slate-100 transition-colors"
               >
                 <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
@@ -1184,11 +1184,11 @@ export default function AccountPage() {
 
           {/* Account Settings Section */}
           <div className="pt-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Account Settings</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Account Settings</h3>
             <div className="space-y-1">
               <button 
                 onClick={() => setSubscriptionModalOpen(true)}
-                className="flex w-full items-center py-2 px-3 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50"
+                className="flex w-full items-center py-2 px-3 text-sm font-medium rounded-md text-slate-300 hover:bg-slate-800 hover:text-slate-100 transition-colors"
               >
                 <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -1198,18 +1198,18 @@ export default function AccountPage() {
 
               <button 
                 onClick={() => setThemeModalOpen(true)}
-                className="flex w-full items-center py-2 px-3 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50"
+                className="flex w-full items-center py-2 px-3 text-sm font-medium rounded-md text-slate-300 hover:bg-slate-800 hover:text-slate-100 transition-colors group"
               >
                 {theme === 'light' ? (
                   <>
-                    <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-4 w-4 mr-3 !text-slate-300 group-hover:!text-slate-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{color: '#cbd5e1 !important'}}>
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                     </svg>
                     Dark Mode
                   </>
                 ) : (
                   <>
-                    <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-4 w-4 mr-3 !text-slate-300 group-hover:!text-slate-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{color: '#cbd5e1 !important'}}>
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                     Light Mode
@@ -1218,10 +1218,10 @@ export default function AccountPage() {
               </button>
               
               <button 
-                className="flex w-full items-center py-2 px-3 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50"
+                className="flex w-full items-center py-2 px-3 text-sm font-medium rounded-md text-slate-300 hover:bg-slate-800 hover:text-slate-100 transition-colors group"
                 onClick={() => setPasswordModalOpen(true)}
               >
-                <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-4 w-4 mr-3 !text-slate-300 group-hover:!text-slate-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{color: '#cbd5e1 !important'}}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1721 9z" />
                 </svg>
                 Change Password
@@ -1231,13 +1231,13 @@ export default function AccountPage() {
           
           {/* Help & Support Section */}
           <div className="pt-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Help & Support</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Help & Support</h3>
             <div className="space-y-1">
               <a 
                 href="mailto:support@quotebid.com" 
-                className="flex items-center py-2 px-3 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50"
+                className="flex items-center py-2 px-3 text-sm font-medium rounded-md text-slate-300 hover:bg-slate-800 hover:text-slate-100 transition-colors group"
               >
-                <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-4 w-4 mr-3 !text-slate-300 group-hover:!text-slate-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{color: '#cbd5e1 !important'}}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
                 Contact Support
@@ -1247,10 +1247,10 @@ export default function AccountPage() {
                 href="https://calendly.com/rubicon-pr-group/quotebid" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center py-2 px-3 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50"
+                className="flex items-center py-2 px-3 text-sm font-medium rounded-md text-slate-300 hover:bg-slate-800 hover:text-slate-100 transition-colors group"
               >
-                <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <svg className="h-4 w-4 mr-3 !text-slate-300 group-hover:!text-slate-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{color: '#cbd5e1 !important'}}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 Book a Call
               </a>
@@ -1258,18 +1258,18 @@ export default function AccountPage() {
           </div>
           
           {/* Help text at bottom of sidebar */}
-          <div className="pt-6 mt-6 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center">
-              Need help? <a href="mailto:support@quotebid.com" className="text-blue-600 hover:underline">Contact Support</a>
+          <div className="pt-6 mt-6 border-t border-slate-700">
+            <p className="text-xs text-slate-400 text-center">
+              Need help? <a href="mailto:support@quotebid.com" className="text-blue-400 hover:text-blue-300 hover:underline">Contact Support</a>
             </p>
           </div>
         </div>
       </div>
 
       {/* Main Content - Responsive margin to account for sidebar */}
-      <div className={`lg:ml-72 transition-all duration-300 ease-in-out flex-1 p-8 ${sidebarOpen ? 'ml-72' : 'ml-0'} account-content-area bg-gray-50`}>
+      <div className={`lg:ml-72 transition-all duration-300 ease-in-out flex-1 p-8 ${sidebarOpen ? 'ml-72' : 'ml-0'} account-content-area bg-slate-950`}>
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">Profile Dashboard</h1>
+          <h1 className="text-2xl font-bold mb-6 text-slate-100">Profile Dashboard</h1>
           
           {!user ? (
             <div className="flex items-center justify-center p-12">
@@ -1278,9 +1278,10 @@ export default function AccountPage() {
           ) : isEditing === true ? (
             <div>
               <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Edit Profile</h1>
+                <h1 className="text-2xl font-bold text-slate-100">Edit Profile</h1>
                 <Button 
                   variant="ghost" 
+                  className="!text-slate-300 hover:!text-slate-100 hover:!bg-slate-800"
                   onClick={() => setIsEditing(false)}
                   disabled={profileUpdateMutation.isPending}
                 >
@@ -1288,10 +1289,10 @@ export default function AccountPage() {
                 </Button>
               </div>
 
-              <Card className="bg-white">
+              <Card className="bg-slate-900 border-slate-700">
                 <CardHeader>
-                  <CardTitle>Profile Information</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-slate-100">Profile Information</CardTitle>
+                  <CardDescription className="text-slate-400">
                     This information will be used by journalists to understand your expertise
                   </CardDescription>
                 </CardHeader>
@@ -1300,9 +1301,9 @@ export default function AccountPage() {
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                       {/* Profile photo upload section */}
                       <div className="mb-6">
-                        <h3 className="text-sm font-medium mb-3">Profile Photo</h3>
+                        <h3 className="text-sm font-medium mb-3 text-slate-200">Profile Photo</h3>
                         <div className="flex items-center gap-4">
-                          <div className="w-24 h-24 rounded-full bg-gray-100 relative overflow-hidden flex-shrink-0">
+                          <div className="w-24 h-24 rounded-full bg-slate-800 border-2 border-slate-700 relative overflow-hidden flex-shrink-0">
                             {(user.avatar || avatarPreview) ? (
                               <img 
                                 src={avatarPreview || user.avatar || ''}
@@ -1318,7 +1319,7 @@ export default function AccountPage() {
                               />
                             ) : null}
                             <div 
-                              className="flex items-center justify-center w-full h-full bg-gray-200 text-gray-600 font-bold text-3xl" 
+                              className="flex items-center justify-center w-full h-full bg-slate-700 text-slate-300 font-bold text-3xl" 
                               style={{display: (user.avatar || avatarPreview) ? 'none' : 'flex'}}
                             >
                               {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
@@ -1353,7 +1354,7 @@ export default function AccountPage() {
                             )}
                           </div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-slate-400 mt-2">
                           Upload a professional headshot to make your profile stand out to journalists.
                           Large images will be automatically optimized for upload.
                         </p>
@@ -1365,9 +1366,13 @@ export default function AccountPage() {
                           name="fullName"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Full Name*</FormLabel>
+                              <FormLabel className="text-slate-200">Full Name*</FormLabel>
                               <FormControl>
-                                <Input placeholder="John Smith" {...field} />
+                                <Input 
+                                  placeholder="John Smith" 
+                                  className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                  {...field} 
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1379,9 +1384,13 @@ export default function AccountPage() {
                           name="location"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Location*</FormLabel>
+                              <FormLabel className="text-slate-200">Location*</FormLabel>
                               <FormControl>
-                                <Input placeholder="New York, NY" {...field} />
+                                <Input 
+                                  placeholder="New York, NY" 
+                                  className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                  {...field} 
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1396,11 +1405,12 @@ export default function AccountPage() {
                           name="email"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Email*</FormLabel>
+                              <FormLabel className="text-slate-200">Email*</FormLabel>
                               <FormControl>
                                 <Input 
                                   type="email" 
                                   placeholder="john@example.com" 
+                                  className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
                                   {...field}
                                   onChange={(e) => {
                                     field.onChange(e);
@@ -1409,9 +1419,9 @@ export default function AccountPage() {
                                 />
                               </FormControl>
                               <div className="h-4 mt-1">
-                                {emailChecking && <div className="text-xs text-gray-400">Checking email...</div>}
-                                {!emailChecking && !emailValid && <div className="text-xs text-red-500">Please enter a valid email address.</div>}
-                                {!emailChecking && emailValid && !emailUnique && <div className="text-xs text-red-500">Email is already in use.</div>}
+                                                            {emailChecking && <div className="text-xs text-slate-400">Checking email...</div>}
+                            {!emailChecking && !emailValid && <div className="text-xs text-red-400">Please enter a valid email address.</div>}
+                            {!emailChecking && emailValid && !emailUnique && <div className="text-xs text-red-400">Email is already in use.</div>}
                               </div>
                               <FormMessage />
                             </FormItem>
@@ -1423,12 +1433,12 @@ export default function AccountPage() {
                           name="phone_number"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Phone</FormLabel>
+                              <FormLabel className="text-slate-200">Phone</FormLabel>
                               <div className="flex gap-3">
                                 <select
                                   value={countryCode}
                                   onChange={(e) => setCountryCode(e.target.value)}
-                                  className="rounded-md border border-gray-300 px-2 py-2 w-20 text-sm"
+                                  className="rounded-md border border-slate-600 bg-slate-800 text-slate-200 px-2 py-2 w-20 text-sm"
                                 >
                                   {COUNTRY_CODES.map(({ code, country, flag }) => (
                                     <option key={code} value={code}>
@@ -1440,6 +1450,7 @@ export default function AccountPage() {
                                   <Input 
                                     type="tel" 
                                     placeholder="Phone number"
+                                    className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
                                     value={formattedPhone}
                                     onChange={(e) => {
                                       const cleaned = e.target.value.replace(/[^\d\s\-() ]/g, '');
@@ -1458,9 +1469,9 @@ export default function AccountPage() {
                                 </FormControl>
                               </div>
                               <div className="h-4 mt-1">
-                                {phoneChecking && <div className="text-xs text-gray-400">Checking phone number...</div>}
-                                {!phoneChecking && !phoneValid && <div className="text-xs text-red-500">Please enter a valid phone number.</div>}
-                                {!phoneChecking && phoneValid && !phoneUnique && <div className="text-xs text-red-500">Phone number is already in use.</div>}
+                                {phoneChecking && <div className="text-xs text-slate-400">Checking phone number...</div>}
+                                {!phoneChecking && !phoneValid && <div className="text-xs text-red-400">Please enter a valid phone number.</div>}
+                                {!phoneChecking && phoneValid && !phoneUnique && <div className="text-xs text-red-400">Phone number is already in use.</div>}
                               </div>
                               <FormMessage />
                             </FormItem>
@@ -1474,12 +1485,16 @@ export default function AccountPage() {
                         name="title"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Professional Title</FormLabel>
+                            <FormLabel className="text-slate-200">Professional Title</FormLabel>
                             <FormControl>
-                              <Input placeholder="CEO of QuoteBid" {...field} />
+                              <Input 
+                                placeholder="CEO of QuoteBid" 
+                                className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                {...field} 
+                              />
                             </FormControl>
                             <FormMessage />
-                            <p className="text-xs text-gray-500">Your professional title (e.g., "CEO of QuoteBid", "Finance Expert", etc.)</p>
+                            <p className="text-xs text-slate-400">Your professional title (e.g., "CEO of QuoteBid", "Finance Expert", etc.)</p>
                           </FormItem>
                         )}
                       />
@@ -1490,11 +1505,11 @@ export default function AccountPage() {
                         name="bio"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Professional Bio*</FormLabel>
+                            <FormLabel className="text-slate-200">Professional Bio*</FormLabel>
                             <FormControl>
                               <Textarea 
                                 placeholder="Describe your background, expertise, and what you can offer to journalists..."
-                                className="min-h-[120px]"
+                                className="min-h-[120px] bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
                                 {...field}
                               />
                             </FormControl>
@@ -1509,19 +1524,19 @@ export default function AccountPage() {
                         name="industry"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Primary Industry*</FormLabel>
+                            <FormLabel className="text-slate-200">Primary Industry*</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
                               defaultValue={field.value}
                             >
                               <FormControl>
-                                <SelectTrigger>
+                                <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-100">
                                   <SelectValue placeholder="Select your industry" />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent>
+                              <SelectContent className="bg-slate-800 border-slate-600 text-slate-100">
                                 {INDUSTRY_OPTIONS.map((option) => (
-                                  <SelectItem key={option.value} value={option.value}>
+                                  <SelectItem key={option.value} value={option.value} className="text-slate-100 hover:bg-slate-700">
                                     {option.label}
                                   </SelectItem>
                                 ))}
@@ -1538,9 +1553,9 @@ export default function AccountPage() {
                         name="doFollowLink"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>
+                            <FormLabel className="text-slate-200">
                               Do-Follow Link
-                              <span className="text-gray-500 text-xs ml-2">(For article placements)</span>
+                              <span className="text-slate-400 text-xs ml-2">(For article placements)</span>
                             </FormLabel>
                             <Select
                               value={field.value || "website"}
@@ -1548,16 +1563,16 @@ export default function AccountPage() {
                               required
                             >
                               <FormControl>
-                                <SelectTrigger>
+                                <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-100">
                                   <SelectValue placeholder="Select a link to use in articles" />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent>
-                                <SelectItem value="website">Website</SelectItem>
-                                <SelectItem value="linkedIn">LinkedIn</SelectItem>
-                                <SelectItem value="instagram">Instagram</SelectItem>
-                                <SelectItem value="twitter">X</SelectItem>
-                                <SelectItem value="other">Other URL</SelectItem>
+                              <SelectContent className="bg-slate-800 border-slate-600 text-slate-100">
+                                <SelectItem value="website" className="text-slate-100 hover:bg-slate-700">Website</SelectItem>
+                                <SelectItem value="linkedIn" className="text-slate-100 hover:bg-slate-700">LinkedIn</SelectItem>
+                                <SelectItem value="instagram" className="text-slate-100 hover:bg-slate-700">Instagram</SelectItem>
+                                <SelectItem value="twitter" className="text-slate-100 hover:bg-slate-700">X</SelectItem>
+                                <SelectItem value="other" className="text-slate-100 hover:bg-slate-700">Other URL</SelectItem>
                               </SelectContent>
                             </Select>
                             {(field.value === "custom" || field.value === "other") && (
@@ -1565,10 +1580,10 @@ export default function AccountPage() {
                                 placeholder="https://example.com" 
                                 value={typeof field.value === "string" && field.value.startsWith("http") ? field.value : ""}
                                 onChange={(e) => field.onChange(e.target.value)}
-                                className="mt-2"
+                                className="mt-2 bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
                               />
                             )}
-                            <FormDescription>
+                            <FormDescription className="text-slate-400">
                               Select which link to include at the end of quotes in articles
                             </FormDescription>
                             <FormMessage />
@@ -1578,16 +1593,20 @@ export default function AccountPage() {
 
                       {/* Social links section */}
                       <div>
-                        <h3 className="text-lg font-medium mb-4">Online Profiles & Web Presence</h3>
+                        <h3 className="text-lg font-medium mb-4 text-slate-200">Online Profiles & Web Presence</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <FormField
                             control={form.control}
                             name="linkedIn"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>LinkedIn</FormLabel>
+                                <FormLabel className="text-slate-200">LinkedIn</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="https://linkedin.com/in/username" {...field} />
+                                  <Input 
+                                    placeholder="https://linkedin.com/in/username" 
+                                    className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                    {...field} 
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -1599,9 +1618,13 @@ export default function AccountPage() {
                             name="website"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Website</FormLabel>
+                                <FormLabel className="text-slate-200">Website</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="https://yourwebsite.com" {...field} />
+                                  <Input 
+                                    placeholder="https://yourwebsite.com" 
+                                    className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                    {...field} 
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -1613,9 +1636,13 @@ export default function AccountPage() {
                             name="instagram"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Instagram</FormLabel>
+                                <FormLabel className="text-slate-200">Instagram</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="https://instagram.com/username" {...field} />
+                                  <Input 
+                                    placeholder="https://instagram.com/username" 
+                                    className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                    {...field} 
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -1627,9 +1654,13 @@ export default function AccountPage() {
                             name="twitter"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>X</FormLabel>
+                                <FormLabel className="text-slate-200">X</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="https://x.com/username" {...field} />
+                                  <Input 
+                                    placeholder="https://x.com/username" 
+                                    className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                    {...field} 
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -1641,11 +1672,15 @@ export default function AccountPage() {
                             name="otherProfileUrl"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Other URL (Optional)</FormLabel>
+                                <FormLabel className="text-slate-200">Other URL (Optional)</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="https://yourwebsite.com" {...field} />
+                                  <Input 
+                                    placeholder="https://yourwebsite.com" 
+                                    className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                    {...field} 
+                                  />
                                 </FormControl>
-                                <FormDescription>
+                                <FormDescription className="text-slate-400">
                                   Add another website or profile not listed above
                                 </FormDescription>
                                 <FormMessage />
@@ -1661,6 +1696,7 @@ export default function AccountPage() {
                         <Button 
                           type="button" 
                           variant="outline"  
+                          className="!bg-slate-800 !border-slate-600 !text-slate-300 hover:!bg-slate-700 hover:!text-slate-100"
                           onClick={() => setIsEditing(false)}
                           disabled={profileUpdateMutation.isPending}
                         >
@@ -1668,6 +1704,7 @@ export default function AccountPage() {
                         </Button>
                         <Button 
                           type="submit"
+                          className="!bg-blue-600 hover:!bg-blue-700 !text-white !border-blue-600"
                           disabled={profileUpdateMutation.isPending}
                         >
                           {profileUpdateMutation.isPending ? (
@@ -1694,20 +1731,20 @@ export default function AccountPage() {
               {/* Header with name and title */}
               <div className="mb-6">
                 {user.fullName && (
-                  <h2 className="text-xl font-semibold mb-1">{user.fullName}</h2>
+                  <h2 className="text-xl font-semibold mb-1 text-slate-100">{user.fullName}</h2>
                 )}
                 {user.title && (
-                  <p className="text-md text-gray-700 font-medium mb-2">{user.title}</p>
+                  <p className="text-md text-slate-300 font-medium mb-2">{user.title}</p>
                 )}
                 <div className="flex items-center">
-                  <p className="text-gray-600">
+                  <p className="text-slate-400">
                     {user.industry ? (
                       <span>{user.industry}</span>
                     ) : (
-                      <span className="text-gray-400 italic">Add your industry in profile settings</span>
+                      <span className="text-slate-500 italic">Add your industry in profile settings</span>
                     )}
                   </p>
-                  <Button variant="ghost" size="sm" className="ml-2" onClick={() => {
+                  <Button variant="ghost" size="sm" className="ml-2 text-slate-300 hover:text-slate-100 hover:bg-slate-800" onClick={() => {
                     setIsEditing(true);
                     setActiveTab('info');
                     // Force scroll to the top of the content area
@@ -1724,16 +1761,16 @@ export default function AccountPage() {
               
               {/* Tabs */}
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6">
-                  <TabsTrigger value="info" className="flex items-center gap-2">
+                <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-800 border border-slate-700">
+                  <TabsTrigger value="info" className="flex items-center gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100">
                     <User className="h-4 w-4" />
                     Profile
                   </TabsTrigger>
-                  <TabsTrigger value="billing" className="flex items-center gap-2">
+                  <TabsTrigger value="billing" className="flex items-center gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100">
                     <CreditCard className="h-4 w-4" />
                     Billing
                   </TabsTrigger>
-                  <TabsTrigger value="email-preferences" className="flex items-center gap-2">
+                  <TabsTrigger value="email-preferences" className="flex items-center gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100">
                     <Mail className="h-4 w-4" />
                     Email Preferences
                   </TabsTrigger>
@@ -1744,14 +1781,14 @@ export default function AccountPage() {
               {/* Bio Section */}
               <div className="mb-8">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">PROFESSIONAL BIO</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300">PROFESSIONAL BIO</h2>
                 </div>
-                <div className="rounded-lg border border-gray-200 p-4">
-                  <div className="text-gray-600">
+                <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
+                  <div className="text-slate-300">
                     {user.bio ? (
                       <p className="whitespace-pre-line">{user.bio}</p>
                     ) : (
-                      <p className="text-gray-400 italic">No bio information added yet. Add a professional bio to help journalists understand your expertise.</p>
+                      <p className="text-slate-500 italic">No bio information added yet. Add a professional bio to help journalists understand your expertise.</p>
                     )}
                   </div>
                 </div>
@@ -1760,57 +1797,57 @@ export default function AccountPage() {
               {/* Contact Information Section */}
               <div className="mb-8">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">CONTACT INFORMATION</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300">CONTACT INFORMATION</h2>
                 </div>
-                <div className="rounded-lg border border-gray-200 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="rounded-lg border border-slate-700 bg-slate-900 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Location</h3>
-                    <p className="text-gray-700">{user.location || 'Not specified'}</p>
+                    <h3 className="text-sm font-medium text-slate-400 mb-1">Location</h3>
+                    <p className="text-slate-200">{user.location || 'Not specified'}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Email</h3>
-                    <p className="text-gray-700">{user.email}</p>
+                    <h3 className="text-sm font-medium text-slate-400 mb-1">Email</h3>
+                    <p className="text-slate-200">{user.email}</p>
                   </div>
                       <div>
-                        <h3 className="text-sm font-medium text-gray-500 mb-1">Phone</h3>
-                        <p className="text-gray-700">{(user as any).phone_number || 'Not specified'}</p>
+                        <h3 className="text-sm font-medium text-slate-400 mb-1">Phone</h3>
+                        <p className="text-slate-200">{(user as any).phone_number || 'Not specified'}</p>
                       </div>
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Website</h3>
+                    <h3 className="text-sm font-medium text-slate-400 mb-1">Website</h3>
                     {user.website ? (
-                      <p className="text-gray-700">
-                        Website (<a href={user.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)
+                      <p className="text-slate-200">
+                        Website (<a href={user.website} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline">View</a>)
                       </p>
                     ) : (
-                      <p className="text-gray-400 italic">Not specified</p>
+                      <p className="text-slate-500 italic">Not specified</p>
                     )}
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Industry</h3>
-                    <p className="text-gray-700">{user.industry || 'Not specified'}</p>
+                    <h3 className="text-sm font-medium text-slate-400 mb-1">Industry</h3>
+                    <p className="text-slate-200">{user.industry || 'Not specified'}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Do-Follow Link</h3>
+                    <h3 className="text-sm font-medium text-slate-400 mb-1">Do-Follow Link</h3>
                     {user.doFollowLink && user.doFollowLink !== 'none' ? (
-                      <p className="text-gray-700">
+                      <p className="text-slate-200">
                         {user.doFollowLink === 'website' && user.website ? (
-                          <>Website (<a href={user.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>
+                          <>Website (<a href={user.website} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline">View</a>)</>
                         ) : user.doFollowLink === 'linkedIn' && user.linkedIn ? (
-                          <>LinkedIn (<a href={user.linkedIn} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>
+                          <>LinkedIn (<a href={user.linkedIn} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline">View</a>)</>
                         ) : user.doFollowLink === 'twitter' && user.twitter ? (
-                          <>X (<a href={user.twitter} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>
+                          <>X (<a href={user.twitter} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline">View</a>)</>
                         ) : user.doFollowLink === 'instagram' && user.instagram ? (
-                          <>Instagram (<a href={user.instagram} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>                  
+                          <>Instagram (<a href={user.instagram} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline">View</a>)</>                  
                         ) : user.doFollowLink === 'other' && user.otherProfileUrl ? (
-                          <>Website (<a href={user.otherProfileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>                  
+                          <>Website (<a href={user.otherProfileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline">View</a>)</>                  
                         ) : user.doFollowLink.startsWith('http') ? (
-                          <>Custom URL (<a href={user.doFollowLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>)</>
+                          <>Custom URL (<a href={user.doFollowLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline">View</a>)</>
                         ) : (
                           'Not properly configured'
                         )}
                       </p>
                     ) : (
-                      <p className="text-red-500 italic">Required - set a do-follow link for article quotes</p>
+                      <p className="text-red-400 italic">Required - set a do-follow link for article quotes</p>
                     )}
                   </div>
                 </div>
@@ -1819,39 +1856,39 @@ export default function AccountPage() {
               {/* Online Profiles & Web Presence */}
               <div className="mb-8">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">ONLINE PROFILES & WEB PRESENCE</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300">ONLINE PROFILES & WEB PRESENCE</h2>
                 </div>
-                <div className="rounded-lg border border-gray-200 p-4">
+                <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {/* LinkedIn */}
                     <div className="flex items-center">
-                      <div className="bg-gray-100 rounded-md p-2 mr-3">
-                        <svg className="h-5 w-5 text-blue-700" viewBox="0 0 24 24" fill="currentColor">
+                      <div className="bg-slate-800 rounded-md p-2 mr-3">
+                        <svg className="h-5 w-5 text-blue-400" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                         </svg>
                       </div>
                       {user.linkedIn ? (
-                        <a href={user.linkedIn} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
+                        <a href={user.linkedIn} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline text-sm font-medium">
                           LinkedIn
                         </a>
                       ) : (
-                        <p className="text-gray-400 italic text-sm">No LinkedIn added</p>
+                        <p className="text-slate-500 italic text-sm">No LinkedIn added</p>
                       )}
                     </div>
                     
                     {/* X (formerly Twitter) */}
                     <div className="flex items-center">
-                      <div className="bg-black rounded-md p-2 mr-3">
-                        <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <div className="bg-slate-800 rounded-md p-2 mr-3">
+                        <svg className="h-5 w-5 text-slate-300" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                         </svg>
                       </div>
                       {user.twitter ? (
-                        <a href={user.twitter || ''} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
+                        <a href={user.twitter || ''} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline text-sm font-medium">
                           X
                         </a>
                       ) : (
-                        <p className="text-gray-400 italic text-sm">No X added</p>
+                        <p className="text-slate-500 italic text-sm">No X added</p>
                       )}
                     </div>
                     
@@ -1863,25 +1900,25 @@ export default function AccountPage() {
                         </svg>
                       </div>
                       {user.instagram ? (
-                        <a href={user.instagram} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
+                        <a href={user.instagram} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline text-sm font-medium">
                           Instagram
                         </a>
                       ) : (
-                        <p className="text-gray-400 italic text-sm">No Instagram added</p>
+                        <p className="text-slate-500 italic text-sm">No Instagram added</p>
                       )}
                     </div>
                     
                     {/* Website */}
                     {user.otherProfileUrl && (
                       <div className="flex items-center">
-                        <div className="bg-purple-100 rounded-md p-2 mr-3">
-                          <svg className="h-5 w-5 text-purple-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <div className="bg-slate-800 rounded-md p-2 mr-3">
+                          <svg className="h-5 w-5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="12" cy="12" r="10"></circle>
                             <path d="M12 8v8"></path>
                             <path d="M8 12h8"></path>
                           </svg>
                         </div>
-                        <a href={user.otherProfileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
+                        <a href={user.otherProfileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline text-sm font-medium">
                           Website
                         </a>
                       </div>
@@ -1890,16 +1927,16 @@ export default function AccountPage() {
                 </div>
               </div>
               
-              {/* Media Coverage Section - Enhanced Premium Design */}
+              {/* Media Coverage Section - Dark Theme Optimized */}
               <div className="mb-8">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">MEDIA COVERAGE</h2>
-                    <p className="text-xs text-gray-500 mt-1">Powered by QuoteBid</p>
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200">MEDIA COVERAGE</h2>
+                    <p className="text-xs text-slate-400 mt-1">Powered by QuoteBid</p>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-slate-950 rounded-xl border border-slate-700 shadow-xl overflow-hidden">
                   {(mediaCoverage && mediaCoverage.length > 0) ? (
                     <div className="p-6">
                       <div className="grid grid-cols-1 gap-6">
@@ -1951,19 +1988,20 @@ export default function AccountPage() {
                           const logoUrl = getLogoUrl();
                           
                           return (
-                          <div key={`coverage-${coverage.id}`} className="group relative bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 p-6 hover:border-blue-200 transform hover:-translate-y-1">
-                            {/* Gradient accent line - blue to purple theme */}
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-t-xl"></div>
+                          <div key={`coverage-${coverage.id}`} className="group relative bg-slate-900 rounded-xl border border-slate-700 shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 p-6 hover:border-blue-400/60 transform hover:-translate-y-2 hover:scale-[1.02]">
+                            {/* Enhanced gradient accent line */}
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-t-xl shadow-sm"></div>
                             
                             {/* Publication logo */}
                             <div className="flex items-start gap-4">
-                              <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform bg-white border border-gray-200 overflow-hidden">
+                              <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform bg-white border-2 border-slate-600 overflow-hidden shadow-sm">
                                 {logoUrl ? (
                                   <img
                                     src={logoUrl}
                                     alt={`${coverage.publication || 'Publication'} logo`}
-                                    className="w-full h-full object-contain"
+                                    className="w-full h-full object-contain opacity-100 filter-none"
                                     loading="lazy"
+                                    style={{ opacity: '1 !important', filter: 'none !important' }}
                                     onError={(e) => {
                                       // Hide the image and show fallback
                                       e.currentTarget.style.display = 'none';
@@ -1976,8 +2014,8 @@ export default function AccountPage() {
                                 ) : null}
                                 {/* Text-based fallback when logo fails or is not available */}
                                 <div 
-                                  className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl"
-                                  style={{ display: logoUrl ? 'none' : 'flex' }}
+                                  className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl opacity-100"
+                                  style={{ display: logoUrl ? 'none' : 'flex', opacity: '1 !important' }}
                                 >
                                   <span className="text-xs font-semibold text-white text-center px-1">
                                     {coverage.publication?.split(' ').map((word: string) => word[0]).join('').slice(0, 2).toUpperCase() || 'NA'}
@@ -1986,16 +2024,16 @@ export default function AccountPage() {
                               </div>
                               
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-gray-900 text-lg leading-tight mb-2 group-hover:text-blue-700 transition-colors">{coverage.title}</h3>
+                                <h3 className="font-semibold text-slate-100 text-lg leading-tight mb-2 group-hover:text-blue-300 transition-colors">{coverage.title}</h3>
                                 
                                 <div className="flex items-center mb-4">
-                                  <div className="flex items-center text-sm text-gray-600">
+                                  <div className="flex items-center text-sm text-slate-300">
                                     <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
                                     <span className="font-medium">{coverage.publication || 'Publication'}</span>
                                     {coverage.articleDate && (
                                       <>
-                                        <span className="mx-2 text-gray-400">•</span>
-                                        <span className="text-gray-500">
+                                        <span className="mx-2 text-slate-500">•</span>
+                                        <span className="text-slate-400">
                                           {new Date(coverage.articleDate).toLocaleDateString()}
                                         </span>
                                       </>
@@ -2005,16 +2043,16 @@ export default function AccountPage() {
                                 
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-3">
-                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 border border-blue-200 shadow-sm">
-                                      <svg className="h-3.5 w-3.5 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-blue-500 to-blue-600 text-white border border-blue-400 shadow-lg shadow-blue-500/25 ring-1 ring-blue-400/30">
+                                      <svg className="h-3.5 w-3.5 mr-1.5 text-white drop-shadow-sm" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                       </svg>
                                       {coverage.source === 'billing_manager' || coverage.source === 'pitch_success' ? 'Earned Placement' : 'Media Coverage'}
                                     </span>
                                     
                                     {/* Success metrics indicator */}
-                                    <div className="hidden sm:flex items-center text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-md">
-                                      <svg className="h-3 w-3 mr-1 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <div className="hidden sm:flex items-center text-xs bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white px-2 py-1 rounded-md border border-fuchsia-400 shadow-lg shadow-fuchsia-500/25 ring-1 ring-fuchsia-400/30 font-bold">
+                                      <svg className="h-3 w-3 mr-1 text-white drop-shadow-sm" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                       </svg>
                                       Featured
@@ -2026,10 +2064,10 @@ export default function AccountPage() {
                                       variant="outline"
                                       size="sm"
                                       asChild
-                                      className="text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                                      className="bg-gradient-to-r from-emerald-500 to-teal-600 border-emerald-400 text-white hover:from-emerald-600 hover:to-teal-700 hover:border-emerald-300 hover:text-white transition-all duration-200 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 ring-1 ring-emerald-400/30 font-bold"
                                     >
-                                      <a href={coverage.url} target="_blank" rel="noopener noreferrer" className="flex items-center font-medium">
-                                        <ExternalLink className="h-4 w-4 mr-1.5" />
+                                      <a href={coverage.url} target="_blank" rel="noopener noreferrer" className="flex items-center font-bold text-white">
+                                        <ExternalLink className="h-4 w-4 mr-1.5 text-white drop-shadow-sm" />
                                         View Article
                                       </a>
                                     </Button>
@@ -2041,21 +2079,20 @@ export default function AccountPage() {
                           );
                         })}
                       </div>
-                      
 
                     </div>
                   ) : (
                     <div className="text-center py-16 px-6">
                       <div className="flex flex-col items-center max-w-md mx-auto">
                         {/* Enhanced empty state with gradient background */}
-                        <div className="w-20 h-20 bg-gradient-to-br from-blue-100 via-purple-100 to-blue-200 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-                          <svg className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center mb-6 shadow-lg border border-slate-700">
+                          <svg className="h-10 w-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No published articles yet</h3>
-                        <p className="text-sm text-gray-500 mb-6 leading-relaxed">When you get quoted through QuoteBid opportunities, your published articles will appear here as beautiful portfolio pieces.</p>
-                        <Button variant="default" size="sm" asChild className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-md hover:shadow-lg transition-all duration-200">
+                        <h3 className="text-lg font-medium text-slate-100 mb-2">No published articles yet</h3>
+                        <p className="text-sm text-slate-400 mb-6 leading-relaxed">When you get quoted through QuoteBid opportunities, your published articles will appear here as beautiful portfolio pieces.</p>
+                        <Button variant="default" size="sm" asChild className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white border-0 shadow-md hover:shadow-lg transition-all duration-200">
                           <a href="/opportunities" className="flex items-center">
                             <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -2070,16 +2107,16 @@ export default function AccountPage() {
               </div>
               
               {/* Support Section */}
-              <div className="mb-8 rounded-lg border border-gray-200 p-6 bg-gray-50 text-center">
-                <h2 className="text-lg font-medium mb-2">Need help with your profile?</h2>
-                <p className="text-gray-600 mb-4">Our team can help optimize your profile to increase your chances of getting quoted.</p>
+              <div className="mb-8 rounded-lg border border-slate-700 p-6 bg-slate-900 text-center">
+                <h2 className="text-lg font-medium mb-2 text-slate-100">Need help with your profile?</h2>
+                <p className="text-slate-400 mb-4">Our team can help optimize your profile to increase your chances of getting quoted.</p>
                 <div className="flex flex-wrap justify-center gap-3">
                   <Button variant="default" size="sm" asChild>
                     <a href="https://calendly.com/rubicon-pr-group/quotebid" target="_blank" rel="noopener noreferrer">
                       Book a Call
                     </a>
                   </Button>
-                  <Button variant="outline" size="sm" asChild>
+                  <Button variant="outline" size="sm" asChild className="!border-slate-600 !text-slate-300 !bg-slate-800 hover:!bg-slate-700 hover:!text-slate-100">
                     <a href="mailto:support@quotebid.com">
                       Email Support
                     </a>
@@ -2121,10 +2158,10 @@ export default function AccountPage() {
 
       {/* Subscription Modal */}
       <Dialog open={subscriptionModalOpen} onOpenChange={setSubscriptionModalOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg bg-slate-900 border-slate-700">
           <DialogHeader>
-            <DialogTitle>Manage Your Subscription</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-slate-100">Manage Your Subscription</DialogTitle>
+            <DialogDescription className="text-slate-400">
               View details of your current subscription plan and make changes.
             </DialogDescription>
           </DialogHeader>
@@ -2137,51 +2174,51 @@ export default function AccountPage() {
               <>
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="text-xl font-bold">QuoteBid {subscription.isPremium ? 'Premium' : 'Basic'}</h3>
-                    <p className="text-sm text-gray-500">
-                      Status: <span className={`font-medium ${subscription.status === 'active' ? 'text-green-600' : 'text-amber-600'}`}>
+                    <h3 className="text-xl font-bold text-slate-100">QuoteBid {subscription.isPremium ? 'Premium' : 'Basic'}</h3>
+                    <p className="text-sm text-slate-400">
+                      Status: <span className={`font-medium ${subscription.status === 'active' ? 'text-green-400' : 'text-amber-400'}`}>
                         {subscription.status === 'active' ? 'Active' : 'Inactive'}
                       </span>
                     </p>
                     {subscription.expiresAt && (
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-slate-400 mt-1">
                         {subscription.status === 'active' ? 'Next billing date' : 'Expires'}: {formatDate(subscription.expiresAt)}
                       </p>
                     )}
                   </div>
-                  <div className="border border-gray-200 rounded-lg p-3 text-center">
-                    <p className="text-xs text-gray-500">Monthly Price</p>
-                    <p className="text-2xl font-bold">
+                  <div className="border border-slate-600 rounded-lg p-3 text-center bg-slate-800">
+                    <p className="text-xs text-slate-400">Monthly Price</p>
+                    <p className="text-2xl font-bold text-slate-100">
                       $99.99
                     </p>
                   </div>
                 </div>
                 
                 <div className="space-y-2">
-                  <h4 className="font-medium text-gray-900">Plan Includes:</h4>
+                  <h4 className="font-medium text-slate-100">Plan Includes:</h4>
                   <ul className="space-y-2">
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                      <span>Unlimited pitches to media opportunities</span>
+                      <CheckCircle className="h-5 w-5 text-green-400 mr-2 shrink-0 mt-0.5" />
+                      <span className="text-slate-300">Unlimited pitches to media opportunities</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                      <span>Priority matching with journalists</span>
+                      <CheckCircle className="h-5 w-5 text-green-400 mr-2 shrink-0 mt-0.5" />
+                      <span className="text-slate-300">Priority matching with journalists</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                      <span>Access to premium tier opportunities</span>
+                      <CheckCircle className="h-5 w-5 text-green-400 mr-2 shrink-0 mt-0.5" />
+                      <span className="text-slate-300">Access to premium tier opportunities</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                      <span>Professional profile with social links</span>
+                      <CheckCircle className="h-5 w-5 text-green-400 mr-2 shrink-0 mt-0.5" />
+                      <span className="text-slate-300">Professional profile with social links</span>
                     </li>
                   </ul>
                 </div>
               </>
             ) : (
               <div className="text-center py-4">
-                <p className="text-gray-500">No active subscription found.</p>
+                <p className="text-slate-400">No active subscription found.</p>
                 <Button className="mt-4">
                   Subscribe Now
                 </Button>
@@ -2217,10 +2254,10 @@ export default function AccountPage() {
 
       {/* Add Media Coverage Modal */}
       <Dialog open={addMediaModalOpen} onOpenChange={setAddMediaModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] bg-slate-900 border-slate-700">
           <DialogHeader>
-            <DialogTitle>{editingMediaItem ? 'Edit Media Coverage' : 'Add Media Coverage'}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-slate-100">{editingMediaItem ? 'Edit Media Coverage' : 'Add Media Coverage'}</DialogTitle>
+            <DialogDescription className="text-slate-400">
               {editingMediaItem 
                 ? 'Update the details about this media coverage item.'
                 : 'Add details about media coverage you\'ve received to showcase on your profile.'
@@ -2299,12 +2336,12 @@ export default function AccountPage() {
               />
               
               {/* Powered by QuoteBid AI Section */}
-              <div className="pt-4 border-t border-gray-100">
-                <div className="flex items-center justify-center gap-2 text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
+              <div className="pt-4 border-t border-slate-700">
+                <div className="flex items-center justify-center gap-2 text-xs text-slate-400 bg-slate-800 rounded-lg p-3">
                   <span>Powered By:</span>
                   <div className="flex items-center">
-                    <span className="text-blue-600 font-bold text-sm">QuoteBid</span>
-                    <span className="text-purple-600 font-bold text-sm ml-1">AI</span>
+                    <span className="text-blue-400 font-bold text-sm">QuoteBid</span>
+                    <span className="text-purple-400 font-bold text-sm ml-1">AI</span>
                   </div>
                 </div>
               </div>
@@ -2327,15 +2364,15 @@ export default function AccountPage() {
 
       {/* Password & Security Modal */}
       <Dialog open={passwordModalOpen} onOpenChange={setPasswordModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] bg-slate-900 border-slate-700">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <DialogTitle className="flex items-center gap-2 text-slate-100">
+              <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
               Change Password
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-slate-400">
               Update your account password
             </DialogDescription>
           </DialogHeader>
@@ -2435,27 +2472,27 @@ export default function AccountPage() {
 
       {/* Theme Switch Confirmation Modal */}
       <Dialog open={themeModalOpen} onOpenChange={setThemeModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-slate-900 border-slate-700">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-slate-100">
               {theme === 'light' ? (
-                <svg className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                 </svg>
               ) : (
-                <svg className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               )}
               Switch to {theme === 'light' ? 'Dark' : 'Light'} Mode
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-slate-400">
               Are you sure you want to switch to {theme === 'light' ? 'dark' : 'light'} mode? This will change the appearance of the entire application.
             </DialogDescription>
           </DialogHeader>
           
           <div className="py-4">
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+            <div className="bg-slate-800 rounded-lg p-4 mb-4 border border-slate-700">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                   {theme === 'light' ? (
@@ -2469,10 +2506,10 @@ export default function AccountPage() {
                   )}
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900">
+                  <h3 className="font-medium text-slate-100">
                     {theme === 'light' ? 'Dark Mode Experience' : 'Light Mode Experience'}
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-slate-300">
                     {theme === 'light' 
                       ? 'Sleek dark interface designed for evening use and reduced eye strain.'
                       : 'Clean bright interface perfect for daytime use and maximum readability.'
@@ -2482,7 +2519,7 @@ export default function AccountPage() {
               </div>
             </div>
             
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-slate-400 mb-4">
               You can always switch back at any time from the account settings.
             </p>
           </div>

@@ -98,13 +98,13 @@ export default function DarkNavbar() {
                   )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80 bg-slate-900/95 border border-white/20 backdrop-blur-lg shadow-2xl">
-                <div className="px-4 py-3 border-b border-white/20">
+              <DropdownMenuContent align="end" className="w-80 bg-slate-950 border border-slate-800 shadow-2xl">
+                <div className="px-4 py-3 border-b border-slate-800/60">
                   <h3 className="text-sm font-medium text-white">Notifications</h3>
                 </div>
                 <div className="max-h-80 overflow-y-auto">
                   {notifications.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-sm text-gray-300">
+                    <div className="px-4 py-6 text-center text-sm text-gray-400">
                       No notifications yet
                     </div>
                   ) : (
@@ -168,7 +168,7 @@ export default function DarkNavbar() {
                       return (
                         <div 
                           key={notification.id} 
-                          className={`px-4 py-3 border-b border-white/20 hover:bg-white/10 cursor-pointer transition-all duration-300 ${!notification.isRead ? 'bg-blue-500/20' : ''}`}
+                          className={`px-4 py-3 border-b border-slate-800/50 hover:bg-slate-800/30 cursor-pointer transition-all duration-300 ${!notification.isRead ? 'bg-blue-900/30' : ''}`}
                           onClick={() => {
                             if (notification.linkUrl) {
                               // Mark as read and navigate
@@ -181,12 +181,12 @@ export default function DarkNavbar() {
                           }}
                         >
                           <div className="flex items-start">
-                            <div className={`flex-shrink-0 rounded-full bg-white/20 p-2`}>
+                            <div className={`flex-shrink-0 rounded-full bg-slate-800/60 p-2`}>
                               {icon}
                             </div>
                             <div className="ml-3 flex-1">
                               <p className="text-sm font-medium text-white">{notification.title}</p>
-                              <div className="text-xs text-gray-300 mt-1">
+                              <div className="text-xs text-gray-400 mt-1">
                                 {notification.linkUrl && notification.message.includes('Click here') ? (
                                   <span>
                                     {notification.message.split('Click here')[0]}
@@ -207,7 +207,7 @@ export default function DarkNavbar() {
                                   <span>{notification.message}</span>
                                 )}
                               </div>
-                              <p className="text-xs text-gray-400 mt-1">
+                              <p className="text-xs text-gray-500 mt-1">
                                 {notification.createdAt && formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                               </p>
                             </div>
@@ -224,13 +224,13 @@ export default function DarkNavbar() {
                 </div>
                 {/* Clear notifications button - only show if there are notifications */}
                 {notifications.length > 0 && (
-                  <div className="px-4 py-3 border-t border-white/20">
+                  <div className="px-4 py-3 border-t border-slate-800/60">
                     <button 
                       onClick={(e) => {
                         e.preventDefault();
                         clearAllNotifications();
                       }}
-                      className="w-full text-center py-2 px-4 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-md border border-red-400/30 hover:border-red-300/50 transition-all duration-300"
+                      className="w-full text-center py-2 px-4 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-900/30 rounded-md border border-red-500/40 hover:border-red-400/60 transition-all duration-300"
                     >
                       Clear All Notifications
                     </button>
