@@ -61,9 +61,9 @@ export default function Home() {
       {/* Overlay gradient for depth */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/10" />
       {/* Animated mesh gradient */}
-              <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
-          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-violet-400 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
+        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-violet-400 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
       </div>
 
       {/* ——— PREMIUM NAVBAR ——— */}
@@ -457,16 +457,16 @@ export default function Home() {
                 <div className="w-full md:w-1/2 flex justify-center">
                   {i === 0 ? (
                     // App Preview for Step 1 - Matching actual app layout
-                    <div className="bg-gradient-to-br from-white/10 to-white/3 backdrop-blur-2xl rounded-2xl md:rounded-3xl border border-white/15 shadow-2xl overflow-hidden hover:scale-105 transition-all duration-300 w-full max-w-sm md:max-w-md">
+                    <div className="bg-gradient-to-br from-gray-600/40 to-gray-700/40 rounded-2xl md:rounded-3xl border border-white/20 shadow-2xl overflow-hidden hover:scale-105 transition-all duration-300 w-full max-w-sm md:max-w-md">
                       {/* App Header */}
-                      <div className="bg-white/5 border-b border-white/10 p-3 md:p-4">
+                      <div className="bg-gray-600/30 border-b border-white/20 p-3 md:p-4">
                         <h3 className="text-white font-bold text-base md:text-lg mb-2">Media Opportunities</h3>
                         <p className="text-gray-300 text-xs md:text-sm">Browse open opportunities from top publications and lock in your bid before prices increase.</p>
                       </div>
                       
                       {/* Single Large Card Preview - Yahoo Finance */}
                       <div className="p-3 md:p-4">
-                        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl md:rounded-2xl p-4 md:p-6 hover:bg-white/8 transition-all">
+                        <div className="bg-gray-600/25 border border-white/20 rounded-xl md:rounded-2xl p-4 md:p-6 hover:bg-gray-600/35 transition-all">
                           {/* Card Header */}
                           <div className="flex items-center justify-between mb-3 md:mb-4">
                             <div className="flex items-center space-x-2 md:space-x-3">
@@ -495,7 +495,7 @@ export default function Home() {
                           
                           {/* Tag */}
                           <div className="mb-3 md:mb-4">
-                            <span className="inline-block px-2 py-1 md:px-3 md:py-1 bg-blue-500/15 text-blue-300 rounded-full text-xs md:text-sm border border-blue-400/20">
+                            <span className="inline-block px-2 py-1 md:px-3 md:py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs md:text-sm border border-blue-400/30">
                               • Capital Markets
                             </span>
                           </div>
@@ -515,9 +515,9 @@ export default function Home() {
                           <div className="flex items-center justify-between mb-3 md:mb-4">
                             <div className="flex items-center space-x-2 md:space-x-3 text-xs md:text-sm">
                               <span className="text-gray-300">⏰ 8 days left</span>
-                              <span className="px-1.5 py-0.5 md:px-2 md:py-1 bg-blue-500/15 text-blue-300 rounded border border-blue-400/20">🔒 Premium</span>
+                              <span className="px-1.5 py-0.5 md:px-2 md:py-1 bg-blue-500/20 text-blue-300 rounded border border-blue-400/30">🔒 Premium</span>
                             </div>
-                            <span className="px-2 py-1 md:px-3 md:py-1 bg-white/5 text-white rounded text-xs md:text-sm border border-white/10">Save Opportunity</span>
+                            <span className="px-2 py-1 md:px-3 md:py-1 bg-gray-500/40 text-white rounded text-xs md:text-sm border border-white/20">Save Opportunity</span>
                           </div>
                           
                           {/* View Details Button */}
@@ -545,27 +545,25 @@ export default function Home() {
                         <div className="h-16 md:h-24 relative mb-2 md:mb-3 bg-white/5 rounded-lg p-2">
                           <svg className="w-full h-full" viewBox="0 0 300 80">
                             <defs>
-                              <linearGradient id="priceChart" x1="0%" y1="0%" x2="0%" y2="100%">
+                              <linearGradient id="priceChartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                                 <stop offset="0%" stopColor="rgba(34, 197, 94, 0.4)" />
                                 <stop offset="50%" stopColor="rgba(34, 197, 94, 0.2)" />
                                 <stop offset="100%" stopColor="rgba(34, 197, 94, 0.0)" />
                               </linearGradient>
-                              <filter id="glow">
+                              <filter id="glowFilter">
                                 <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
                                 <feMerge> 
                                   <feMergeNode in="coloredBlur"/>
                                   <feMergeNode in="SourceGraphic"/>
                                 </feMerge>
                               </filter>
-                            </defs>
-                            
-                            {/* Grid lines */}
-                            <defs>
-                              <pattern id="grid" width="30" height="20" patternUnits="userSpaceOnUse">
+                              <pattern id="gridPattern" width="30" height="20" patternUnits="userSpaceOnUse">
                                 <path d="M 30 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5"/>
                               </pattern>
                             </defs>
-                            <rect width="100%" height="100%" fill="url(#grid)" />
+                            
+                            {/* Grid background */}
+                            <rect width="100%" height="100%" fill="url(#gridPattern)" />
                             
                             {/* Price line with smooth curves */}
                             <path
@@ -573,13 +571,13 @@ export default function Home() {
                               fill="none"
                               stroke="#22c55e"
                               strokeWidth="2.5"
-                              filter="url(#glow)"
+                              filter="url(#glowFilter)"
                             />
                             
                             {/* Filled area under curve */}
                             <path
                               d="M0,65 Q20,60 40,55 T80,45 Q100,42 120,38 T160,35 Q180,32 200,25 T240,20 Q260,18 280,15 L300,13 L300,80 L0,80 Z"
-                              fill="url(#priceChart)"
+                              fill="url(#priceChartGradient)"
                             />
                             
                             {/* Data points */}
@@ -591,7 +589,7 @@ export default function Home() {
                             
                             {/* Current price indicator */}
                             <line x1="300" y1="0" x2="300" y2="80" stroke="#22c55e" strokeWidth="1" strokeDasharray="3,3" opacity="0.6"/>
-                  </svg>
+                          </svg>
                           
                           {/* Price labels */}
                           <div className="absolute top-1 left-2 text-green-300 text-xs font-mono">$536</div>
@@ -819,7 +817,7 @@ export default function Home() {
       </section>
 
       {/* ——— EDITORIAL INTEGRITY STRIP ——— */}
-      <section className="relative z-20 bg-gradient-to-b from-purple-900 to-slate-900 py-24 overflow-hidden">
+      <section className="relative z-20 bg-gradient-to-b from-purple-900 to-slate-900 py-12 md:py-24 overflow-hidden">
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-full h-full" style={{
@@ -916,7 +914,7 @@ export default function Home() {
       </section>
 
       {/* ——— PRICING ENGINE STRIP ——— */}
-      <section className="relative z-20 bg-gradient-to-b from-slate-900 to-purple-900 py-20 overflow-hidden">
+      <section className="relative z-20 bg-gradient-to-b from-slate-900 to-purple-900 py-12 md:py-20 overflow-hidden">
         {/* Animated data flow background */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-1/4 left-0 w-64 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent"></div>
@@ -925,7 +923,7 @@ export default function Home() {
                             </div>
         
         <div className="max-w-7xl mx-auto px-6 relative">
-          <div className="flex flex-col lg:flex-row-reverse items-center gap-24">
+          <div className="flex flex-col lg:flex-row-reverse items-center gap-12 md:gap-24">
             
             {/* Left side - Content */}
             <div className="lg:w-1/2 text-center lg:text-left">
@@ -1063,7 +1061,7 @@ export default function Home() {
       </section>
 
       {/* ——— PRICING SECTION ——— */}
-      <section className="relative z-20 bg-gradient-to-b from-slate-900 to-purple-900 py-24">
+      <section className="relative z-20 bg-gradient-to-b from-slate-900 to-purple-900 py-16 md:py-24">
         {/* Background effects */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-20 right-20 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>

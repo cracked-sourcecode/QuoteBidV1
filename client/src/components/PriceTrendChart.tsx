@@ -255,8 +255,8 @@ export default function PriceTrendChart({
     );
   }
 
-  return (
-    <div className="w-full h-[520px]">
+      return (
+      <div className="w-full h-[520px]">
       {/* Header with live price ticker and controls - themed */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
         <div className="flex flex-wrap items-center gap-4 min-w-0">

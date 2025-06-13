@@ -154,10 +154,10 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
   // Get logo URL using memoization for performance
   const logoUrl = useMemo(() => {
     return outletLogo && outletLogo.trim() && outletLogo !== 'null' && outletLogo !== 'undefined' 
-      ? (outletLogo.startsWith('http') || outletLogo.startsWith('data:') 
-          ? outletLogo 
-          : `${window.location.origin}${outletLogo}`)
-      : '';
+    ? (outletLogo.startsWith('http') || outletLogo.startsWith('data:') 
+        ? outletLogo 
+        : `${window.location.origin}${outletLogo}`)
+    : '';
   }, [outletLogo]);
 
   // Use default tick interval (no need to fetch admin config for regular users)
@@ -384,7 +384,7 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
                     "bg-gradient-to-r from-slate-600 to-slate-700 text-white border border-slate-500/50"
                   : tier === 1 ? "bg-blue-600 text-white" : 
                     tier === 2 ? "bg-indigo-600 text-white" : 
-                    "bg-gray-600 text-white"
+                "bg-gray-600 text-white"
               )}
             >
               Tier {tier}
@@ -482,8 +482,8 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
                     recentTrend === 'down' ? "text-red-300 bg-gradient-to-r from-red-800/60 to-rose-800/60 border-red-600/50" : 
                     "text-blue-300 bg-gradient-to-r from-blue-800/60 to-indigo-800/60 border-blue-600/50"
                   : recentTrend === 'up' ? "text-green-700 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-green-100" : 
-                    recentTrend === 'down' ? "text-red-700 bg-gradient-to-r from-red-50 to-rose-50 border-red-200 shadow-red-100" : 
-                    "text-blue-700 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-blue-100"
+                recentTrend === 'down' ? "text-red-700 bg-gradient-to-r from-red-50 to-rose-50 border-red-200 shadow-red-100" : 
+                "text-blue-700 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-blue-100"
               )}>
                 {recentTrend === 'up' ? (
                   <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
@@ -595,8 +595,8 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
                     ? 'bg-gradient-to-r from-blue-600/25 to-blue-700/25 text-blue-200 hover:from-blue-600/35 hover:to-blue-700/35 border border-blue-500/50 shadow-md' 
                     : 'bg-gradient-to-r from-slate-700/60 to-slate-600/60 text-slate-300 hover:from-slate-700/80 hover:to-slate-600/80 border border-slate-500/60 shadow-md'
                   : isSaved 
-                    ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               )}
             >
               <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''} ${isLoading ? 'animate-pulse' : ''}`} />

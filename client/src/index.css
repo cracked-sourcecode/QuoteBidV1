@@ -167,12 +167,7 @@
   }
 
   body {
-    @apply text-foreground font-sans antialiased;
-    background-color: #0f172a !important; /* Force in Tailwind layer */
-  }
-  
-  html {
-    background-color: #0f172a !important; /* Force in Tailwind layer */
+    @apply bg-qlightgray text-foreground font-sans antialiased;
   }
   :root {
     --background: 0 0% 100%;
@@ -278,13 +273,13 @@
 /* Global styles */
 html {
   scroll-behavior: smooth;
-  background-color: #0f172a !important; /* Force slate-900 to match home gradient */
+  background-color: #0f172a; /* Changed to slate-900 to match home gradient */
 }
 
 body {
   font-family: 'Inter', sans-serif;
   transition: background-color 0.2s ease-in-out;
-  background-color: #0f172a !important; /* Force slate-900 to match home gradient */
+  background-color: #0f172a; /* Changed to slate-900 to match home gradient */
   min-height: 100vh;
 }
 
@@ -428,22 +423,26 @@ body {
   border-top: 6px solid #7B5FFF !important; /* accent color */
 }
 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
 /* Ensure smooth page transitions */
 #root {
   min-height: 100vh;
-  background-color: #0f172a !important; /* Force slate-900 to match theme */
+  background-color: white;
   position: relative;
   z-index: 1;
 }
 
-/* Force background on main app container */
-#root > * {
-  background-color: transparent;
-}
-
 /* Loading state for navigation */
 body.navigating {
-  background-color: #0f172a !important; /* Force slate-900 to match home gradient */
+  background-color: #0f172a !important; /* Changed to slate-900 to match home gradient */
 }
 
 body.navigating #root {
@@ -515,9 +514,4 @@ body.navigating #root {
 /* Custom scale class for 2% increase */
 .scale-102 {
   transform: scale(1.02);
-}
-
-/* Force dark background on all major containers */
-*, *::before, *::after {
-  box-sizing: border-box;
 }
