@@ -515,7 +515,7 @@ export default function OpportunitiesPage() {
               </div>
             </div>
             <p className="text-gray-600 mt-4 text-lg">
-              The world's first live marketplace for earned media
+                              The World's First Live Marketplace for Earned Media
             </p>
           </div>
           
@@ -536,7 +536,7 @@ export default function OpportunitiesPage() {
               &copy; {new Date().getFullYear()} QuoteBid Inc. All rights reserved.
             </p>
             <p className="text-gray-500 text-sm mt-2">
-              Built for experts, not PR agencies.
+                              Built for Experts, Not PR Agencies.
             </p>
           </div>
         </div>

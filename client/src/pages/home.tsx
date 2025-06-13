@@ -126,7 +126,7 @@ export default function Home() {
                 </h1>
             
             <p className="mt-8 text-blue-300 text-xl font-bold tracking-wide">
-              Built for experts, not PR agencies.
+              Built for Experts, Not PR Agencies.
             </p>
             
             <p className="mt-6 text-gray-300 text-xl max-w-2xl leading-relaxed">
@@ -1068,145 +1068,145 @@ export default function Home() {
           <div className="absolute bottom-20 left-20 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
         </div>
         
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-            <div className="text-center mb-16">
-            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-full text-blue-300 text-sm font-semibold uppercase tracking-wide backdrop-blur-sm mb-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
+            <div className="text-center mb-8 md:mb-16">
+            <div className="inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-full text-blue-300 text-xs md:text-sm font-semibold uppercase tracking-wide backdrop-blur-sm mb-6 md:mb-8">
               <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
               Start Today
             </div>
-            <h2 className="text-5xl md:text-6xl font-black text-white mb-6">
+            <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-white mb-4 md:mb-6 leading-tight">
               Join the New Era of <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-purple-500 bg-clip-text text-transparent">Media Access</span>
             </h2>
-            <p className="text-gray-300 text-xl max-w-3xl mx-auto leading-relaxed">
+            <p className="text-gray-300 text-base md:text-xl max-w-3xl mx-auto leading-relaxed px-2">
                 No retainers. No guesswork. Just you, the story, and a price you control.
               </p>
             </div>
             
-          <div className="flex flex-col lg:flex-row gap-12 items-stretch max-w-6xl mx-auto">
+          <div className="flex flex-col lg:flex-row gap-6 md:gap-8 lg:gap-12 items-stretch max-w-6xl mx-auto">
               {/* Left side: Benefits */}
-            <div className="lg:w-1/2 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-10 lg:p-12">
-              <h3 className="text-3xl font-bold mb-8 text-white">Reclaim Control of How You Get Covered</h3>
+            <div className="lg:w-1/2 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl md:rounded-3xl shadow-2xl p-6 md:p-8 lg:p-12">
+              <h3 className="text-xl md:text-2xl lg:text-3xl font-bold mb-6 md:mb-8 text-white">Reclaim Control of How You Get Covered</h3>
                 
-              <div className="space-y-8">
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 h-12 w-12 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center">
-                    <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="space-y-6 md:space-y-8">
+                <div className="flex items-start space-x-3 md:space-x-4">
+                  <div className="flex-shrink-0 h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center mt-1">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h2m5 0h2a2 2 0 002-2V7a2 2 0 00-2-2h-2m-5 4h6m-6 4h6m-6-8h6" />
                       </svg>
                     </div>
                     <div>
-                    <h4 className="text-xl font-semibold mb-2 text-white">Access Live Editorial Opportunities</h4>
-                    <p className="text-gray-300 leading-relaxed">Log in and browse time-sensitive, real media requests — curated, categorized, and priced by demand.</p>
+                    <h4 className="text-lg md:text-xl font-semibold mb-1 md:mb-2 text-white">Access Live Editorial Opportunities</h4>
+                    <p className="text-gray-300 text-sm md:text-base leading-relaxed">Log in and browse time-sensitive, real media requests — curated, categorized, and priced by demand.</p>
                     </div>
                   </div>
                   
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 h-12 w-12 rounded-2xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center">
-                    <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-start space-x-3 md:space-x-4">
+                  <div className="flex-shrink-0 h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center mt-1">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                       </svg>
                     </div>
                     <div>
-                    <h4 className="text-xl font-semibold mb-2 text-white">Bid for Coverage at Market Price</h4>
-                    <p className="text-gray-300 leading-relaxed">Every pitch is a bid. You decide what coverage is worth to you. No retainers, no fixed fees — just real-time pricing that adjusts with demand.</p>
+                    <h4 className="text-lg md:text-xl font-semibold mb-1 md:mb-2 text-white">Bid for Coverage at Market Price</h4>
+                    <p className="text-gray-300 text-sm md:text-base leading-relaxed">Every pitch is a bid. You decide what coverage is worth to you. No retainers, no fixed fees — just real-time pricing that adjusts with demand.</p>
                     </div>
                   </div>
                   
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 h-12 w-12 rounded-2xl bg-green-500/20 border border-green-400/30 flex items-center justify-center">
-                    <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-start space-x-3 md:space-x-4">
+                  <div className="flex-shrink-0 h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl bg-green-500/20 border border-green-400/30 flex items-center justify-center mt-1">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                     <div>
-                    <h4 className="text-xl font-semibold mb-2 text-white">Pay Only When You're Published</h4>
-                    <p className="text-gray-300 leading-relaxed">There's no upfront cost to pitch. You're only charged if your quote appears in the final published article. No placement? No charge.</p>
+                    <h4 className="text-lg md:text-xl font-semibold mb-1 md:mb-2 text-white">Pay Only When You're Published</h4>
+                    <p className="text-gray-300 text-sm md:text-base leading-relaxed">There's no upfront cost to pitch. You're only charged if your quote appears in the final published article. No placement? No charge.</p>
                   </div>
                 </div>
                 
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 h-12 w-12 rounded-2xl bg-orange-500/20 border border-orange-400/30 flex items-center justify-center">
-                    <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-start space-x-3 md:space-x-4">
+                  <div className="flex-shrink-0 h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl bg-orange-500/20 border border-orange-400/30 flex items-center justify-center mt-1">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                     </svg>
                     </div>
                   <div>
-                    <h4 className="text-xl font-semibold mb-2 text-white">Submit Pitches with Your Voice</h4>
-                    <p className="text-gray-300 leading-relaxed">Record your pitch, we transcribe it instantly. Submit in seconds — no formatting stress, no friction.</p>
+                    <h4 className="text-lg md:text-xl font-semibold mb-1 md:mb-2 text-white">Submit Pitches with Your Voice</h4>
+                    <p className="text-gray-300 text-sm md:text-base leading-relaxed">Record your pitch, we transcribe it instantly. Submit in seconds — no formatting stress, no friction.</p>
                   </div>
                   </div>
                 </div>
               </div>
               
             {/* Right side: Pricing Card */}
-            <div className="lg:w-1/2 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden hover:scale-105 transition-all duration-300">
-              <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 px-8 py-8 border-b border-white/20">
-                  <div className="flex justify-between items-start">
+            <div className="lg:w-1/2 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden hover:scale-105 transition-all duration-300">
+              <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 px-4 py-4 md:px-6 md:py-6 lg:px-8 lg:py-8 border-b border-white/20">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0">
                     <div>
-                    <h3 className="text-2xl font-bold text-white mb-1">QuoteBid</h3>
-                    <p className="text-gray-300 text-lg">Premium Membership</p>
+                    <h3 className="text-lg md:text-xl lg:text-2xl font-bold text-white mb-1">QuoteBid</h3>
+                    <p className="text-gray-300 text-sm md:text-base lg:text-lg">Premium Membership</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-left sm:text-right">
                       <div className="flex items-baseline">
-                      <span className="text-5xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-purple-500 bg-clip-text text-transparent animate-pulse">
+                      <span className="text-3xl md:text-4xl lg:text-5xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-purple-500 bg-clip-text text-transparent">
                         $99.99
                       </span>
-                      <span className="ml-2 text-lg text-gray-300">/month</span>
+                      <span className="ml-2 text-sm md:text-base lg:text-lg text-gray-300">/month</span>
                       </div>
-                    <p className="text-gray-400 text-sm mt-1">Billed monthly</p>
+                    <p className="text-gray-400 text-xs md:text-sm mt-1">Billed monthly</p>
                     </div>
                   </div>
                   
-                <div className="bg-blue-500/20 border border-blue-400/30 rounded-xl p-4 mt-6">
+                <div className="bg-blue-500/20 border border-blue-400/30 rounded-lg md:rounded-xl p-3 md:p-4 mt-4 md:mt-6">
                   <div className="flex items-start">
-                    <svg className="w-5 h-5 mr-3 text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 md:w-5 md:h-5 mr-2 md:mr-3 text-blue-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     <div>
-                      <p className="text-blue-300 font-medium text-sm">Subscription required to access the marketplace</p>
+                      <p className="text-blue-300 font-medium text-xs md:text-sm">Subscription required to access the marketplace</p>
                       <p className="text-blue-200 text-xs mt-1">Cancel anytime • No contracts • No commitments</p>
                     </div>
                     </div>
                   </div>
                 </div>
                 
-                <div className="p-8">
-                  <ul className="space-y-4 mb-8">
+                <div className="p-4 md:p-6 lg:p-8">
+                  <ul className="space-y-3 md:space-y-4 mb-6 md:mb-8">
                     <li className="flex items-start">
-                    <svg className="w-6 h-6 text-green-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 text-green-400 mt-0.5 mr-2 md:mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                       </svg>
-                    <span className="text-white text-lg">Unlimited access to all media opportunities</span>
+                    <span className="text-white text-sm md:text-base lg:text-lg">Unlimited access to all media opportunities</span>
                     </li>
                     <li className="flex items-start">
-                    <svg className="w-6 h-6 text-green-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 text-green-400 mt-0.5 mr-2 md:mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                       </svg>
-                    <span className="text-white text-lg">Voice recording with AI transcription</span>
+                    <span className="text-white text-sm md:text-base lg:text-lg">Voice recording with AI transcription</span>
                     </li>
                     <li className="flex items-start">
-                    <svg className="w-6 h-6 text-green-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 text-green-400 mt-0.5 mr-2 md:mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                       </svg>
-                    <span className="text-white text-lg">Dynamic bidding platform with real-time pricing</span>
+                    <span className="text-white text-sm md:text-base lg:text-lg">Dynamic bidding platform with real-time pricing</span>
                     </li>
                     <li className="flex items-start">
-                    <svg className="w-6 h-6 text-green-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 text-green-400 mt-0.5 mr-2 md:mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                       </svg>
-                    <span className="text-white text-lg">Payment only when your quotes get published</span>
+                    <span className="text-white text-sm md:text-base lg:text-lg">Payment only when your quotes get published</span>
                   </li>
                   <li className="flex items-start">
-                    <svg className="w-6 h-6 text-green-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 text-green-400 mt-0.5 mr-2 md:mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    <span className="text-white text-lg">Live market data and pricing insights</span>
+                    <span className="text-white text-sm md:text-base lg:text-lg">Live market data and pricing insights</span>
                     </li>
                   </ul>
                   
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                     <Button 
-                    className="w-full py-6 text-lg font-semibold bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-violet-700 text-white rounded-2xl shadow-2xl transition-all duration-300"
+                    className="w-full py-4 md:py-5 lg:py-6 text-base md:text-lg font-semibold bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-violet-700 text-white rounded-xl md:rounded-2xl shadow-2xl transition-all duration-300"
                       size="lg"
                       onClick={handleSignup}
                     >
@@ -1214,7 +1214,7 @@ export default function Home() {
                     </Button>
                     
                     <div className="text-center">
-                    <p className="text-gray-400 text-sm">
+                    <p className="text-gray-400 text-xs md:text-sm">
                       Join thousands of experts already using QuoteBid
                       </p>
                     </div>
@@ -1245,7 +1245,7 @@ export default function Home() {
       </div>
             </Link>
             <p className="text-gray-400 mt-4 text-lg">
-              The world's first live marketplace for earned media
+              The World's First Live Marketplace for Earned Media
             </p>
     </div>
           
@@ -1275,7 +1275,7 @@ export default function Home() {
               &copy; {new Date().getFullYear()} QuoteBid Inc. All rights reserved.
             </p>
             <p className="text-gray-500 text-sm mt-2">
-              Built for experts, not PR agencies.
+              Built for Experts, Not PR Agencies.
             </p>
           </div>
         </div>

@@ -157,26 +157,26 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
 
   if (!clientSecret && !errorMessage) {
     return (
-      <div className="flex items-center justify-center min-h-[80vh] px-6 py-8">
+      <div className="flex items-center justify-center min-h-[70vh] px-4 md:px-6 py-4 md:py-8">
         <div className="w-full max-w-6xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-stretch">
             {/* Left Column - Payment Form */}
-            <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-8 h-full">
+            <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-4 md:p-8 h-full">
               <form onSubmit={handleSubmit} className="h-full flex flex-col">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-white">Payment Information</h3>
+                <div className="flex items-center justify-between mb-4 md:mb-6">
+                  <h3 className="text-lg md:text-xl font-bold text-white">Payment Information</h3>
                   <div className="flex items-center gap-2 text-green-400">
                     <Lock className="h-4 w-4" />
                     <span className="text-sm font-medium">Secure</span>
-        </div>
-      </div>
+                  </div>
+                </div>
                   
                 <div className="space-y-6 flex-grow">
                   <div>
                     <label className="block text-sm font-medium text-gray-200 mb-3">
                       Credit Card Information
                     </label>
-                    <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
+                    <div className="border border-white/20 rounded-xl bg-slate-800/80 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
                       <CardNumberElement 
                         options={{
                           style: {
@@ -184,9 +184,13 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                               fontSize: '16px',
                               color: '#ffffff',
                               fontWeight: '500',
+                              fontFamily: '"Inter", sans-serif',
                               '::placeholder': {
-                                color: '#D1D5DB'
+                                color: '#9CA3AF'
                               }
+                            },
+                            invalid: {
+                              color: '#EF4444'
                             }
                           }
                         }} 
@@ -199,7 +203,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                       <label className="block text-sm font-medium text-gray-200 mb-3">
                         Expiration
                       </label>
-                      <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
+                      <div className="border border-white/20 rounded-xl bg-slate-800/80 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
                         <CardExpiryElement 
                           options={{
                             style: {
@@ -207,9 +211,13 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                                 fontSize: '16px',
                                 color: '#ffffff',
                                 fontWeight: '500',
+                                fontFamily: '"Inter", sans-serif',
                                 '::placeholder': {
-                                  color: '#D1D5DB'
+                                  color: '#9CA3AF'
                                 }
+                              },
+                              invalid: {
+                                color: '#EF4444'
                               }
                             }
                           }} 
@@ -220,7 +228,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                       <label className="block text-sm font-medium text-gray-200 mb-3">
                         CVC
                       </label>
-                      <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
+                      <div className="border border-white/20 rounded-xl bg-slate-800/80 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
                         <CardCvcElement 
                           options={{
                             style: {
@@ -228,9 +236,13 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                                 fontSize: '16px',
                                 color: '#ffffff',
                                 fontWeight: '500',
+                                fontFamily: '"Inter", sans-serif',
                                 '::placeholder': {
-                                  color: '#D1D5DB'
+                                  color: '#9CA3AF'
                                 }
+                              },
+                              invalid: {
+                                color: '#EF4444'
                               }
                             }
                           }} 
@@ -345,9 +357,9 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
 
   if (errorMessage && !clientSecret) {
   return (
-      <div className="flex items-center justify-center min-h-[80vh] px-6 py-8">
+      <div className="flex items-center justify-center min-h-[70vh] px-4 md:px-6 py-4 md:py-8">
         <div className="w-full max-w-6xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-stretch">
             {/* Left Column - Payment Form */}
             <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-8 h-full">
               <form onSubmit={handleSubmit} className="h-full flex flex-col">
@@ -364,7 +376,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                     <label className="block text-sm font-medium text-gray-200 mb-3">
                       Credit Card Information
                     </label>
-                    <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
+                    <div className="border border-white/20 rounded-xl bg-slate-800/80 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
                       <CardNumberElement 
                         options={{
                           style: {
@@ -372,9 +384,13 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                               fontSize: '16px',
                               color: '#ffffff',
                               fontWeight: '500',
+                              fontFamily: '"Inter", sans-serif',
                               '::placeholder': {
-                                color: '#D1D5DB'
+                                color: '#9CA3AF'
                               }
+                            },
+                            invalid: {
+                              color: '#EF4444'
                             }
                           }
                         }} 
@@ -387,7 +403,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                       <label className="block text-sm font-medium text-gray-200 mb-3">
                         Expiration
                       </label>
-                      <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
+                      <div className="border border-white/20 rounded-xl bg-slate-800/80 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
                         <CardExpiryElement 
                           options={{
                             style: {
@@ -395,9 +411,13 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                                 fontSize: '16px',
                                 color: '#ffffff',
                                 fontWeight: '500',
+                                fontFamily: '"Inter", sans-serif',
                                 '::placeholder': {
-                                  color: '#D1D5DB'
+                                  color: '#9CA3AF'
                                 }
+                              },
+                              invalid: {
+                                color: '#EF4444'
                               }
                             }
                           }} 
@@ -408,7 +428,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                       <label className="block text-sm font-medium text-gray-200 mb-3">
                         CVC
                       </label>
-                      <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
+                      <div className="border border-white/20 rounded-xl bg-slate-800/80 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
                         <CardCvcElement 
                           options={{
                             style: {
@@ -416,9 +436,13 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                                 fontSize: '16px',
                                 color: '#ffffff',
                                 fontWeight: '500',
+                                fontFamily: '"Inter", sans-serif',
                                 '::placeholder': {
-                                  color: '#D1D5DB'
+                                  color: '#9CA3AF'
                                 }
+                              },
+                              invalid: {
+                                color: '#EF4444'
                               }
                             }
                           }} 
@@ -551,7 +575,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                   <label className="block text-sm font-medium text-gray-200 mb-3">
                     Credit Card Information
                   </label>
-                  <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
+                  <div className="border border-white/20 rounded-xl bg-slate-800/80 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
                     <CardNumberElement 
                       options={{
                         style: {
@@ -559,9 +583,13 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                             fontSize: '16px',
                             color: '#ffffff',
                             fontWeight: '500',
+                            fontFamily: '"Inter", sans-serif',
                             '::placeholder': {
-                              color: '#D1D5DB'
+                              color: '#9CA3AF'
                             }
+                          },
+                          invalid: {
+                            color: '#EF4444'
                           }
                         }
                       }} 
@@ -574,7 +602,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                     <label className="block text-sm font-medium text-gray-200 mb-3">
                       Expiration
                     </label>
-                    <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
+                    <div className="border border-white/20 rounded-xl bg-slate-800/80 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
                       <CardExpiryElement 
                         options={{
                           style: {
@@ -582,9 +610,13 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                               fontSize: '16px',
                               color: '#ffffff',
                               fontWeight: '500',
+                              fontFamily: '"Inter", sans-serif',
                               '::placeholder': {
-                                color: '#D1D5DB'
+                                color: '#9CA3AF'
                               }
+                            },
+                            invalid: {
+                              color: '#EF4444'
                             }
                           }
                         }} 
@@ -595,7 +627,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                     <label className="block text-sm font-medium text-gray-200 mb-3">
                       CVC
                     </label>
-                    <div className="border border-white/20 rounded-xl bg-white/5 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
+                    <div className="border border-white/20 rounded-xl bg-slate-800/80 backdrop-blur-md p-4 transition-all hover:border-white/30 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20">
                       <CardCvcElement 
                         options={{
                           style: {
@@ -603,9 +635,13 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                               fontSize: '16px',
                               color: '#ffffff',
                               fontWeight: '500',
+                              fontFamily: '"Inter", sans-serif',
                               '::placeholder': {
-                                color: '#D1D5DB'
+                                color: '#9CA3AF'
                               }
+                            },
+                            invalid: {
+                              color: '#EF4444'
                             }
                           }
                         }} 
