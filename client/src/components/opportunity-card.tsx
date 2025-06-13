@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react';
 import { getLogoContainerClasses, getDeviceOptimizedClasses } from '@/lib/responsive-utils';
 import { useAuth } from '@/hooks/use-auth';
 import { apiFetch } from '@/lib/apiFetch';
+import { useTheme } from '@/hooks/use-theme';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -26,6 +27,7 @@ const tierLabels: Record<OutletTier, string> = {
 export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
   const { hasActiveSubscription } = useSubscription();
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [showPaywallModal, setShowPaywallModal] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
@@ -33,6 +35,9 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [hourlyChange, setHourlyChange] = useState<number>(0);
   const [recentTrend, setRecentTrend] = useState<'up' | 'down' | 'stable'>('stable');
+  const [currentPriceState, setCurrentPriceState] = useState(opportunity.currentPrice);
+  const [priceJustUpdated, setPriceJustUpdated] = useState(false);
+  const [tickInterval, setTickInterval] = useState(60000); // Default 1 minute
 
   const {
     id,
@@ -49,7 +54,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     summary
   } = opportunity;
 
-  // Fetch real hourly price change data
+  // Fetch real hourly price change data synced with admin tick interval
   useEffect(() => {
     const fetchHourlyChange = async () => {
       try {
@@ -77,8 +82,46 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
       }
     };
     
+    // Initial fetch
     fetchHourlyChange();
-  }, [id]);
+    
+    // Set up real-time updates synced with admin tick interval
+    const interval = setInterval(fetchHourlyChange, tickInterval);
+    
+    return () => clearInterval(interval);
+  }, [id, tickInterval]);
+
+  // Real-time price updates synced with admin tick interval
+  useEffect(() => {
+    const fetchLatestPrice = async () => {
+      try {
+        const response = await apiFetch(`/api/opportunities/${id}`, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const latestOpportunity = await response.json();
+          if (latestOpportunity.currentPrice !== currentPriceState) {
+            setCurrentPriceState(latestOpportunity.currentPrice);
+            // Show visual feedback for price update
+            setPriceJustUpdated(true);
+            setTimeout(() => setPriceJustUpdated(false), 2000);
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to fetch latest price for opportunity ${id}:`, error);
+      }
+    };
+    
+    // Set up real-time price updates synced with admin tick interval
+    const priceInterval = setInterval(fetchLatestPrice, tickInterval);
+    
+    return () => clearInterval(priceInterval);
+  }, [id, currentPriceState, tickInterval]);
+
+  // Update local price state when opportunity prop changes
+  useEffect(() => {
+    setCurrentPriceState(opportunity.currentPrice);
+  }, [opportunity.currentPrice]);
 
   // Improved logo loading handler for retina displays
   const handleLogoLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -111,9 +154,53 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
 
   console.log(`OpportunityCard - ${outlet}: logo URL = ${logoUrl}, original = ${outletLogo}`);
 
+  // Fetch admin-configured tick interval
+  useEffect(() => {
+    const fetchTickInterval = async () => {
+      try {
+        const response = await apiFetch('/api/admin/config', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const config = await response.json();
+          const intervalMs = config.tickIntervalMs || 60000; // Default 1 minute
+          setTickInterval(intervalMs);
+          console.log(`⏰ Using admin-configured tick interval: ${intervalMs}ms`);
+        }
+      } catch (error) {
+        console.error('Failed to fetch tick interval, using default:', error);
+        setTickInterval(60000); // Fallback to 1 minute
+      }
+    };
+    
+    fetchTickInterval();
+    
+    // Refresh configuration every 5 minutes to stay in sync with admin changes
+    const configInterval = setInterval(fetchTickInterval, 300000);
+    
+    return () => clearInterval(configInterval);
+  }, []);
+
+  // Preload logo image for faster loading
+  useEffect(() => {
+    if (logoUrl && logoUrl.trim() && !logoFailed) {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = logoUrl;
+      document.head.appendChild(link);
+      
+      return () => {
+        if (document.head.contains(link)) {
+          document.head.removeChild(link);
+        }
+      };
+    }
+  }, [logoUrl, logoFailed]);
+
   // Calculate price changes and trends using bulk data from opportunities API
-  const priceIncrease = currentPrice > basePrice
-    ? Math.round(((currentPrice - basePrice) / basePrice) * 100)
+  const priceIncrease = currentPriceState > basePrice
+    ? Math.round(((currentPriceState - basePrice) / basePrice) * 100)
     : 0;
 
   // Format deadline
@@ -266,28 +353,49 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
       />
       
       <div 
-        className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-1 group" 
+        className={cn(
+          "backdrop-blur-xl rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-1 group",
+          theme === 'dark' 
+            ? "bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-purple-900/20 border border-slate-600/50 hover:shadow-blue-500/10 hover:border-blue-500/40 hover:bg-gradient-to-br hover:from-slate-900/98 hover:via-slate-800/95 hover:to-purple-900/25"
+            : "bg-white border border-gray-200 hover:shadow-lg"
+        )}
         onClick={handleCardClick}
       >
         {/* Header */}
-        <div className="p-4 pb-3 border-b border-gray-100">
+        <div className={cn(
+          "p-4 pb-3 border-b",
+          theme === 'dark' ? "border-slate-600/40" : "border-gray-100"
+        )}>
           <div className="flex justify-between items-start mb-3">
             {/* Publication Logo & Name */}
             <div className="flex items-center space-x-3 flex-1 min-w-0">
-              <div className={`${getLogoContainerClasses()} ${getDeviceOptimizedClasses()}`}>
+              <div className={cn(
+                `${getLogoContainerClasses()} ${getDeviceOptimizedClasses()}`,
+                theme === 'dark' ? "ring-1 ring-slate-500/20" : ""
+              )}>
                 {logoUrl && !logoFailed ? (
                   <img
                     src={logoUrl}
                     alt={`${outlet} logo`}
-                    className="w-full h-full object-contain"
-                    loading="lazy"
+                    className={cn(
+                      "w-full h-full object-contain rounded",
+                      theme === 'dark' ? "bg-white/90 p-1" : ""
+                    )}
+                    loading="eager"
+                    fetchPriority="high"
                     onLoad={handleLogoLoad}
                     onError={handleLogoError}
                   />
                 ) : (
                   // Text-based fallback when logo fails or is not available
-                  <div className="w-full h-full flex items-center justify-center bg-white rounded">
-                    <span className="text-xs font-semibold text-gray-600 text-center px-1">
+                  <div className={cn(
+                    "w-full h-full flex items-center justify-center rounded",
+                    theme === 'dark' ? "bg-gradient-to-br from-slate-600/60 to-slate-700/80 border border-slate-500/40" : "bg-white"
+                  )}>
+                    <span className={cn(
+                      "text-xs font-semibold text-center px-1",
+                      theme === 'dark' ? "text-slate-100" : "text-gray-600"
+                    )}>
                       {outlet?.split(' ').map((word: string) => word[0]).join('').slice(0, 2).toUpperCase() || 'NA'}
                     </span>
                   </div>
@@ -295,7 +403,10 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
               </div>
               
               <div className="min-w-0 flex-1">
-                <h3 className="text-sm sm:text-base md:text-base lg:text-base xl:text-lg font-bold text-gray-900 truncate leading-tight">
+                <h3 className={cn(
+                  "text-sm sm:text-base md:text-base lg:text-base xl:text-lg font-bold truncate leading-tight",
+                  theme === 'dark' ? "text-white" : "text-gray-900"
+                )}>
                   {outlet}
                 </h3>
               </div>
@@ -305,9 +416,13 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
             <Badge 
               className={cn(
                 "font-bold text-xs sm:text-xs md:text-xs lg:text-sm xl:text-sm px-2 py-0.5 sm:px-2.5 sm:py-1 md:px-3 md:py-1 rounded-full flex-shrink-0 ml-3", 
-                tier === 1 ? "bg-blue-600 text-white" : 
-                tier === 2 ? "bg-purple-600 text-white" : 
-                "bg-gray-600 text-white"
+                theme === 'dark' 
+                  ? tier === 1 ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white border border-blue-500/50" : 
+                    tier === 2 ? "bg-gradient-to-r from-purple-600 to-purple-700 text-white border border-purple-500/50" : 
+                    "bg-gradient-to-r from-slate-600 to-slate-700 text-white border border-slate-500/50"
+                  : tier === 1 ? "bg-blue-600 text-white" : 
+                    tier === 2 ? "bg-purple-600 text-white" : 
+                    "bg-gray-600 text-white"
               )}
             >
               Tier {tier}
@@ -315,45 +430,98 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
           </div>
           
           {/* Expert Request label */}
-          <div className="text-xs sm:text-xs md:text-xs lg:text-sm xl:text-sm font-semibold text-blue-600 uppercase tracking-wide">EXPERT REQUEST</div>
+          <div className={cn(
+            "text-xs sm:text-xs md:text-xs lg:text-sm xl:text-sm font-semibold uppercase tracking-wide",
+            theme === 'dark' 
+              ? "bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent"
+              : "text-blue-600"
+          )}>EXPERT REQUEST</div>
         </div>
         
         {/* Content */}
         <div className="px-4 py-3 flex-1 flex flex-col">
           {/* Title */}
-          <h2 className="text-base sm:text-lg md:text-lg lg:text-xl xl:text-xl font-bold text-gray-900 mb-2 line-clamp-2 leading-snug">
+          <h2 className={cn(
+            "text-base sm:text-lg md:text-lg lg:text-xl xl:text-xl font-bold mb-2 line-clamp-2 leading-snug",
+            theme === 'dark' ? "text-white" : "text-gray-900"
+          )}>
             {title}
           </h2>
           
           {/* Description */}
-          <div className="text-sm sm:text-sm md:text-sm lg:text-base xl:text-base text-gray-600 mb-3 line-clamp-2 leading-relaxed font-medium">
+          <div className={cn(
+            "text-sm sm:text-sm md:text-sm lg:text-base xl:text-base mb-3 line-clamp-2 leading-relaxed font-medium",
+            theme === 'dark' ? "text-slate-300" : "text-gray-600"
+          )}>
             {summary ? summary.substring(0, 120) + (summary.length > 120 ? '...' : '') : 'We\'re looking for experts: 1. 2. 3.'}
           </div>
           
           {/* Enhanced Category Tag */}
           <div className="mb-3">
             {topicTags && topicTags.length > 0 ? (
-              <span className="inline-flex items-center px-2 py-1 sm:px-2.5 sm:py-1.5 md:px-3 md:py-1.5 text-xs sm:text-xs md:text-xs lg:text-sm xl:text-sm font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 rounded-lg border border-blue-200 shadow-sm">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-1.5"></span>
+              <span className={cn(
+                "inline-flex items-center px-2 py-1 sm:px-2.5 sm:py-1.5 md:px-3 md:py-1.5 text-xs sm:text-xs md:text-xs lg:text-sm xl:text-sm font-semibold rounded-lg shadow-sm",
+                theme === 'dark' 
+                  ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-300 border border-blue-500/40 backdrop-blur-sm"
+                  : "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200"
+              )}>
+                <span className={cn(
+                  "w-1.5 h-1.5 rounded-full mr-1.5",
+                  theme === 'dark' 
+                    ? "bg-gradient-to-r from-blue-500 to-purple-500"
+                    : "bg-blue-500"
+                )}></span>
                 {topicTags[0]}
               </span>
             ) : (
-              <span className="inline-flex items-center px-2 py-1 sm:px-2.5 sm:py-1.5 md:px-3 md:py-1.5 text-xs sm:text-xs md:text-xs lg:text-sm xl:text-sm font-semibold bg-gradient-to-r from-gray-50 to-slate-50 text-gray-700 rounded-lg border border-gray-200 shadow-sm">
-                <span className="w-1.5 h-1.5 bg-gray-500 rounded-full mr-1.5"></span>
+              <span className={cn(
+                "inline-flex items-center px-2 py-1 sm:px-2.5 sm:py-1.5 md:px-3 md:py-1.5 text-xs sm:text-xs md:text-xs lg:text-sm xl:text-sm font-semibold rounded-lg shadow-sm",
+                theme === 'dark' 
+                  ? "bg-gradient-to-r from-slate-700/40 to-slate-600/40 text-slate-200 border border-slate-500/50 backdrop-blur-sm"
+                  : "bg-gradient-to-r from-gray-50 to-slate-50 text-gray-700 border border-gray-200"
+              )}>
+                <span className={cn(
+                  "w-1.5 h-1.5 rounded-full mr-1.5",
+                  theme === 'dark' 
+                    ? "bg-gradient-to-r from-slate-500 to-slate-600"
+                    : "bg-gray-500"
+                )}></span>
                 General
               </span>
             )}
           </div>
           
           {/* Price Section with Background */}
-          <div className="mb-3 p-3 sm:p-3.5 md:p-4 lg:p-4 xl:p-5 bg-gradient-to-r from-gray-50/50 to-blue-50/30 rounded-lg border border-gray-100">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs sm:text-xs md:text-sm lg:text-sm xl:text-sm font-semibold text-gray-700">Current Price</span>
+          <div className={cn(
+            "mb-3 p-3 sm:p-3.5 md:p-4 lg:p-4 xl:p-5 rounded-xl shadow-lg transition-all duration-500",
+            theme === 'dark' 
+              ? priceJustUpdated
+                ? "bg-gradient-to-br from-blue-600/30 via-purple-600/25 to-slate-700/60 border border-blue-500/50 backdrop-blur-sm"
+                : "bg-gradient-to-br from-blue-600/25 via-purple-600/20 to-slate-700/60 border border-blue-500/40 backdrop-blur-sm"
+              : priceJustUpdated
+                ? "bg-gradient-to-r from-blue-100/60 to-purple-100/40 border border-blue-300/70"
+                : "bg-gradient-to-r from-gray-50/50 to-blue-50/30 border border-gray-100"
+          )}>
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className={cn(
+                  "text-xs sm:text-xs md:text-sm lg:text-sm xl:text-sm font-semibold mb-1",
+                  theme === 'dark' ? "text-blue-200" : "text-gray-700"
+                )}>Current Price</span>
+                <div className={cn(
+                  "text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-3xl font-black transition-all duration-500",
+                  theme === 'dark' ? "bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent" : "text-gray-900"
+                )}>${currentPriceState % 1 === 0 ? Math.floor(currentPriceState) : currentPriceState}</div>
+              </div>
               <div className={cn(
                 "flex items-center text-xs sm:text-xs md:text-xs lg:text-sm xl:text-sm font-bold px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full border shadow-sm transition-all duration-200 hover:scale-105",
-                recentTrend === 'up' ? "text-green-700 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-green-100" : 
-                recentTrend === 'down' ? "text-red-700 bg-gradient-to-r from-red-50 to-rose-50 border-red-200 shadow-red-100" : 
-                "text-blue-700 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-blue-100"
+                theme === 'dark' 
+                  ? recentTrend === 'up' ? "text-green-300 bg-gradient-to-r from-green-800/60 to-emerald-800/60 border-green-600/50" : 
+                    recentTrend === 'down' ? "text-red-300 bg-gradient-to-r from-red-800/60 to-rose-800/60 border-red-600/50" : 
+                    "text-blue-300 bg-gradient-to-r from-blue-800/60 to-indigo-800/60 border-blue-600/50"
+                  : recentTrend === 'up' ? "text-green-700 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-green-100" : 
+                    recentTrend === 'down' ? "text-red-700 bg-gradient-to-r from-red-50 to-rose-50 border-red-200 shadow-red-100" : 
+                    "text-blue-700 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-blue-100"
               )}>
                 {recentTrend === 'up' ? (
                   <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
@@ -367,51 +535,84 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
                 </span>
               </div>
             </div>
-            <div className="text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-3xl font-black text-gray-900">${currentPrice % 1 === 0 ? Math.floor(currentPrice) : currentPrice}</div>
           </div>
           
           {/* Smart Status Badges */}
           <div className="flex flex-wrap gap-1.5 mb-3 pointer-events-none">
             {isPremium && (
-              <Badge className="bg-blue-100 text-blue-700 flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5">
+              <Badge className={cn(
+                "flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5",
+                theme === 'dark' 
+                  ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white border border-blue-500/50"
+                  : "bg-blue-100 text-blue-700"
+              )}>
                 <Award className="h-2.5 w-2.5" /> 
                 Premium
               </Badge>
             )}
             
             {isUrgent && (
-              <Badge className="bg-red-100 text-red-700 flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5">
+              <Badge className={cn(
+                "flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5",
+                theme === 'dark' 
+                  ? "bg-gradient-to-r from-red-600 to-red-700 text-white border border-red-500/50"
+                  : "bg-red-100 text-red-700"
+              )}>
                 <AlertTriangle className="h-2.5 w-2.5" /> 
                 {hoursRemaining <= 6 ? 'Urgent' : 'Closing Soon'}
               </Badge>
             )}
 
             {isHot && !isUrgent && (
-              <Badge className="bg-orange-100 text-orange-700 flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5">
+              <Badge className={cn(
+                "flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5",
+                theme === 'dark' 
+                  ? "bg-gradient-to-r from-orange-600 to-orange-700 text-white border border-orange-500/50"
+                  : "bg-orange-100 text-orange-700"
+              )}>
                 <Flame className="h-2.5 w-2.5" /> 
                 Hot
               </Badge>
             )}
 
             {isTrending && !isHot && !isUrgent && (
-              <Badge className="bg-green-100 text-green-700 flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5">
+              <Badge className={cn(
+                "flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5",
+                theme === 'dark' 
+                  ? "bg-gradient-to-r from-green-600 to-green-700 text-white border border-green-500/50"
+                  : "bg-green-100 text-green-700"
+              )}>
                 <Zap className="h-2.5 w-2.5" /> 
                 Trending
               </Badge>
             )}
 
             {isNew && !isPremium && !isUrgent && !isHot && (
-              <Badge className="bg-purple-100 text-purple-700 flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5">
-                <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span> 
+              <Badge className={cn(
+                "flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5",
+                theme === 'dark' 
+                  ? "bg-gradient-to-r from-purple-600 to-purple-700 text-white border border-purple-500/50"
+                  : "bg-purple-100 text-purple-700"
+              )}>
+                <span className={cn(
+                  "w-1.5 h-1.5 rounded-full",
+                  theme === 'dark' ? "bg-purple-300" : "bg-purple-500"
+                )}></span> 
                 New
               </Badge>
             )}
           </div>
           
           {/* Deadline info */}
-          <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
+          <div className={cn(
+            "flex items-center justify-between text-sm mb-3",
+            theme === 'dark' ? "text-slate-300" : "text-gray-600"
+          )}>
             <div className="flex items-center">
-            <Clock className="h-3.5 w-3.5 mr-1.5 text-gray-500" />
+            <Clock className={cn(
+              "h-3.5 w-3.5 mr-1.5",
+              theme === 'dark' ? "text-slate-400" : "text-gray-500"
+            )} />
             <span className="font-semibold">
               {hoursRemaining <= 0 ? 'Closed' :
                hoursRemaining <= 6 ? `${hoursRemaining}h left` :
@@ -425,11 +626,16 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
             <button
               onClick={handleSaveClick}
               disabled={isLoading}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
-                isSaved 
-                  ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className={cn(
+                "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed",
+                theme === 'dark' 
+                  ? isSaved 
+                    ? 'bg-gradient-to-r from-blue-600/25 to-purple-600/25 text-blue-200 hover:from-blue-600/35 hover:to-purple-600/35 border border-blue-500/50 shadow-md' 
+                    : 'bg-gradient-to-r from-slate-700/60 to-slate-600/60 text-slate-300 hover:from-slate-700/80 hover:to-slate-600/80 border border-slate-500/60 shadow-md'
+                  : isSaved 
+                    ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              )}
             >
               <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''} ${isLoading ? 'animate-pulse' : ''}`} />
               <span>{isLoading ? 'Saving...' : isSaved ? 'Saved' : 'Save Opportunity'}</span>
@@ -438,13 +644,21 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
         </div>
         
         {/* Action button with separator */}
-        <div className="border-t border-gray-100 p-4 pt-3">
+        <div className={cn(
+          "border-t p-4 pt-3",
+          theme === 'dark' ? "border-slate-600/40" : "border-gray-100"
+        )}>
           <Button 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl transition-all duration-200" 
+            className={cn(
+              "w-full text-white font-medium py-3 rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.01]",
+              theme === 'dark' 
+                ? "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                : "bg-blue-600 hover:bg-blue-700"
+            )}
             size="sm"
             onClick={handleButtonClick}
           >
-            View Details
+            View Details →
           </Button>
         </div>
       </div>

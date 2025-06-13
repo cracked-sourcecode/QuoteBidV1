@@ -188,7 +188,7 @@ export default function SavedOpportunitiesPage() {
   }
 
   return (
-    <div className="w-full bg-gray-50 min-h-screen">
+    <div className="w-full bg-white min-h-screen">
       {/* Header with gradient background */}
       <div className="px-4 sm:px-6 lg:px-8 py-8 border-b border-gray-200 bg-gradient-to-r from-purple-50 via-pink-50 to-red-50">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -291,7 +291,7 @@ export default function SavedOpportunitiesPage() {
       )}
       
       {/* Opportunities grid with background gradient */}
-      <div className="px-4 sm:px-6 lg:px-8 py-8 bg-gradient-to-b from-gray-50 to-white">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 bg-white">
         {savedOpportunities.length > 0 ? (
           filteredOpportunities.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -344,6 +344,53 @@ export default function SavedOpportunitiesPage() {
           </div>
         )}
       </div>
+
+      {/* ——— FOOTER ——— */}
+      <footer className="relative z-20 bg-white py-16 mt-16">
+        {/* Background effects */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-400 rounded-full mix-blend-multiply filter blur-2xl animate-blob"></div>
+          <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-400 rounded-full mix-blend-multiply filter blur-2xl animate-blob animation-delay-2000"></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
+          <div className="mb-8">
+            <div className="inline-flex items-center group">
+              <span className="text-gray-900 font-black text-4xl tracking-tight">
+                <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Quote</span>
+                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Bid</span>
+              </span>
+              <div className="ml-3 px-2 py-1 bg-blue-100 border border-blue-200 rounded text-blue-700 text-xs font-bold uppercase tracking-wider">
+                Beta
+              </div>
+            </div>
+            <p className="text-gray-600 mt-4 text-lg">
+              The world's first live marketplace for earned media
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap justify-center gap-8 mb-8">
+            <span className="text-gray-500 hover:text-gray-700 transition-colors duration-300 text-lg font-medium cursor-default">
+              Terms of Use
+            </span>
+            <span className="text-gray-500 hover:text-gray-700 transition-colors duration-300 text-lg font-medium cursor-default">
+              Privacy
+            </span>
+            <span className="text-gray-500 hover:text-gray-700 transition-colors duration-300 text-lg font-medium cursor-default">
+              Editorial Integrity
+            </span>
+          </div>
+          
+          <div className="border-t border-gray-200 pt-8">
+            <p className="text-gray-600 text-lg">
+              &copy; {new Date().getFullYear()} QuoteBid Inc. All rights reserved.
+            </p>
+            <p className="text-gray-500 text-sm mt-2">
+              Built for experts, not PR agencies.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 } 

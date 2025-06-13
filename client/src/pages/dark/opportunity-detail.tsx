@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useRoute, Link, useLocation } from 'wouter';
-import { ChevronLeft, Calendar, Clock, DollarSign, TrendingUp, Flame, ChevronUp, Info, Mic, Lock } from 'lucide-react';
+import { ChevronLeft, Calendar, Clock, DollarSign, TrendingUp, TrendingDown, Flame, ChevronUp, Info, Mic, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -145,12 +145,113 @@ export default function OpportunityDetail() {
       stableOpportunityId.current = opportunityId;
     }
   }, [opportunityId]);
+  
+  
   const [isBriefMinimized, setIsBriefMinimized] = useState(false);
   const [pitchContent, setPitchContent] = useState('');
+  const [draftId, setDraftId] = useState<number | null>(null);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
   // Connect to real-time price updates from pricing engine
   const priceData = useOpportunityPrice(opportunityId);
   const { isConnected, connectionCount } = usePriceConnection();
+  
+  // Draft functionality
+  const createDraft = async () => {
+    try {
+      console.log('🚀 Creating draft for opportunity:', opportunityId);
+      console.log('🚀 Draft payload:', {
+        opportunityId,
+        content: pitchContent,
+        bidAmount: opportunity?.currentPrice || 0,
+        pitchType: 'text',
+        status: 'draft'
+      });
+      
+      const response = await apiFetch('/api/pitches/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          opportunityId,
+          content: pitchContent,
+          bidAmount: opportunity?.currentPrice || 0,
+          pitchType: 'text',
+          status: 'draft'
+        }),
+      });
+      
+      console.log('🚀 Draft API response:', response.status, response.ok);
+      
+      if (response.ok) {
+        const draft = await response.json();
+        console.log('📝 Draft created successfully:', draft);
+        setDraftId(draft.id);
+        setLastSaved(new Date());
+        return draft;
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to create draft:', response.status, errorText);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error creating draft:', error);
+      return null;
+    }
+  };
+  
+  const saveDraft = async () => {
+    if (!draftId) return;
+    
+    try {
+      setIsAutoSaving(true);
+      console.log('💾 Saving draft:', draftId, 'Content length:', pitchContent.length);
+      const response = await apiFetch(`/api/pitches/${draftId}/draft`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: pitchContent,
+          bidAmount: opportunity?.currentPrice || 0
+        }),
+      });
+      
+      if (response.ok) {
+        console.log('✅ Draft saved successfully');
+        setLastSaved(new Date());
+      } else {
+        console.error('Failed to save draft:', response.status);
+      }
+    } catch (error) {
+      console.error('Error saving draft:', error);
+    } finally {
+      setIsAutoSaving(false);
+    }
+  };
+  
+  const loadExistingDraft = async () => {
+    try {
+      const response = await apiFetch('/api/user');
+      if (response.ok) {
+        const userData = await response.json();
+        const userId = userData.id;
+        
+        // Check for existing draft for this opportunity
+        const draftsResponse = await apiFetch(`/api/users/${userId}/drafts?opportunityId=${opportunityId}`);
+        if (draftsResponse.ok) {
+          const drafts = await draftsResponse.json();
+          if (drafts && drafts.length > 0) {
+            const draft = drafts[0];
+            console.log('📖 Loading existing draft:', draft);
+            setDraftId(draft.id);
+            setPitchContent(draft.content || '');
+            setLastSaved(new Date(draft.updatedAt));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error);
+    }
+  };
   
   // State for real data
   const [opportunity, setOpportunity] = useState<any>(null);
@@ -460,6 +561,11 @@ export default function OpportunityDetail() {
         // Check if user has already pitched for this opportunity
         await checkUserPitchStatus(opportunityData.id);
         
+        // Load existing draft after checking pitch status
+        if (!userPitchStatus?.hasSubmitted) {
+          await loadExistingDraft();
+        }
+        
       } catch (err) {
         console.error('Error fetching opportunity data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load opportunity');
@@ -470,6 +576,44 @@ export default function OpportunityDetail() {
     
     fetchOpportunityData();
   }, [opportunityId]);
+  
+  // Auto-save draft when pitch content changes
+  useEffect(() => {
+    if (!pitchContent || userPitchStatus?.hasSubmitted) return;
+    
+    const autoSaveTimer = setTimeout(async () => {
+      console.log('🔥 Auto-save triggered:', { pitchContent: pitchContent.length, draftId, hasSubmitted: userPitchStatus?.hasSubmitted });
+      
+      if (!draftId && pitchContent.trim().length > 0) {
+        // Create draft if user starts typing
+        console.log('🔥 Creating draft...');
+        const newDraft = await createDraft();
+        console.log('🔥 Draft creation result:', newDraft);
+      } else if (draftId && pitchContent.trim().length > 0) {
+        // Save existing draft
+        console.log('🔥 Saving existing draft:', draftId);
+        await saveDraft();
+      }
+    }, 2000); // Wait 2 seconds after user stops typing
+    
+    return () => clearTimeout(autoSaveTimer);
+  }, [pitchContent, draftId, userPitchStatus?.hasSubmitted, createDraft, saveDraft]);
+
+  // Scroll to pitch section if anchor is present
+  useEffect(() => {
+    if (window.location.hash === '#pitch-section') {
+      // Small delay to ensure the page has rendered
+      setTimeout(() => {
+        const element = document.getElementById('pitch-section');
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+        }
+      }, 500);
+    }
+  }, [isLoading, userPitchStatus]);
 
   // Real-time price history state
   const [realTimePriceHistory, setRealTimePriceHistory] = useState<any[]>([]);
@@ -1109,18 +1253,40 @@ export default function OpportunityDetail() {
                     <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Live Activity:</span>
                   </div>
                   
-                  <div className="flex items-center space-x-2 bg-gradient-to-r from-green-50 to-emerald-50 px-4 py-2 rounded-xl border border-green-200/50 shadow-md">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
-                    <span className="text-sm font-semibold text-green-700">
+                  <div className={`flex items-center space-x-2 px-4 py-2 rounded-xl shadow-md ${
+                    priceIncrease >= 0 
+                      ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50'
+                      : 'bg-gradient-to-r from-red-50 to-red-100 border border-red-200/50'
+                  }`}>
+                    {priceIncrease >= 0 ? (
+                      <TrendingUp className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <TrendingDown className="h-5 w-5 text-red-600" />
+                    )}
+                    <span className={`text-sm font-semibold ${
+                      priceIncrease >= 0 ? 'text-green-700' : 'text-red-700'
+                    }`}>
                       ${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'} 
                       {realTimePriceHistory.length > 0 ? ' (live pricing)' : ' (last hour)'}
                     </span>
                   </div>
                   
-                  <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-cyan-50 px-4 py-2 rounded-xl border border-blue-200/50 shadow-md">
-                    <Flame className="h-5 w-5 text-blue-600" />
-                    <span className="text-sm font-semibold text-blue-700">8 pitches (last hour)</span>
-                  </div>
+                  {pitches.filter(pitch => {
+                    const pitchDate = new Date(pitch.createdAt);
+                    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+                    return pitchDate > oneHourAgo;
+                  }).length > 0 && (
+                    <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-cyan-50 px-4 py-2 rounded-xl border border-blue-200/50 shadow-md">
+                      <Flame className="h-5 w-5 text-blue-600" />
+                      <span className="text-sm font-semibold text-blue-700">
+                        {pitches.filter(pitch => {
+                          const pitchDate = new Date(pitch.createdAt);
+                          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+                          return pitchDate > oneHourAgo;
+                        }).length} pitches (last hour)
+                      </span>
+                    </div>
+                  )}
                   
                   <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-50 to-amber-50 px-4 py-2 rounded-xl border border-orange-200/50 shadow-md">
                     <Clock className="h-5 w-5 text-orange-600" />
@@ -1274,8 +1440,8 @@ export default function OpportunityDetail() {
 
                     <div className="flex items-baseline space-x-3 mb-4">
                       <span className={`text-4xl font-bold ${
-                        priceTrend === 'up' ? 'text-green-600 animate-pulse' :
-                        priceTrend === 'down' ? 'text-red-600 animate-pulse' :
+                        priceTrend === 'up' ? 'text-green-600' :
+                        priceTrend === 'down' ? 'text-red-600' :
                         priceData ? 'text-blue-600' : 'text-gray-900'
                       } transition-colors duration-300`}>${currentPrice}</span>
                       {priceIncrease !== 0 && (
@@ -1302,7 +1468,7 @@ export default function OpportunityDetail() {
                     </div>
 
                     {/* Pitch Input */}
-                    <div className="mb-6">
+                    <div id="pitch-section" className="mb-6">
                       {isCheckingPitchStatus ? (
                         /* Loading Pitch Status */
                         <div className="bg-gray-50 rounded-2xl border border-gray-200/50 p-8">
@@ -1374,7 +1540,26 @@ export default function OpportunityDetail() {
                         /* Normal Pitch Input State */
                         <>
                           <div className="flex items-center justify-between mb-3">
-                            <label className="text-gray-700 font-semibold text-lg">Craft your pitch</label>
+                            <div className="flex items-center space-x-3">
+                              <label className="text-gray-700 font-semibold text-lg">Craft your pitch</label>
+                              {draftId && (
+                                <div className="flex items-center space-x-1 text-xs">
+                                  {isAutoSaving ? (
+                                    <span className="text-blue-600 flex items-center">
+                                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse mr-1"></div>
+                                      Saving...
+                                    </span>
+                                  ) : lastSaved ? (
+                                    <span className="text-green-600 flex items-center">
+                                      <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                                      Saved {lastSaved.toLocaleTimeString()}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-500">Draft</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                             <span className={`text-sm font-medium ${
                               remainingChars < 100 ? 'text-red-500' : 'text-gray-500'
                             }`}>

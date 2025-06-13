@@ -1036,7 +1036,7 @@ export default function AccountPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 relative overflow-hidden">
+    <div className="flex min-h-screen bg-white relative overflow-hidden">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div 
@@ -1267,7 +1267,7 @@ export default function AccountPage() {
       </div>
 
       {/* Main Content - Responsive margin to account for sidebar */}
-      <div className={`lg:ml-72 transition-all duration-300 ease-in-out flex-1 p-8 ${sidebarOpen ? 'ml-72' : 'ml-0'} account-content-area bg-gray-50`}>
+      <div className={`lg:ml-72 transition-all duration-300 ease-in-out flex-1 p-8 ${sidebarOpen ? 'ml-72' : 'ml-0'} account-content-area bg-white`}>
         <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl font-bold mb-6">Profile Dashboard</h1>
           
@@ -2522,6 +2522,8 @@ export default function AccountPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+
     </div>
   );
 }

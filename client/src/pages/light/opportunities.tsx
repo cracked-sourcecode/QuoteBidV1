@@ -198,7 +198,7 @@ export default function OpportunitiesPage() {
   }
 
   return (
-    <div className="w-full bg-gray-50 min-h-screen">
+    <div className="w-full bg-white min-h-screen">
       {/* Resubscription Modal */}
       <ResubscriptionModal 
         open={showResubscribeModal} 
@@ -370,7 +370,7 @@ export default function OpportunitiesPage() {
       </div>
       
       {/* Opportunities grid with background gradient */}
-      <div className="px-4 sm:px-6 lg:px-8 py-8 bg-gradient-to-b from-gray-50 to-white">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 bg-white">
         {filteredOpportunities.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredOpportunities.map((opportunity) => (
@@ -399,7 +399,7 @@ export default function OpportunitiesPage() {
       </div>
 
       {/* ——— FOOTER ——— */}
-      <footer className="relative z-20 bg-gradient-to-b from-blue-50/80 to-gray-100 py-16 mt-16">
+      <footer className="relative z-20 bg-white py-16 mt-16">
         {/* Background effects */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-400 rounded-full mix-blend-multiply filter blur-2xl animate-blob"></div>

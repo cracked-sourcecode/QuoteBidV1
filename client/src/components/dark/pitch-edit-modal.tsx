@@ -5,7 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
 import { AlertTriangle, Loader2 } from "lucide-react";
 
 interface PitchEditModalProps {
@@ -24,21 +23,15 @@ interface PitchEditModalProps {
   };
 }
 
-export default function PitchEditModal({ isOpen, onClose, pitch }: PitchEditModalProps) {
+export default function DarkPitchEditModal({ isOpen, onClose, pitch }: PitchEditModalProps) {
   const [content, setContent] = useState(pitch.content);
   const { toast } = useToast();
-  const [location] = useLocation();
-
-  // Detect if we're in dark theme based on the current route
-  const isDarkTheme = location.includes('/dark/') || location.includes('dark');
 
   // Ensure we can only edit pitches with 'pending' status or 'draft' status
-  // CRITICAL FIX: Allow editing of both draft and pending pitches
   const canEdit = pitch.status === 'pending' || pitch.status === 'draft';
 
   const updateMutation = useMutation({
     mutationFn: async () => {
-      // Validate content before sending
       const trimmedContent = content.trim();
       if (!trimmedContent) {
         throw new Error("Pitch content cannot be empty");
@@ -74,14 +67,11 @@ export default function PitchEditModal({ isOpen, onClose, pitch }: PitchEditModa
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      // Validate content before sending
       const trimmedContent = content.trim();
       if (!trimmedContent) {
         throw new Error("Pitch content cannot be empty");
       }
       
-      // Always use the standard pitch update endpoint
-      // Both draft and pending pitches can be updated using the same endpoint
       const endpoint = `/api/pitches/${pitch.id}`;
       const data = { content: trimmedContent };
       
@@ -153,77 +143,38 @@ export default function PitchEditModal({ isOpen, onClose, pitch }: PitchEditModa
       return;
     }
 
-    // Simply update the content with the submitMutation
-    // This keeps the pitch in pending status while updating the content
     submitMutation.mutate();
   };
 
   const isLoading = updateMutation.isPending || submitMutation.isPending;
 
-  // Theme-aware classes
-  const dialogClasses = isDarkTheme 
-    ? "max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-800/95 backdrop-blur-sm border-slate-700/50 text-white" 
-    : "max-w-3xl max-h-[90vh] overflow-y-auto";
-    
-  const titleClasses = isDarkTheme 
-    ? "text-xl font-semibold text-white" 
-    : "text-xl font-semibold";
-    
-  const descriptionClasses = isDarkTheme 
-    ? "text-gray-300" 
-    : "";
-    
-  const cardClasses = isDarkTheme 
-    ? "p-3 bg-slate-700/50 rounded-md border border-slate-600/50" 
-    : "p-3 bg-muted rounded-md";
-    
-  const labelClasses = isDarkTheme 
-    ? "text-sm font-medium mb-2 text-gray-200" 
-    : "text-sm font-medium mb-2";
-    
-  const titleTextClasses = isDarkTheme 
-    ? "font-medium text-white" 
-    : "font-medium";
-    
-  const subtitleClasses = isDarkTheme 
-    ? "text-sm text-gray-300 mt-1" 
-    : "text-sm text-muted-foreground mt-1";
-    
-  const warningClasses = isDarkTheme 
-    ? "p-2 mb-2 bg-yellow-900/30 text-yellow-300 text-sm rounded flex items-center border border-yellow-700/50" 
-    : "p-2 mb-2 bg-yellow-50 text-yellow-700 text-sm rounded flex items-center";
-    
-  const textareaClasses = isDarkTheme 
-    ? "min-h-[200px] bg-slate-700/50 border-slate-600 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500" 
-    : "min-h-[200px]";
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className={dialogClasses}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-800/95 backdrop-blur-sm border-slate-700/50 text-white">
         <DialogHeader>
-          <DialogTitle className={titleClasses}>
+          <DialogTitle className="text-xl font-semibold text-white">
             Resubmit Pitch for {pitch.opportunity?.title}
           </DialogTitle>
-          <DialogDescription className={descriptionClasses}>
+          <DialogDescription className="text-gray-300">
             Update your pitch content before resubmitting it to the reporter
           </DialogDescription>
         </DialogHeader>
         
         <div className="mt-4">
           <div className="mb-4">
-            <h3 className={labelClasses}>Opportunity</h3>
-            <div className={cardClasses}>
-              <h4 className={titleTextClasses}>{pitch.opportunity?.title}</h4>
+            <h3 className="text-sm font-medium mb-2 text-gray-200">Opportunity</h3>
+            <div className="p-3 bg-slate-700/50 rounded-md border border-slate-600/50">
+              <h4 className="font-medium text-white">{pitch.opportunity?.title}</h4>
               {pitch.opportunity?.outlet && (
-                <p className={subtitleClasses}>{pitch.opportunity.outlet}</p>
+                <p className="text-sm text-gray-300 mt-1">{pitch.opportunity.outlet}</p>
               )}
             </div>
           </div>
           
           <div className="mb-4">
-            <h3 className={labelClasses}>Your Pitch</h3>
+            <h3 className="text-sm font-medium mb-2 text-gray-200">Your Pitch</h3>
             {!canEdit && (
-              <div className={warningClasses}>
+              <div className="p-2 mb-2 bg-yellow-900/30 text-yellow-300 text-sm rounded flex items-center border border-yellow-700/50">
                 <AlertTriangle className="h-4 w-4 mr-2" />
                 This pitch cannot be edited because it has already been sent to the reporter.
               </div>
@@ -232,7 +183,7 @@ export default function PitchEditModal({ isOpen, onClose, pitch }: PitchEditModa
               value={content} 
               onChange={(e) => setContent(e.target.value)} 
               placeholder="Enter your pitch details here..."
-              className={textareaClasses}
+              className="min-h-[200px] bg-slate-700/50 border-slate-600 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
               disabled={isLoading || !canEdit}
             />
           </div>
@@ -244,7 +195,7 @@ export default function PitchEditModal({ isOpen, onClose, pitch }: PitchEditModa
               variant="outline" 
               onClick={onClose} 
               disabled={isLoading}
-              className={isDarkTheme ? "border-slate-600 bg-slate-800/50 text-gray-300 hover:bg-slate-700 hover:text-white backdrop-blur-sm" : ""}
+              className="border-slate-600 bg-slate-800/50 text-gray-300 hover:bg-slate-700 hover:text-white backdrop-blur-sm"
             >
               Cancel
             </Button>
@@ -256,7 +207,7 @@ export default function PitchEditModal({ isOpen, onClose, pitch }: PitchEditModa
                   onClick={handleSubmit} 
                   disabled={isLoading} 
                   variant="default"
-                  className={isDarkTheme ? "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white" : ""}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
                 >
                   {submitMutation.isPending ? (
                     <>
@@ -272,7 +223,7 @@ export default function PitchEditModal({ isOpen, onClose, pitch }: PitchEditModa
               <Button 
                 variant="secondary" 
                 disabled
-                className={isDarkTheme ? "bg-slate-700/50 text-gray-400 border-slate-600" : ""}
+                className="bg-slate-700/50 text-gray-400 border-slate-600"
               >
                 Cannot Edit (Already Sent)
               </Button>
@@ -282,4 +233,4 @@ export default function PitchEditModal({ isOpen, onClose, pitch }: PitchEditModa
       </DialogContent>
     </Dialog>
   );
-}
+} 

@@ -2782,7 +2782,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         audioUrl,
         transcript, 
         status,
-        isDraft,
+        isDraft: true,  // ALWAYS set to true for drafts
         pitchType,
         bidAmount: bidAmount || null,
         updatedAt: new Date()
@@ -2790,6 +2790,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const result = await storage.createPitch(pitchData);
       console.log("Draft pitch created:", result);
+      
+      // Create notification for draft creation if user has content
+      if (result && content && content.trim().length > 0) {
+        try {
+          // Get opportunity details for the notification
+          const opportunity = await storage.getOpportunity(opportunityId);
+          if (opportunity) {
+            await notificationService.createNotification({
+              userId,
+              type: 'pitch_status',
+              title: '✏️ Draft Started',
+              message: `You've started a draft for "${opportunity.title}". Continue crafting your pitch to submit your bid.`,
+              linkUrl: `/opportunities/${opportunityId}#pitch-section`,
+              relatedId: result.id,
+              relatedType: 'pitch',
+              icon: 'edit',
+              iconColor: 'blue',
+            });
+            console.log(`Created draft notification for user ${userId} and opportunity ${opportunityId}`);
+          }
+        } catch (notificationError) {
+          console.error('Error creating draft notification:', notificationError);
+          // Don't fail the request if notification creation fails
+        }
+      }
       
       // Return the created draft
       return res.status(201).json(result);
@@ -2849,6 +2874,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...updateData
       });
       console.log("Draft pitch updated:", result);
+      
+      // Create notification for significant draft progress (e.g., first substantial content)
+      // Only notify if this is the first time the user adds substantial content (50+ characters)
+      // and the previous content was very short (< 20 characters)
+      const oldContentLength = (existingPitch.content || '').length;
+      const newContentLength = content.length;
+      
+      if (result && oldContentLength < 20 && newContentLength >= 50) {
+        try {
+          // Get opportunity details for the notification
+          const opportunity = await storage.getOpportunity(existingPitch.opportunityId);
+          if (opportunity) {
+            await notificationService.createNotification({
+              userId: existingPitch.userId,
+              type: 'pitch_status',
+              title: '📝 Draft Progress',
+              message: `You're making great progress on your pitch for "${opportunity.title}". Keep going to submit your bid!`,
+              linkUrl: `/opportunities/${existingPitch.opportunityId}#pitch-section`,
+              relatedId: result.id,
+              relatedType: 'pitch',
+              icon: 'edit',
+              iconColor: 'green',
+            });
+            console.log(`Created draft progress notification for user ${existingPitch.userId} and opportunity ${existingPitch.opportunityId}`);
+          }
+        } catch (notificationError) {
+          console.error('Error creating draft progress notification:', notificationError);
+          // Don't fail the request if notification creation fails
+        }
+      }
       
       return res.status(200).json(result);
     } catch (error: any) {

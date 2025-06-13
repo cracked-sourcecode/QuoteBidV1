@@ -47,11 +47,6 @@ export interface PitchDTO {
 
 // Get the canonical status from a pitch - single source of truth
 export function getStage(pitch: PitchDTO): PitchStatus {
-  // CRITICAL FIX: Determine draft status more accurately, not just relying on the isDraft flag
-  // A pitch is only a draft if it's both marked as draft status AND doesn't have a payment intent
-  // If it has a payment intent or non-draft status, it should be considered a submitted pitch
-  // This handles cases where the API sends isDraft: true for submitted pitches
-  
   console.log("getStage processing pitch:", { 
     id: pitch.id, 
     status: pitch.status, 
@@ -59,20 +54,10 @@ export function getStage(pitch: PitchDTO): PitchStatus {
     hasPaymentIntent: !!pitch.paymentIntentId 
   });
   
-  // CRITICAL FIX: If pitch has an ID, it should never be considered a draft
-  // John Smith bug fix: ID presence is the key indicator of submission in admin
-  if (pitch.id > 0) {
-    console.log(`Pitch ${pitch.id} found in system, forcing non-draft status`);
-    // If it has status draft but has an ID, it should be 'pending' at minimum
-    if (pitch.status === 'draft') {
-      return 'pending';
-    }
-    // Otherwise return its regular status
-    return pitch.status;
-  }
-  
-  if (pitch.status === 'draft' && pitch.isDraft === true && !pitch.paymentIntentId) {
-    // Only true drafts: have draft status, isDraft flag, and no payment intent
+  // CRITICAL FIX: Respect the actual status from the database
+  // If status is 'draft', it should remain 'draft' regardless of having an ID
+  // The previous logic was incorrectly forcing drafts to 'pending' status
+  if (pitch.status === 'draft') {
     return 'draft';
   }
   
@@ -82,10 +67,6 @@ export function getStage(pitch: PitchDTO): PitchStatus {
     case 'interested': return 'reporter_interested';
     case 'not_interested': return 'reporter_not_interested';
     case 'successful': return 'successful_coverage';
-    case 'draft': 
-      // If a pitch has 'draft' status but does have a payment intent, 
-      // it should be considered 'pending'
-      return pitch.paymentIntentId ? 'pending' : 'draft';
     default: return pitch.status;
   }
 }

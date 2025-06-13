@@ -63,8 +63,8 @@ export default function LightNavbar() {
                   href={item.path}
                   className={`${
                     location === item.path
-                      ? "text-gray-900 font-bold uppercase text-sm px-3 py-2 border-b-2 border-blue-600"
-                      : "text-gray-600 hover:text-gray-900 font-semibold uppercase text-sm px-3 py-2 transition-all duration-300"
+                      ? "text-gray-900 font-medium uppercase text-sm px-3 py-2 border-b-2 border-blue-600"
+                      : "text-gray-600 hover:text-gray-900 font-medium uppercase text-sm px-3 py-2 transition-all duration-300"
                   }`}
                 >
                   {item.name}
@@ -78,7 +78,7 @@ export default function LightNavbar() {
             {/* Notifications Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 relative transition-all duration-300">
+                <button className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-0 focus:ring-offset-0 focus:shadow-none relative transition-all duration-300" style={{outline: 'none', boxShadow: 'none'}}>
                   <svg 
                     xmlns="http://www.w3.org/2000/svg" 
                     className="h-6 w-6 text-gray-600 hover:text-gray-900 transition-colors duration-300" 
@@ -133,6 +133,13 @@ export default function LightNavbar() {
                           icon = (
                             <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${iconTextClass}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                          );
+                          break;
+                        case 'edit':
+                          icon = (
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${iconTextClass}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           );
                           break;

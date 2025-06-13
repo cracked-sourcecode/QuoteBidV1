@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { AlertCircle, ArrowRight, Clock, Info, Edit, FileText, Check, ExternalLink } from 'lucide-react';
+import { AlertCircle, ArrowRight, Clock, Info, Edit, FileText, Check, ExternalLink, Save } from 'lucide-react';
 import { BidInfo } from '@shared/types/opportunity';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,7 @@ export default function BidTicket({
   publicationName,
   opportunityId
 }: BidTicketProps) {
+  console.log('🎫 BidTicket component loaded with opportunityId:', opportunityId);
   const { toast } = useToast();
   const { canPitch } = useSubscription();
   
@@ -61,6 +62,35 @@ export default function BidTicket({
   // Character count for pitch
   const charCount = pitch.length;
   const maxChars = 400;
+  
+  // Manual save function
+  const handleManualSave = async () => {
+    if (!draftId) return;
+    
+    try {
+      const res = await apiRequest('PUT', `/api/pitches/${draftId}/draft`, {
+        content: pitch,
+        bidAmount: bidAmount
+      });
+      
+      if (res.ok) {
+        setLastSaved(new Date());
+        toast({
+          title: "Draft saved",
+          description: "Your pitch has been saved successfully.",
+        });
+      } else {
+        throw new Error('Failed to save draft');
+      }
+    } catch (error) {
+      console.error('Error manually saving draft:', error);
+      toast({
+        title: "Save failed",
+        description: "Failed to save your draft. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
   
   // Deadline formatting
   const deadline = new Date(bidInfo.deadline);
@@ -199,6 +229,7 @@ export default function BidTicket({
   
   // Function to start a new pitch (creates a draft)
   const handleStartPitch = async () => {
+    console.log('🚀 handleStartPitch called! OpportunityId:', opportunityId);
     setIsCreatingDraft(true);
     try {
       // First check if there's already a draft for this opportunity
@@ -239,33 +270,29 @@ export default function BidTicket({
         }
       }
       
-      // No existing draft found, create a new one
-      const res = await apiRequest('POST', '/api/pitches/draft', {
+      // No existing draft found, create a new one with empty content
+      console.log('📝 Creating new draft with data:', {
         opportunityId,
-        content: 'Draft in progress...', // Initialize with text so it's not null
+        content: '',
         bidAmount: minBid,
         pitchType: 'text',
         status: 'draft'
       });
+      const res = await apiRequest('POST', '/api/pitches/draft', {
+        opportunityId,
+        content: '', // Start with empty content
+        bidAmount: minBid,
+        pitchType: 'text',
+        status: 'draft'
+      });
+      console.log('📝 Draft creation response:', res.status, res.ok);
       
       if (res.ok) {
         const draft = await res.json();
         console.log('Created new draft:', draft);
         setDraftId(draft.id);
-        setPitch(''); // Reset the pitch content in the UI
+        setPitch(''); // Start with empty content in UI
         setIsPitchStarted(true);
-        
-        // Immediately save the empty content to override placeholder
-        setTimeout(async () => {
-          try {
-            await apiRequest('PUT', `/api/pitches/${draft.id}/draft`, {
-              content: '',
-              bidAmount: minBid
-            });
-          } catch (err) {
-            console.error('Error resetting draft content:', err);
-          }
-        }, 500);
       } else {
         throw new Error('Failed to create draft');
       }
@@ -356,31 +383,57 @@ export default function BidTicket({
     }
   };
   
+  // Auto-save state
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
   // Auto-save draft debouncer
   useEffect(() => {
-    // Save if we have a draft ID and pitch is started - even with empty content
+    // Save if we have a draft ID and pitch is started
     if (draftId && isPitchStarted) {
+      setIsAutoSaving(true);
       const timer = setTimeout(async () => {
         try {
-          console.log(`Auto-saving draft ${draftId} with content length: ${pitch.length}`);
+          console.log(`💾 Auto-saving draft ${draftId} with content length: ${pitch.length}`);
+          console.log('💾 Auto-save payload:', { content: pitch, bidAmount: bidAmount });
           const res = await apiRequest('PUT', `/api/pitches/${draftId}/draft`, {
             content: pitch,
             bidAmount: bidAmount
           });
+          console.log('💾 Auto-save response:', res.status, res.ok);
           
           if (!res.ok) {
-            console.error('Error auto-saving draft:', await res.text());
+            const errorText = await res.text();
+            console.error('Error auto-saving draft:', errorText);
+            // Show a subtle toast notification for auto-save failures
+            toast({
+              title: "Auto-save failed",
+              description: "Your changes may not be saved. Please save manually.",
+              variant: "destructive"
+            });
           } else {
             console.log('Draft auto-saved successfully');
+            setLastSaved(new Date());
           }
         } catch (error) {
           console.error('Failed to auto-save draft:', error);
+          // Show a subtle toast notification for auto-save failures
+          toast({
+            title: "Auto-save failed", 
+            description: "Your changes may not be saved. Please save manually.",
+            variant: "destructive"
+          });
+        } finally {
+          setIsAutoSaving(false);
         }
-      }, 1000); // 1 second debounce for quicker response
+      }, 2000); // 2 second debounce to avoid too frequent saves
       
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        setIsAutoSaving(false);
+      };
     }
-  }, [pitch, bidAmount, draftId, isPitchStarted]);
+  }, [pitch, bidAmount, draftId, isPitchStarted, toast]);
   
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -402,6 +455,16 @@ export default function BidTicket({
       </div>
 
       {/* Show message when user has already submitted a pitch */}
+      {(() => {
+        console.log('🎫 BidTicket render state:', {
+          hasSubmittedPitch,
+          isCheckingPitchStatus,
+          isPitchStarted,
+          draftId,
+          submittedPitch: submittedPitch?.status
+        });
+        return null;
+      })()}
       {hasSubmittedPitch ? (
         submittedPitch?.status === 'pending' ? (
           <div className="p-6 space-y-4">
@@ -477,7 +540,16 @@ export default function BidTicket({
           <div className="bg-blue-50 p-3 rounded-md flex items-center justify-between">
             <div className="flex items-center">
               <FileText className="h-4 w-4 text-blue-600 mr-2" />
-              <span className="text-sm text-blue-800">Working on draft - <span className="font-medium">Auto-saving</span></span>
+              <span className="text-sm text-blue-800">
+                Working on draft - 
+                {isAutoSaving ? (
+                  <span className="font-medium text-blue-600"> Saving...</span>
+                ) : lastSaved ? (
+                  <span className="font-medium text-green-600"> Saved {lastSaved.toLocaleTimeString()}</span>
+                ) : (
+                  <span className="font-medium"> Auto-saving enabled</span>
+                )}
+              </span>
             </div>
             <Badge variant="outline" className="text-blue-600 border-blue-600">
               Draft
@@ -584,6 +656,21 @@ export default function BidTicket({
                 </span>
               )}
             </div>
+            
+            {/* Manual Save Button */}
+            <div className="flex justify-end mt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleManualSave}
+                disabled={!draftId}
+                className="text-xs"
+              >
+                <Save className="h-3 w-3 mr-1" />
+                Save Draft
+              </Button>
+            </div>
           </div>
           
           {error && (
@@ -665,7 +752,10 @@ export default function BidTicket({
           
           <Button 
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded flex items-center justify-center"
-            onClick={handleStartPitch}
+            onClick={() => {
+              console.log('🔥 START PITCH BUTTON CLICKED!');
+              handleStartPitch();
+            }}
             disabled={isCreatingDraft}
           >
             {isCreatingDraft ? (
