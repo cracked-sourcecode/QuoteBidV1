@@ -13,6 +13,8 @@ import { post } from '@/lib/api';
 import { SignupStage, storeSignupEmail, storeSignupData } from '@/lib/signup-wizard';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
 import { queryClient } from '@/lib/queryClient';
+import { useTheme } from '@/hooks/use-theme';
+
 
 // Password validation utility
 const validatePassword = (password: string) => {
@@ -46,6 +48,7 @@ function SignupWizardContent() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { currentStage, setStage, email } = useSignupWizard();
+  const { refreshThemeFromDatabase } = useTheme();
   const [inputEmail, setInputEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [username, setUsername] = React.useState('');
@@ -306,6 +309,14 @@ function SignupWizardContent() {
     
     // Invalidate user query to force refetch with new token
     queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+    
+    // Refresh theme from database after successful signup completion
+    console.log('🎨 [SIGNUP] Profile complete, refreshing theme from database...');
+    try {
+      await refreshThemeFromDatabase();
+    } catch (error) {
+      console.log('🎨 [SIGNUP] Theme refresh failed:', error);
+    }
     
     // Use client-side navigation after a short delay
     setTimeout(() => {

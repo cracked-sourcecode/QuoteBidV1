@@ -7788,6 +7788,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to update email preferences' });
     }
   });
+
+  // Get user's preferences (theme, notifications, etc.)
+  app.get("/api/users/:userId/preferences", jwtAuth, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      console.log('🎨 [DB-GET] User preferences fetch started for user:', userId);
+      
+      if (!req.user || req.user.id !== userId) {
+        console.log('🎨 [DB-GET] Access denied - user mismatch');
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      const user = await getDb().select().from(users).where(eq(users.id, userId)).limit(1);
+      console.log('🎨 [DB-GET] User found:', user.length > 0);
+      
+      if (user.length === 0) {
+        console.log('🎨 [DB-GET] User not found');
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Return user preferences or defaults if not set
+      const preferences = user[0].userPreferences || {
+        theme: "light",
+        notifications: true,
+        language: "en"
+      };
+
+      console.log('🎨 [DB-GET] Fetched preferences:', preferences);
+      res.json(preferences);
+    } catch (error) {
+      console.error('🎨 [DB-GET] Error fetching user preferences:', error);
+      res.status(500).json({ error: 'Failed to fetch user preferences' });
+    }
+  });
+
+  // Update user's preferences (theme, notifications, etc.)
+  app.patch("/api/users/:userId/preferences", jwtAuth, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      console.log('🎨 [DB] User preferences update started for user:', userId);
+      console.log('🎨 [DB] Request body:', req.body);
+      
+      if (!req.user || req.user.id !== userId) {
+        console.log('🎨 [DB] Access denied - user mismatch');
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      const { theme, notifications, language } = req.body;
+      console.log('🎨 [DB] Extracted values:', { theme, notifications, language });
+
+      // Validate theme values
+      const validThemes = ['light', 'dark'];
+      const preferences = {
+        theme: validThemes.includes(theme) ? theme : 'light',
+        notifications: Boolean(notifications),
+        language: typeof language === 'string' ? language : 'en'
+      };
+      
+      console.log('🎨 [DB] Validated preferences object:', preferences);
+
+      // Check current user preferences before update
+      const userBefore = await getDb().select().from(users).where(eq(users.id, userId)).limit(1);
+      console.log('🎨 [DB] User preferences BEFORE update:', userBefore[0]?.userPreferences);
+
+      const updateResult = await getDb().update(users)
+        .set({ userPreferences: preferences })
+        .where(eq(users.id, userId));
+      
+      console.log('🎨 [DB] Database update result:', updateResult);
+
+      // Check user preferences after update
+      const userAfter = await getDb().select().from(users).where(eq(users.id, userId)).limit(1);
+      console.log('🎨 [DB] User preferences AFTER update:', userAfter[0]?.userPreferences);
+
+      console.log('🎨 [DB] Sending success response with preferences:', preferences);
+      res.json({ 
+        message: 'User preferences updated successfully',
+        preferences 
+      });
+    } catch (error) {
+      console.error('🎨 [DB] Error updating user preferences:', error);
+      res.status(500).json({ error: 'Failed to update user preferences' });
+    }
+  });
   
   // Debug endpoint to check pitch data integrity
   app.get("/api/admin/debug/pitch-users", requireAdminAuth, async (req: Request, res: Response) => {

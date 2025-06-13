@@ -85,7 +85,25 @@ export default function OpportunitiesPage() {
         console.log('Formatted opportunities:', formattedOpportunities);
         setOpportunities(formattedOpportunities);
         
-        // Remove inefficient bulk logo preloading - let individual cards handle their own logos lazily
+        // Smart logo preloading for initial sign-in experience
+        // Preload logos for first 6 opportunities (above-the-fold) to prevent lag on initial sign-in
+        // while keeping lazy loading for opportunities below the fold
+        const preloadCount = Math.min(6, formattedOpportunities.length);
+        formattedOpportunities.slice(0, preloadCount).forEach((opp: any) => {
+          if (opp.outletLogo && opp.outletLogo.trim() && opp.outletLogo !== 'null' && opp.outletLogo !== 'undefined') {
+            const logoUrl = opp.outletLogo.startsWith('http') || opp.outletLogo.startsWith('data:') 
+              ? opp.outletLogo 
+              : `${window.location.origin}${opp.outletLogo}`;
+            
+            // Preload the logo image
+            const img = new Image();
+            img.src = logoUrl;
+            // Add high priority for above-the-fold content
+            if ('fetchPriority' in img) {
+              (img as any).fetchPriority = 'high';
+            }
+          }
+        });
       } catch (error) {
         console.error('Error fetching opportunities:', error);
       } finally {
@@ -375,10 +393,11 @@ export default function OpportunitiesPage() {
       <div className="px-4 sm:px-6 lg:px-8 py-8 bg-white">
         {filteredOpportunities.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredOpportunities.map((opportunity) => (
+            {filteredOpportunities.map((opportunity, index) => (
               <OpportunityCard
                 key={opportunity.id}
                 opportunity={opportunity}
+                isPriority={index < 6} // First 6 cards are above-the-fold priority
               />
             ))}
           </div>

@@ -15,6 +15,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
+  isPriority?: boolean; // Whether this card is above-the-fold and should load with high priority
 }
 
 // Map tier to display label
@@ -24,12 +25,13 @@ const tierLabels: Record<OutletTier, string> = {
   3: 'Tier 3'
 };
 
-export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
+export default function OpportunityCard({ opportunity, isPriority = false }: OpportunityCardProps) {
   // EFFICIENT LOGO LOADING STRATEGY FOR LIVE FEED:
-  // - No bulk preloading (wasteful for dynamic content with daily new opportunities)
-  // - Use native lazy loading to only load logos when cards become visible
+  // - Smart preloading for first 6 opportunities (above-the-fold) to prevent initial sign-in lag
+  // - High priority loading for above-the-fold content
+  // - Lazy loading for opportunities below the fold to save bandwidth
   // - Let browser handle caching and optimization naturally
-  // - Significantly reduces bandwidth usage and improves initial page load
+  // - Significantly reduces bandwidth usage while improving initial page load experience
   
   const { hasActiveSubscription } = useSubscription();
   const { user } = useAuth();
@@ -132,7 +134,8 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
   // Improved logo loading handler for retina displays
   const handleLogoLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.target as HTMLImageElement;
-    // On retina displays, wait a bit to ensure proper loading
+    // For priority images, reduce delay; for lazy images, use standard delay
+    const delay = isPriority ? 10 : 100;
     setTimeout(() => {
       if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
         setLogoLoaded(true);
@@ -140,7 +143,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
       } else {
         setLogoFailed(true);
       }
-    }, 100);
+    }, delay);
   };
 
   const handleLogoError = () => {
@@ -157,31 +160,9 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
       : '';
   }, [outletLogo]);
 
-  // Fetch admin-configured tick interval
+  // Use default tick interval (no need to fetch admin config for regular users)
   useEffect(() => {
-    const fetchTickInterval = async () => {
-      try {
-        const response = await apiFetch('/api/admin/config', {
-          credentials: 'include'
-        });
-        if (response.ok) {
-          const config = await response.json();
-          const intervalMs = config.tickIntervalMs || 60000; // Default 1 minute
-          setTickInterval(intervalMs);
-          console.log(`⏰ Using admin-configured tick interval: ${intervalMs}ms`);
-        }
-      } catch (error) {
-        console.error('Failed to fetch tick interval, using default:', error);
-        setTickInterval(60000); // Fallback to 1 minute
-      }
-    };
-    
-    fetchTickInterval();
-    
-    // Refresh configuration every 5 minutes to stay in sync with admin changes
-    const configInterval = setInterval(fetchTickInterval, 300000);
-    
-    return () => clearInterval(configInterval);
+    setTickInterval(60000); // Default 1 minute tick interval
   }, []);
 
   // Calculate price changes and trends using bulk data from opportunities API
@@ -361,8 +342,9 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
                       "w-full h-full object-contain rounded",
                       theme === 'dark' ? "bg-white/90 p-1" : ""
                     )}
-                    loading="lazy"
-                    decoding="async"
+                    loading={isPriority ? "eager" : "lazy"}
+                    decoding={isPriority ? "sync" : "async"}
+                    {...(isPriority && { fetchPriority: "high" as any })}
                     onLoad={handleLogoLoad}
                     onError={handleLogoError}
                   />

@@ -3,6 +3,7 @@ import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { AuthContext } from "@/hooks/use-auth";
 import { useContext } from "react";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function LoginPage() {
   const [, navigate] = useLocation();
@@ -16,12 +17,16 @@ export default function LoginPage() {
   }
   
   const { loginMutation } = authContext;
+  const { refreshThemeFromDatabase } = useTheme();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    // Convert username to lowercase automatically
+    // Convert username to lowercase and remove spaces automatically
     if (name === "username") {
-      setForm({ ...form, [name]: value.toLowerCase() });
+      setForm({ ...form, [name]: value.toLowerCase().replace(/\s/g, '') });
+    } else if (name === "password") {
+      // Remove spaces from password automatically
+      setForm({ ...form, [name]: value.replace(/\s/g, '') });
     } else {
       setForm({ ...form, [name]: value });
     }
@@ -34,6 +39,11 @@ export default function LoginPage() {
     try {
       // Use the proper login mutation from auth context
       await loginMutation.mutateAsync(form);
+      
+      // Refresh theme from database after successful login
+      console.log('🎨 [LOGIN] Login successful, refreshing theme from database...');
+      await refreshThemeFromDatabase();
+      
       // Navigation is handled by the loginMutation onSuccess callback
       navigate("/opportunities");
     } catch (err: any) {
@@ -52,7 +62,7 @@ export default function LoginPage() {
       {/* Animated mesh gradient */}
       <div className="absolute inset-0 opacity-30">
         <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
-        <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
+        
         <div className="absolute -bottom-8 left-20 w-72 h-72 bg-violet-400 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{animationDelay: '4s'}}></div>
       </div>
       

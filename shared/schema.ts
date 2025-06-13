@@ -69,6 +69,11 @@ export const users = pgTable("users", {
     mediaCoverageUpdates: true,
     placementSuccess: true
   }),
+  userPreferences: jsonb("user_preferences").default({
+    theme: "light",
+    notifications: true,
+    language: "en"
+  }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

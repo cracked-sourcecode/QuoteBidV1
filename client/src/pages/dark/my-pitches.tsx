@@ -287,11 +287,13 @@ export default function MyPitches() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex justify-center items-center h-64">
-          <div className="flex items-center space-x-3">
-            <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
-            <span className="text-gray-300">Loading your pitches...</span>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-purple-900">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="flex justify-center items-center h-64">
+            <div className="flex items-center space-x-3">
+              <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
+              <span className="text-gray-300">Loading your pitches...</span>
+            </div>
           </div>
         </div>
       </div>
@@ -300,13 +302,15 @@ export default function MyPitches() {
 
   if (hasError) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6">
-          <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 text-red-400 mr-3" />
-            <div>
-              <h3 className="font-medium text-red-300">Unable to load your pitches</h3>
-              <p className="text-red-400 text-sm mt-1">Please try refreshing the page.</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-purple-900">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-400 mr-3" />
+              <div>
+                <h3 className="font-medium text-red-300">Unable to load your pitches</h3>
+                <p className="text-red-400 text-sm mt-1">Please try refreshing the page.</p>
+              </div>
             </div>
           </div>
         </div>
