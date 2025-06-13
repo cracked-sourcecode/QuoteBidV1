@@ -440,11 +440,8 @@ export default function SavedOpportunitiesPage() {
                 {displayedOpportunities.map((opportunity, index) => (
                   <div 
                     key={opportunity.id}
-                    className="animate-fadeIn"
-                    style={{ 
-                      animationDelay: `${(index % OPPORTUNITIES_PER_BATCH) * 0.1}s`,
-                      animationFillMode: 'both'
-                    }}
+                    className="opacity-0 animate-[fadeInUp_0.6s_ease-out_forwards]"
+                    style={{ animationDelay: `${(index % OPPORTUNITIES_PER_BATCH) * 0.1}s` }}
                   >
                     <OpportunityCard opportunity={opportunity} />
                   </div>
