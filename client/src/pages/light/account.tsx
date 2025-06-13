@@ -2070,22 +2070,43 @@ export default function AccountPage() {
               </div>
               
               {/* Support Section */}
-              <div className="mb-8 rounded-lg border border-gray-200 p-6 bg-gray-50 text-center">
-                <h2 className="text-lg font-medium mb-2">Need help with your profile?</h2>
-                <p className="text-gray-600 mb-4">Our team can help optimize your profile to increase your chances of getting quoted.</p>
-                <div className="flex flex-wrap justify-center gap-3">
-                  <Button variant="default" size="sm" asChild>
-                    <a href="https://calendly.com/rubicon-pr-group/quotebid" target="_blank" rel="noopener noreferrer">
-                      Book a Call
-                    </a>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <a href="mailto:support@quotebid.com">
-                      Email Support
-                    </a>
-                  </Button>
-                </div>
-              </div>
+              <Card className={theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-800 border-slate-700'}>
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <div className={`${theme === 'light' ? 'bg-gray-100' : 'bg-slate-700'} rounded-full p-2`}>
+                      <User className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className={`font-medium ${theme === 'light' ? 'text-gray-900' : 'text-slate-100'} mb-1`}>Need help with your profile?</h4>
+                      <p className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-slate-300'} mb-3`}>
+                        Our team can help optimize your profile to increase your chances of getting quoted.
+                      </p>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="default" 
+                          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0"
+                          asChild
+                        >
+                          <a href="https://calendly.com/rubicon-pr-group/quotebid" target="_blank" rel="noopener noreferrer">
+                            Book a Call
+                          </a>
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={theme === 'light' ? '!bg-white !border-gray-300 !text-gray-700 hover:!bg-gray-50 hover:!text-gray-900' : '!bg-slate-800 !border-slate-600 !text-slate-300 hover:!bg-slate-700 hover:!text-slate-100'}
+                          asChild
+                        >
+                          <a href="mailto:support@quotebid.com">
+                            Email Support
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
                 </TabsContent>
 
                 {/* Billing Tab */}

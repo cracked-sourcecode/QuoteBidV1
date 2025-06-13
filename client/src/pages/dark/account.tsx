@@ -1036,7 +1036,7 @@ export default function AccountPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-950 relative overflow-hidden">
+    <div className="flex min-h-screen bg-slate-900 relative overflow-hidden">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div 
@@ -1267,7 +1267,7 @@ export default function AccountPage() {
       </div>
 
       {/* Main Content - Responsive margin to account for sidebar */}
-      <div className={`lg:ml-72 transition-all duration-300 ease-in-out flex-1 p-8 ${sidebarOpen ? 'ml-72' : 'ml-0'} account-content-area bg-slate-950`}>
+              <div className={`lg:ml-72 transition-all duration-300 ease-in-out flex-1 p-8 ${sidebarOpen ? 'ml-72' : 'ml-0'} account-content-area bg-slate-900`}>
         <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl font-bold mb-6 text-slate-100">Profile Dashboard</h1>
           
@@ -1439,9 +1439,10 @@ export default function AccountPage() {
                                   value={countryCode}
                                   onChange={(e) => setCountryCode(e.target.value)}
                                   className="rounded-md border border-slate-600 bg-slate-800 text-slate-200 px-2 py-2 w-20 text-sm"
+                                  style={{ backgroundColor: 'rgb(30 41 59)', borderColor: 'rgb(71 85 105)' }}
                                 >
                                   {COUNTRY_CODES.map(({ code, country, flag }) => (
-                                    <option key={code} value={code}>
+                                    <option key={code} value={code} style={{ backgroundColor: 'rgb(30 41 59)', color: 'rgb(226 232 240)' }}>
                                       {flag} {code}
                                     </option>
                                   ))}
@@ -2043,16 +2044,16 @@ export default function AccountPage() {
                                 
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-3">
-                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-blue-500 to-blue-600 text-white border border-blue-400 shadow-lg shadow-blue-500/25 ring-1 ring-blue-400/30">
-                                      <svg className="h-3.5 w-3.5 mr-1.5 text-white drop-shadow-sm" fill="currentColor" viewBox="0 0 20 20">
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-slate-700 text-slate-200 border border-slate-600">
+                                      <svg className="h-3.5 w-3.5 mr-1.5 text-slate-200" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                       </svg>
                                       {coverage.source === 'billing_manager' || coverage.source === 'pitch_success' ? 'Earned Placement' : 'Media Coverage'}
                                     </span>
                                     
                                     {/* Success metrics indicator */}
-                                    <div className="hidden sm:flex items-center text-xs bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white px-2 py-1 rounded-md border border-fuchsia-400 shadow-lg shadow-fuchsia-500/25 ring-1 ring-fuchsia-400/30 font-bold">
-                                      <svg className="h-3 w-3 mr-1 text-white drop-shadow-sm" fill="currentColor" viewBox="0 0 20 20">
+                                    <div className="hidden sm:flex items-center text-xs bg-slate-600 text-slate-300 px-2 py-1 rounded-md border border-slate-500 font-bold">
+                                      <svg className="h-3 w-3 mr-1 text-slate-300" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                       </svg>
                                       Featured
@@ -2064,10 +2065,10 @@ export default function AccountPage() {
                                       variant="outline"
                                       size="sm"
                                       asChild
-                                      className="bg-gradient-to-r from-emerald-500 to-teal-600 border-emerald-400 text-white hover:from-emerald-600 hover:to-teal-700 hover:border-emerald-300 hover:text-white transition-all duration-200 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 ring-1 ring-emerald-400/30 font-bold"
+                                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 border-0 text-white transition-all duration-200 font-bold"
                                     >
                                       <a href={coverage.url} target="_blank" rel="noopener noreferrer" className="flex items-center font-bold text-white">
-                                        <ExternalLink className="h-4 w-4 mr-1.5 text-white drop-shadow-sm" />
+                                        <ExternalLink className="h-4 w-4 mr-1.5" />
                                         View Article
                                       </a>
                                     </Button>
@@ -2107,22 +2108,43 @@ export default function AccountPage() {
               </div>
               
               {/* Support Section */}
-              <div className="mb-8 rounded-lg border border-slate-700 p-6 bg-slate-900 text-center">
-                <h2 className="text-lg font-medium mb-2 text-slate-100">Need help with your profile?</h2>
-                <p className="text-slate-400 mb-4">Our team can help optimize your profile to increase your chances of getting quoted.</p>
-                <div className="flex flex-wrap justify-center gap-3">
-                  <Button variant="default" size="sm" asChild>
-                    <a href="https://calendly.com/rubicon-pr-group/quotebid" target="_blank" rel="noopener noreferrer">
-                      Book a Call
-                    </a>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild className="!border-slate-600 !text-slate-300 !bg-slate-800 hover:!bg-slate-700 hover:!text-slate-100">
-                    <a href="mailto:support@quotebid.com">
-                      Email Support
-                    </a>
-                  </Button>
-                </div>
-              </div>
+              <Card className={theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-800 border-slate-700'}>
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <div className={`${theme === 'light' ? 'bg-gray-100' : 'bg-slate-700'} rounded-full p-2`}>
+                      <User className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className={`font-medium ${theme === 'light' ? 'text-gray-900' : 'text-slate-100'} mb-1`}>Need help with your profile?</h4>
+                      <p className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-slate-300'} mb-3`}>
+                        Our team can help optimize your profile to increase your chances of getting quoted.
+                      </p>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="default" 
+                          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0"
+                          asChild
+                        >
+                          <a href="https://calendly.com/rubicon-pr-group/quotebid" target="_blank" rel="noopener noreferrer">
+                            Book a Call
+                          </a>
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={theme === 'light' ? '!bg-white !border-gray-300 !text-gray-700 hover:!bg-gray-50 hover:!text-gray-900' : '!bg-slate-800 !border-slate-600 !text-slate-300 hover:!bg-slate-700 hover:!text-slate-100'}
+                          asChild
+                        >
+                          <a href="mailto:support@quotebid.com">
+                            Email Support
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
                 </TabsContent>
 
                 {/* Billing Tab */}
@@ -2271,7 +2293,7 @@ export default function AccountPage() {
                 name="url"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Article URL *</FormLabel>
+                    <FormLabel className="text-slate-200">Article URL *</FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="https://example.com/article" 
@@ -2279,9 +2301,9 @@ export default function AccountPage() {
                         onChange={(e) => handleUrlChange(e.target.value, field.onChange)}
                       />
                     </FormControl>
-                    <FormDescription>
+                    <FormDescription className="text-slate-400">
                       {fetchingTitle ? (
-                        <span className="text-blue-600 flex items-center gap-1">
+                        <span className="text-blue-400 flex items-center gap-1">
                           <Loader2 className="h-3 w-3 animate-spin" />
                           Fetching article info...
                         </span>
@@ -2300,7 +2322,7 @@ export default function AccountPage() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Article/Coverage Title</FormLabel>
+                    <FormLabel className="text-slate-200">Article/Coverage Title</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input 
@@ -2309,7 +2331,7 @@ export default function AccountPage() {
                         />
                         {fetchingTitle && (
                           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                            <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
                           </div>
                         )}
                       </div>
@@ -2323,11 +2345,11 @@ export default function AccountPage() {
                 name="publication"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Publication Name</FormLabel>
+                    <FormLabel className="text-slate-200">Publication Name</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g. TechCrunch, Forbes, etc." {...field} />
                     </FormControl>
-                    <FormDescription>
+                    <FormDescription className="text-slate-400">
                       Name of the publication or website that published the article
                     </FormDescription>
                     <FormMessage />
@@ -2384,7 +2406,7 @@ export default function AccountPage() {
                 name="currentPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Current Password</FormLabel>
+                    <FormLabel className="text-slate-200">Current Password</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
@@ -2403,7 +2425,7 @@ export default function AccountPage() {
                 name="newPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>New Password</FormLabel>
+                    <FormLabel className="text-slate-200">New Password</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
@@ -2412,7 +2434,7 @@ export default function AccountPage() {
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription>
+                    <FormDescription className="text-slate-400">
                       Password must be at least 8 characters long
                     </FormDescription>
                     <FormMessage />
@@ -2425,7 +2447,7 @@ export default function AccountPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm New Password</FormLabel>
+                    <FormLabel className="text-slate-200">Confirm New Password</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
@@ -2454,6 +2476,7 @@ export default function AccountPage() {
                 <Button
                   type="submit"
                   disabled={passwordChangeMutation.isPending}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0"
                 >
                   {passwordChangeMutation.isPending ? (
                     <>

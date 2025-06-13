@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { useTheme } from '@/hooks/use-theme';
 import { 
   Bell, 
   DollarSign, 
@@ -90,6 +91,7 @@ const EMAIL_CATEGORIES = [
 export function EmailPreferences() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { theme } = useTheme();
   const queryClient = useQueryClient();
   const [localPreferences, setLocalPreferences] = useState<EmailPreferences | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -169,10 +171,10 @@ export function EmailPreferences() {
   if (isLoading || !localPreferences) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-64 bg-slate-700 rounded animate-pulse" />
+        <div className={`h-8 w-64 ${theme === 'light' ? 'bg-gray-200' : 'bg-slate-700'} rounded animate-pulse`} />
         <div className="space-y-4">
           {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="h-24 bg-slate-700 rounded animate-pulse" />
+            <div key={i} className={`h-24 ${theme === 'light' ? 'bg-gray-200' : 'bg-slate-700'} rounded animate-pulse`} />
           ))}
         </div>
       </div>
@@ -183,10 +185,10 @@ export function EmailPreferences() {
     return (
       <div className="space-y-6">
         <div className="text-center py-8">
-          <h3 className="text-lg font-medium text-slate-100 mb-2">Failed to load email preferences</h3>
-          <p className="text-slate-400 mb-4">Error: {error.message}</p>
-          <p className="text-slate-400 mb-4">There was an error loading your email preferences. Please try refreshing the page.</p>
-          <Button onClick={() => window.location.reload()} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100">
+          <h3 className={`text-lg font-medium ${theme === 'light' ? 'text-gray-900' : 'text-slate-100'} mb-2`}>Failed to load email preferences</h3>
+          <p className={`${theme === 'light' ? 'text-gray-600' : 'text-slate-400'} mb-4`}>Error: {error.message}</p>
+          <p className={`${theme === 'light' ? 'text-gray-600' : 'text-slate-400'} mb-4`}>There was an error loading your email preferences. Please try refreshing the page.</p>
+          <Button onClick={() => window.location.reload()} variant="outline" className={theme === 'light' ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900' : 'border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100'}>
             Refresh Page
           </Button>
         </div>
@@ -198,20 +200,20 @@ export function EmailPreferences() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-100 mb-2">Email Preferences</h2>
-        <p className="text-slate-400">
+        <h2 className={`text-2xl font-bold ${theme === 'light' ? 'text-gray-900' : 'text-slate-100'} mb-2`}>Email Preferences</h2>
+        <p className={theme === 'light' ? 'text-gray-600' : 'text-slate-400'}>
           Control which email notifications you receive from QuoteBid. You can always change these settings.
         </p>
       </div>
 
       {/* Optional Email Preferences */}
-      <Card className="bg-slate-800 border-slate-700 shadow-sm">
+      <Card className={`${theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-800 border-slate-700'} shadow-sm`}>
         <CardHeader>
-          <CardTitle className="text-slate-100 flex items-center gap-2">
+          <CardTitle className={`${theme === 'light' ? 'text-gray-900' : 'text-slate-100'} flex items-center gap-2`}>
             <Bell className="h-5 w-5 text-blue-400" />
             Notification Preferences
           </CardTitle>
-          <CardDescription className="text-slate-400">
+          <CardDescription className={theme === 'light' ? 'text-gray-600' : 'text-slate-400'}>
             Choose which types of email updates you'd like to receive
           </CardDescription>
         </CardHeader>
@@ -222,31 +224,31 @@ export function EmailPreferences() {
             
             return (
               <div key={category.id} className="group">
-                <div className="flex items-start justify-between p-4 rounded-xl border border-slate-600 bg-slate-700 hover:bg-slate-600 transition-all duration-200">
+                <div className={`flex items-start justify-between p-4 rounded-xl border ${theme === 'light' ? 'border-gray-200 bg-gray-50 hover:bg-blue-50' : 'border-slate-600 bg-slate-700 hover:bg-slate-600'} transition-all duration-200`}>
                   <div className="flex gap-4 flex-1">
                     {/* Icon */}
-                    <div className={`w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0`}>
-                      <Icon className={`h-6 w-6 ${category.color.replace('text-red-600', 'text-red-400').replace('text-blue-600', 'text-blue-400').replace('text-yellow-600', 'text-yellow-400').replace('text-green-600', 'text-green-400').replace('text-purple-600', 'text-purple-400').replace('text-emerald-600', 'text-emerald-400')}`} />
+                    <div className={`w-12 h-12 rounded-xl ${theme === 'light' ? 'bg-white border border-gray-200' : 'bg-slate-800'} flex items-center justify-center flex-shrink-0`}>
+                      <Icon className={`h-6 w-6 ${theme === 'light' ? category.color : category.color.replace('text-red-600', 'text-red-400').replace('text-blue-600', 'text-blue-400').replace('text-yellow-600', 'text-yellow-400').replace('text-green-600', 'text-green-400').replace('text-purple-600', 'text-purple-400').replace('text-emerald-600', 'text-emerald-400')}`} />
                     </div>
                     
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-slate-100">{category.title}</h3>
+                        <h3 className={`font-semibold ${theme === 'light' ? 'text-gray-900' : 'text-slate-100'}`}>{category.title}</h3>
                         <Badge 
                           variant={isEnabled ? "default" : "secondary"}
-                          className={isEnabled ? "bg-green-800 text-green-200 border-green-700" : "bg-slate-600 text-slate-300 border-slate-500"}
+                          className={isEnabled ? (theme === 'light' ? "bg-green-100 text-green-700 border-green-300" : "bg-green-800 text-green-200 border-green-700") : (theme === 'light' ? "bg-gray-100 text-gray-700 border-gray-300" : "bg-slate-600 text-slate-300 border-slate-500")}
                         >
                           {isEnabled ? "On" : "Off"}
                         </Badge>
                       </div>
-                      <p className="text-slate-300 text-sm mb-3">{category.description}</p>
+                      <p className={`${theme === 'light' ? 'text-gray-700' : 'text-slate-300'} text-sm mb-3`}>{category.description}</p>
                       
                       {/* Examples */}
                       <div className="space-y-1">
-                        <p className="text-xs text-slate-400 font-medium">Examples:</p>
+                        <p className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-slate-400'} font-medium`}>Examples:</p>
                         {category.examples.map((example, idx) => (
-                          <p key={idx} className="text-xs text-slate-400 pl-2 border-l-2 border-slate-500">
+                          <p key={idx} className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-slate-400'} pl-2 border-l-2 ${theme === 'light' ? 'border-gray-300' : 'border-slate-500'}`}>
                             "{example}"
                           </p>
                         ))}
@@ -273,26 +275,26 @@ export function EmailPreferences() {
 
       {/* Save Status */}
       {updatePreferencesMutation.isPending && (
-        <div className="flex items-center justify-center p-4 bg-slate-800 border border-slate-600 rounded-xl">
+        <div className={`flex items-center justify-center p-4 ${theme === 'light' ? 'bg-gray-50 border border-gray-200' : 'bg-slate-800 border border-slate-600'} rounded-xl`}>
           <div className="animate-spin w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full mr-3" />
-          <span className="text-slate-200 text-sm">Saving preferences...</span>
+          <span className={`${theme === 'light' ? 'text-gray-700' : 'text-slate-200'} text-sm`}>Saving preferences...</span>
         </div>
       )}
 
       {/* Save/Reset Buttons */}
       {hasChanges && !updatePreferencesMutation.isPending && (
-        <Card className="bg-slate-800 border-slate-700 shadow-sm">
+        <Card className={`${theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-800 border-slate-700'} shadow-sm`}>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-medium text-slate-100 mb-1">Unsaved Changes</h3>
-                <p className="text-sm text-slate-400">You have unsaved changes to your email preferences.</p>
+                <h3 className={`font-medium ${theme === 'light' ? 'text-gray-900' : 'text-slate-100'} mb-1`}>Unsaved Changes</h3>
+                <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-slate-400'}`}>You have unsaved changes to your email preferences.</p>
               </div>
               <div className="flex gap-3">
                 <Button 
                   variant="outline" 
                   onClick={handleReset}
-                  className="!bg-slate-800 !border-slate-600 !text-slate-300 hover:!bg-slate-700 hover:!text-slate-100"
+                  className={theme === 'light' ? '!bg-white !border-gray-300 !text-gray-700 hover:!bg-gray-50 hover:!text-gray-900' : '!bg-slate-800 !border-slate-600 !text-slate-300 hover:!bg-slate-700 hover:!text-slate-100'}
                 >
                   Reset
                 </Button>
