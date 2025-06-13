@@ -200,22 +200,9 @@ export default function PriceTrendChart({
             }`}>
               Price History
             </div>
-            {live && (
-              <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl border whitespace-nowrap ${
-                theme === 'dark'
-                  ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-cyan-400/30 backdrop-blur-sm'
-                  : 'bg-green-50 border-green-200'
-              }`}>
-                <div className={`w-2.5 h-2.5 rounded-full animate-pulse shadow-lg ${
-                  theme === 'dark' ? 'bg-cyan-400 shadow-cyan-400/70' : 'bg-green-500 shadow-green-500/50'
-                }`}></div>
-                <span className={`font-semibold text-sm tracking-wide ${
-                  theme === 'dark' ? 'text-cyan-300' : 'text-green-700'
-                }`}>LIVE</span>
-              </div>
-            )}
+
           </div>
-          <div className={`flex rounded-xl p-1.5 flex-shrink-0 shadow-lg ${
+          <div className={`flex rounded-xl p-1.5 flex-shrink-0 shadow-lg mt-8 ${
             theme === 'dark' 
               ? 'bg-slate-800/60 backdrop-blur-sm border border-slate-600/30'
               : 'bg-gray-100 border border-gray-200'
@@ -269,7 +256,7 @@ export default function PriceTrendChart({
           </div>
           {priceStats && (
             <div className="flex flex-wrap items-center gap-4">
-              <div className={`text-2xl lg:text-3xl font-black transition-all duration-500 whitespace-nowrap ${
+              <div className={`text-4xl font-black transition-all duration-500 whitespace-nowrap ${
                 theme === 'dark'
                   ? isAnimating && live 
                     ? 'text-transparent bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 bg-clip-text animate-pulse' 
@@ -292,25 +279,11 @@ export default function PriceTrendChart({
                 </span>
                 <span>${Math.abs(priceStats.change).toFixed(0)} ({priceStats.isUp ? '+' : ''}{priceStats.changePercent}%)</span>
               </div>
-              {live && (
-                <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl border whitespace-nowrap shadow-lg ${
-                  theme === 'dark'
-                    ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-cyan-400/30 backdrop-blur-sm'
-                    : 'bg-green-50 border-green-200'
-                }`}>
-                  <div className={`w-2.5 h-2.5 rounded-full animate-pulse shadow-lg ${
-                    theme === 'dark' ? 'bg-cyan-400 shadow-cyan-400/70' : 'bg-green-500 shadow-green-500/50'
-                  }`}></div>
-                  <span className={`font-semibold text-sm tracking-wide ${
-                    theme === 'dark' ? 'text-cyan-300' : 'text-green-700'
-                  }`}>LIVE UPDATES</span>
-                </div>
-              )}
             </div>
           )}
         </div>
         
-        <div className={`flex rounded-xl p-1.5 flex-shrink-0 shadow-xl ${
+        <div className={`flex rounded-xl p-1.5 flex-shrink-0 shadow-xl mt-8 ${
           theme === 'dark' 
             ? 'bg-slate-800/60 backdrop-blur-sm border border-slate-600/30'
             : 'bg-gray-100 border border-gray-200'

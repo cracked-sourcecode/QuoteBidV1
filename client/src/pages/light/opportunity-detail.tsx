@@ -1428,7 +1428,7 @@ export default function OpportunityDetail() {
                 {/* Current Price & Pitch Section - Right Side */}
                 <div className="p-8 relative">
                   <div className="mb-6">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-1">
                       <h3 className="text-xl font-bold text-gray-900">Current Price</h3>
                       <div className="flex items-center space-x-2 text-green-600 text-sm font-medium">
                         <span className="w-2 h-2 bg-green-500 rounded-full"></span>
@@ -1438,7 +1438,7 @@ export default function OpportunityDetail() {
                       </div>
                     </div>
 
-                    <div className="flex items-baseline space-x-3 mb-4">
+                    <div className="flex items-baseline space-x-3 mb-2">
                       <span className={`text-4xl font-bold ${
                         priceTrend === 'up' ? 'text-green-600' :
                         priceTrend === 'down' ? 'text-red-600' :
@@ -1452,7 +1452,7 @@ export default function OpportunityDetail() {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-2">
                         <span className={`w-3 h-3 rounded-full ${priceData || isConnected ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`}></span>
                         <span className="text-gray-600 font-medium">
@@ -1468,7 +1468,7 @@ export default function OpportunityDetail() {
                     </div>
 
                     {/* Pitch Input */}
-                    <div id="pitch-section" className="mb-6">
+                    <div id="pitch-section" className="mb-6 -mt-2">
                       {isCheckingPitchStatus ? (
                         /* Loading Pitch Status */
                         <div className="bg-gray-50 rounded-2xl border border-gray-200/50 p-8">

@@ -1237,7 +1237,7 @@ export default function OpportunityDetail() {
                   <DollarSign className="h-5 w-5 text-white" />
                 </div>
                 <div className="text-left">
-                  <div className="flex items-center space-x-2 mb-1">
+                  <div className="flex items-center space-x-2 mb-0">
                   <div className="text-xs font-semibold text-green-300 uppercase tracking-wide">Current Price</div>
                   </div>
                   <div className={`text-sm font-bold ${priceData ? 'text-blue-400' : 'text-white'} transition-colors duration-300`}>
@@ -1434,7 +1434,7 @@ export default function OpportunityDetail() {
                 {/* Current Price & Pitch Section - Right Side */}
                 <div className="p-8 relative">
                   <div className="mb-6">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-1">
                       <h3 className="text-xl font-bold text-white">Current Price</h3>
                       <div className="flex items-center space-x-2 text-green-400 text-sm font-medium">
                         <span className="w-2 h-2 bg-green-500 rounded-full"></span>
@@ -1444,11 +1444,11 @@ export default function OpportunityDetail() {
                       </div>
                     </div>
 
-                    <div className="flex items-baseline space-x-3 mb-4">
+                    <div className="flex items-baseline space-x-3 mb-2">
                       <span className={`text-4xl font-bold ${
                         priceTrend === 'up' ? 'text-green-400' :
                         priceTrend === 'down' ? 'text-red-400' :
-                        priceData ? 'text-green-400' : 'text-white'
+                        priceData ? 'text-blue-400' : 'text-white'
                       } transition-colors duration-300`}>${currentPrice}</span>
                       {priceIncrease !== 0 && (
                         <div className={`flex items-center space-x-1 text-lg font-semibold ${priceIncrease >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -1458,9 +1458,9 @@ export default function OpportunityDetail() {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-2">
-                        <span className={`w-3 h-3 rounded-full ${priceData || isConnected ? 'bg-blue-500 animate-pulse' : 'bg-slate-500'}`}></span>
+                        <span className={`w-3 h-3 rounded-full ${priceData || isConnected ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`}></span>
                         <span className="text-slate-300 font-medium">
                           {priceData || isConnected ? 'Dynamic pricing active' : 'Static pricing'}
                         </span>
@@ -1474,7 +1474,7 @@ export default function OpportunityDetail() {
                     </div>
 
                     {/* Pitch Input */}
-                    <div id="pitch-section" className="mb-6">
+                    <div id="pitch-section" className="mb-6 -mt-2">
                       {isCheckingPitchStatus ? (
                         /* Loading Pitch Status */
                         <div className="bg-slate-700/60 backdrop-blur-sm rounded-2xl border border-slate-600/50 p-8">
