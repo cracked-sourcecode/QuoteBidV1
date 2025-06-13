@@ -1389,10 +1389,11 @@ export default function OpportunityDetail() {
                         p: p.price
                       }))}
                       live={isConnected && !!priceData}
+                      theme="light"
                     />
 
                     {/* Enhanced price range and timeline info */}
-                    <div className="space-y-4 mt-12">
+                    <div className="space-y-4 mt-20">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-2">
                                                       <span className="text-green-600 font-bold text-lg">${Math.min(...priceDataForChart.map((p: any) => p.price))}</span>

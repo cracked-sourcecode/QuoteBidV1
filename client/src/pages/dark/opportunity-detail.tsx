@@ -64,7 +64,7 @@ function RelatedOpportunityPrice({ opportunityId, fallbackPrice }: { opportunity
   const currentPrice = priceData?.currentPrice || fetchedPrice || fallbackPrice;
   
   return (
-    <span className="text-2xl font-bold text-green-600">
+    <span className="text-2xl font-bold text-green-400">
       ${currentPrice}
     </span>
   );
@@ -110,8 +110,8 @@ function RelatedOpportunityHourlyChange({ opportunityId }: { opportunityId: numb
   if (trend === 'stable' || change === 0) {
     return (
       <div className="text-right">
-        <div className="text-xs text-gray-500 mb-1">Past Hour</div>
-        <div className="text-blue-600 text-sm font-semibold flex items-center justify-end space-x-1">
+        <div className="text-xs text-slate-400 mb-1">Past Hour</div>
+        <div className="text-blue-400 text-sm font-semibold flex items-center justify-end space-x-1">
           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
           <span>No change</span>
         </div>
@@ -121,9 +121,9 @@ function RelatedOpportunityHourlyChange({ opportunityId }: { opportunityId: numb
   
   return (
     <div className="text-right">
-      <div className="text-xs text-gray-500 mb-1">Past Hour</div>
+      <div className="text-xs text-slate-400 mb-1">Past Hour</div>
       <div className={`text-sm font-semibold flex items-center justify-end space-x-1 ${
-        trend === 'up' ? 'text-green-600' : 'text-red-600'
+        trend === 'up' ? 'text-green-400' : 'text-red-400'
       }`}>
         <TrendingUp className={`h-3 w-3 ${trend === 'down' ? 'rotate-180' : ''}`} />
         <span>{change > 0 ? '+' : ''}${Math.abs(change)}</span>
@@ -764,10 +764,10 @@ export default function OpportunityDetail() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading opportunity details...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading opportunity details...</p>
         </div>
       </div>
     );
@@ -776,11 +776,11 @@ export default function OpportunityDetail() {
   // Error state
   if (error || !opportunity) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600 mb-4">{error || 'Opportunity not found'}</p>
+          <p className="text-red-400 mb-4">{error || 'Opportunity not found'}</p>
           <Link href="/opportunities">
-            <Button>Back to Opportunities</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white">Back to Opportunities</Button>
           </Link>
         </div>
       </div>
@@ -1119,19 +1119,23 @@ export default function OpportunityDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 relative overflow-hidden">
+      {/* Additional depth layers */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20" />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/20" />
+      
       {/* Main Content */}
-      <div className="mx-auto px-4 py-4">
-        {/* White Container Wrapper */}
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden">
+      <div className="relative z-10 mx-auto px-4 py-4">
+        {/* Dark Container Wrapper */}
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-700/50 overflow-hidden">
           <div className="px-6 pb-6">
             {/* Compact Professional Header with Logo + Name - ORIGINAL DESIGN */}
-            <div className="pt-6 pb-4 border-b border-gray-200">
+            <div className="pt-6 pb-4 border-b border-slate-600/50">
               <div className="flex items-center space-x-4 mb-4">
                 {/* Logo Container */}
                 <div className="flex-shrink-0">
                   {getLogoUrl() && !logoFailed ? (
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 flex-shrink-0 flex items-center justify-center bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 flex-shrink-0 flex items-center justify-center bg-white rounded-lg border border-slate-600/50 overflow-hidden shadow-md">
                       <img
                         src={getLogoUrl()}
                         alt={`${opportunity.outlet} logo`}
@@ -1143,8 +1147,8 @@ export default function OpportunityDetail() {
                       />
                     </div>
                   ) : (
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 flex-shrink-0 flex items-center justify-center bg-white rounded-lg border border-gray-200 overflow-hidden">
-                      <span className="text-gray-600 font-bold text-base sm:text-lg md:text-xl lg:text-2xl">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 flex-shrink-0 flex items-center justify-center bg-white rounded-lg border border-slate-600/50 overflow-hidden shadow-md">
+                      <span className="text-slate-700 font-bold text-base sm:text-lg md:text-xl lg:text-2xl">
                         {opportunity.outlet?.split(' ').map((word: string) => word[0]).join('').slice(0, 2).toUpperCase() || 'NA'}
                       </span>
                     </div>
@@ -1154,7 +1158,7 @@ export default function OpportunityDetail() {
                 {/* Publication Name and Tier */}
                 <div className="flex-1">
                   <div className="flex items-center space-x-3">
-                    <h2 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl font-bold text-gray-900">
+                    <h2 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl font-bold text-white">
                       {opportunity.outlet}
                     </h2>
                     <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md px-3 py-1.5 text-xs sm:text-sm font-semibold">
@@ -1162,14 +1166,14 @@ export default function OpportunityDetail() {
                     </Badge>
                   </div>
                   {/* Optional: Add publication tagline or category */}
-                  <p className="text-sm sm:text-base text-gray-600 mt-1">Premium Media Opportunity</p>
+                  <p className="text-sm sm:text-base text-slate-400 mt-1">Premium Media Opportunity</p>
                 </div>
               </div>
             </div>
 
             {/* Opportunity Title */}
             <div className="pt-6 mb-6">
-              <h1 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl font-bold text-black leading-tight">
+              <h1 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl font-bold text-white leading-tight">
                 {opportunity.title}
               </h1>
             </div>
@@ -1180,7 +1184,7 @@ export default function OpportunityDetail() {
                 {(opportunity.topicTags || []).map((tag: string, index: number) => (
                   <div 
                     key={`${tag}-${index}`}
-                    className="text-xs sm:text-sm px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full shadow-sm border border-gray-200 hover:bg-gray-150 transition-colors"
+                    className="text-xs sm:text-sm px-3 py-1.5 bg-gradient-to-r from-blue-600/80 to-purple-600/80 backdrop-blur-sm text-blue-100 rounded-full shadow-sm border border-blue-500/30 hover:from-blue-500/80 hover:to-purple-500/80 transition-all duration-200"
                   >
                     {tag}
                   </div>
@@ -1189,34 +1193,34 @@ export default function OpportunityDetail() {
             </div>
 
             {/* Key Info Row - More colorful design with left-aligned dates */}
-            <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl p-4 mb-6 border border-blue-200/20 shadow-md">
+            <div className="flex items-center justify-between bg-gradient-to-r from-slate-800/70 via-blue-900/50 to-slate-700/50 backdrop-blur-sm rounded-xl p-4 mb-6 border border-blue-400/50">
               {/* Posted Date - Left aligned */}
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg shadow-md">
+                <div className="p-2 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg">
                   <Calendar className="h-5 w-5 text-white" />
                 </div>
                 <div className="text-left">
-                  <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Posted</div>
-                  <div className="text-sm font-bold text-gray-900">
+                  <div className="text-xs font-semibold text-blue-300 uppercase tracking-wide">Posted</div>
+                  <div className="text-sm font-bold text-white">
                     {format(new Date(opportunity.postedAt || opportunity.createdAt), 'MMM d, yyyy')}
                   </div>
                 </div>
               </div>
 
               {/* Separator */}
-              <div className="h-12 w-px bg-gradient-to-b from-transparent via-blue-300 to-transparent"></div>
+              <div className="h-12 w-px bg-gradient-to-b from-transparent via-blue-400/60 to-transparent"></div>
 
               {/* Deadline - Left aligned */}
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg shadow-md">
+                <div className="p-2 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg">
                   <Clock className="h-5 w-5 text-white" />
                 </div>
                 <div className="text-left">
-                  <div className="text-xs font-semibold text-orange-600 uppercase tracking-wide">Deadline</div>
-                  <div className="text-sm font-bold text-gray-900 flex items-center space-x-2">
+                  <div className="text-xs font-semibold text-blue-300 uppercase tracking-wide">Deadline</div>
+                  <div className="text-sm font-bold text-white flex items-center space-x-2">
                     <span>{format(new Date(opportunity.deadline), 'MMM d, yyyy')}</span>
                     {isToday && (
-                      <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-2 py-0.5 shadow-md animate-pulse">
+                      <Badge className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs font-bold px-2 py-0.5 animate-pulse">
                         Today
                       </Badge>
                     )}
@@ -1225,18 +1229,18 @@ export default function OpportunityDetail() {
               </div>
 
               {/* Separator */}
-              <div className="h-12 w-px bg-gradient-to-b from-transparent via-green-300 to-transparent"></div>
+              <div className="h-12 w-px bg-gradient-to-b from-transparent via-blue-400/60 to-transparent"></div>
 
               {/* Status - Left aligned */}
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-br from-green-400 to-green-500 rounded-lg shadow-md">
+                <div className="p-2 bg-gradient-to-br from-green-400 to-green-500 rounded-lg">
                   <DollarSign className="h-5 w-5 text-white" />
                 </div>
                 <div className="text-left">
                   <div className="flex items-center space-x-2 mb-1">
-                  <div className="text-xs font-semibold text-green-600 uppercase tracking-wide">Current Price</div>
+                  <div className="text-xs font-semibold text-green-300 uppercase tracking-wide">Current Price</div>
                   </div>
-                  <div className={`text-sm font-bold ${priceData ? 'text-blue-600' : 'text-gray-900'} transition-colors duration-300`}>
+                  <div className={`text-sm font-bold ${priceData ? 'text-blue-400' : 'text-white'} transition-colors duration-300`}>
                     ${currentPrice}
                   </div>
                 </div>
@@ -1245,27 +1249,27 @@ export default function OpportunityDetail() {
 
             {/* Live Activity - Enhanced with gradients */}
             <div className="mb-10">
-              <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-2xl border border-purple-200/30 p-6 shadow-lg">
+              <div className="bg-gradient-to-r from-slate-800/60 via-blue-900/40 to-indigo-900/40 backdrop-blur-sm rounded-2xl border border-blue-400/40 p-6 shadow-lg">
                 <div className="flex items-center space-x-6">
                   <div className="flex items-center space-x-4">
                     <div className="relative flex items-center justify-center w-6 h-6">
                       <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-400/50"></span>
                     </div>
-                    <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Live Activity:</span>
+                    <span className="text-lg font-bold text-white">Live Activity:</span>
                   </div>
                   
-                  <div className={`flex items-center space-x-2 px-4 py-2 rounded-xl shadow-md ${
+                  <div className={`flex items-center space-x-2 px-4 py-2 rounded-xl ${
                     priceIncrease >= 0 
-                      ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50'
-                      : 'bg-gradient-to-r from-red-50 to-red-100 border border-red-200/50'
+                      ? 'bg-green-600/20 border border-green-400/40'
+                      : 'bg-blue-600/20 border border-blue-400/40'
                   }`}>
                     {priceIncrease >= 0 ? (
-                      <TrendingUp className="h-5 w-5 text-green-600" />
+                      <TrendingUp className="h-5 w-5 text-green-300" />
                     ) : (
-                      <TrendingDown className="h-5 w-5 text-red-600" />
+                      <TrendingDown className="h-5 w-5 text-blue-300" />
                     )}
                     <span className={`text-sm font-semibold ${
-                      priceIncrease >= 0 ? 'text-green-700' : 'text-red-700'
+                      priceIncrease >= 0 ? 'text-green-200' : 'text-blue-200'
                     }`}>
                       ${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'} 
                       {realTimePriceHistory.length > 0 ? ' (live pricing)' : ' (last hour)'}
@@ -1277,9 +1281,9 @@ export default function OpportunityDetail() {
                     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
                     return pitchDate > oneHourAgo;
                   }).length > 0 && (
-                    <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-cyan-50 px-4 py-2 rounded-xl border border-blue-200/50 shadow-md">
-                      <Flame className="h-5 w-5 text-blue-600" />
-                      <span className="text-sm font-semibold text-blue-700">
+                    <div className="flex items-center space-x-2 bg-blue-600/20 px-4 py-2 rounded-xl border border-blue-400/40">
+                      <Flame className="h-5 w-5 text-blue-300" />
+                      <span className="text-sm font-semibold text-blue-200">
                         {pitches.filter(pitch => {
                           const pitchDate = new Date(pitch.createdAt);
                           const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
@@ -1289,9 +1293,9 @@ export default function OpportunityDetail() {
                     </div>
                   )}
                   
-                  <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-50 to-amber-50 px-4 py-2 rounded-xl border border-orange-200/50 shadow-md">
-                    <Clock className="h-5 w-5 text-orange-600" />
-                    <span className="text-sm font-semibold text-orange-700">
+                  <div className="flex items-center space-x-2 bg-blue-600/20 px-4 py-2 rounded-xl border border-blue-400/40">
+                    <Clock className="h-5 w-5 text-blue-300" />
+                    <span className="text-sm font-semibold text-blue-200">
                       {Math.max(0, Math.ceil((new Date(opportunity.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60)))}h remaining
                     </span>
                   </div>
@@ -1299,8 +1303,8 @@ export default function OpportunityDetail() {
               </div>
             </div>
 
-            {/* Opportunity Brief Card - Lighter, more professional blue */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl overflow-hidden mb-10 shadow-lg border border-blue-200/50">
+            {/* Opportunity Brief Card - Darker, more professional theme */}
+            <div className="bg-gradient-to-br from-slate-800/60 to-slate-700/60 backdrop-blur-sm rounded-3xl overflow-hidden mb-10 shadow-lg border border-blue-400/30">
               <div className="p-6">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
@@ -1310,16 +1314,16 @@ export default function OpportunityDetail() {
                       <span className="w-3 h-3 bg-blue-400 rounded-full shadow-md animate-pulse animation-delay-200"></span>
                       <span className="w-3 h-3 bg-blue-300 rounded-full shadow-md animate-pulse animation-delay-400"></span>
                     </div>
-                    <h3 className="text-xl font-semibold text-blue-900 tracking-wide">
+                    <h3 className="text-xl font-semibold text-white tracking-wide">
                       Opportunity Brief
                     </h3>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <span className="text-sm font-medium text-blue-700">Classification:</span>
+                    <span className="text-sm font-medium text-blue-200">Classification:</span>
                     <Badge className={`border-0 px-4 py-2 font-semibold shadow-sm ${
                       getOpportunityStatus(opportunity) === 'open' 
                         ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-                        : 'bg-gradient-to-r from-red-400 to-pink-500 text-white'
+                        : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
                     }`}>
                       {getOpportunityStatus(opportunity).charAt(0).toUpperCase() + getOpportunityStatus(opportunity).slice(1)}
                     </Badge>
@@ -1329,13 +1333,13 @@ export default function OpportunityDetail() {
                 {/* Content */}
                 {!isBriefMinimized && (
                   <div className="mb-6">
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm overflow-hidden border border-blue-100">
+                    <div className="bg-slate-700/60 backdrop-blur-sm rounded-2xl shadow-sm overflow-hidden border border-blue-400/20">
                       <div className="p-6">
-                        <div className="text-black text-lg leading-loose space-y-4 font-medium">
+                        <div className="text-gray-100 text-lg leading-loose space-y-4 font-medium">
                           {opportunity.summary ? (
                             <div className="whitespace-pre-wrap">
                               {opportunity.summary.split('\n\n').map((paragraph: string, index: number) => (
-                                <p key={index} className="mb-4 last:mb-0 font-medium text-black">
+                                <p key={index} className="mb-4 last:mb-0 font-medium text-gray-100">
                                   {paragraph.split('\n').map((line: string, lineIndex: number) => (
                                     <span key={lineIndex}>
                                       {line}
@@ -1347,10 +1351,10 @@ export default function OpportunityDetail() {
                             </div>
                           ) : (
                             <div>
-                              <p className="font-semibold text-black mb-4 text-xl">
+                              <p className="font-semibold text-gray-100 mb-4 text-xl">
                                 {opportunity.title}
                               </p>
-                              <p className="text-black leading-loose text-lg font-medium">
+                              <p className="text-gray-100 leading-loose text-lg font-medium">
                                 This opportunity is seeking expert commentary and insights. Please provide your relevant experience and perspective in your pitch.
                               </p>
                             </div>
@@ -1367,7 +1371,7 @@ export default function OpportunityDetail() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsBriefMinimized(!isBriefMinimized)}
-                    className="flex items-center space-x-3 text-blue-700 hover:text-blue-900 hover:bg-blue-100/50 transition-all duration-200 px-4 py-3 rounded-xl font-medium"
+                    className="flex items-center space-x-3 text-blue-200 hover:text-white hover:bg-slate-700/50 transition-all duration-200 px-4 py-3 rounded-xl font-medium"
                   >
                     <ChevronUp className={`h-5 w-5 transition-transform duration-300 ${isBriefMinimized ? 'rotate-180' : ''}`} />
                     <span className="text-sm">{isBriefMinimized ? 'Expand Brief' : 'Minimize Brief'}</span>
@@ -1376,11 +1380,11 @@ export default function OpportunityDetail() {
               </div>
             </div>
 
-            {/* Marketplace Pricing Section - Enhanced with gradients */}
-            <div className="bg-gradient-to-br from-indigo-50 via-white to-purple-50 rounded-3xl border border-indigo-200/30 overflow-hidden shadow-xl">
+            {/* Marketplace Pricing Section - Enhanced with dark gradients */}
+            <div className="bg-gradient-to-br from-slate-800/60 via-slate-700/40 to-slate-600/40 backdrop-blur-sm rounded-3xl border border-slate-600/30 overflow-hidden shadow-xl">
               <div className="grid grid-cols-2 gap-0">
                 {/* Price Trend Section - Left Side */}
-                <div className="p-8 border-r border-gray-200/50">
+                <div className="p-8 border-r border-slate-600/50">
                   <div className="mb-6">
                     {/* Live Status Indicator removed */}
 
@@ -1391,23 +1395,24 @@ export default function OpportunityDetail() {
                         p: p.price
                       }))}
                       live={isConnected && !!priceData}
+                      theme="dark"
                     />
 
                     {/* Enhanced price range and timeline info */}
-                    <div className="space-y-4 mt-12">
+                    <div className="space-y-4 mt-20">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-2">
-                                                      <span className="text-green-600 font-bold text-lg">${Math.min(...priceDataForChart.map((p: any) => p.price))}</span>
-                          <span className="text-gray-500 text-sm">Low</span>
+                                                      <span className="text-green-400 font-bold text-lg">${Math.min(...priceDataForChart.map((p: any) => p.price))}</span>
+                          <span className="text-slate-400 text-sm">Low</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                                                      <span className="text-red-500 font-bold text-lg">${Math.max(...priceDataForChart.map((p: any) => p.price))}</span>
-                          <span className="text-gray-500 text-sm">High</span>
+                                                      <span className="text-red-400 font-bold text-lg">${Math.max(...priceDataForChart.map((p: any) => p.price))}</span>
+                          <span className="text-slate-400 text-sm">High</span>
                         </div>
                       </div>
                       
                       {/* Timeline information */}
-                      <div className="flex justify-end items-center text-xs text-gray-500 border-t pt-3">
+                      <div className="flex justify-end items-center text-xs text-slate-400 border-t border-slate-600/50 pt-3">
                         <div className="flex items-center space-x-4">
                           {opportunity && (
                             <>
@@ -1430,8 +1435,8 @@ export default function OpportunityDetail() {
                 <div className="p-8 relative">
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-bold text-gray-900">Current Price</h3>
-                      <div className="flex items-center space-x-2 text-green-600 text-sm font-medium">
+                      <h3 className="text-xl font-bold text-white">Current Price</h3>
+                      <div className="flex items-center space-x-2 text-green-400 text-sm font-medium">
                         <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                         <span>
                           {Math.round(belowListPercentage)}% {actualPriceDifference >= 0 ? 'above' : 'below'} list price
@@ -1441,12 +1446,12 @@ export default function OpportunityDetail() {
 
                     <div className="flex items-baseline space-x-3 mb-4">
                       <span className={`text-4xl font-bold ${
-                        priceTrend === 'up' ? 'text-green-600' :
-                        priceTrend === 'down' ? 'text-red-600' :
-                        priceData ? 'text-blue-600' : 'text-gray-900'
+                        priceTrend === 'up' ? 'text-green-400' :
+                        priceTrend === 'down' ? 'text-red-400' :
+                        priceData ? 'text-green-400' : 'text-white'
                       } transition-colors duration-300`}>${currentPrice}</span>
                       {priceIncrease !== 0 && (
-                        <div className={`flex items-center space-x-1 text-lg font-semibold ${priceIncrease >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <div className={`flex items-center space-x-1 text-lg font-semibold ${priceIncrease >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           <TrendingUp className={`h-5 w-5 ${priceIncrease < 0 ? 'rotate-180' : ''}`} />
                           <span>{priceIncrease >= 0 ? '+' : ''}${priceIncrease}</span>
                         </div>
@@ -1455,13 +1460,13 @@ export default function OpportunityDetail() {
 
                     <div className="flex items-center justify-between mb-8">
                       <div className="flex items-center space-x-2">
-                        <span className={`w-3 h-3 rounded-full ${priceData || isConnected ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`}></span>
-                        <span className="text-gray-600 font-medium">
+                        <span className={`w-3 h-3 rounded-full ${priceData || isConnected ? 'bg-blue-500 animate-pulse' : 'bg-slate-500'}`}></span>
+                        <span className="text-slate-300 font-medium">
                           {priceData || isConnected ? 'Dynamic pricing active' : 'Static pricing'}
                         </span>
                       </div>
                       {priceData?.lastPriceUpdate && (
-                        <div className="text-xs text-gray-500 flex items-center space-x-1">
+                        <div className="text-xs text-slate-400 flex items-center space-x-1">
                           <Clock className="h-3 w-3" />
                           <span>Updated {new Date(priceData.lastPriceUpdate).toLocaleTimeString()}</span>
                         </div>
@@ -1472,17 +1477,17 @@ export default function OpportunityDetail() {
                     <div id="pitch-section" className="mb-6">
                       {isCheckingPitchStatus ? (
                         /* Loading Pitch Status */
-                        <div className="bg-gray-50 rounded-2xl border border-gray-200/50 p-8">
+                        <div className="bg-slate-700/60 backdrop-blur-sm rounded-2xl border border-slate-600/50 p-8">
                           <div className="text-center">
                             <div className="flex justify-center mb-4">
-                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
                             </div>
-                            <p className="text-gray-600 font-medium">Checking your pitch status...</p>
+                            <p className="text-slate-300 font-medium">Checking your pitch status...</p>
                           </div>
                         </div>
                       ) : userPitchStatus?.hasSubmitted ? (
                         /* Already Submitted State */
-                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200/50 overflow-hidden">
+                        <div className="bg-gradient-to-br from-green-900/40 to-emerald-900/40 backdrop-blur-sm rounded-2xl border border-green-500/30 overflow-hidden">
                           <div className="p-8 text-center">
                             {/* Success Icon */}
                             <div className="flex justify-center mb-6">
@@ -1494,20 +1499,20 @@ export default function OpportunityDetail() {
                             </div>
                             
                             {/* Title */}
-                            <h3 className="text-xl font-bold text-green-800 mb-3">
+                            <h3 className="text-xl font-bold text-green-300 mb-3">
                               Pitch Already Submitted!
                             </h3>
                             
                             {/* Message */}
-                            <p className="text-green-700 text-base mb-4 leading-relaxed">
+                            <p className="text-green-200 text-base mb-4 leading-relaxed">
                               You've already submitted a pitch for this opportunity. Each user can only submit one pitch per opportunity.
                             </p>
                             
                             {/* Bid Amount Display */}
                             {userPitchStatus.pitch?.bidAmount && (
-                              <div className="bg-white/60 rounded-lg p-3 mb-4 border border-green-200/50">
-                                <div className="text-sm font-medium text-green-600 mb-1">Your bid amount:</div>
-                                <div className="text-2xl font-bold text-green-800">
+                              <div className="bg-slate-700/60 backdrop-blur-sm rounded-lg p-3 mb-4 border border-green-500/30">
+                                <div className="text-sm font-medium text-green-400 mb-1">Your bid amount:</div>
+                                <div className="text-2xl font-bold text-green-300">
                                   ${userPitchStatus.pitch.bidAmount}
                                 </div>
                               </div>
@@ -1516,7 +1521,7 @@ export default function OpportunityDetail() {
                             {/* Action Buttons */}
                             <div className="space-y-2">
                               <Link href="/opportunities">
-                                <Button className="w-full bg-white hover:bg-gray-50 text-green-700 border border-green-200 font-semibold py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
+                                <Button className="w-full bg-slate-700/80 hover:bg-slate-600/80 text-green-300 border border-green-500/30 font-semibold py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
                                   <div className="flex items-center justify-center space-x-2">
                                     <ChevronLeft className="h-4 w-4 rotate-180" />
                                     <span>Browse Other Opportunities</span>
@@ -1525,7 +1530,7 @@ export default function OpportunityDetail() {
                               </Link>
                               
                               <Link href="/my-pitches">
-                                <Button variant="outline" className="w-full bg-white/80 hover:bg-white text-green-700 border border-green-200 font-semibold py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
+                                <Button variant="outline" className="w-full bg-slate-800/60 hover:bg-slate-700/60 text-green-300 border border-green-500/30 font-semibold py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
                                   <div className="flex items-center justify-center space-x-2">
                                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -1542,27 +1547,27 @@ export default function OpportunityDetail() {
                         <>
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center space-x-3">
-                              <label className="text-gray-700 font-semibold text-lg">Craft your pitch</label>
+                              <label className="text-slate-200 font-semibold text-lg">Craft your pitch</label>
                               {draftId && (
                                 <div className="flex items-center space-x-1 text-xs">
                                   {isAutoSaving ? (
-                                    <span className="text-blue-600 flex items-center">
-                                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse mr-1"></div>
+                                    <span className="text-blue-400 flex items-center">
+                                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse mr-1"></div>
                                       Saving...
                                     </span>
                                   ) : lastSaved ? (
-                                    <span className="text-green-600 flex items-center">
-                                      <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                                    <span className="text-green-400 flex items-center">
+                                      <div className="w-2 h-2 bg-green-400 rounded-full mr-1"></div>
                                       Saved {lastSaved.toLocaleTimeString()}
                                     </span>
                                   ) : (
-                                    <span className="text-gray-500">Draft</span>
+                                    <span className="text-slate-400">Draft</span>
                                   )}
                                 </div>
                               )}
                             </div>
                             <span className={`text-sm font-medium ${
-                              remainingChars < 100 ? 'text-red-500' : 'text-gray-500'
+                              remainingChars < 100 ? 'text-red-400' : 'text-slate-400'
                             }`}>
                               {remainingChars} characters remaining
                             </span>
@@ -1573,7 +1578,7 @@ export default function OpportunityDetail() {
                               value={pitchContent}
                               onChange={(e) => setPitchContent(e.target.value)}
                               placeholder="Share your expertise, credentials, and unique perspective that would make you perfect for this story. Explain why you're the ideal expert for this opportunity..."
-                              className="min-h-[240px] w-full p-4 border border-gray-200 rounded-xl bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-50 transition-all duration-200 resize-none text-gray-800 text-base font-medium placeholder:text-gray-400 placeholder:font-normal shadow-sm hover:border-gray-300"
+                              className="min-h-[240px] w-full p-4 border border-slate-600/50 rounded-xl bg-slate-700/60 backdrop-blur-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all duration-200 resize-none text-slate-100 text-base font-medium placeholder:text-slate-400 placeholder:font-normal shadow-sm hover:border-slate-500/60"
                               maxLength={maxPitchLength}
                               style={{
                                 fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
@@ -1583,7 +1588,7 @@ export default function OpportunityDetail() {
                             />
                             
                             {/* Word count indicator */}
-                            <div className="absolute bottom-3 right-3 text-xs text-gray-400 bg-white/80 backdrop-blur-sm px-2 py-1 rounded">
+                            <div className="absolute bottom-3 right-3 text-xs text-slate-400 bg-slate-700/80 backdrop-blur-sm px-2 py-1 rounded">
                               {pitchContent.trim().split(/\s+/).filter(word => word.length > 0).length} words
                             </div>
                           </div>
@@ -1595,14 +1600,14 @@ export default function OpportunityDetail() {
                     {!isCheckingPitchStatus && !userPitchStatus?.hasSubmitted && (
                       <div className="mb-6">
                         <div className="flex items-center justify-between mb-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className={`flex items-center space-x-2 border-red-200 hover:bg-red-50 ${
-                              isRecording ? 'bg-red-50 text-red-700 border-red-300' : 
-                              isTranscribing ? 'bg-blue-50 text-blue-700 border-blue-300' :
-                              'text-red-500'
-                            }`}
+                                                  <Button
+                          type="button"
+                          variant="outline"
+                          className={`flex items-center space-x-2 bg-blue-900/40 border-blue-500/50 hover:bg-blue-800/60 hover:border-blue-400/60 transition-all duration-200 ${
+                            isRecording ? 'bg-blue-900/60 text-blue-200 border-blue-400/70' : 
+                            isTranscribing ? 'bg-blue-900/60 text-blue-200 border-blue-400/70' :
+                            'text-blue-300 border-blue-500/50'
+                          }`}
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -1616,35 +1621,35 @@ export default function OpportunityDetail() {
                           >
                             {isRecording ? (
                               <>
-                                <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse"></div>
+                                <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
                                 <span className="font-medium">Recording {formatTime(recordingTime)}</span>
                               </>
                             ) : isTranscribing ? (
                               <>
-                                <div className="w-3 h-3 bg-blue-600 rounded-full animate-pulse"></div>
+                                <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
                                 <span className="font-medium">Transcribing...</span>
                               </>
                             ) : (
                               <>
-                                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
                                 <span className="font-medium">Record Pitch</span>
                               </>
                             )}
                           </Button>
-                          <span className="text-blue-600 text-sm font-medium">
+                          <span className="text-blue-400 text-sm font-medium">
                             Powered by QuoteBid AI
                           </span>
                         </div>
                         
                         {/* Success indicator */}
                         {transcriptionSuccess && (
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center space-x-2">
+                          <div className="bg-green-900/40 border border-green-500/30 rounded-lg p-3 flex items-center space-x-2">
                             <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
                               <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
                             </div>
-                            <span className="text-green-700 font-medium text-sm">Voice transcribed and added to your pitch!</span>
+                            <span className="text-green-300 font-medium text-sm">Voice transcribed and added to your pitch!</span>
                           </div>
                         )}
                       </div>
@@ -1652,8 +1657,8 @@ export default function OpportunityDetail() {
 
                     {/* Recording Error Display - Only show if not submitted and not loading */}
                     {!isCheckingPitchStatus && !userPitchStatus?.hasSubmitted && recorderError && (
-                      <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
-                        <p className="text-sm text-red-800">{recorderError}</p>
+                      <div className="bg-red-900/40 border border-red-500/30 rounded-md p-3 mb-4">
+                        <p className="text-sm text-red-300">{recorderError}</p>
                         {audioURL && (
                           <button
                             onClick={() => {
@@ -1661,7 +1666,7 @@ export default function OpportunityDetail() {
                               setAudioURL(null);
                               setRecordingBlob(null);
                             }}
-                            className="text-sm text-red-600 hover:text-red-700 mt-2 underline"
+                            className="text-sm text-red-400 hover:text-red-300 mt-2 underline"
                           >
                             Dismiss
                           </button>
@@ -1671,17 +1676,17 @@ export default function OpportunityDetail() {
 
                     {/* Audio Playback - Only show if not submitted and not loading */}
                     {!isCheckingPitchStatus && !userPitchStatus?.hasSubmitted && audioURL && recorderError && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+                      <div className="bg-yellow-900/40 border border-yellow-500/30 rounded-md p-4 mb-4">
                         <div className="flex items-center space-x-2 mb-2">
-                          <Mic className="h-4 w-4 text-yellow-600" />
-                          <span className="text-sm font-medium text-yellow-800">Recording Available (Transcription Failed)</span>
+                          <Mic className="h-4 w-4 text-yellow-400" />
+                          <span className="text-sm font-medium text-yellow-300">Recording Available (Transcription Failed)</span>
                         </div>
                         <audio controls src={audioURL} className="w-full mb-2"></audio>
                         <div className="flex space-x-2">
                           <button
                             onClick={() => recordingBlob && transcribeAudio(recordingBlob)}
                             disabled={isTranscribing}
-                            className="text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                            className="text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50"
                           >
                             {isTranscribing ? 'Transcribing...' : 'Retry Transcription'}
                           </button>
@@ -1692,7 +1697,7 @@ export default function OpportunityDetail() {
                               setRecorderError(null);
                               setRecordingTime(0);
                             }}
-                            className="text-sm text-red-600 hover:text-red-700"
+                            className="text-sm text-red-400 hover:text-red-300"
                           >
                             Clear recording
                           </button>
@@ -1711,7 +1716,7 @@ export default function OpportunityDetail() {
                             handleSecurePitch();
                           }}
                           className={`w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 mb-4 ${
-                            priceData ? 'ring-2 ring-blue-300 ring-opacity-50' : ''
+                            priceData ? 'ring-2 ring-blue-400/50 ring-opacity-50' : ''
                           }`}
                         >
                           <div className="flex items-center justify-center space-x-2">
@@ -1726,7 +1731,7 @@ export default function OpportunityDetail() {
                         </Button>
 
                         {/* Disclaimer */}
-                        <p className="text-gray-500 text-sm text-center leading-relaxed">
+                        <p className="text-slate-400 text-sm text-center leading-relaxed">
                           By pitching, you agree to pay the accepted market rate at the time of submission—only if you're included in the article.
                         </p>
                       </>
@@ -1737,19 +1742,19 @@ export default function OpportunityDetail() {
             </div>
 
             {/* Competition Momentum Section */}
-            <div className="mt-12 bg-gradient-to-br from-orange-50 to-red-50 rounded-3xl border border-orange-200/50 overflow-hidden">
+            <div className="mt-12 bg-gradient-to-br from-blue-900/40 to-indigo-900/40 backdrop-blur-sm rounded-3xl border border-blue-500/30 overflow-hidden">
               <div className="p-8">
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-orange-100 rounded-xl">
-                      <Flame className="h-6 w-6 text-orange-600" />
+                    <div className="p-3 bg-blue-600/60 backdrop-blur-sm rounded-xl">
+                      <Flame className="h-6 w-6 text-blue-300" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-gray-900">Competition Momentum</h3>
-                      <p className="text-gray-600 mt-1">Demand level based on expert pitches</p>
+                      <h3 className="text-2xl font-bold text-white">Competition Momentum</h3>
+                      <p className="text-slate-300 mt-1">Demand level based on expert pitches</p>
                     </div>
                   </div>
-                  <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 text-sm font-bold shadow-md">
+                  <Badge className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-4 py-2 text-sm font-bold shadow-md">
                     {pitches.length === 0 ? 'No Interest' : 
                      pitches.length <= 2 ? 'Low Demand' : 
                      pitches.length <= 5 ? 'Medium Demand' : 
@@ -1760,19 +1765,19 @@ export default function OpportunityDetail() {
                 {/* Competition Meter */}
                 <div className="mb-8">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm font-medium text-gray-600">Demand Level</span>
-                    <span className="text-sm font-bold text-orange-600">{Math.min(pitches.length * 15, 100)}% Competitive</span>
+                    <span className="text-sm font-medium text-slate-300">Demand Level</span>
+                    <span className="text-sm font-bold text-blue-400">{Math.min(pitches.length * 15, 100)}% Competitive</span>
                   </div>
                   
                   {/* Progress Bar */}
-                  <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
+                  <div className="w-full bg-slate-700/60 rounded-full h-3 shadow-inner">
                     <div 
-                      className="h-3 rounded-full bg-gradient-to-r from-green-400 via-yellow-400 to-orange-400 transition-all duration-1000 ease-out shadow-sm"
+                      className="h-3 rounded-full bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 transition-all duration-1000 ease-out shadow-sm"
                       style={{ width: `${Math.min(pitches.length * 15, 100)}%` }}
                     ></div>
                   </div>
                   
-                  <div className="flex justify-between text-xs text-gray-500 mt-2">
+                  <div className="flex justify-between text-xs text-slate-400 mt-2">
                     <span>Low Demand</span>
                     <span>Medium Demand</span>
                     <span>High Demand</span>
@@ -1780,7 +1785,7 @@ export default function OpportunityDetail() {
                 </div>
 
                 {/* Experts Pitched - Combined Display */}
-                <div className="bg-white/50 rounded-2xl p-6 border border-white/60">
+                <div className="bg-slate-700/40 backdrop-blur-sm rounded-2xl p-6 border border-slate-600/50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       {/* Count Display */}
@@ -1790,9 +1795,9 @@ export default function OpportunityDetail() {
                       
                       {/* Info */}
                       <div>
-                        <div className="text-lg font-bold text-gray-900">Experts Pitched</div>
-                        <div className="text-green-600 text-sm font-semibold">↗ +{pitches.length} today</div>
-                        <div className="text-gray-500 text-sm">Driving current demand level</div>
+                        <div className="text-lg font-bold text-white">Experts Pitched</div>
+                        <div className="text-green-400 text-sm font-semibold">↗ +{pitches.length} today</div>
+                        <div className="text-slate-400 text-sm">Driving current demand level</div>
                       </div>
                     </div>
                     
@@ -1801,7 +1806,7 @@ export default function OpportunityDetail() {
                       {pitches.length > 0 ? (
                         <>
                           {pitches.slice(0, 5).map((pitch, index) => (
-                            <div key={pitch.id} className={`flex items-center justify-center w-10 h-10 rounded-full shadow-md border-2 border-white ${index > 0 ? '-ml-2' : ''}`}>
+                            <div key={pitch.id} className={`flex items-center justify-center w-10 h-10 rounded-full shadow-md border-2 border-slate-600 ${index > 0 ? '-ml-2' : ''}`}>
                               {pitch.user?.avatar ? (
                                 <img 
                                   src={pitch.user.avatar.startsWith('http') ? pitch.user.avatar : `${window.location.origin}${pitch.user.avatar}`}
@@ -1816,13 +1821,13 @@ export default function OpportunityDetail() {
                             </div>
                           ))}
                           {pitches.length > 5 && (
-                            <div className="flex items-center justify-center w-10 h-10 bg-gray-600 text-white rounded-full text-xs font-bold shadow-md border-2 border-white -ml-2">
+                            <div className="flex items-center justify-center w-10 h-10 bg-slate-600 text-white rounded-full text-xs font-bold shadow-md border-2 border-slate-600 -ml-2">
                               +{pitches.length - 5}
                             </div>
                           )}
                         </>
                       ) : (
-                        <div className="text-gray-500 text-sm">No pitches yet</div>
+                        <div className="text-slate-400 text-sm">No pitches yet</div>
                       )}
                     </div>
                   </div>
@@ -1831,7 +1836,7 @@ export default function OpportunityDetail() {
             </div>
 
             {/* Suggested for You Section */}
-            <div className="mt-12 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 rounded-3xl border border-gray-200/50 overflow-hidden shadow-xl">
+            <div className="mt-12 bg-gradient-to-br from-slate-800/60 via-slate-700/40 to-purple-900/20 backdrop-blur-sm rounded-3xl border border-slate-600/50 overflow-hidden shadow-xl">
               <div className="p-8">
                 {/* Header Section */}
                 <div className="flex items-center justify-between mb-8">
@@ -1839,10 +1844,10 @@ export default function OpportunityDetail() {
                     <div className="flex items-center space-x-3">
                       <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
                       <div>
-                        <h3 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
+                        <h3 className="text-2xl font-bold text-white flex items-center space-x-2">
                           <span>Suggested for you</span>
-                          <span className="text-blue-600">•</span>
-                          <span className="text-lg text-blue-600 font-semibold">
+                          <span className="text-blue-400">•</span>
+                          <span className="text-lg text-blue-400 font-semibold">
                             Active {opportunity?.topicTags?.[0] || 'Related'} Stories
                           </span>
                         </h3>
@@ -1852,7 +1857,7 @@ export default function OpportunityDetail() {
                   <Link href="/opportunities">
                     <Button 
                       variant="outline" 
-                      className="group bg-white/80 backdrop-blur-sm hover:bg-white border-blue-200 text-blue-600 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md px-6 py-3"
+                      className="group bg-slate-700/60 backdrop-blur-sm hover:bg-slate-600/60 border-blue-500/30 text-blue-400 hover:border-blue-400/50 hover:text-blue-300 transition-all duration-200 shadow-sm hover:shadow-md px-6 py-3"
                     >
                       <span className="font-semibold">View All</span>
                       <ChevronLeft className="h-4 w-4 ml-2 rotate-180 group-hover:translate-x-1 transition-transform duration-200" />
@@ -1873,40 +1878,40 @@ export default function OpportunityDetail() {
                           setIsLoading(true);
                         }}
                       >
-                        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200/60 overflow-hidden hover:shadow-xl hover:border-blue-200/60 transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+                        <div className="bg-gradient-to-br from-blue-900/50 via-purple-900/40 to-indigo-900/60 backdrop-blur-sm rounded-2xl border border-blue-400/30 overflow-hidden hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-300/60 hover:from-blue-800/60 hover:via-purple-800/50 hover:to-indigo-800/70 transition-all duration-300 hover:-translate-y-2 cursor-pointer group">
                           {/* Card Header */}
                           <div className="p-6 pb-4">
                             <div className="flex items-center justify-between mb-4">
                               <div className="flex items-center space-x-2">
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center shadow-lg group-hover:from-blue-300 group-hover:to-purple-400 transition-all duration-300">
                                   <span className="text-white text-xs font-bold">
                                     {(relatedOpp.publication?.name || relatedOpp.outlet || 'UK')[0]}
                                   </span>
                                 </div>
-                                <span className="text-sm font-semibold text-gray-600">
+                                <span className="text-sm font-semibold text-blue-200 group-hover:text-blue-100 transition-colors duration-300">
                                   {relatedOpp.publication?.name || relatedOpp.outlet || 'Unknown Outlet'}
                                 </span>
                               </div>
-                              <Badge className={`text-xs font-bold px-3 py-1.5 shadow-sm border-0 ${
-                                getTierDisplay(relatedOpp.tier) === 1 ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white' :
-                                getTierDisplay(relatedOpp.tier) === 2 ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' :
-                                'bg-gradient-to-r from-green-500 to-green-600 text-white'
+                              <Badge className={`text-xs font-bold px-3 py-1.5 shadow-lg border-0 ${
+                                getTierDisplay(relatedOpp.tier) === 1 ? 'bg-gradient-to-r from-purple-400 to-purple-500 text-white' :
+                                getTierDisplay(relatedOpp.tier) === 2 ? 'bg-gradient-to-r from-blue-400 to-blue-500 text-white' :
+                                'bg-gradient-to-r from-cyan-400 to-blue-500 text-white'
                               }`}>
                                 Tier {getTierDisplay(relatedOpp.tier)}
                               </Badge>
                             </div>
                             
                             {/* Title */}
-                            <h4 className="text-lg font-bold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors line-clamp-2 leading-tight">
+                            <h4 className="text-lg font-bold text-white mb-4 group-hover:text-blue-300 transition-colors duration-300 line-clamp-2 leading-tight">
                               {relatedOpp.title}
                             </h4>
                             
                             {/* Status and Time */}
                             <div className="flex items-center justify-between mb-4">
-                              <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-semibold ${
-                                relatedOpp.status === 'urgent' ? 'bg-red-50 text-red-600 border border-red-200' :
-                                relatedOpp.status === 'trending' ? 'bg-orange-50 text-orange-600 border border-orange-200' :
-                                'bg-green-50 text-green-600 border border-green-200'
+                              <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-semibold backdrop-blur-sm ${
+                                relatedOpp.status === 'urgent' ? 'bg-red-900/50 text-red-200 border border-red-400/40 shadow-md' :
+                                relatedOpp.status === 'trending' ? 'bg-blue-900/50 text-blue-200 border border-blue-400/40 shadow-md' :
+                                'bg-blue-900/50 text-blue-200 border border-blue-400/40 shadow-md'
                               }`}>
                                 {relatedOpp.status === 'urgent' ? (
                                   <>
@@ -1920,12 +1925,12 @@ export default function OpportunityDetail() {
                                   </>
                                 ) : (
                                   <>
-                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
                                     <span>Open</span>
                                   </>
                                 )}
                               </div>
-                              <span className="text-gray-500 text-sm font-medium bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+                              <span className="text-blue-200 text-sm font-medium bg-slate-800/60 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-blue-500/30 shadow-md">
                                 {relatedOpp.deadline ? 
                                   `${Math.ceil((new Date(relatedOpp.deadline).getTime() - Date.now()) / (1000 * 60 * 60))}h left` :
                                   'Active'
@@ -1936,11 +1941,11 @@ export default function OpportunityDetail() {
                           
                           {/* Card Footer */}
                           <div className="px-6 pb-6">
-                            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50/50 rounded-xl border border-gray-100">
+                            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-800/50 via-purple-800/40 to-indigo-800/50 backdrop-blur-sm rounded-xl border border-blue-400/30 shadow-lg group-hover:from-blue-700/60 group-hover:via-purple-700/50 group-hover:to-indigo-700/60 transition-all duration-300">
                               <div className="flex items-baseline space-x-2">
                                 <RelatedOpportunityPrice opportunityId={relatedOpp.id} fallbackPrice={relatedOpp.minimumBid || relatedOpp.currentPrice || 0} />
                                 {relatedOpp.increment && (
-                                  <span className="text-gray-500 text-sm font-medium">
+                                  <span className="text-blue-300 text-sm font-medium">
                                     +${relatedOpp.increment}
                                   </span>
                                 )}
@@ -1956,23 +1961,23 @@ export default function OpportunityDetail() {
                     Array.from({ length: 3 }, (_, index) => (
                       <div 
                         key={`fallback-${index}`}
-                        className="bg-white/50 backdrop-blur-sm rounded-2xl border border-gray-200/50 overflow-hidden"
+                        className="bg-gradient-to-br from-blue-900/30 via-purple-900/20 to-indigo-900/40 backdrop-blur-sm rounded-2xl border border-blue-400/20 overflow-hidden"
                       >
                         <div className="p-6">
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center space-x-2">
-                              <div className="w-8 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
-                              <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+                              <div className="w-8 h-8 bg-blue-600/60 rounded-lg animate-pulse"></div>
+                              <div className="h-4 bg-blue-600/60 rounded w-24 animate-pulse"></div>
                             </div>
-                            <div className="h-6 bg-gray-200 rounded w-16 animate-pulse"></div>
+                            <div className="h-6 bg-purple-600/60 rounded w-16 animate-pulse"></div>
                           </div>
-                          <div className="h-6 bg-gray-200 rounded w-full mb-2 animate-pulse"></div>
-                          <div className="h-6 bg-gray-200 rounded w-3/4 mb-4 animate-pulse"></div>
+                          <div className="h-6 bg-blue-500/50 rounded w-full mb-2 animate-pulse"></div>
+                          <div className="h-6 bg-purple-500/50 rounded w-3/4 mb-4 animate-pulse"></div>
                           <div className="flex justify-between mb-4">
-                            <div className="h-8 bg-gray-200 rounded w-20 animate-pulse"></div>
-                            <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
+                            <div className="h-8 bg-indigo-600/60 rounded w-20 animate-pulse"></div>
+                            <div className="h-8 bg-blue-600/60 rounded w-16 animate-pulse"></div>
                           </div>
-                          <div className="h-16 bg-gray-100 rounded-xl animate-pulse"></div>
+                          <div className="h-16 bg-gradient-to-r from-blue-700/40 to-purple-700/40 rounded-xl animate-pulse"></div>
                         </div>
                       </div>
                     ))
@@ -1981,8 +1986,8 @@ export default function OpportunityDetail() {
 
                 {/* Additional Info */}
                 {relatedOpportunities.length > 0 && (
-                  <div className="mt-8 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
-                    <div className="flex items-center justify-center space-x-2 text-sm text-blue-700">
+                  <div className="mt-8 p-4 bg-gradient-to-r from-blue-900/40 to-purple-900/40 backdrop-blur-sm rounded-xl border border-blue-500/30">
+                    <div className="flex items-center justify-center space-x-2 text-sm text-blue-300">
                       <Info className="h-4 w-4" />
                       <span className="font-medium">
                         Found {relatedOpportunities.length} related {relatedOpportunities.length === 1 ? 'opportunity' : 'opportunities'} in {opportunity?.topicTags?.[0] || 'your area'}
@@ -1999,7 +2004,7 @@ export default function OpportunityDetail() {
                 <Button 
                   variant="ghost" 
                   size="lg" 
-                  className="flex items-center space-x-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100/50 transition-all duration-200 px-8 py-4 mx-auto"
+                  className="flex items-center space-x-3 text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200 px-8 py-4 mx-auto"
                 >
                   <ChevronLeft className="h-5 w-5" />
                   <span className="font-semibold text-lg">Back to Opportunities</span>

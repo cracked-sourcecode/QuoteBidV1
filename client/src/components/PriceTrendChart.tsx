@@ -18,7 +18,7 @@ interface CustomTooltipProps extends TooltipProps<number, string> {
   live?: boolean;
 }
 
-const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, live }) => {
+const CustomTooltip: React.FC<CustomTooltipProps & { theme?: 'light' | 'dark' }> = ({ active, payload, label, live, theme = 'light' }) => {
   if (!active || !payload || !payload.length) return null;
 
   const data = payload[0];
@@ -26,20 +26,37 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, l
   const change = data.payload.priceChange;
   const isRealTime = data.payload.isRealTime;
   
+  const tooltipStyles = theme === 'dark' 
+    ? "bg-slate-900/95 backdrop-blur-xl border border-blue-400/20 rounded-xl shadow-2xl shadow-blue-500/10 p-4 text-sm min-w-[180px] ring-1 ring-blue-400/10"
+    : "bg-white/95 backdrop-blur-xl border border-gray-200 rounded-xl shadow-2xl p-4 text-sm min-w-[180px]";
+    
+  const priceStyles = theme === 'dark' ? "font-bold text-2xl text-emerald-400 mb-2" : "font-bold text-2xl text-green-600 mb-2";
+  const timeStyles = theme === 'dark' ? "text-slate-300 text-xs mb-3 opacity-80" : "text-gray-500 text-xs mb-3 opacity-80";
+  const changeColors = theme === 'dark' 
+    ? { up: 'text-emerald-400', down: 'text-blue-400' }
+    : { up: 'text-green-600', down: 'text-red-600' };
+  const liveStyles = theme === 'dark' 
+    ? "flex items-center space-x-2 text-xs text-cyan-400 mt-3 pt-3 border-t border-cyan-400/20"
+    : "flex items-center space-x-2 text-xs text-blue-600 mt-3 pt-3 border-t border-blue-200";
+  
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-xl p-3 text-sm min-w-[160px]">
-      <div className="font-bold text-xl text-gray-900 mb-1">${price?.toLocaleString()}</div>
-      <div className="text-gray-500 text-xs mb-2">{data.payload.fullTime}</div>
+    <div className={tooltipStyles}>
+      <div className={priceStyles}>
+        ${price?.toLocaleString()}
+      </div>
+      <div className={timeStyles}>{data.payload.fullTime}</div>
       {change !== undefined && change !== 0 && (
-        <div className={`text-sm font-semibold flex items-center space-x-1 ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-          <span>{change > 0 ? '↗' : '↘'}</span>
+        <div className={`text-sm font-semibold flex items-center space-x-2 ${
+          change > 0 ? changeColors.up : changeColors.down
+        }`}>
+          <span className="text-lg">{change > 0 ? '↗' : '↘'}</span>
           <span>${Math.abs(change).toFixed(0)} {change > 0 ? 'increase' : 'decrease'}</span>
         </div>
       )}
       {isRealTime && (
-        <div className="flex items-center space-x-1 text-xs text-red-600 mt-2 pt-2 border-t border-gray-100">
-          <div className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></div>
-          <span className="font-medium">Live Update</span>
+        <div className={liveStyles}>
+          <div className={`w-2 h-2 ${theme === 'dark' ? 'bg-cyan-400' : 'bg-blue-600'} rounded-full animate-pulse shadow-lg ${theme === 'dark' ? 'shadow-cyan-400/50' : 'shadow-blue-600/50'}`}></div>
+          <span className="font-medium tracking-wide">LIVE UPDATE</span>
         </div>
       )}
     </div>
@@ -47,16 +64,17 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, l
 };
 
 /**
- * StockX-inspired interactive price chart
+ * Cyberpunk-inspired dark theme interactive price chart with stunning visual effects
  */
 export default function PriceTrendChart({
-  data, live = false,
+  data, live = false, theme = 'light',
 }: { 
   data: PricePoint[]; 
   live?: boolean;
+  theme?: 'light' | 'dark';
 }) {
   
-  // Time period options (StockX style)
+  // Time period options with dark cyberpunk styling
   const timeframes = [
     { label: '1H', hours: 1 },
     { label: '6H', hours: 6 },
@@ -172,26 +190,48 @@ export default function PriceTrendChart({
   if (!chartData || chartData.length === 0) {
     return (
       <div className="w-full h-[520px]">
-        {/* Header with timeframe buttons */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+        {/* Header with timeframe buttons - themed */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div className="flex flex-wrap items-center gap-3 min-w-0">
-            <div className="text-lg font-semibold text-gray-900 whitespace-nowrap">Price History</div>
+            <div className={`text-xl font-bold whitespace-nowrap ${
+              theme === 'dark' 
+                ? 'text-white bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent'
+                : 'text-gray-900'
+            }`}>
+              Price History
+            </div>
             {live && (
-              <div className="flex items-center space-x-1 px-2 py-1 bg-green-50 rounded-lg whitespace-nowrap">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-green-600 font-medium text-sm">Live</span>
+              <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl border whitespace-nowrap ${
+                theme === 'dark'
+                  ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-cyan-400/30 backdrop-blur-sm'
+                  : 'bg-green-50 border-green-200'
+              }`}>
+                <div className={`w-2.5 h-2.5 rounded-full animate-pulse shadow-lg ${
+                  theme === 'dark' ? 'bg-cyan-400 shadow-cyan-400/70' : 'bg-green-500 shadow-green-500/50'
+                }`}></div>
+                <span className={`font-semibold text-sm tracking-wide ${
+                  theme === 'dark' ? 'text-cyan-300' : 'text-green-700'
+                }`}>LIVE</span>
               </div>
             )}
           </div>
-          <div className="flex bg-gray-100 rounded-lg p-1 flex-shrink-0">
+          <div className={`flex rounded-xl p-1.5 flex-shrink-0 shadow-lg ${
+            theme === 'dark' 
+              ? 'bg-slate-800/60 backdrop-blur-sm border border-slate-600/30'
+              : 'bg-gray-100 border border-gray-200'
+          }`}>
             {timeframes.map((tf) => (
               <button
                 key={tf.label}
                 onClick={() => handleTimeframeChange(tf)}
-                className={`px-2 lg:px-3 py-1.5 text-xs lg:text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap ${
+                className={`px-3 lg:px-4 py-2 text-xs lg:text-sm font-semibold rounded-lg transition-all duration-300 whitespace-nowrap ${
                   selectedTimeframe.label === tf.label
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? theme === 'dark'
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/25 ring-1 ring-blue-400/50'
+                      : 'bg-blue-600 text-white shadow-lg'
+                    : theme === 'dark'
+                      ? 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
                 }`}
               >
                 {tf.label}
@@ -200,57 +240,93 @@ export default function PriceTrendChart({
           </div>
         </div>
         
-        <div className="w-full h-[460px] flex items-center justify-center bg-gray-50 rounded-xl border border-gray-200">
-          <div className="text-center text-gray-500">
-            <div className="text-3xl mb-3">📈</div>
-            <p className="font-medium">No price data for {selectedTimeframe.label} timeframe</p>
-            <p className="text-sm text-gray-400 mt-1">Try selecting "ALL" to see complete history</p>
+        <div className={`w-full h-[460px] flex items-center justify-center rounded-2xl border shadow-2xl ${
+          theme === 'dark'
+            ? 'bg-gradient-to-br from-slate-800/50 to-slate-900/80 backdrop-blur-sm border-slate-600/30'
+            : 'bg-white border-gray-200'
+        }`}>
+          <div className={`text-center ${theme === 'dark' ? 'text-slate-300' : 'text-gray-600'}`}>
+            <div className="text-4xl mb-4 opacity-60">📈</div>
+            <p className="font-semibold text-lg">No price data for {selectedTimeframe.label} timeframe</p>
+            <p className={`text-sm mt-2 opacity-75 ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'}`}>Try selecting "ALL" to see complete history</p>
           </div>
         </div>
       </div>
     );
   }
 
-      return (
-      <div className="w-full h-[520px]">
-      {/* Header with live price ticker and timeframe controls */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
-        <div className="flex flex-wrap items-center gap-3 min-w-0">
-          <div className="text-lg font-semibold text-gray-900 whitespace-nowrap">Price History</div>
+  return (
+    <div className="w-full h-[520px]">
+      {/* Header with live price ticker and controls - themed */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+        <div className="flex flex-wrap items-center gap-4 min-w-0">
+          <div className={`text-xl font-bold whitespace-nowrap ${
+            theme === 'dark' 
+              ? 'text-white bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent'
+              : 'text-gray-900'
+          }`}>
+            Price History
+          </div>
           {priceStats && (
-            <div className="flex flex-wrap items-center gap-3">
-              <div className={`text-xl lg:text-2xl font-bold transition-colors duration-300 whitespace-nowrap ${
-                isAnimating && live ? 'text-blue-600' : 'text-gray-900'
+            <div className="flex flex-wrap items-center gap-4">
+              <div className={`text-2xl lg:text-3xl font-black transition-all duration-500 whitespace-nowrap ${
+                theme === 'dark'
+                  ? isAnimating && live 
+                    ? 'text-transparent bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 bg-clip-text animate-pulse' 
+                    : 'text-emerald-400'
+                  : 'text-green-600'
               }`}>
                 ${priceStats.current}
               </div>
-              <div className={`flex items-center space-x-1 text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
-                priceStats.isUp ? 'text-green-600' : 'text-red-600'
+              <div className={`flex items-center space-x-2 text-sm font-bold transition-all duration-500 whitespace-nowrap px-3 py-1.5 rounded-xl ${
+                theme === 'dark'
+                  ? priceStats.isUp 
+                    ? 'text-emerald-300 bg-emerald-500/10 border border-emerald-400/20' 
+                    : 'text-blue-300 bg-blue-500/10 border border-blue-400/20'
+                  : priceStats.isUp 
+                    ? 'text-green-700 bg-green-50 border border-green-200' 
+                    : 'text-red-700 bg-red-50 border border-red-200'
               }`}>
-                <span className={isAnimating && live ? 'animate-bounce' : ''}>
+                <span className={`text-lg ${isAnimating && live ? 'animate-bounce' : ''}`}>
                   {priceStats.isUp ? '↗' : '↘'}
                 </span>
                 <span>${Math.abs(priceStats.change).toFixed(0)} ({priceStats.isUp ? '+' : ''}{priceStats.changePercent}%)</span>
               </div>
               {live && (
-                <div className="flex items-center space-x-1 px-2 py-1 bg-green-50 rounded-lg whitespace-nowrap">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-green-600 font-medium text-sm">Live Updates</span>
+                <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl border whitespace-nowrap shadow-lg ${
+                  theme === 'dark'
+                    ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-cyan-400/30 backdrop-blur-sm'
+                    : 'bg-green-50 border-green-200'
+                }`}>
+                  <div className={`w-2.5 h-2.5 rounded-full animate-pulse shadow-lg ${
+                    theme === 'dark' ? 'bg-cyan-400 shadow-cyan-400/70' : 'bg-green-500 shadow-green-500/50'
+                  }`}></div>
+                  <span className={`font-semibold text-sm tracking-wide ${
+                    theme === 'dark' ? 'text-cyan-300' : 'text-green-700'
+                  }`}>LIVE UPDATES</span>
                 </div>
               )}
             </div>
           )}
         </div>
         
-        <div className="flex bg-gray-100 rounded-lg p-1 flex-shrink-0">
+        <div className={`flex rounded-xl p-1.5 flex-shrink-0 shadow-xl ${
+          theme === 'dark' 
+            ? 'bg-slate-800/60 backdrop-blur-sm border border-slate-600/30'
+            : 'bg-gray-100 border border-gray-200'
+        }`}>
           {timeframes.map((tf) => (
             <button
               key={tf.label}
               onClick={() => handleTimeframeChange(tf)}
-              className={`px-2 lg:px-3 py-1.5 text-xs lg:text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap ${
+              className={`px-3 lg:px-4 py-2 text-xs lg:text-sm font-semibold rounded-lg transition-all duration-300 whitespace-nowrap ${
                 selectedTimeframe.label === tf.label
-                  ? 'bg-white text-gray-900 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? theme === 'dark'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/25 ring-1 ring-blue-400/50'
+                    : 'bg-blue-600 text-white shadow-lg'
+                  : theme === 'dark'
+                    ? 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
               }`}
             >
               {tf.label}
@@ -259,36 +335,69 @@ export default function PriceTrendChart({
         </div>
       </div>
 
-      {/* Interactive Chart */}
-      <div className={`h-[460px] bg-white rounded-xl border border-gray-200 p-4 transition-all duration-300 ${
-        isAnimating ? 'ring-2 ring-blue-200' : ''
+      {/* Interactive chart - themed */}
+      <div className={`h-[460px] rounded-2xl border p-6 shadow-2xl transition-all duration-500 ${
+        theme === 'dark'
+          ? `bg-gradient-to-br from-slate-800/40 via-slate-900/60 to-slate-800/40 backdrop-blur-sm border-slate-600/30 ${
+              isAnimating ? 'ring-2 ring-cyan-400/50 shadow-cyan-500/20' : 'shadow-slate-900/50'
+            }`
+          : 'bg-white border-gray-200 shadow-gray-300/50'
       }`}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
             <defs>
-              <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={priceStats?.isUp ? "#10B981" : "#EF4444"} stopOpacity={0.4} />
-                <stop offset="50%" stopColor={priceStats?.isUp ? "#10B981" : "#EF4444"} stopOpacity={0.1} />
-                <stop offset="100%" stopColor={priceStats?.isUp ? "#10B981" : "#EF4444"} stopOpacity={0.02} />
+              {/* Gradient definitions for different price trends - themed */}
+              <linearGradient id={theme === 'dark' ? "bullishGradient" : "bullishGradientLight"} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#10B981" stopOpacity={theme === 'dark' ? 0.6 : 0.3} />
+                <stop offset="30%" stopColor="#059669" stopOpacity={theme === 'dark' ? 0.4 : 0.2} />
+                <stop offset="70%" stopColor="#047857" stopOpacity={theme === 'dark' ? 0.2 : 0.1} />
+                <stop offset="100%" stopColor="#065f46" stopOpacity={theme === 'dark' ? 0.05 : 0.02} />
               </linearGradient>
               
-              {/* Glow effect for live updates */}
-              <filter id="liveGlow">
-                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <linearGradient id={theme === 'dark' ? "bearishGradient" : "bearishGradientLight"} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={theme === 'dark' ? "#3B82F6" : "#EF4444"} stopOpacity={theme === 'dark' ? 0.6 : 0.3} />
+                <stop offset="30%" stopColor={theme === 'dark' ? "#2563EB" : "#DC2626"} stopOpacity={theme === 'dark' ? 0.4 : 0.2} />
+                <stop offset="70%" stopColor={theme === 'dark' ? "#1D4ED8" : "#B91C1C"} stopOpacity={theme === 'dark' ? 0.2 : 0.1} />
+                <stop offset="100%" stopColor={theme === 'dark' ? "#1E40AF" : "#991B1B"} stopOpacity={theme === 'dark' ? 0.05 : 0.02} />
+              </linearGradient>
+
+              {/* Glow effects - themed */}
+              <filter id={theme === 'dark' ? "cyberpunkGlow" : "lightGlow"} x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation={theme === 'dark' ? "4" : "2"} result="coloredBlur"/>
                 <feMerge> 
                   <feMergeNode in="coloredBlur"/>
                   <feMergeNode in="SourceGraphic"/>
                 </feMerge>
               </filter>
+              
+              <filter id={theme === 'dark' ? "liveGlow" : "liveGlowLight"} x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation={theme === 'dark' ? "6" : "3"} result="coloredBlur"/>
+                <feMerge> 
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+
+              {/* Animated gradient for live updates - themed */}
+              <linearGradient id={theme === 'dark' ? "liveGradient" : "liveGradientLight"} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={theme === 'dark' ? "#06B6D4" : "#3B82F6"} stopOpacity={theme === 'dark' ? 0.8 : 0.4} />
+                <stop offset="50%" stopColor="#3B82F6" stopOpacity={theme === 'dark' ? 0.5 : 0.3} />
+                <stop offset="100%" stopColor={theme === 'dark' ? "#8B5CF6" : "#6366F1"} stopOpacity={theme === 'dark' ? 0.1 : 0.05} />
+              </linearGradient>
             </defs>
             
-            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+            {/* Grid - themed */}
+            <CartesianGrid 
+              strokeDasharray="2 4" 
+              opacity={theme === 'dark' ? 0.15 : 0.3} 
+              stroke={theme === 'dark' ? "#64748b" : "#e5e7eb"}
+            />
             
             <XAxis
               dataKey="displayTime"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 11, fill: '#6B7280' }}
+              tick={{ fontSize: 11, fill: theme === 'dark' ? '#94a3b8' : '#6b7280', fontWeight: 500 }}
               interval="preserveStartEnd"
             />
             
@@ -296,40 +405,55 @@ export default function PriceTrendChart({
               domain={priceDomain}
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 11, fill: '#6B7280' }}
+              tick={{ fontSize: 11, fill: theme === 'dark' ? '#94a3b8' : '#6b7280', fontWeight: 500 }}
               tickFormatter={(value) => `$${Math.round(value)}`}
             />
             
-            <Tooltip content={<CustomTooltip live={live} />} />
+            <Tooltip content={<CustomTooltip live={live} theme={theme} />} />
             
-
-            
-            {/* Main price area with enhanced styling for live updates */}
+            {/* Main price area - themed */}
             <Area
               type="monotone"
               dataKey="price"
-              stroke={priceStats?.isUp ? "#10B981" : "#EF4444"}
-              strokeWidth={live && isAnimating ? 3 : 2.5}
+              stroke={
+                live && isAnimating 
+                  ? theme === 'dark' ? "#06B6D4" : "#3B82F6"
+                  : priceStats?.isUp 
+                    ? "#10B981" 
+                    : theme === 'dark' ? "#3B82F6" : "#EF4444"
+              }
+              strokeWidth={live && isAnimating ? 4 : 3}
               strokeLinecap="round"
-              fill="url(#priceGradient)"
+              fill={
+                live && isAnimating 
+                  ? theme === 'dark' ? "url(#liveGradient)" : "url(#liveGradientLight)"
+                  : priceStats?.isUp 
+                    ? theme === 'dark' ? "url(#bullishGradient)" : "url(#bullishGradientLight)"
+                    : theme === 'dark' ? "url(#bearishGradient)" : "url(#bearishGradientLight)"
+              }
               fillOpacity={1}
               dot={false}
               activeDot={{
-                r: live ? 6 : 5,
-                stroke: priceStats?.isUp ? "#10B981" : "#EF4444",
-                strokeWidth: 2,
-                fill: 'white',
+                r: live ? 8 : 6,
+                stroke: live && isAnimating 
+                  ? theme === 'dark' ? "#06B6D4" : "#3B82F6"
+                  : priceStats?.isUp 
+                    ? "#10B981" 
+                    : theme === 'dark' ? "#3B82F6" : "#EF4444",
+                strokeWidth: 3,
+                fill: theme === 'dark' ? '#1e293b' : '#ffffff',
                 style: { cursor: 'pointer' },
-                filter: live && isAnimating ? 'url(#liveGlow)' : undefined
+                filter: live && isAnimating 
+                  ? theme === 'dark' ? 'url(#liveGlow)' : 'url(#liveGlowLight)'
+                  : theme === 'dark' ? 'url(#cyberpunkGlow)' : 'url(#lightGlow)'
               }}
-              animationDuration={isAnimating ? 800 : 400}
+              animationDuration={isAnimating ? 1000 : 600}
               animationEasing="ease-out"
+              filter={live && isAnimating ? theme === 'dark' ? 'url(#cyberpunkGlow)' : undefined : undefined}
             />
           </AreaChart>
         </ResponsiveContainer>
       </div>
-
-
     </div>
   );
 } 
