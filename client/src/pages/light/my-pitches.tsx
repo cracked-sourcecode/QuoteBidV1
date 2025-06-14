@@ -287,11 +287,13 @@ export default function MyPitches() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex justify-center items-center h-64">
-          <div className="flex items-center space-x-3">
-            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-            <span className="text-gray-600">Loading your pitches...</span>
+      <div className="w-full bg-white min-h-screen">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+          <div className="flex justify-center items-center h-64">
+            <div className="flex items-center space-x-3">
+              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+              <span className="text-gray-600">Loading your pitches...</span>
+            </div>
           </div>
         </div>
       </div>
@@ -300,13 +302,15 @@ export default function MyPitches() {
 
   if (hasError) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 text-red-600 mr-3" />
-            <div>
-              <h3 className="font-medium text-red-800">Unable to load your pitches</h3>
-              <p className="text-red-700 text-sm mt-1">Please try refreshing the page.</p>
+      <div className="w-full bg-white min-h-screen">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-600 mr-3" />
+              <div>
+                <h3 className="font-medium text-red-800">Unable to load your pitches</h3>
+                <p className="text-red-700 text-sm mt-1">Please try refreshing the page.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -317,10 +321,10 @@ export default function MyPitches() {
   return (
     <div className="w-full bg-white min-h-screen">
       {/* Header with gradient background */}
-      <div className="px-4 sm:px-6 lg:px-8 py-8 border-b border-gray-200 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50">
-        <div className="max-w-5xl mx-auto px-4 py-6">
+      <div className="px-3 sm:px-4 py-4 sm:py-6 bg-white">
+        <div className="max-w-5xl mx-auto">
           {/* Header Section */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-4 sm:p-6 mb-6">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200/50 p-3 sm:p-6 mb-4 sm:mb-6">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">My Pitches</h1>
@@ -335,10 +339,10 @@ export default function MyPitches() {
                 <span className="sm:hidden">Browse</span>
               </button>
             </div>
-            
+          
             {/* Enhanced Stats Row */}
             <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4">
-              <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-2 sm:p-3 border border-amber-200">
+              <div className="bg-amber-50 rounded-xl p-2 sm:p-3 border border-amber-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-amber-700 mb-0.5">Drafts</p>
@@ -349,7 +353,7 @@ export default function MyPitches() {
                   </div>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-2 sm:p-3 border border-blue-200">
+              <div className="bg-white rounded-xl p-2 sm:p-3 border border-gray-200 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-blue-700 mb-0.5">Submitted</p>
@@ -360,7 +364,7 @@ export default function MyPitches() {
                   </div>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-2 sm:p-3 border border-green-200">
+              <div className="bg-green-50 rounded-xl p-2 sm:p-3 border border-green-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-green-700 mb-0.5">Published</p>
@@ -383,7 +387,7 @@ export default function MyPitches() {
                   placeholder="Search your pitches by title, publication, or outlet..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white text-gray-900 placeholder-gray-500 hover:border-gray-400 transition-colors"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs bg-white text-gray-900 placeholder-gray-500 hover:border-gray-400 transition-colors"
                 />
               </div>
               
@@ -413,10 +417,10 @@ export default function MyPitches() {
           </div>
 
           {/* Content Section */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200/50 overflow-hidden">
           {allPitches.length === 0 ? (
             <div className="text-center py-12 px-6">
-              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center">
+              <div className="w-20 h-20 mx-auto mb-4 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-200">
                 <FileText className="h-10 w-10 text-blue-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to start pitching?</h3>
@@ -455,41 +459,47 @@ export default function MyPitches() {
                 const createdDate = formatDate(pitch.createdAt);
                 
                 return (
-                  <div key={pitch.id} className={`p-3 sm:p-4 hover:bg-gray-50/50 transition-all duration-200 ${index === 0 ? 'rounded-t-2xl' : ''} ${index === paginatedPitches.length - 1 ? 'rounded-b-2xl' : ''}`}>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                  <div key={pitch.id} className={`p-3 sm:p-4 hover:bg-gray-50/50 transition-all duration-200 ${index === 0 ? 'rounded-t-2xl' : ''} ${index === filteredPitches.length - 1 ? 'rounded-b-2xl' : ''}`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                       {/* Left: Title and Publication */}
-                      <div className="flex-1 min-w-0 sm:mr-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 mb-2 gap-2 sm:gap-0">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
                           <h3 className="font-semibold text-gray-900 text-sm sm:text-base line-clamp-2 sm:max-w-xl sm:truncate">
                             {pitch.opportunity?.title || `Pitch #${pitch.id}`}
                           </h3>
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${statusDisplay.color} shadow-sm w-fit`}>
+                          <span className={`inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 self-start sm:self-auto ${statusDisplay.color} shadow-sm`}>
                             <StatusIcon className="h-3 w-3 mr-1" />
                             {statusDisplay.label}
                           </span>
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-xs sm:text-sm text-gray-500 gap-1 sm:gap-0">
-                          <span className="font-medium text-gray-700 text-xs sm:text-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-500">
+                          <span className="font-medium text-gray-700 text-sm">
                             {pitch.opportunity?.publication?.name || pitch.opportunity?.outlet || "Unknown Publication"}
                           </span>
-                          <span className="flex items-center">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {createdDate}
-                          </span>
-                          {pitch.bidAmount && !pitch.isDraft && (
-                            <span className="flex items-center font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-lg text-xs w-fit">
-                              Pitch Price: ${pitch.bidAmount}
+                          <div className="flex items-center gap-3 sm:gap-4">
+                            <span className="flex items-center">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {createdDate}
                             </span>
-                          )}
+                            {pitch.bidAmount && !pitch.isDraft && (
+                              <span className="flex items-center font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-lg text-xs">
+                                Pitch Price: ${pitch.bidAmount}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
                       {/* Right: Actions */}
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-2 sm:space-x-2 flex-wrap sm:flex-nowrap">
                         {pitch.isDraft ? (
                           <Button size="sm" onClick={() => {
                             // Navigate to opportunity detail page and scroll to pitch section
-                            setLocation(`/opportunities/${pitch.opportunity?.id || pitch.opportunityId}#pitch-section`);
+                            const opportunityId = pitch.opportunity?.id || pitch.opportunityId;
+                            const targetUrl = `/opportunities/${opportunityId}#pitch-section`;
+                            
+                            // Use window.location.href for better hash handling
+                            window.location.href = targetUrl;
                           }} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-3 py-1.5 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all text-xs flex-1 sm:flex-initial">
                             <Edit className="h-3 w-3 mr-1" />
                             Continue
@@ -521,7 +531,7 @@ export default function MyPitches() {
 
                     {/* Admin Notes */}
                     {pitch.adminNotes && (
-                      <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+                      <div className="mt-3 p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
                         <p className="text-sm text-blue-800 leading-relaxed">
                           <span className="font-semibold">Publisher Feedback: </span>
                           {pitch.adminNotes}
@@ -531,7 +541,7 @@ export default function MyPitches() {
 
                     {/* Published Article */}
                     {pitch.article?.url && ['successful', 'successful_coverage'].includes(pitch.status) && (
-                      <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-xl border border-green-200">
+                      <div className="mt-3 p-3 bg-green-50 rounded-xl border border-green-200">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
                             <Award className="h-4 w-4 text-green-600 mr-2" />
@@ -659,7 +669,7 @@ export default function MyPitches() {
       )}
 
       {/* ——— FOOTER ——— */}
-      <footer className="relative z-20 bg-white py-16 mt-16">
+      <footer className="relative z-20 bg-white py-16 mt-0">
         {/* Background effects */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-400 rounded-full mix-blend-multiply filter blur-2xl animate-blob"></div>
@@ -678,7 +688,7 @@ export default function MyPitches() {
               </div>
             </div>
             <p className="text-gray-600 mt-4 text-lg">
-              The world's first live marketplace for earned media
+              The World's First Live Marketplace for Earned Media
             </p>
           </div>
           
@@ -699,7 +709,7 @@ export default function MyPitches() {
               &copy; {new Date().getFullYear()} QuoteBid Inc. All rights reserved.
             </p>
             <p className="text-gray-500 text-sm mt-2">
-              Built for experts, not PR agencies.
+              Built For Experts, Not PR Agencies.
             </p>
           </div>
         </div>

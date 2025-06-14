@@ -104,6 +104,73 @@ export default function DarkNavbar() {
               </>
             ) : (
               <>
+                {/* Mobile Notifications */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="md:hidden relative p-2 hover:bg-white/10 focus:outline-none focus:ring-0 focus:bg-white/10">
+                      <Bell className="h-5 w-5 text-white/80" />
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium min-w-[16px]">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-80 bg-slate-800 border-white/20">
+                    <div className="px-4 py-3 border-b border-white/20">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-white">Notifications</h3>
+                        {notifications.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={clearAllNotifications}
+                            className="text-xs text-white/60 hover:text-white/80 hover:bg-white/10"
+                          >
+                            Clear all
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-white/60">
+                          <Bell className="h-8 w-8 mx-auto mb-2 text-white/30" />
+                          <p className="text-sm">No notifications yet</p>
+                        </div>
+                      ) : (
+                        notifications.slice(0, 10).map((notification) => (
+                          <DropdownMenuItem
+                            key={notification.id}
+                            className={`px-4 py-3 cursor-pointer hover:bg-white/10 ${!notification.isRead ? 'bg-blue-600/20' : ''}`}
+                            onClick={() => {
+                              markAsRead(notification.id);
+                              if (notification.linkUrl) {
+                                window.location.href = notification.linkUrl;
+                              }
+                            }}
+                          >
+                            <div className="flex items-start space-x-3">
+                              <div className={`w-2 h-2 rounded-full mt-2 ${!notification.isRead ? 'bg-blue-400' : 'bg-white/30'}`} />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-white truncate">
+                                  {notification.title}
+                                </p>
+                                <p className="text-sm text-white/70 line-clamp-2">
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-white/50 mt-1">
+                                  {notification.createdAt ? formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true }) : 'Just now'}
+                                </p>
+                              </div>
+                            </div>
+                          </DropdownMenuItem>
+                        ))
+                      )}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 {/* Desktop Notifications */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -252,43 +319,6 @@ export default function DarkNavbar() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                </div>
-
-                {/* Mobile User Profile Photo Only */}
-                <div className="md:hidden">
-                  <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
-                    {user?.avatar ? (
-                      <img 
-                        src={user.avatar.startsWith('http') ? user.avatar : `${window.location.origin}${user.avatar}`}
-                        alt={user.fullName || 'Profile'}
-                        className="h-full w-full object-cover rounded-full"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          const parent = e.currentTarget.parentElement;
-                          if (parent) {
-                            const svg = parent.querySelector('.fallback-avatar');
-                            if (svg) {
-                              (svg as HTMLElement).style.display = 'block';
-                            }
-                          }
-                        }}
-                      />
-                    ) : null}
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      className={`h-5 w-5 text-white/80 fallback-avatar ${user?.avatar ? 'hidden' : 'block'}`}
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor"
-                    >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth="2" 
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
-                      />
-                    </svg>
-                  </div>
                 </div>
               </>
             )}

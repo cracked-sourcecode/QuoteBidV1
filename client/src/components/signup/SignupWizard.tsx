@@ -144,7 +144,7 @@ export function SignupWizard({ children }: SignupWizardProps) {
                 </div>
               </div>
               <p className="text-gray-400 text-sm md:text-base">
-                The world's first live marketplace for earned media
+                The World's First Live Marketplace for Earned Media
               </p>
             </div>
             
@@ -165,7 +165,7 @@ export function SignupWizard({ children }: SignupWizardProps) {
                 &copy; {new Date().getFullYear()} QuoteBid Inc. All rights reserved.
               </p>
               <p className="text-gray-500 text-xs md:text-sm mt-2">
-                Built for experts, not PR agencies.
+                Built For Experts, Not PR Agencies.
               </p>
           </div>
         </div>

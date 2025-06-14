@@ -127,16 +127,16 @@ export default function PitchReviewModal({ isOpen, onClose, pitch }: PitchReview
 
   // Theme-aware classes
   const dialogClasses = isDarkTheme 
-    ? "max-w-4xl max-h-[90vh] overflow-hidden flex flex-col bg-slate-800/95 backdrop-blur-sm border-slate-700/50 text-white" 
-    : "max-w-4xl max-h-[90vh] overflow-hidden flex flex-col";
+    ? "w-[95vw] sm:w-full max-w-md sm:max-w-2xl lg:max-w-4xl h-[90vh] sm:max-h-[90vh] overflow-hidden flex flex-col bg-slate-800/95 backdrop-blur-sm border-slate-700/50 text-white" 
+    : "w-[95vw] sm:w-full max-w-md sm:max-w-2xl lg:max-w-4xl h-[90vh] sm:max-h-[90vh] overflow-hidden flex flex-col";
     
   const headerClasses = isDarkTheme 
-    ? "border-b border-slate-700/50 pb-4" 
-    : "border-b border-gray-200 pb-4";
+    ? "border-b border-slate-700/50 pb-4 flex-shrink-0" 
+    : "border-b border-gray-200 pb-4 flex-shrink-0";
     
   const titleClasses = isDarkTheme 
-    ? "text-xl font-bold text-white mb-2" 
-    : "text-xl font-bold text-gray-900 mb-2";
+    ? "text-base sm:text-xl font-bold text-white mb-2 leading-tight" 
+    : "text-base sm:text-xl font-bold text-gray-900 mb-2 leading-tight";
     
   const statusBadgeClasses = (baseColor: string) => isDarkTheme 
     ? `inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${baseColor.replace('50', '900/30').replace('200', '700/50').replace('600', '400').replace('700', '300').replace('800', '200').replace('900', '100')}` 
@@ -195,16 +195,16 @@ export default function PitchReviewModal({ isOpen, onClose, pitch }: PitchReview
     : "text-gray-500 hover:text-gray-700";
     
   const contentClasses = isDarkTheme 
-    ? "flex-1 overflow-y-auto p-6 bg-slate-800/30" 
-    : "flex-1 overflow-y-auto p-6";
+    ? "flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-800/30" 
+    : "flex-1 overflow-y-auto p-4 sm:p-6";
     
   const cardClasses = isDarkTheme 
-    ? "bg-slate-800/50 rounded-lg border border-slate-700/50 p-6" 
-    : "bg-white rounded-lg border border-gray-200 p-6";
+    ? "bg-slate-800/50 rounded-lg border border-slate-700/50 p-4 sm:p-6" 
+    : "bg-white rounded-lg border border-gray-200 p-4 sm:p-6";
     
   const cardTitleClasses = isDarkTheme 
-    ? "font-semibold text-white mb-4 flex items-center" 
-    : "font-semibold text-gray-900 mb-4 flex items-center";
+    ? "font-semibold text-white mb-4 flex items-center text-sm sm:text-base" 
+    : "font-semibold text-gray-900 mb-4 flex items-center text-sm sm:text-base";
     
   const statusCardClasses = (bgColor: string) => isDarkTheme 
     ? `rounded-lg p-6 border ${bgColor.replace('50', '900/30').replace('200', '700/50')}` 
@@ -242,13 +242,16 @@ export default function PitchReviewModal({ isOpen, onClose, pitch }: PitchReview
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className={dialogClasses}>
         <DialogHeader className={headerClasses}>
-          <div className="flex items-start justify-between">
-            <div className="flex-1 pr-6">
+          <div className="space-y-4">
+            <div className="flex-1">
               <DialogTitle className={titleClasses}>
-                {pitch.opportunity?.publication?.name || pitch.opportunity?.outlet || "Unknown Publication"}: {pitch.opportunity?.title || `Pitch #${pitch.id}`}
+                {pitch.opportunity?.publication?.name || pitch.opportunity?.outlet || "Publication"}
               </DialogTitle>
+              <p className={isDarkTheme ? "text-gray-300 text-sm mt-1" : "text-gray-600 text-sm mt-1"}>
+                {pitch.opportunity?.title || `Pitch #${pitch.id}`}
+              </p>
               
-              <div className="flex items-center space-x-4 mb-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-3">
                 <div className={statusBadgeClasses(statusDisplay.color)}>
                   <StatusIcon className="h-4 w-4 mr-2" />
                   {statusDisplay.label}
@@ -257,12 +260,12 @@ export default function PitchReviewModal({ isOpen, onClose, pitch }: PitchReview
                 {(isSuccessful || isInProgress) && (
                   <div className={linkBadgeClasses}>
                     <ExternalLink className="h-3 w-3 mr-1" />
-                    <span className="text-sm">Do-follow link included</span>
+                    <span className="text-xs sm:text-sm">Do-follow link included</span>
                   </div>
                 )}
               </div>
 
-              <div className={metaTextClasses}>
+              <div className={`flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
                 <div className="flex items-center">
                   <Calendar className="h-4 w-4 mr-1" />
                   <span>Submitted {format(createdDate, "MMM d, yyyy")}</span>
@@ -277,7 +280,7 @@ export default function PitchReviewModal({ isOpen, onClose, pitch }: PitchReview
               </div>
             </div>
             
-            <div className="flex-shrink-0 mr-8">
+            <div className="flex items-center justify-between">
               <div className={bidAmountClasses}>
                 <div className={bidLabelClasses}>
                   Bid Amount
@@ -314,42 +317,45 @@ export default function PitchReviewModal({ isOpen, onClose, pitch }: PitchReview
         <div className={tabBorderClasses}>
           <button 
             onClick={() => setActiveTab('status')}
-            className={`px-6 py-3 text-sm font-medium transition-colors ${
+            className={`flex-1 px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium transition-colors ${
               activeTab === 'status' 
                 ? activeTabClasses 
                 : inactiveTabClasses
             }`}
           >
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Status
+            <div className="flex items-center justify-center gap-1 sm:gap-2">
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Status</span>
+              <span className="sm:hidden">Status</span>
             </div>
           </button>
           <button 
             onClick={() => setActiveTab('content')}
-            className={`px-6 py-3 text-sm font-medium transition-colors ${
+            className={`flex-1 px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium transition-colors ${
               activeTab === 'content' 
                 ? activeTabClasses 
                 : inactiveTabClasses
             }`}
           >
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Pitch Content
+            <div className="flex items-center justify-center gap-1 sm:gap-2">
+              <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Pitch Content</span>
+              <span className="sm:hidden">Content</span>
             </div>
           </button>
           {pitch.article?.url && (
             <button 
               onClick={() => setActiveTab('deliverable')}
-              className={`px-6 py-3 text-sm font-medium transition-colors ${
+              className={`flex-1 px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium transition-colors ${
                 activeTab === 'deliverable' 
                   ? activeTabClasses 
                   : inactiveTabClasses
               }`}
             >
-              <div className="flex items-center gap-2">
-                <ExternalLink className="h-4 w-4" />
-                Deliverable
+              <div className="flex items-center justify-center gap-1 sm:gap-2">
+                <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Deliverable</span>
+                <span className="sm:hidden">Article</span>
               </div>
             </button>
           )}

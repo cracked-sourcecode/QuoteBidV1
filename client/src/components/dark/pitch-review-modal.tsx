@@ -122,16 +122,19 @@ export default function DarkPitchReviewModal({ isOpen, onClose, pitch }: PitchRe
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col bg-slate-800/95 backdrop-blur-sm border-slate-700/50 text-white">
-        <DialogHeader className="border-b border-slate-700/50 pb-4">
-          <div className="flex items-start justify-between">
-            <div className="flex-1 pr-6">
-              <DialogTitle className="text-xl font-bold text-white mb-2">
-                {pitch.opportunity?.publication?.name || pitch.opportunity?.outlet || "Unknown Publication"}: {pitch.opportunity?.title || `Pitch #${pitch.id}`}
+      <DialogContent className="w-[95vw] sm:w-full max-w-md sm:max-w-2xl lg:max-w-4xl h-[90vh] sm:max-h-[90vh] overflow-hidden flex flex-col bg-slate-800/95 backdrop-blur-sm border-slate-700/50 text-white">
+        <DialogHeader className="border-b border-slate-700/50 pb-4 flex-shrink-0">
+          <div className="space-y-4">
+            <div className="flex-1">
+              <DialogTitle className="text-base sm:text-xl font-bold text-white mb-2 leading-tight">
+                {pitch.opportunity?.publication?.name || pitch.opportunity?.outlet || "Publication"}
               </DialogTitle>
+              <p className="text-gray-300 text-sm mt-1">
+                {pitch.opportunity?.title || `Pitch #${pitch.id}`}
+              </p>
               
-              <div className="flex items-center space-x-4 mb-3">
-                <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusDisplay.color}`}>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-3">
+                <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${statusDisplay.color}`}>
                   <StatusIcon className="h-4 w-4 mr-2" />
                   {statusDisplay.label}
                 </div>
@@ -139,12 +142,12 @@ export default function DarkPitchReviewModal({ isOpen, onClose, pitch }: PitchRe
                 {(isSuccessful || isInProgress) && (
                   <div className="flex items-center bg-blue-900/30 px-3 py-1 rounded-full border border-blue-700/50 text-blue-300">
                     <ExternalLink className="h-3 w-3 mr-1" />
-                    <span className="text-sm">Do-follow link included</span>
+                    <span className="text-xs sm:text-sm">Do-follow link included</span>
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center space-x-4 text-sm text-gray-300">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-300">
                 <div className="flex items-center">
                   <Calendar className="h-4 w-4 mr-1" />
                   <span>Submitted {format(createdDate, "MMM d, yyyy")}</span>
@@ -159,7 +162,7 @@ export default function DarkPitchReviewModal({ isOpen, onClose, pitch }: PitchRe
               </div>
             </div>
             
-            <div className="flex-shrink-0 mr-8">
+            <div className="flex items-center justify-between">
               <div className="bg-green-900/30 border border-green-700/50 rounded-lg px-4 py-3 text-center">
                 <div className="text-xs font-medium text-green-300 uppercase mb-1">
                   Bid Amount
@@ -193,48 +196,51 @@ export default function DarkPitchReviewModal({ isOpen, onClose, pitch }: PitchRe
         <div className="flex border-b border-slate-700/50">
           <button 
             onClick={() => setActiveTab('status')}
-            className={`px-6 py-3 text-sm font-medium transition-colors ${
+            className={`flex-1 px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium transition-colors ${
               activeTab === 'status' 
                 ? 'border-b-2 border-blue-500 text-blue-400' 
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Status
+            <div className="flex items-center justify-center gap-1 sm:gap-2">
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Status</span>
+              <span className="sm:hidden">Status</span>
             </div>
           </button>
           <button 
             onClick={() => setActiveTab('content')}
-            className={`px-6 py-3 text-sm font-medium transition-colors ${
+            className={`flex-1 px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium transition-colors ${
               activeTab === 'content' 
                 ? 'border-b-2 border-blue-500 text-blue-400' 
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Pitch Content
+            <div className="flex items-center justify-center gap-1 sm:gap-2">
+              <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Pitch Content</span>
+              <span className="sm:hidden">Content</span>
             </div>
           </button>
           {pitch.article?.url && (
             <button 
               onClick={() => setActiveTab('deliverable')}
-              className={`px-6 py-3 text-sm font-medium transition-colors ${
+              className={`flex-1 px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium transition-colors ${
                 activeTab === 'deliverable' 
                   ? 'border-b-2 border-blue-500 text-blue-400' 
                   : 'text-gray-400 hover:text-gray-200'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <ExternalLink className="h-4 w-4" />
-                Deliverable
+              <div className="flex items-center justify-center gap-1 sm:gap-2">
+                <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Deliverable</span>
+                <span className="sm:hidden">Article</span>
               </div>
             </button>
           )}
         </div>
         
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-800/30">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-800/30">
           {activeTab === 'status' ? (
             <div className="space-y-6">
               <div className="bg-slate-800/50 rounded-lg border border-slate-700/50 p-6">

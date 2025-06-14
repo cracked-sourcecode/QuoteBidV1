@@ -632,7 +632,7 @@ export default function RegisterPage() {
               World's First <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">PR</span> Pricing Engine
             </h1>
             <p className="text-lg sm:text-xl text-white max-w-sm mx-auto mb-2" style={{lineHeight: '1.3'}}>
-              The first live marketplace for earned media
+              The World's First Live Marketplace for Earned Media
             </p>
             <p className="text-lg sm:text-xl text-gray-300 max-w-sm mx-auto mb-4" style={{lineHeight: '1.3'}}>
               Built for experts — not PR agencies.
@@ -646,7 +646,7 @@ export default function RegisterPage() {
                 World's First <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">PR</span> Pricing Engine
               </h1>
               <p className="mb-1 text-xl xl:text-xl text-white">
-                The first live marketplace for earned media
+                The World's First Live Marketplace for Earned Media
               </p>
               <p className="mb-3 text-xl xl:text-xl text-gray-300">
                 Built for experts — not PR agencies.
@@ -954,7 +954,7 @@ export default function RegisterPage() {
                 </div>
               </Link>
               <p className="text-gray-400 mt-4 text-lg">
-                The world's first live marketplace for earned media
+                The World's First Live Marketplace for Earned Media
               </p>
             </div>
             
@@ -984,7 +984,7 @@ export default function RegisterPage() {
                 &copy; {new Date().getFullYear()} QuoteBid Inc. All rights reserved.
               </p>
               <p className="text-gray-500 text-sm mt-2">
-                Built for experts, not PR agencies.
+                Built For Experts, Not PR Agencies.
               </p>
             </div>
           </div>

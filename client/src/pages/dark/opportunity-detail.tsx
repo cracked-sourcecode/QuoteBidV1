@@ -601,36 +601,56 @@ export default function OpportunityDetail() {
     return () => clearTimeout(autoSaveTimer);
   }, [pitchContent, draftId, userPitchStatus?.hasSubmitted, createDraft, saveDraft]);
 
-  // Scroll to pitch section if anchor is present - FIXED for mobile navigation
+  // Scroll to pitch section if anchor is present - Enhanced for navigation from other pages
   useEffect(() => {
-    if (window.location.hash === '#pitch-section') {
-      // Multiple attempts to ensure scroll works even during loading
-      const scrollToPitchSection = () => {
-        const element = document.getElementById('pitch-section');
-        if (element) {
-          // Force scroll to top first to prevent conflicts
-          window.scrollTo(0, 0);
-          
-          // Then scroll to pitch section
-          setTimeout(() => {
+    const handleScrollToPitchSection = () => {
+      if (window.location.hash === '#pitch-section') {
+        console.log('🎯 Hash detected: #pitch-section - initiating scroll');
+        
+        const scrollToPitchSection = () => {
+          const element = document.getElementById('pitch-section');
+          if (element) {
+            console.log('✅ Found pitch-section element, scrolling...');
+            
+            // Scroll to the top of the pitch section with better positioning
             element.scrollIntoView({ 
               behavior: 'smooth', 
-              block: 'center' 
+              block: 'start', // Changed from 'center' to 'start' for better positioning
+              inline: 'nearest'
             });
-          }, 100);
-        }
-        return element !== null;
-      };
+            return true;
+          }
+          console.log('❌ Pitch-section element not found');
+          return false;
+        };
 
-      // Try immediately and with delays
-      const attempts = [0, 300, 600, 1000, 1500];
-      attempts.forEach(delay => {
-        setTimeout(() => {
-          scrollToPitchSection();
-        }, delay);
-      });
-    }
-  }, []); // Remove dependencies to prevent conflicts with loading states
+        // Try multiple times with increasing delays to handle loading states
+        const attempts = [0, 100, 300, 600, 1000, 1500, 2000];
+        attempts.forEach(delay => {
+          setTimeout(() => {
+            if (scrollToPitchSection()) {
+              console.log('🎯 Successfully scrolled to pitch section');
+            }
+          }, delay);
+        });
+      }
+    };
+
+    // Run immediately on mount
+    handleScrollToPitchSection();
+
+    // Also listen for hash changes (when navigating within the same page)
+    const handleHashChange = () => {
+      console.log('🔄 Hash changed:', window.location.hash);
+      handleScrollToPitchSection();
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [opportunity, isLoading]); // Depend on opportunity and loading state changes
 
   // Real-time price history state
   const [realTimePriceHistory, setRealTimePriceHistory] = useState<any[]>([]);
@@ -935,9 +955,14 @@ export default function OpportunityDetail() {
 
   // Check if recording is supported
   const isRecordingSupported = () => {
-    return !!(navigator.mediaDevices && 
-              navigator.mediaDevices.getUserMedia && 
-              window.MediaRecorder);
+    try {
+      return !!(navigator.mediaDevices && 
+                navigator.mediaDevices.getUserMedia && 
+                window.MediaRecorder && 
+                typeof MediaRecorder.isTypeSupported === 'function');
+    } catch {
+      return false;
+    }
   };
 
   // Voice recording functions - Mobile Compatible
@@ -1500,6 +1525,7 @@ export default function OpportunityDetail() {
             </div>
 
             {/* Marketplace Pricing Section - Enhanced with dark gradients */}
+            <div id="pitch-section" style={{position: 'absolute', transform: 'translateY(-60px)'}}></div>
             <div className="bg-gradient-to-br from-slate-800/60 via-slate-700/40 to-slate-600/40 backdrop-blur-sm rounded-3xl border border-slate-600/30 overflow-hidden shadow-xl">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
                 {/* Price Trend Section - Left Side */}
@@ -1584,7 +1610,7 @@ export default function OpportunityDetail() {
                     </div>
 
                     {/* Pitch Input */}
-                    <div id="pitch-section" className="mb-6">
+                    <div className="mb-6">
                       {isCheckingPitchStatus ? (
                         /* Loading Pitch Status */
                         <div className="bg-slate-700/60 backdrop-blur-sm rounded-2xl border border-slate-600/50 p-8">
@@ -1929,7 +1955,7 @@ export default function OpportunityDetail() {
             </div>
 
             {/* Suggested for You Section */}
-            <div className="mt-8 sm:mt-10 lg:mt-12 bg-gradient-to-br from-slate-800/60 via-slate-700/40 to-purple-900/20 backdrop-blur-sm rounded-3xl border border-slate-600/50 overflow-hidden shadow-xl">
+            <div className="mt-8 sm:mt-10 lg:mt-12 bg-gradient-to-br from-slate-800/60 via-slate-700/40 to-slate-600/30 backdrop-blur-sm rounded-3xl border border-slate-600/50 overflow-hidden shadow-xl">
               <div className="p-4 sm:p-6 lg:p-8">
                 {/* Header Section */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 gap-4">
@@ -1971,7 +1997,7 @@ export default function OpportunityDetail() {
                           setIsLoading(true);
                         }}
                       >
-                        <div className="bg-gradient-to-br from-blue-900/50 via-purple-900/40 to-indigo-900/60 backdrop-blur-sm rounded-2xl border border-blue-400/30 overflow-hidden hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-300/60 hover:from-blue-800/60 hover:via-purple-800/50 hover:to-indigo-800/70 transition-all duration-300 hover:-translate-y-1 sm:hover:-translate-y-2 cursor-pointer group">
+                        <div className="bg-gradient-to-br from-slate-800/50 via-slate-700/40 to-slate-600/60 backdrop-blur-sm rounded-2xl border border-blue-400/30 overflow-hidden hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-300/60 hover:from-slate-700/60 hover:via-slate-600/50 hover:to-slate-500/70 transition-all duration-300 hover:-translate-y-1 sm:hover:-translate-y-2 cursor-pointer group">
                           {/* Card Header */}
                           <div className="p-4 sm:p-6 pb-3 sm:pb-4">
                             <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -2034,7 +2060,7 @@ export default function OpportunityDetail() {
                           
                           {/* Card Footer */}
                           <div className="px-4 sm:px-6 pb-4 sm:pb-6">
-                            <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-blue-800/50 via-purple-800/40 to-indigo-800/50 backdrop-blur-sm rounded-xl border border-blue-400/30 shadow-lg group-hover:from-blue-700/60 group-hover:via-purple-700/50 group-hover:to-indigo-700/60 transition-all duration-300">
+                            <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-slate-800/50 via-slate-700/40 to-slate-600/50 backdrop-blur-sm rounded-xl border border-blue-400/30 shadow-lg group-hover:from-slate-700/60 group-hover:via-slate-600/50 group-hover:to-slate-500/60 transition-all duration-300">
                               <div className="flex items-baseline space-x-2">
                                 <RelatedOpportunityPrice opportunityId={relatedOpp.id} fallbackPrice={relatedOpp.minimumBid || relatedOpp.currentPrice || 0} />
                                 {relatedOpp.increment && (
@@ -2054,7 +2080,7 @@ export default function OpportunityDetail() {
                     Array.from({ length: 3 }, (_, index) => (
                       <div 
                         key={`fallback-${index}`}
-                        className="bg-gradient-to-br from-blue-900/30 via-purple-900/20 to-indigo-900/40 backdrop-blur-sm rounded-2xl border border-blue-400/20 overflow-hidden"
+                        className="bg-gradient-to-br from-slate-800/30 via-slate-700/20 to-slate-600/40 backdrop-blur-sm rounded-2xl border border-blue-400/20 overflow-hidden"
                       >
                         <div className="p-6">
                           <div className="flex items-center justify-between mb-4">
@@ -2065,7 +2091,7 @@ export default function OpportunityDetail() {
                             <div className="h-6 bg-purple-600/60 rounded w-16 animate-pulse"></div>
                           </div>
                           <div className="h-6 bg-blue-500/50 rounded w-full mb-2 animate-pulse"></div>
-                          <div className="h-6 bg-purple-500/50 rounded w-3/4 mb-4 animate-pulse"></div>
+                          <div className="h-6 bg-slate-500/50 rounded w-3/4 mb-4 animate-pulse"></div>
                           <div className="flex justify-between mb-4">
                             <div className="h-8 bg-indigo-600/60 rounded w-20 animate-pulse"></div>
                             <div className="h-8 bg-blue-600/60 rounded w-16 animate-pulse"></div>

@@ -19,7 +19,7 @@ export default function EmailFooter({ frontendUrl = 'http://localhost:5050' }: E
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         fontWeight: '600',
       }}>
-        QuoteBid — Built for experts, not PR agencies.
+        QuoteBid — Built For Experts, Not PR Agencies.
       </Text>
 
       {/* Navigation Links */}

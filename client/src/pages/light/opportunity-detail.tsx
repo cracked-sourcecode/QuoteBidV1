@@ -599,36 +599,56 @@ export default function OpportunityDetail() {
     return () => clearTimeout(autoSaveTimer);
   }, [pitchContent, draftId, userPitchStatus?.hasSubmitted, createDraft, saveDraft]);
 
-  // Scroll to pitch section if anchor is present - FIXED for mobile navigation
+  // Scroll to pitch section if anchor is present - Enhanced for navigation from other pages
   useEffect(() => {
-    if (window.location.hash === '#pitch-section') {
-      // Multiple attempts to ensure scroll works even during loading
-      const scrollToPitchSection = () => {
-        const element = document.getElementById('pitch-section');
-        if (element) {
-          // Force scroll to top first to prevent conflicts
-          window.scrollTo(0, 0);
-          
-          // Then scroll to pitch section
-          setTimeout(() => {
+    const handleScrollToPitchSection = () => {
+      if (window.location.hash === '#pitch-section') {
+        console.log('🎯 Hash detected: #pitch-section - initiating scroll');
+        
+        const scrollToPitchSection = () => {
+          const element = document.getElementById('pitch-section');
+          if (element) {
+            console.log('✅ Found pitch-section element, scrolling...');
+            
+            // Scroll to the top of the pitch section with better positioning
             element.scrollIntoView({ 
               behavior: 'smooth', 
-              block: 'center' 
+              block: 'start', // Changed from 'center' to 'start' for better positioning
+              inline: 'nearest'
             });
-          }, 100);
-        }
-        return element !== null;
-      };
+            return true;
+          }
+          console.log('❌ Pitch-section element not found');
+          return false;
+        };
 
-      // Try immediately and with delays
-      const attempts = [0, 300, 600, 1000, 1500];
-      attempts.forEach(delay => {
-        setTimeout(() => {
-          scrollToPitchSection();
-        }, delay);
-      });
-    }
-  }, []); // Remove dependencies to prevent conflicts with loading states
+        // Try multiple times with increasing delays to handle loading states
+        const attempts = [0, 100, 300, 600, 1000, 1500, 2000];
+        attempts.forEach(delay => {
+          setTimeout(() => {
+            if (scrollToPitchSection()) {
+              console.log('🎯 Successfully scrolled to pitch section');
+            }
+          }, delay);
+        });
+      }
+    };
+
+    // Run immediately on mount
+    handleScrollToPitchSection();
+
+    // Also listen for hash changes (when navigating within the same page)
+    const handleHashChange = () => {
+      console.log('🔄 Hash changed:', window.location.hash);
+      handleScrollToPitchSection();
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [opportunity, isLoading]); // Depend on opportunity and loading state changes
 
   // Real-time price history state
   const [realTimePriceHistory, setRealTimePriceHistory] = useState<any[]>([]);
@@ -1498,6 +1518,7 @@ export default function OpportunityDetail() {
             </div>
 
             {/* Marketplace Pricing Section - Enhanced with gradients */}
+            <div id="pitch-section" style={{position: 'absolute', transform: 'translateY(-60px)'}}></div>
             <div className="bg-gradient-to-br from-indigo-50 via-white to-purple-50 rounded-3xl border border-indigo-200/30 overflow-hidden shadow-xl">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
                 {/* Price Trend Section - Left Side */}
@@ -1582,7 +1603,7 @@ export default function OpportunityDetail() {
                     </div>
 
                     {/* Pitch Input */}
-                    <div id="pitch-section" className="mb-6">
+                    <div className="mb-6">
                       {isCheckingPitchStatus ? (
                         /* Loading Pitch Status */
                         <div className="bg-gray-50 rounded-2xl border border-gray-200/50 p-8">

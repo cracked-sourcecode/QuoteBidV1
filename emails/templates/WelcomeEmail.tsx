@@ -162,7 +162,7 @@ export default function WelcomeEmail({
               </Text>
               
               <Text style={introText}>
-                You've just joined the first live marketplace for earned media — built for experts, not PR agencies.
+                You've just joined The World's First Live Marketplace for Earned Media — built For Experts, Not PR Agencies.
               </Text>
               
               <Text style={missionText}>

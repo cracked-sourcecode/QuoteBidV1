@@ -497,7 +497,11 @@ export default function MyPitches() {
                         {pitch.isDraft ? (
                           <Button size="sm" onClick={() => {
                             // Navigate to opportunity detail page and scroll to pitch section
-                            setLocation(`/opportunities/${pitch.opportunity?.id || pitch.opportunityId}#pitch-section`);
+                            const opportunityId = pitch.opportunity?.id || pitch.opportunityId;
+                            const targetUrl = `/opportunities/${opportunityId}#pitch-section`;
+                            
+                            // Use window.location.href for better hash handling
+                            window.location.href = targetUrl;
                           }} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-2 sm:px-3 py-1.5 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all text-xs w-full sm:w-auto">
                             <Edit className="h-3 w-3 mr-1" />
                             Continue
@@ -673,7 +677,7 @@ export default function MyPitches() {
               </div>
             </div>
             <p className="text-gray-400 mt-4 text-lg">
-              The world's first live marketplace for earned media
+              The World's First Live Marketplace for Earned Media
             </p>
           </div>
           
@@ -694,7 +698,7 @@ export default function MyPitches() {
               &copy; {new Date().getFullYear()} QuoteBid Inc. All rights reserved.
             </p>
             <p className="text-gray-500 text-sm mt-2">
-              Built for experts, not PR agencies.
+              Built For Experts, Not PR Agencies.
             </p>
           </div>
         </div>

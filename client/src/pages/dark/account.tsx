@@ -13,7 +13,7 @@ import { apiFetch } from '@/lib/apiFetch';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
 import { format } from 'date-fns';
 import { Link } from 'wouter';
-import { Loader2, CreditCard, CheckCircle, CalendarIcon, ExternalLink, Newspaper, Upload, Trash2, Brain, Mail } from 'lucide-react';
+import { Loader2, CreditCard, CheckCircle, CalendarIcon, ExternalLink, Newspaper, Upload, Trash2, Brain, Mail, Menu, X, Home, MessageSquare, Search, Settings as SettingsIcon, HelpCircle, Phone } from 'lucide-react';
 
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -1045,10 +1045,45 @@ export default function AccountPage() {
           aria-hidden="true"
         />
       )}
-      {/* Mobile Sidebar Toggle */}
+      
+      {/* Mobile Header - New */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-slate-900 border-b border-slate-700 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 rounded-md bg-slate-800 border border-slate-700 shadow-sm"
+            aria-label="Toggle sidebar"
+          >
+            <Menu className="h-5 w-5 text-slate-300" />
+          </button>
+          
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex-shrink-0 overflow-hidden">
+              {(user.avatar || avatarPreview) && (
+                <img 
+                  src={avatarPreview || user.avatar || ''} 
+                  alt={user.fullName || 'Profile'} 
+                  className="w-full h-full object-cover"
+                />
+              )}
+              {!(user.avatar || avatarPreview) && (
+                <div className="flex items-center justify-center w-full h-full bg-slate-700 text-slate-300 font-bold text-sm">
+                  {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+                </div>
+              )}
+            </div>
+            <div className="text-right">
+              <h1 className="text-sm font-semibold text-slate-100 truncate max-w-32">{user.fullName}</h1>
+              <p className="text-xs text-slate-400">Account Settings</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Sidebar Toggle - Hidden in favor of header */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-slate-800 border border-slate-700 shadow-lg"
+        className="hidden lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-slate-800 border border-slate-700 shadow-lg"
         aria-label="Toggle sidebar"
       >
         <svg
@@ -1065,9 +1100,9 @@ export default function AccountPage() {
         </svg>
       </button>
 
-      {/* Sidebar - Fixed width */}
+      {/* Sidebar - Mobile Optimized */}
       <div 
-        className={`w-72 min-h-screen bg-slate-900 border-r border-slate-700 p-6 fixed overflow-y-auto transition-transform duration-300 ease-in-out z-40 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`} 
+        className={`w-72 lg:w-72 min-h-screen bg-slate-900 border-r border-slate-700 p-4 lg:p-6 fixed overflow-y-auto transition-transform duration-300 ease-in-out z-40 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 pt-16 lg:pt-6`} 
         style={{ maxHeight: '100vh' }}
       >
         <div className="space-y-6">
@@ -1266,10 +1301,44 @@ export default function AccountPage() {
         </div>
       </div>
 
-      {/* Main Content - Responsive margin to account for sidebar */}
-              <div className={`lg:ml-72 transition-all duration-300 ease-in-out flex-1 p-8 ${sidebarOpen ? 'ml-72' : 'ml-0'} account-content-area bg-slate-900`}>
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6 text-slate-100">Profile Dashboard</h1>
+      {/* Main Content - Mobile Responsive */}
+      <div className="lg:ml-72 flex-1 bg-slate-900 min-h-screen">
+        <div className="pt-16 lg:pt-0 px-4 lg:px-8 py-4 lg:py-8 account-content-area">
+          <div className="max-w-6xl mx-auto">
+            {/* Mobile Profile Section */}
+            <div className="lg:hidden mb-6">
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-800 border-2 border-slate-700 relative flex-shrink-0 overflow-hidden">
+                  {(user.avatar || avatarPreview) && (
+                    <img 
+                      src={avatarPreview || user.avatar || ''} 
+                      alt={user.fullName || 'Profile'} 
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                  {!(user.avatar || avatarPreview) && (
+                    <div className="flex items-center justify-center w-full h-full bg-slate-700 text-slate-300 font-bold text-xl sm:text-2xl">
+                      {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-xl sm:text-2xl font-bold text-slate-100 truncate">{user.fullName}</h1>
+                  <p className="text-sm text-slate-400">@{user.username}</p>
+                  {user.location && (
+                    <p className="text-sm text-slate-400">{user.location}</p>
+                  )}
+                  {user.title && (
+                    <p className="text-sm text-slate-300 font-medium">{user.title}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Header */}
+            <div className="hidden lg:block">
+              <h1 className="text-2xl font-bold mb-6 text-slate-100">Profile Dashboard</h1>
+            </div>
           
           {!user ? (
             <div className="flex items-center justify-center p-12">
@@ -1729,8 +1798,8 @@ export default function AccountPage() {
             </div>
           ) : (
             <>
-              {/* Header with name and title */}
-              <div className="mb-6">
+              {/* Desktop Header with name and title */}
+              <div className="hidden lg:block mb-6">
                 {user.fullName && (
                   <h2 className="text-xl font-semibold mb-1 text-slate-100">{user.fullName}</h2>
                 )}
@@ -1759,21 +1828,110 @@ export default function AccountPage() {
                   </Button>
                 </div>
               </div>
+
+              {/* Mobile Edit Button */}
+              <div className="lg:hidden mb-4">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-slate-500"
+                  onClick={() => {
+                    setIsEditing(true);
+                    setActiveTab('info');
+                  }}
+                >
+                  <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit Profile
+                </Button>
+              </div>
               
+              {/* Mobile Account Settings Navigation */}
+              <div className="lg:hidden mb-6">
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
+                      <SettingsIcon className="h-5 w-5" />
+                      Quick Settings
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600 hover:border-slate-500 flex flex-col items-center gap-1 h-auto py-3"
+                        onClick={() => setSubscriptionModalOpen(true)}
+                      >
+                        <CreditCard className="h-4 w-4" />
+                        <span className="text-xs">Billing</span>
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600 hover:border-slate-500 flex flex-col items-center gap-1 h-auto py-3"
+                        onClick={() => setPasswordModalOpen(true)}
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <span className="text-xs">Password</span>
+                      </Button>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600 hover:border-slate-500 flex flex-col items-center gap-1 h-auto py-3"
+                        onClick={() => setThemeModalOpen(true)}
+                      >
+                        {theme === 'light' ? (
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                          </svg>
+                        ) : (
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                          </svg>
+                        )}
+                        <span className="text-xs">{theme === 'light' ? 'Dark' : 'Light'}</span>
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600 hover:border-slate-500 flex flex-col items-center gap-1 h-auto py-3"
+                        asChild
+                      >
+                        <a href="mailto:support@quotebid.com">
+                          <HelpCircle className="h-4 w-4" />
+                          <span className="text-xs">Support</span>
+                        </a>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
               {/* Tabs */}
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-800 border border-slate-700">
-                  <TabsTrigger value="info" className="flex items-center gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100">
+                <TabsList className="grid w-full grid-cols-3 mb-4 lg:mb-6 bg-slate-800 border border-slate-700 h-auto">
+                  <TabsTrigger value="info" className="flex flex-col lg:flex-row items-center gap-1 lg:gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100 py-2 lg:py-3 text-xs lg:text-sm">
                     <User className="h-4 w-4" />
-                    Profile
+                    <span className="hidden lg:inline">Profile</span>
+                    <span className="lg:hidden">Info</span>
                   </TabsTrigger>
-                  <TabsTrigger value="billing" className="flex items-center gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100">
+                  <TabsTrigger value="billing" className="flex flex-col lg:flex-row items-center gap-1 lg:gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100 py-2 lg:py-3 text-xs lg:text-sm">
                     <CreditCard className="h-4 w-4" />
-                    Billing
+                    <span>Billing</span>
                   </TabsTrigger>
-                  <TabsTrigger value="email-preferences" className="flex items-center gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100">
+                  <TabsTrigger value="email-preferences" className="flex flex-col lg:flex-row items-center gap-1 lg:gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100 py-2 lg:py-3 text-xs lg:text-sm">
                     <Mail className="h-4 w-4" />
-                    Email Preferences
+                    <span className="hidden lg:inline">Email Preferences</span>
+                    <span className="lg:hidden">Email</span>
                   </TabsTrigger>
                 </TabsList>
 
@@ -2164,6 +2322,7 @@ export default function AccountPage() {
               </Tabs>
             </>
           )}
+          </div>
         </div>
       </div>
 
