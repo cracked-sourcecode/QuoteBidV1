@@ -34,7 +34,7 @@ const customStyles = `
   }
 `;
 
-// Country codes list - Most commonly used countries
+// Country codes list - Most commonly used countries (reduced for mobile)
 const COUNTRY_CODES = [
   { code: '+1', country: 'US/Canada', flag: '🇺🇸' },
   { code: '+44', country: 'UK', flag: '🇬🇧' },
@@ -43,24 +43,11 @@ const COUNTRY_CODES = [
   { code: '+49', country: 'Germany', flag: '🇩🇪' },
   { code: '+39', country: 'Italy', flag: '🇮🇹' },
   { code: '+34', country: 'Spain', flag: '🇪🇸' },
-  { code: '+31', country: 'Netherlands', flag: '🇳🇱' },
   { code: '+91', country: 'India', flag: '🇮🇳' },
   { code: '+86', country: 'China', flag: '🇨🇳' },
   { code: '+81', country: 'Japan', flag: '🇯🇵' },
-  { code: '+82', country: 'South Korea', flag: '🇰🇷' },
   { code: '+55', country: 'Brazil', flag: '🇧🇷' },
   { code: '+52', country: 'Mexico', flag: '🇲🇽' },
-  { code: '+7', country: 'Russia', flag: '🇷🇺' },
-  { code: '+46', country: 'Sweden', flag: '🇸🇪' },
-  { code: '+47', country: 'Norway', flag: '🇳🇴' },
-  { code: '+45', country: 'Denmark', flag: '🇩🇰' },
-  { code: '+41', country: 'Switzerland', flag: '🇨🇭' },
-  { code: '+43', country: 'Austria', flag: '🇦🇹' },
-  { code: '+32', country: 'Belgium', flag: '🇧🇪' },
-  { code: '+353', country: 'Ireland', flag: '🇮🇪' },
-  { code: '+351', country: 'Portugal', flag: '🇵🇹' },
-  { code: '+64', country: 'New Zealand', flag: '🇳🇿' },
-  { code: '+65', country: 'Singapore', flag: '🇸🇬' },
 ];
 
 // Debounce helper
@@ -256,15 +243,41 @@ export default function RegisterPage() {
     }
   }, [form.username, checkUsernameUnique, form.email, checkEmailUnique, form.phone, checkPhoneUnique]);
 
+  // Track if form has been submitted to show errors
+  const [formSubmitted, setFormSubmitted] = useState(false);
+
+  // Update errors when uniqueness/validity states change - but only after form submission
+  useEffect(() => {
+    if (formSubmitted) {
+      const errs = validate();
+      setErrors(errs);
+    }
+  }, [usernameUnique, emailUnique, emailValid, phoneUnique, phoneValid, passwordValidation.isValid, passwordsMatch, form, countryCode, formSubmitted]);
+
   // Validation helpers
   const validate = () => {
     const errs: any = {};
     if (!form.fullName) errs.fullName = 'Full name is required.';
-    if (!/^[a-z0-9_-]{3,30}$/.test(form.username)) errs.username = 'Invalid username.';
-    if (!form.email || !/^[^@]+@[^@]+\.[a-zA-Z]{2,}$/.test(form.email)) errs.email = 'Please enter a valid email address.';
+    
+    // Username validation - format AND uniqueness
+    if (!/^[a-z0-9_-]{3,30}$/.test(form.username)) {
+      errs.username = 'Invalid username.';
+    } else if (!usernameUnique) {
+      errs.username = 'Username is already taken.';
+    }
+    
+    // Email validation - format AND uniqueness AND validity  
+    if (!form.email || !/^[^@]+@[^@]+\.[a-zA-Z]{2,}$/.test(form.email)) {
+      errs.email = 'Please enter a valid email address.';
+    } else if (!emailValid) {
+      errs.email = 'Please enter a valid email address.';
+    } else if (!emailUnique) {
+      errs.email = 'Email is already in use.';
+    }
+    
     if (!form.companyName) errs.companyName = 'Company name is required.';
     
-    // Phone validation based on country
+    // Phone validation based on country - format AND uniqueness AND validity
     const phoneDigits = form.phone.replace(/\D/g, '');
     let minPhoneLength = 7; // default
     if (countryCode === '+1') minPhoneLength = 10;
@@ -273,6 +286,10 @@ export default function RegisterPage() {
     
     if (!form.phone || phoneDigits.length < minPhoneLength) {
       errs.phone = `Please enter a valid phone number (${minPhoneLength} digits required).`;
+    } else if (!phoneValid) {
+      errs.phone = `Please enter a valid phone number (${minPhoneLength} digits required).`;
+    } else if (!phoneUnique) {
+      errs.phone = 'Phone number is already in use.';
     }
     
     if (!form.industry) errs.industry = 'Please select your industry.';
@@ -282,41 +299,77 @@ export default function RegisterPage() {
     return errs;
   };
 
-  // Toast rule reminders
+  // Handle field blur - validate individual field and show error if needed
   const handleBlur = (field: string) => {
-    if (field === 'username' && !/^[a-z0-9_-]{3,30}$/.test(form.username) && !ruleToastOpen.current.username) {
-      ruleToastOpen.current.username = true;
-      toast({
-        title: 'Username requirements',
-        description: 'Usernames must be 3-30 chars, lowercase letters, numbers, _ or -',
-        variant: 'destructive',
-        duration: 4000,
-      });
-      setTimeout(() => (ruleToastOpen.current.username = false), 4000);
+    // Validate the specific field and update errors
+    const currentErrors = { ...errors };
+    
+    if (field === 'fullName') {
+      if (!form.fullName) currentErrors.fullName = 'Full name is required.';
+      else delete currentErrors.fullName;
     }
-    if (field === 'email' && (!form.email || !/^[^@]+@[^@]+\.[a-zA-Z]{2,}$/.test(form.email)) && !ruleToastOpen.current.email) {
-      ruleToastOpen.current.email = true;
-      toast({
-        title: 'Email requirements',
-        description: 'Please enter a valid email address (lowercase, valid TLD).',
-        variant: 'destructive',
-        duration: 4000,
-      });
-      setTimeout(() => (ruleToastOpen.current.email = false), 4000);
-    }
-    if (field === 'phone') {
-      const phoneDigits = form.phone.replace(/\D/g, '');
-      if ((!form.phone || phoneDigits.length < 7) && !ruleToastOpen.current.phone) {
-        ruleToastOpen.current.phone = true;
-        toast({
-          title: 'Phone requirements',
-          description: 'Please enter a valid phone number with country code (e.g., +1 234 567 8900).',
-          variant: 'destructive',
-          duration: 4000,
-        });
-        setTimeout(() => (ruleToastOpen.current.phone = false), 4000);
+    
+    if (field === 'username') {
+      if (!/^[a-z0-9_-]{3,30}$/.test(form.username)) {
+        currentErrors.username = 'Invalid username.';
+      } else if (!usernameUnique) {
+        currentErrors.username = 'Username is already taken.';
+      } else {
+        delete currentErrors.username;
       }
     }
+    
+    if (field === 'email') {
+      if (!form.email || !/^[^@]+@[^@]+\.[a-zA-Z]{2,}$/.test(form.email)) {
+        currentErrors.email = 'Please enter a valid email address.';
+      } else if (!emailValid) {
+        currentErrors.email = 'Please enter a valid email address.';
+      } else if (!emailUnique) {
+        currentErrors.email = 'Email is already in use.';
+      } else {
+        delete currentErrors.email;
+      }
+    }
+    
+    if (field === 'companyName') {
+      if (!form.companyName) currentErrors.companyName = 'Company name is required.';
+      else delete currentErrors.companyName;
+    }
+    
+    if (field === 'phone') {
+      const phoneDigits = form.phone.replace(/\D/g, '');
+      let minPhoneLength = 7;
+      if (countryCode === '+1') minPhoneLength = 10;
+      else if (countryCode === '+44') minPhoneLength = 10;
+      else if (countryCode === '+61') minPhoneLength = 9;
+      
+      if (!form.phone || phoneDigits.length < minPhoneLength) {
+        currentErrors.phone = `Please enter a valid phone number (${minPhoneLength} digits required).`;
+      } else if (!phoneValid) {
+        currentErrors.phone = `Please enter a valid phone number (${minPhoneLength} digits required).`;
+      } else if (!phoneUnique) {
+        currentErrors.phone = 'Phone number is already in use.';
+      } else {
+        delete currentErrors.phone;
+      }
+    }
+    
+    if (field === 'industry') {
+      if (!form.industry) currentErrors.industry = 'Please select your industry.';
+      else delete currentErrors.industry;
+    }
+    
+    if (field === 'password') {
+      if (!passwordValidation.isValid) currentErrors.password = 'Password must meet all security requirements.';
+      else delete currentErrors.password;
+    }
+    
+    if (field === 'confirmPassword') {
+      if (form.password !== form.confirmPassword) currentErrors.confirmPassword = 'Passwords do not match.';
+      else delete currentErrors.confirmPassword;
+    }
+    
+    setErrors(currentErrors);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -478,6 +531,7 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormSubmitted(true);
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length === 0) {
@@ -547,7 +601,7 @@ export default function RegisterPage() {
         </div>
 
         {/* ——— PREMIUM NAVBAR ——— */}
-        <header className="absolute top-0 w-full z-30 py-6 px-6 md:px-8">
+        <header className="absolute top-0 w-full z-30 py-2 px-6 md:px-8">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <Link href="/" className="flex items-center group">
               <span className="text-white font-black text-3xl tracking-tight">
@@ -571,27 +625,36 @@ export default function RegisterPage() {
           </div>
         </header>
 
-        <div className="relative z-20 flex flex-col lg:flex-row min-h-screen pt-24">
+        <div className="relative z-20 flex flex-col lg:flex-row min-h-screen pt-4">
           {/* Mobile Header - Show on small screens */}
-          <div className="lg:hidden px-6 pt-8 pb-4 text-center relative z-10">
-            <h1 className="text-4xl font-black leading-tight mb-4 text-white">
-              Get Featured in <span className="text-yellow-400">Top</span><br />Media Outlets
+          <div className="lg:hidden px-4 pt-16 pb-4 text-center relative z-10">
+            <h1 className="text-4xl sm:text-5xl font-black leading-tight mb-4 text-white">
+              World's First <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">PR</span> Pricing Engine
             </h1>
-            <p className="text-lg text-gray-300 max-w-md mx-auto">
-              Join thousands of experts connecting with journalists at top publications.
+            <p className="text-lg sm:text-xl text-white max-w-sm mx-auto mb-2" style={{lineHeight: '1.3'}}>
+              The first live marketplace for earned media
+            </p>
+            <p className="text-lg sm:text-xl text-gray-300 max-w-sm mx-auto mb-4" style={{lineHeight: '1.3'}}>
+              Built for experts — not PR agencies.
             </p>
           </div>
 
           {/* Left: Hero Panel - Desktop only */}
           <div className="hidden lg:flex flex-col justify-center items-start w-1/2 pl-24 pr-6 xl:pl-28 xl:pr-8 relative z-10">
             <div className="max-w-2xl w-full">
-              <h1 className="text-5xl xl:text-6xl font-black leading-tight mb-8 text-white" style={{letterSpacing: '-0.01em'}}>
-                Get Featured in <span className="text-yellow-400">Top</span><br />Media Outlets
+              <h1 className="text-5xl xl:text-6xl font-black leading-tight mb-4 text-white" style={{letterSpacing: '-0.01em'}}>
+                World's First <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">PR</span> Pricing Engine
               </h1>
-              <p className="mb-12 text-xl xl:text-2xl max-w-xl text-gray-300">
-                Join thousands of experts connecting with journalists at <span className="font-semibold text-white">Forbes</span>, <span className="font-semibold text-white">Bloomberg</span>, <span className="font-semibold text-white">TechCrunch</span>, and more.
+              <p className="mb-1 text-xl xl:text-xl text-white">
+                The first live marketplace for earned media
               </p>
-              <ul className="space-y-8 xl:space-y-10 text-base xl:text-lg">
+              <p className="mb-3 text-xl xl:text-xl text-gray-300">
+                Built for experts — not PR agencies.
+              </p>
+              <p className="mb-8 text-lg xl:text-lg max-w-xl text-gray-300 leading-relaxed">
+                QuoteBid's Pricing Engine tracks demand, deadlines, and outlet yield in real time. <span className="font-bold text-white">No retainers. No static fees. Only pay if you're published.</span>
+              </p>
+              <ul className="space-y-2 text-base xl:text-lg">
                 <li className="flex items-start gap-6">
                   <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center">
                     <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -599,19 +662,19 @@ export default function RegisterPage() {
                     </svg>
                   </div>
                   <div>
-                    <div className="font-bold text-white text-lg">Bid on Premium Opportunities</div>
-                    <div className="text-gray-300 mt-1">Set your price and only pay when published</div>
+                    <div className="font-bold text-white text-lg">Bid on real stories in real time</div>
+                    <div className="text-gray-300 mt-1">Every pitch is a bid — prices rise and fall with demand.</div>
                   </div>
                 </li>
                 <li className="flex items-start gap-6">
                   <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center">
                     <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                     </svg>
                   </div>
                   <div>
-                    <div className="font-bold text-white text-lg">AI-Powered Voice Pitches</div>
-                    <div className="text-gray-300 mt-1">Record a pitch – we transcribe & attach it automatically</div>
+                    <div className="font-bold text-white text-lg">Track live market pricing</div>
+                    <div className="text-gray-300 mt-1">Our engine moves with outlet yield, deadlines, and user interest.</div>
                   </div>
                 </li>
                 <li className="flex items-start gap-6">
@@ -621,8 +684,8 @@ export default function RegisterPage() {
                     </svg>
                   </div>
                   <div>
-                    <div className="font-bold text-white text-lg">Verified Media Requests</div>
-                    <div className="text-gray-300 mt-1">Every opportunity vetted by our editorial team</div>
+                    <div className="font-bold text-white text-lg">Only pay if you're quoted</div>
+                    <div className="text-gray-300 mt-1">No retainers. No upfront fees. You only pay when you're published.</div>
                   </div>
                 </li>
               </ul>
@@ -630,76 +693,94 @@ export default function RegisterPage() {
           </div>
           
           {/* Right: Signup Card */}
-          <div className="flex flex-col justify-center items-center w-full lg:w-1/2 px-4 py-8 lg:px-8 relative z-10">
-            <div className="w-full max-w-[480px] lg:max-w-[560px] bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-5 lg:p-7">
-              <div className="text-center mb-5">
-                <h2 className="text-2xl lg:text-3xl font-black mb-2 text-white">Join QuoteBid</h2>
-                <p className="text-gray-300 text-sm lg:text-base">Start connecting with top journalists today</p>
+          <div className="flex flex-col justify-center items-center w-full lg:w-1/2 px-3 py-4 lg:px-8 lg:py-4 relative z-10">
+            <div className="w-full max-w-[420px] sm:max-w-[480px] lg:max-w-[620px] bg-slate-800/95 backdrop-blur-2xl border border-slate-600/50 rounded-2xl sm:rounded-3xl shadow-2xl pt-3 px-4 pb-8 sm:pt-4 sm:px-6 sm:pb-10 lg:pt-5 lg:px-8 lg:pb-12">
+              <div className="text-center mb-3 sm:mb-1">
+                <div className="flex items-center justify-center gap-2 sm:gap-4 mb-2">
+                  <span className="text-white font-black text-xl sm:text-2xl lg:text-4xl tracking-tight">
+                    <span className="text-white">Quote</span>
+                    <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Bid</span>
+                  </span>
+                  <div className="px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs sm:text-sm font-bold uppercase tracking-wider backdrop-blur-sm">
+                    Beta
+                  </div>
+                </div>
+                <p className="text-gray-400 text-sm sm:text-base lg:text-lg font-medium mb-3 sm:mb-4">Built for Experts, Not PR Agencies</p>
               </div>
               
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
-                  <Field error={errors.fullName} className="col-span-1">
+              <form onSubmit={handleSubmit} className="space-y-1 sm:space-y-0.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2">
+                    <Field error={errors.fullName}>
                     <input 
                       name="fullName" 
                       value={form.fullName} 
                       onChange={handleChange} 
+                      onBlur={() => handleBlur('fullName')}
                       placeholder="Full Name" 
-                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" 
+                      className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-700/60 px-3 py-2.5 sm:px-5 sm:py-2.5 w-full text-sm text-white placeholder-gray-400 transition-all hover:border-slate-500/50 focus:border-blue-400/50 focus:ring-0 focus:outline-none h-10 sm:h-11" 
                     />
                   </Field>
-                  <Field error={errors.username} className="col-span-1">
+                  <Field error={errors.username}>
                     <input
                       name="username"
                       value={form.username}
                       onChange={e => {
-                        // Prevent uppercase and spaces
-                        const value = e.target.value.replace(/[^a-z0-9_-]/g, '').toLowerCase();
+                        // Allow uppercase but convert to lowercase, filter out invalid chars
+                        const value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
                         setForm(f => ({ ...f, username: value }));
                       }}
                       onBlur={() => handleBlur('username')}
                       placeholder="Username"
-                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                      className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-700/60 px-3 py-2.5 sm:px-5 sm:py-2.5 w-full text-sm text-white placeholder-gray-400 transition-all hover:border-slate-500/50 focus:border-blue-400/50 focus:ring-0 focus:outline-none h-10 sm:h-11"
                     />
-                    <div className="h-4 mt-1">
-                      {usernameChecking && <div className="text-xs text-gray-300">Checking username...</div>}
-                      {!usernameChecking && !usernameUnique && <div className="text-xs text-red-400">Username is already taken.</div>}
-                    </div>
                   </Field>
-                  <Field error={errors.email} className="col-span-1">
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2">
+                  <Field error={errors.email}>
                     <input
                       name="email"
                       value={form.email}
-                      onChange={handleChange}
+                      onChange={e => {
+                        // Allow uppercase but convert to lowercase for email
+                        const value = e.target.value.toLowerCase();
+                        setForm(f => ({ ...f, email: value }));
+                      }}
                       onBlur={() => handleBlur('email')}
                       placeholder="Email"
-                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                      className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-700/60 px-3 py-2.5 sm:px-5 sm:py-2.5 w-full text-sm text-white placeholder-gray-400 transition-all hover:border-slate-500/50 focus:border-blue-400/50 focus:ring-0 focus:outline-none h-10 sm:h-11"
                     />
-                    <div className="h-4 mt-1">
-                      {emailChecking && <div className="text-xs text-gray-300">Checking email...</div>}
-                      {!emailChecking && !emailValid && <div className="text-xs text-red-400">Please enter a valid email address.</div>}
-                      {!emailChecking && emailValid && !emailUnique && <div className="text-xs text-red-400">Email is already in use.</div>}
-                    </div>
                   </Field>
-                  <Field error={errors.companyName} className="col-span-1">
+                  <Field error={errors.companyName}>
                     <input 
                       name="companyName" 
                       value={form.companyName} 
                       onChange={handleChange} 
+                      onBlur={() => handleBlur('companyName')}
                       placeholder="Company Name" 
-                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" 
+                      className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-700/60 px-3 py-2.5 sm:px-5 sm:py-2.5 w-full text-sm text-white placeholder-gray-400 transition-all hover:border-slate-500/50 focus:border-blue-400/50 focus:ring-0 focus:outline-none h-10 sm:h-11" 
                     />
                   </Field>
-                  <Field error={errors.phone} className="col-span-1 sm:col-span-2">
-                    <div className="flex gap-3">
+                </div>
+                
+                <div>
+                  <Field error={errors.phone}>
+                    <div className="flex gap-1.5 sm:gap-2">
                       <select
                         value={countryCode}
                         onChange={(e) => setCountryCode(e.target.value)}
-                        className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-2 py-2.5 w-18 lg:w-20 text-sm lg:text-base text-white transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                        className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-700/60 px-1.5 py-2.5 sm:px-2 sm:py-2.5 w-14 sm:w-16 text-xs text-white transition-all hover:border-slate-500/50 focus:border-blue-400/50 focus:ring-0 focus:outline-none h-10 sm:h-11 appearance-none"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                          backgroundPosition: 'right 0.15rem center',
+                          backgroundRepeat: 'no-repeat',
+                          backgroundSize: '0.8em 0.8em',
+                          backgroundColor: 'rgb(51 65 85 / 0.6)'
+                        }}
                       >
                         {COUNTRY_CODES.map(({ code, country, flag }) => (
                           <option key={code} value={code} className="bg-slate-800 text-white">
-                            {flag} {code}
+                            {code}
                           </option>
                         ))}
                       </select>
@@ -709,79 +790,80 @@ export default function RegisterPage() {
                         onChange={handleChange}
                         onBlur={() => handleBlur('phone')}
                         placeholder="Phone number"
-                        className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+                        className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-700/60 px-3 py-2.5 sm:px-5 sm:py-2.5 w-full text-sm text-white placeholder-gray-400 transition-all hover:border-slate-500/50 focus:border-blue-400/50 focus:ring-0 focus:outline-none h-10 sm:h-11"
                         required
                       />
                     </div>
-                    <div className="h-4 mt-1">
-                      {phoneChecking && <div className="text-xs text-gray-300">Checking phone number...</div>}
-                      {!phoneChecking && !phoneValid && <div className="text-xs text-red-400">Please enter a valid phone number.</div>}
-                      {!phoneChecking && phoneValid && !phoneUnique && <div className="text-xs text-red-400">Phone number is already in use.</div>}
-                    </div>
                   </Field>
-                  <Field error={errors.industry} className="col-span-1 sm:col-span-2">
+                </div>
+                
+                <div>
+                  <Field error={errors.industry}>
                     <div className="relative">
                       <select
                         name="industry"
                         value={form.industry}
                         onChange={handleChange}
-                        className="w-full rounded-xl px-4 py-2.5 text-sm lg:text-base font-medium text-white bg-white/10 backdrop-blur-md border border-white/20 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 appearance-none"
+                        onBlur={() => handleBlur('industry')}
+                        className="w-full rounded-lg sm:rounded-xl px-3 py-2.5 sm:px-5 sm:py-2.5 text-sm text-white bg-slate-700/60 border border-slate-600/30 transition-all hover:border-slate-500/50 focus:border-blue-400/50 focus:ring-0 focus:outline-none appearance-none h-10 sm:h-11"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                          backgroundPosition: 'right 0.75rem center',
+                          backgroundRepeat: 'no-repeat',
+                          backgroundSize: '1.2em 1.2em'
+                        }}
                       >
-                        <option value="" disabled className="bg-slate-800 text-gray-300">Select your industry</option>
+                        <option value="" disabled className="bg-slate-800 text-gray-400">Select your industry</option>
                         {INDUSTRY_OPTIONS.map(opt => (
                           <option key={opt.value} value={opt.value} className="bg-slate-800 text-white">{opt.label}</option>
                         ))}
                       </select>
-                      <svg className="pointer-events-none absolute right-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
                     </div>
                   </Field>
-                  <Field error={errors.password} className="col-span-1">
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2">
+                  <Field error={errors.password}>
                     <input 
                       name="password" 
                       type="password" 
                       value={form.password} 
                       onChange={handleChange} 
+                      onBlur={() => handleBlur('password')}
                       placeholder="Create password" 
-                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" 
+                      className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-700/60 px-3 py-2.5 sm:px-5 sm:py-2.5 w-full text-sm text-white placeholder-gray-400 transition-all hover:border-slate-500/50 focus:border-blue-400/50 focus:ring-0 focus:outline-none h-10 sm:h-11" 
                     />
-                    <div className="h-4 mt-1">
-                      {form.password && !passwordValidation.isValid && <div className="text-xs text-red-400">Password must meet all security requirements.</div>}
-                    </div>
                   </Field>
-                  <Field error={errors.confirmPassword} className="col-span-1">
+                  <Field error={errors.confirmPassword}>
                     <input 
                       name="confirmPassword" 
                       type="password" 
                       value={form.confirmPassword} 
                       onChange={handleChange} 
+                      onBlur={() => handleBlur('confirmPassword')}
                       placeholder="Confirm password" 
-                      className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 w-full text-sm lg:text-base text-white placeholder-gray-300 transition-all hover:border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20" 
+                      className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-700/60 px-3 py-2.5 sm:px-5 sm:py-2.5 w-full text-sm text-white placeholder-gray-400 transition-all hover:border-slate-500/50 focus:border-blue-400/50 focus:ring-0 focus:outline-none h-10 sm:h-11" 
                     />
-                    <div className="h-4 mt-1">
-                      {form.confirmPassword && !passwordsMatch && <div className="text-xs text-red-400">Passwords do not match.</div>}
-                    </div>
                   </Field>
                 </div>
                 
                 {/* Password strength indicator - shown below both password fields */}
                 {form.password && (
-                  <div className="mt-4 space-y-3">
-                    <div className="bg-white/10 rounded-xl p-4 border border-white/20">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-medium text-white">Password Strength</span>
+                  <div className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
+                    <div className="bg-slate-700/50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-600/30">
+                      <div className="flex items-center justify-between mb-2 sm:mb-3">
+                        <span className="text-xs sm:text-sm font-medium text-white">Password Strength</span>
                         {passwordValidation.strengthText && (
-                          <span className={`text-sm font-bold ${passwordValidation.strengthColor}`}>
+                          <span className={`text-xs sm:text-sm font-bold ${passwordValidation.strengthColor}`}>
                             {passwordValidation.strengthText}
                           </span>
                         )}
                       </div>
                       
                       {/* Strength bar */}
-                      <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
+                      <div className="w-full bg-slate-600 rounded-full h-1.5 sm:h-2 mb-3 sm:mb-4">
                         <div 
-                          className={`h-2 rounded-full transition-all duration-300 ${
+                          className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
                             passwordValidation.strength === 0 ? 'w-0' :
                             passwordValidation.strength <= 2 ? 'w-2/5 bg-red-400' :
                             passwordValidation.strength <= 3 ? 'w-3/5 bg-yellow-400' :
@@ -792,30 +874,30 @@ export default function RegisterPage() {
                       </div>
 
                       {/* Requirements checklist */}
-                      <div className="space-y-2 text-sm">
+                      <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                         <div className={`flex items-center space-x-2 ${passwordValidation.requirements.minLength ? 'text-green-400' : 'text-gray-400'}`}>
-                          {passwordValidation.requirements.minLength ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                          {passwordValidation.requirements.minLength ? <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" /> : <X className="h-3 w-3 sm:h-4 sm:w-4" />}
                           <span>At least 8 characters</span>
                         </div>
                         <div className={`flex items-center space-x-2 ${passwordValidation.requirements.uppercase ? 'text-green-400' : 'text-gray-400'}`}>
-                          {passwordValidation.requirements.uppercase ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                          {passwordValidation.requirements.uppercase ? <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" /> : <X className="h-3 w-3 sm:h-4 sm:w-4" />}
                           <span>At least one uppercase letter</span>
                         </div>
                         <div className={`flex items-center space-x-2 ${passwordValidation.requirements.lowercase ? 'text-green-400' : 'text-gray-400'}`}>
-                          {passwordValidation.requirements.lowercase ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                          {passwordValidation.requirements.lowercase ? <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" /> : <X className="h-3 w-3 sm:h-4 sm:w-4" />}
                           <span>At least one lowercase letter</span>
                         </div>
                         <div className={`flex items-center space-x-2 ${passwordValidation.requirements.number ? 'text-green-400' : 'text-gray-400'}`}>
-                          {passwordValidation.requirements.number ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                          {passwordValidation.requirements.number ? <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" /> : <X className="h-3 w-3 sm:h-4 sm:w-4" />}
                           <span>At least one number</span>
                         </div>
                         <div className={`flex items-center space-x-2 ${passwordValidation.requirements.special ? 'text-green-400' : 'text-gray-400'}`}>
-                          {passwordValidation.requirements.special ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                          {passwordValidation.requirements.special ? <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" /> : <X className="h-3 w-3 sm:h-4 sm:w-4" />}
                           <span>At least one special character (!@#$%^&*)</span>
                         </div>
                         {form.confirmPassword && (
                           <div className={`flex items-center space-x-2 ${passwordsMatch ? 'text-green-400' : 'text-red-400'}`}>
-                            {passwordsMatch ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                            {passwordsMatch ? <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" /> : <X className="h-3 w-3 sm:h-4 sm:w-4" />}
                             <span>Passwords match</span>
                           </div>
                         )}
@@ -824,31 +906,89 @@ export default function RegisterPage() {
                   </div>
                 )}
                 
-                <div className="flex items-center mt-4 mb-4">
+                <div className="flex items-start mt-3 sm:mt-4">
                   <input 
                     type="checkbox" 
                     name="agreeTerms" 
                     checked={form.agreeTerms} 
                     onChange={handleChange} 
-                    className="accent-blue-500 w-5 h-5 border-2 border-white/30 rounded transition-all duration-150 mr-3 outline-none focus:outline-none cursor-pointer" 
+                    className="accent-blue-500 w-4 h-4 border-2 border-slate-600 rounded transition-all duration-150 mr-2 outline-none focus:outline-none cursor-pointer mt-0.5 sm:mt-1" 
                     required 
                   />
-                  <label htmlFor="terms" className="text-sm lg:text-base font-medium text-gray-300 select-none cursor-pointer">
-                    I agree to the <Link href="/legal/terms" className="text-blue-400 underline font-semibold hover:text-blue-300 transition-colors">Terms of Service</Link>
+                  <label htmlFor="terms" className="text-sm sm:text-base font-medium text-gray-300 select-none cursor-pointer leading-relaxed">
+                    I agree to the <Link href="/legal/terms" className="text-blue-400 underline hover:text-blue-300 transition-colors">Terms of Service</Link>
                   </label>
                 </div>
                 
+                <div className="mt-16 sm:mt-20 lg:mt-24 pt-2 sm:pt-4">
                 <Button 
                   type="submit" 
-                  className="w-full py-2.5 text-sm lg:text-base font-semibold rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-violet-700 text-white transition-all duration-300 shadow-xl hover:shadow-2xl" 
+                  className="w-full py-2.5 sm:py-3 text-sm sm:text-base lg:text-base font-semibold rounded-lg sm:rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-violet-700 text-white transition-all duration-300 shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed" 
                   disabled={!isFormComplete}
                 >
                   Create Account
                 </Button>
+                </div>
               </form>
             </div>
           </div>
         </div>
+        
+        {/* ——— FOOTER ——— */}
+        <footer className="relative z-20 bg-gradient-to-b from-transparent to-slate-900 py-16">
+          {/* Background effects */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob"></div>
+            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob animation-delay-2000"></div>
+          </div>
+          
+          <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
+            <div className="mb-8">
+              <Link href="/" className="inline-flex items-center group">
+                <span className="text-white font-black text-4xl tracking-tight">
+                  <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Quote</span>
+                  <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Bid</span>
+                </span>
+                <div className="ml-3 px-2 py-1 bg-blue-500/20 border border-blue-400/30 rounded text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
+                  Beta
+                </div>
+              </Link>
+              <p className="text-gray-400 mt-4 text-lg">
+                The world's first live marketplace for earned media
+              </p>
+            </div>
+            
+            <div className="flex flex-wrap justify-center gap-8 mb-8">
+              <Link 
+                href="/legal/terms" 
+                className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
+              >
+                Terms of Use
+              </Link>
+              <Link 
+                href="/legal/privacy" 
+                className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
+              >
+                Privacy
+              </Link>
+              <Link 
+                href="/legal/editorial-integrity" 
+                className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
+              >
+                Editorial Integrity
+              </Link>
+            </div>
+            
+            <div className="border-t border-white/20 pt-8">
+              <p className="text-gray-400 text-lg">
+                &copy; {new Date().getFullYear()} QuoteBid Inc. All rights reserved.
+              </p>
+              <p className="text-gray-500 text-sm mt-2">
+                Built for experts, not PR agencies.
+              </p>
+            </div>
+          </div>
+        </footer>
       </div>
     </>
   );
