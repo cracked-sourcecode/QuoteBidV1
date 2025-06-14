@@ -297,17 +297,17 @@ export default function OpportunitiesPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20"></div>
           <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/20"></div>
           
-          <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8 border-b border-blue-500/30">
-            <div className="flex flex-col sm:flex-row items-center gap-6">
-              {/* Search with better visibility */}
-              <div className="relative w-full sm:w-auto sm:flex-grow">
+          <div className="relative z-10 px-3 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-blue-500/30">
+            <div className="space-y-4">
+              {/* Search with better visibility - full width on mobile */}
+              <div className="relative w-full">
                 <div className="relative">
                   <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
                     <Search className="h-3 w-3 text-blue-300" />
                   </div>
                   <Input
                     placeholder="Search by title, outlet, or tag"
-                    className="pl-12 pr-4 h-12 bg-slate-800/80 border border-slate-600/60 text-white placeholder:text-slate-300 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300 hover:bg-slate-800/90"
+                    className="pl-12 pr-4 h-11 sm:h-12 bg-slate-800/80 border border-slate-600/60 text-white placeholder:text-slate-300 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300 hover:bg-slate-800/90"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{ outline: 'none', boxShadow: 'none' }}
@@ -315,10 +315,10 @@ export default function OpportunitiesPage() {
                 </div>
               </div>
           
-              {/* Filters with better visibility */}
-              <div className="flex flex-wrap gap-4 w-full sm:w-auto">
+              {/* Filters - stacked on mobile, inline on larger screens */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <Select value={tierFilter} onValueChange={setTierFilter}>
-                  <SelectTrigger className="w-full sm:w-[160px] h-12 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
+                  <SelectTrigger className="h-11 sm:h-12 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
                     <SelectValue placeholder="All Tiers" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
@@ -332,7 +332,7 @@ export default function OpportunitiesPage() {
                 </Select>
                 
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-[160px] h-12 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
+                  <SelectTrigger className="h-11 sm:h-12 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
                     <SelectValue placeholder="Open" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
@@ -345,7 +345,7 @@ export default function OpportunitiesPage() {
                 </Select>
                 
                 <Select value={industryFilter} onValueChange={setIndustryFilter}>
-                  <SelectTrigger className="w-full sm:w-[180px] h-12 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
+                  <SelectTrigger className="h-11 sm:h-12 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
                     <SelectValue placeholder="All Industries" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
@@ -362,7 +362,7 @@ export default function OpportunitiesPage() {
               </div>
             </div>
             
-            {/* Active filters - original style but better visibility */}
+            {/* Active filters */}
             {(tierFilter !== 'all' || statusFilter !== 'all' || industryFilter !== 'all' || searchQuery) && (
               <div className="mt-4 relative">
                 <div className="relative bg-slate-800/80 backdrop-blur-2xl rounded-xl border border-slate-600/60 py-3 px-4 shadow-xl">
@@ -442,11 +442,11 @@ export default function OpportunitiesPage() {
               </div>
             )}
             
-            {/* Results count and sort controls - original layout */}
-            <div className="mt-4 flex justify-between items-center">
+            {/* Results count and sort controls - mobile optimized */}
+            <div className="mt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                <p className="text-white font-medium">
+                <p className="text-white font-medium text-sm">
                   Showing {displayedOpportunities.length} of {filteredOpportunities.length} {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
                 </p>
               </div>
@@ -456,11 +456,11 @@ export default function OpportunitiesPage() {
                   <div className="p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
                     <SlidersHorizontal className="h-3 w-3 text-blue-300" />
                   </div>
-                  <span className="text-white font-medium">Sort by:</span>
+                  <span className="text-white font-medium text-sm">Sort by:</span>
                 </div>
                 
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-[170px] h-10 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
+                  <SelectTrigger className="w-[140px] sm:w-[170px] h-9 sm:h-10 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">

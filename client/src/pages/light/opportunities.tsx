@@ -293,26 +293,26 @@ export default function OpportunitiesPage() {
 
       
       {/* Search and filters */}
-      <div className="px-4 sm:px-6 lg:px-8 py-4 border-b border-gray-200 bg-white">
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          {/* Search */}
-          <div className="relative w-full sm:w-auto sm:flex-grow">
+      <div className="px-3 sm:px-6 lg:px-8 py-3 sm:py-4 border-b border-gray-200 bg-white">
+        <div className="space-y-3">
+          {/* Search - full width on mobile */}
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search by title, outlet, or tag"
-              className="pl-9"
+              className="pl-9 h-10 sm:h-11"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           
-          {/* Filters */}
-          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          {/* Filters - stacked on mobile, inline on larger screens */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
             <Select
               value={tierFilter}
               onValueChange={setTierFilter}
             >
-              <SelectTrigger className="w-full sm:w-[140px]">
+              <SelectTrigger className="h-10 sm:h-11">
                 <SelectValue placeholder="All Tiers" />
               </SelectTrigger>
               <SelectContent>
@@ -329,7 +329,7 @@ export default function OpportunitiesPage() {
               value={statusFilter}
               onValueChange={setStatusFilter}
             >
-              <SelectTrigger className="w-full sm:w-[140px]">
+              <SelectTrigger className="h-10 sm:h-11">
                 <SelectValue placeholder="Open" />
               </SelectTrigger>
               <SelectContent>
@@ -345,7 +345,7 @@ export default function OpportunitiesPage() {
               value={industryFilter}
               onValueChange={setIndustryFilter}
             >
-              <SelectTrigger className="w-full sm:w-[170px]">
+              <SelectTrigger className="h-10 sm:h-11">
                 <SelectValue placeholder="All Industries" />
               </SelectTrigger>
               <SelectContent>
@@ -364,9 +364,9 @@ export default function OpportunitiesPage() {
         
         {/* Active filters */}
         {(tierFilter !== 'all' || statusFilter !== 'all' || industryFilter !== 'all' || searchQuery) && (
-          <div className="flex flex-wrap items-center gap-2 mt-3">
+          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-100">
             <div className="flex items-center">
-              <Filter className="h-4 w-4 text-gray-500 mr-1" />
+              <Filter className="h-3 w-3 text-gray-500 mr-1" />
               <span className="text-xs text-gray-600">Active filters:</span>
             </div>
             
@@ -415,31 +415,33 @@ export default function OpportunitiesPage() {
         )}
       </div>
       
-      {/* Results count */}
-      <div className="px-4 sm:px-6 lg:px-8 py-3 bg-white border-b border-gray-200 flex justify-between items-center">
-        <p className="text-xs text-gray-600">
-          Showing {displayedOpportunities.length} of {filteredOpportunities.length} {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
-        </p>
-        
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal className="h-3 w-3 text-gray-500" />
-          <span className="text-xs text-gray-600 mr-1">Sort by:</span>
-          <Select
-            value={sortBy}
-            onValueChange={setSortBy}
-          >
-            <SelectTrigger className="w-[170px] h-7 text-xs border-none shadow-none px-1">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="deadline">Deadline (Soonest)</SelectItem>
-                <SelectItem value="posted">Recently Posted</SelectItem>
-                <SelectItem value="price-low">Price (Low to High)</SelectItem>
-                <SelectItem value="price-high">Price (High to Low)</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+      {/* Results count and sort - mobile optimized */}
+      <div className="px-3 sm:px-6 lg:px-8 py-2 sm:py-3 bg-white border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
+          <p className="text-xs text-gray-600">
+            Showing {displayedOpportunities.length} of {filteredOpportunities.length} {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
+          </p>
+          
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="h-3 w-3 text-gray-500" />
+            <span className="text-xs text-gray-600">Sort by:</span>
+            <Select
+              value={sortBy}
+              onValueChange={setSortBy}
+            >
+              <SelectTrigger className="w-[140px] sm:w-[170px] h-7 text-xs border-none shadow-none px-1">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="deadline">Deadline (Soonest)</SelectItem>
+                  <SelectItem value="posted">Recently Posted</SelectItem>
+                  <SelectItem value="price-low">Price (Low to High)</SelectItem>
+                  <SelectItem value="price-high">Price (High to Low)</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
       

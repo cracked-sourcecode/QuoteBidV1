@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useRoute, Link, useLocation } from 'wouter';
 import { ChevronLeft, Calendar, Clock, DollarSign, TrendingUp, TrendingDown, Flame, ChevronUp, Info, Mic, Lock } from 'lucide-react';
 import { format } from 'date-fns';
@@ -12,8 +12,7 @@ import LogoUniform from '@/components/ui/logo-uniform';
 import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
 import { getPublicationLogo } from '@/lib/responsive-utils';
-// Import RecordRTC for mobile recording
-import RecordRTC from "recordrtc";
+// Mobile-compatible voice recording using native MediaRecorder
 
 // Function to determine actual opportunity status based on deadline
 const getOpportunityStatus = (opportunity: any) => {
@@ -160,7 +159,7 @@ export default function OpportunityDetail() {
   const { isConnected, connectionCount } = usePriceConnection();
   
   // Draft functionality
-  const createDraft = async () => {
+  const createDraft = useCallback(async () => {
     try {
       console.log('🚀 Creating draft for opportunity:', opportunityId);
       console.log('🚀 Draft payload:', {
@@ -200,9 +199,9 @@ export default function OpportunityDetail() {
       console.error('Error creating draft:', error);
       return null;
     }
-  };
+  }, [opportunityId, pitchContent]);
   
-  const saveDraft = async () => {
+  const saveDraft = useCallback(async () => {
     if (!draftId) return;
     
     try {
@@ -228,7 +227,7 @@ export default function OpportunityDetail() {
     } finally {
       setIsAutoSaving(false);
     }
-  };
+  }, [draftId, pitchContent]);
   
   const loadExistingDraft = async () => {
     try {
@@ -1560,12 +1559,7 @@ export default function OpportunityDetail() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
-                      <div className="flex items-center space-x-2">
-                        <span className={`w-3 h-3 rounded-full ${priceData || isConnected ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`}></span>
-                        <span className="text-slate-300 font-medium text-sm sm:text-base">
-                          {priceData || isConnected ? 'Dynamic pricing active' : 'Static pricing'}
-                        </span>
-                      </div>
+
                       {priceData?.lastPriceUpdate && (
                         <div className="text-xs text-slate-400 flex items-center space-x-1">
                           <Clock className="h-3 w-3" />
@@ -1575,7 +1569,7 @@ export default function OpportunityDetail() {
                     </div>
 
                     {/* Pitch Input */}
-                    <div id="pitch-section" className="mb-6 -mt-2">
+                    <div id="pitch-section" className="mb-6">
                       {isCheckingPitchStatus ? (
                         /* Loading Pitch Status */
                         <div className="bg-slate-700/60 backdrop-blur-sm rounded-2xl border border-slate-600/50 p-8">
@@ -1588,30 +1582,30 @@ export default function OpportunityDetail() {
                         </div>
                       ) : userPitchStatus?.hasSubmitted ? (
                         /* Already Submitted State */
-                        <div className="bg-gradient-to-br from-green-900/40 to-emerald-900/40 backdrop-blur-sm rounded-2xl border border-green-500/30 overflow-hidden">
-                          <div className="p-8 text-center">
+                        <div className="bg-gradient-to-br from-green-900/40 to-emerald-900/40 backdrop-blur-sm rounded-2xl border border-green-500/30 overflow-hidden h-[280px] sm:h-[360px] lg:h-[400px] flex items-center justify-center mt-6">
+                          <div className="p-8 text-center flex flex-col justify-center h-full">
                             {/* Success Icon */}
-                            <div className="flex justify-center mb-6">
-                              <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center shadow-lg">
-                                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="flex justify-center mb-5">
+                              <div className="w-18 h-18 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center shadow-lg">
+                                <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"></path>
                                 </svg>
                               </div>
                             </div>
                             
                             {/* Title */}
-                            <h3 className="text-xl font-bold text-green-300 mb-3">
+                            <h3 className="text-xl font-bold text-green-300 mb-4">
                               Pitch Already Submitted!
                             </h3>
                             
                             {/* Message */}
-                            <p className="text-green-200 text-base mb-4 leading-relaxed">
+                            <p className="text-green-200 text-base mb-5 leading-relaxed">
                               You've already submitted a pitch for this opportunity. Each user can only submit one pitch per opportunity.
                             </p>
                             
                             {/* Bid Amount Display */}
                             {userPitchStatus.pitch?.bidAmount && (
-                              <div className="bg-slate-700/60 backdrop-blur-sm rounded-lg p-3 mb-4 border border-green-500/30">
+                              <div className="bg-slate-700/60 backdrop-blur-sm rounded-lg p-4 mb-5 border border-green-500/30">
                                 <div className="text-sm font-medium text-green-400 mb-1">Your bid amount:</div>
                                 <div className="text-2xl font-bold text-green-300">
                                   ${userPitchStatus.pitch.bidAmount}
@@ -1620,9 +1614,9 @@ export default function OpportunityDetail() {
                             )}
                             
                             {/* Action Buttons */}
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               <Link href="/opportunities">
-                                <Button className="w-full bg-slate-700/80 hover:bg-slate-600/80 text-green-300 border border-green-500/30 font-semibold py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
+                                <Button className="w-full bg-slate-700/80 hover:bg-slate-600/80 text-green-300 border border-green-500/30 font-semibold py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
                                   <div className="flex items-center justify-center space-x-2">
                                     <ChevronLeft className="h-4 w-4 rotate-180" />
                                     <span>Browse Other Opportunities</span>
@@ -1631,7 +1625,7 @@ export default function OpportunityDetail() {
                               </Link>
                               
                               <Link href="/my-pitches">
-                                <Button variant="outline" className="w-full bg-slate-800/60 hover:bg-slate-700/60 text-green-300 border border-green-500/30 font-semibold py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
+                                <Button variant="outline" className="w-full bg-slate-800/60 hover:bg-slate-700/60 text-green-300 border border-green-500/30 font-semibold py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
                                   <div className="flex items-center justify-center space-x-2">
                                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -1649,23 +1643,6 @@ export default function OpportunityDetail() {
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center space-x-3">
                               <label className="text-slate-200 font-semibold text-lg">Craft your pitch</label>
-                              {draftId && (
-                                <div className="flex items-center space-x-1 text-xs">
-                                  {isAutoSaving ? (
-                                    <span className="text-blue-400 flex items-center">
-                                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse mr-1"></div>
-                                      Saving...
-                                    </span>
-                                  ) : lastSaved ? (
-                                    <span className="text-green-400 flex items-center">
-                                      <div className="w-2 h-2 bg-green-400 rounded-full mr-1"></div>
-                                      Saved {lastSaved.toLocaleTimeString()}
-                                    </span>
-                                  ) : (
-                                    <span className="text-slate-400">Draft</span>
-                                  )}
-                                </div>
-                              )}
                             </div>
                             <span className={`text-sm font-medium ${
                               remainingChars < 100 ? 'text-red-400' : 'text-slate-400'
