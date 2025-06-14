@@ -76,6 +76,10 @@ export default function PitchBidModal({
   const [audioLevel, setAudioLevel] = useState(0);
   const [recorderError, setRecorderError] = useState<string | null>(null);
   
+  // Debug state for on-screen debugging
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
+  const [showDebug, setShowDebug] = useState(false);
+  
   // Recording timer
   const recordingInterval = useRef<NodeJS.Timeout | null>(null);
   
@@ -769,6 +773,13 @@ export default function PitchBidModal({
       processRecording.mutate();
     }
   }, [recordingBlob, isRecording, transcript]);
+
+  // Add debug message function
+  const addDebugMessage = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setDebugInfo(prev => [...prev.slice(-10), `${timestamp}: ${message}`]); // Keep last 10 messages
+    console.log(`[Debug] ${message}`);
+  };
 
   return (
     <>

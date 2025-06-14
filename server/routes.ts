@@ -3036,6 +3036,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to process voice recording" });
     }
   });
+
+  // Debug endpoint for mobile recording issues - logs to server terminal
+  app.post("/api/debug/log", (req: Request, res: Response) => {
+    const { message, type = 'info', data = null } = req.body;
+    const timestamp = new Date().toISOString();
+    
+    // Color-coded terminal output
+    const colors = {
+      info: '\x1b[36m',    // Cyan
+      error: '\x1b[31m',   // Red
+      warning: '\x1b[33m', // Yellow
+      success: '\x1b[32m', // Green
+      reset: '\x1b[0m'     // Reset
+    };
+    
+    const color = colors[type as keyof typeof colors] || colors.info;
+    const logMessage = `${color}[📱 MOBILE DEBUG ${timestamp}] ${message}${colors.reset}`;
+    
+    console.log(logMessage);
+    
+    // Also log data if provided
+    if (data) {
+      console.log(`${color}[📱 DATA]${colors.reset}`, JSON.stringify(data, null, 2));
+    }
+    
+    res.status(200).json({ success: true });
+  });
   
   // ============ SAVED OPPORTUNITIES ENDPOINTS ============
   
