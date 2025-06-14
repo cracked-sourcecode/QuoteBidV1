@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -30,6 +30,8 @@ import { useSubscription } from "@/hooks/use-subscription";
 import { useLocation } from "wouter";
 import { CreditCard } from "lucide-react";
 import PaywallModal from "@/components/paywall-modal";
+// Import RecordRTC for mobile recording
+import RecordRTC from "recordrtc";
 
 interface PitchBidModalProps {
   isOpen: boolean;
@@ -63,12 +65,13 @@ export default function PitchBidModal({
   // Text pitch state
   const [pitchContent, setPitchContent] = useState<string>("");
   
-  // Simple direct voice recording state (replacing useRecorder)
+  // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [recordRTCRecorder, setRecordRTCRecorder] = useState<any>(null); // RecordRTC instance
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
   const [recorderError, setRecorderError] = useState<string | null>(null);
@@ -280,68 +283,45 @@ export default function PitchBidModal({
     return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   };
 
-  // Check if recording is supported
-  const isRecordingSupported = () => {
-    return !!(navigator.mediaDevices && 
-              navigator.mediaDevices.getUserMedia && 
-              window.MediaRecorder);
+  // Enhanced iOS detection with version checking
+  const getIOSVersion = () => {
+    const match = navigator.userAgent.match(/OS (\d+)_(\d+)_?(\d+)?/);
+    if (match) {
+      return {
+        major: parseInt(match[1]),
+        minor: parseInt(match[2]),
+        patch: parseInt(match[3] || '0')
+      };
+    }
+    return null;
   };
 
-  // Direct recording functions - Mobile Compatible
+  // Check if recording is supported with detailed debugging
+  const isRecordingSupported = () => {
+    const hasNavigator = typeof navigator !== 'undefined';
+    const hasMediaDevices = hasNavigator && !!navigator.mediaDevices;
+    const hasGetUserMedia = hasMediaDevices && !!navigator.mediaDevices.getUserMedia;
+    
+    return hasNavigator && hasMediaDevices && hasGetUserMedia;
+  };
+
+  // Mobile-First Recording with RecordRTC
   const startRecording = async () => {
-    console.log('[Direct Recording] Starting recording...');
-    console.log('[Direct Recording] Mobile device:', isMobileDevice());
-    console.log('[Direct Recording] iOS device:', isIOSDevice());
-    console.log('[Direct Recording] Recording supported:', isRecordingSupported());
+    console.log('[Hybrid Recording] Starting recording...');
+    console.log('[Hybrid Recording] Mobile device:', isMobileDevice());
+    console.log('[Hybrid Recording] iOS device:', isIOSDevice());
     
     try {
       setRecorderError(null);
 
-      // Check if recording is supported
+      // Check basic recording support
       if (!isRecordingSupported()) {
-        setRecorderError('Audio recording is not supported on this device/browser. Please use the text pitch option instead.');
+        setRecorderError('Microphone access is not available on this device. Please use the text pitch option instead.');
         return;
       }
 
-      // iOS specific checks
-      if (isIOSDevice()) {
-        // Check if we're in a secure context (HTTPS)
-        if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-          setRecorderError('Audio recording requires HTTPS on iOS devices. Please use the text pitch option instead.');
-          return;
-        }
-
-        // Check if MediaRecorder is available
-        if (!window.MediaRecorder) {
-          setRecorderError('Audio recording is not available on this iOS version. Please use the text pitch option instead.');
-          return;
-        }
-
-        // Check supported formats for iOS
-        const iosSupportedTypes = [
-          'audio/mp4',
-          'audio/aac',
-          'audio/wav',
-          'audio/webm;codecs=opus',
-          'audio/webm'
-        ];
-        
-        let supportedType = null;
-        for (const type of iosSupportedTypes) {
-          if (MediaRecorder.isTypeSupported(type)) {
-            supportedType = type;
-            break;
-          }
-        }
-
-        if (!supportedType) {
-          setRecorderError('No supported audio format found for this iOS device. Please use the text pitch option instead.');
-          return;
-        }
-      }
-
-      // Request microphone access with mobile-optimized settings
-      let mediaStreamConstraints = {
+      // Request microphone access
+      const mediaStreamConstraints = {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
@@ -349,153 +329,124 @@ export default function PitchBidModal({
         }
       };
 
-      // iOS specific audio constraints
-      if (isIOSDevice()) {
-        mediaStreamConstraints = {
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          }
-        };
-      }
-
-      console.log('[Direct Recording] Requesting microphone access...');
+      console.log('[Hybrid Recording] Requesting microphone access...');
       
-      // Try to get media stream with timeout for mobile
-      const mediaStream = await Promise.race([
-        navigator.mediaDevices.getUserMedia(mediaStreamConstraints),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Microphone access timeout')), 10000)
-        )
-      ]) as MediaStream;
-      
-      console.log('[Direct Recording] Got media stream:', mediaStream);
+      const mediaStream = await navigator.mediaDevices.getUserMedia(mediaStreamConstraints);
+      console.log('[Hybrid Recording] Got media stream:', mediaStream);
       setStream(mediaStream);
-      
-      // Determine the best MIME type for the device
-      let mimeType = 'audio/webm;codecs=opus';
-      
-      if (isIOSDevice()) {
-        // iOS preferred formats
-        const iosTypes = ['audio/mp4', 'audio/aac', 'audio/wav'];
-        for (const type of iosTypes) {
-          if (MediaRecorder.isTypeSupported(type)) {
-            mimeType = type;
-            break;
-          }
-        }
-      } else if (isMobileDevice()) {
-        // Android preferred formats
-        const androidTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
-        for (const type of androidTypes) {
-          if (MediaRecorder.isTypeSupported(type)) {
-            mimeType = type;
-            break;
-          }
-        }
-      }
 
-      console.log('[Direct Recording] Using MIME type:', mimeType);
+      // Use RecordRTC for mobile devices (especially iOS)
+      if (isMobileDevice()) {
+        console.log('[Hybrid Recording] Using RecordRTC for mobile recording');
+        
+        const recorder = new RecordRTC(mediaStream, {
+          type: 'audio',
+          mimeType: isIOSDevice() ? 'audio/wav' : 'audio/webm',
+          recorderType: RecordRTC.StereoAudioRecorder,
+          numberOfAudioChannels: 1,
+          desiredSampRate: 16000,
+          bufferSize: 4096,
+          audioBitsPerSecond: 128000
+        });
 
-      // Create MediaRecorder with mobile-optimized settings
-      const recorderOptions: MediaRecorderOptions = {
-        mimeType: mimeType
-      };
+        recorder.startRecording();
+        setRecordRTCRecorder(recorder);
+        setIsRecording(true);
+        setRecordingTime(0);
 
-      // Add bitrate for supported browsers
-      if (MediaRecorder.isTypeSupported(mimeType)) {
-        try {
-          const recorder = new MediaRecorder(mediaStream, {
-            ...recorderOptions,
-            audioBitsPerSecond: 128000
+        // Start timer
+        recordingInterval.current = setInterval(() => {
+          setRecordingTime(prev => {
+            const newTime = prev + 1;
+            if (newTime >= 120) { // Max 2 minutes
+              stopRecording();
+              return 120;
+            }
+            return newTime;
           });
-          console.log('[Direct Recording] MediaRecorder created with bitrate');
-        } catch (e) {
-          console.log('[Direct Recording] Bitrate not supported, using basic options');
-        }
-      }
+        }, 1000);
 
-      const recorder = new MediaRecorder(mediaStream, recorderOptions);
-      const chunks: Blob[] = [];
-      
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunks.push(event.data);
-          console.log('[Direct Recording] Got chunk:', event.data.size, 'bytes');
-        }
-      };
-      
-      recorder.onstop = () => {
-        console.log('[Direct Recording] Recording stopped, creating blob...');
-        const blob = new Blob(chunks, { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        setRecordingBlob(blob);
-        setAudioURL(url);
-        setIsRecording(false);
+        console.log('[Hybrid Recording] RecordRTC recording started successfully!');
         
-        // Stop the stream
-        if (mediaStream) {
-          mediaStream.getTracks().forEach(track => track.stop());
-        }
-        
-        if (recordingInterval.current) {
-          clearInterval(recordingInterval.current);
-        }
-        
-        console.log('[Direct Recording] Recording complete, blob size:', blob.size);
-        
-        // Mobile-specific success message
         if (isMobileDevice()) {
           toast({
-            title: "Recording Complete",
-            description: "Your voice recording was captured successfully on mobile!",
+            title: "Recording Started",
+            description: "Mobile recording active. Speak clearly into your device's microphone.",
           });
         }
-      };
-      
-      recorder.onerror = (event) => {
-        console.error('[Direct Recording] Recording error:', event);
-        let errorMessage = 'Recording failed. Please try again.';
+      } 
+      // Use MediaRecorder for desktop
+      else {
+        console.log('[Hybrid Recording] Using MediaRecorder for desktop recording');
         
-        if (isMobileDevice()) {
-          errorMessage = 'Mobile recording failed. Please check microphone permissions and try again, or use text pitch instead.';
+        // Check MediaRecorder support for desktop
+        if (!window.MediaRecorder) {
+          setRecorderError('Audio recording is not supported on this browser. Please use the text pitch option instead.');
+          return;
         }
+
+        const recorder = new MediaRecorder(mediaStream, {
+          mimeType: 'audio/webm;codecs=opus'
+        });
+
+        const chunks: Blob[] = [];
         
-        setRecorderError(errorMessage);
-        setIsRecording(false);
-      };
-      
-      // Start recording
-      recorder.start(isMobileDevice() ? 1000 : 100); // Larger chunks for mobile
-      setMediaRecorder(recorder);
-      setIsRecording(true);
-      setRecordingTime(0);
-      
-      // Start timer
-      recordingInterval.current = setInterval(() => {
-        setRecordingTime(prev => {
-          const newTime = prev + 1;
-          if (newTime >= 120) { // Max 2 minutes
-            stopRecording();
-            return 120;
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            chunks.push(event.data);
+            console.log('[Hybrid Recording] Got chunk:', event.data.size, 'bytes');
           }
-          return newTime;
-        });
-      }, 1000);
-      
-      console.log('[Direct Recording] Recording started successfully!');
-      
-      // Mobile-specific success message
-      if (isMobileDevice()) {
-        toast({
-          title: "Recording Started",
-          description: "Mobile recording active. Speak clearly into your device's microphone.",
-        });
+        };
+        
+        recorder.onstop = () => {
+          console.log('[Hybrid Recording] Desktop recording stopped, creating blob...');
+          const blob = new Blob(chunks, { type: 'audio/webm' });
+          const url = URL.createObjectURL(blob);
+          setRecordingBlob(blob);
+          setAudioURL(url);
+          setIsRecording(false);
+          
+          // Stop the stream
+          if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+          }
+          
+          if (recordingInterval.current) {
+            clearInterval(recordingInterval.current);
+          }
+          
+          console.log('[Hybrid Recording] Desktop recording complete, blob size:', blob.size);
+        };
+        
+        recorder.onerror = (event) => {
+          console.error('[Hybrid Recording] Desktop recording error:', event);
+          setRecorderError('Recording failed. Please try again or use the text pitch option.');
+          setIsRecording(false);
+        };
+        
+        // Start recording
+        recorder.start(100);
+        setMediaRecorder(recorder);
+        setIsRecording(true);
+        setRecordingTime(0);
+        
+        // Start timer
+        recordingInterval.current = setInterval(() => {
+          setRecordingTime(prev => {
+            const newTime = prev + 1;
+            if (newTime >= 120) { // Max 2 minutes
+              stopRecording();
+              return 120;
+            }
+            return newTime;
+          });
+        }, 1000);
+        
+        console.log('[Hybrid Recording] MediaRecorder recording started successfully!');
       }
       
     } catch (err) {
-      console.error('[Direct Recording] Error starting recording:', err);
+      console.error('[Hybrid Recording] Error starting recording:', err);
       
       let errorMessage = 'Failed to start recording';
       
@@ -511,7 +462,7 @@ export default function PitchBidModal({
         } else if (err.message.includes('timeout')) {
           errorMessage = 'Microphone access timed out. Please try again or use the text pitch option.';
         } else if (isIOSDevice()) {
-          errorMessage = 'iOS recording not available. Please use the text pitch option instead.';
+          errorMessage = 'Recording not available on this iOS version. Please use the text pitch option instead.';
         } else if (isMobileDevice()) {
           errorMessage = 'Mobile recording not available. Please use the text pitch option instead.';
         } else {
@@ -525,17 +476,45 @@ export default function PitchBidModal({
   };
   
   const stopRecording = () => {
-    console.log('[Direct Recording] Stopping recording...');
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
+    console.log('[Hybrid Recording] Stopping recording...');
+    
+    if (isMobileDevice() && recordRTCRecorder) {
+      // Stop RecordRTC recording
+      recordRTCRecorder.stopRecording(() => {
+        console.log('[Hybrid Recording] RecordRTC recording stopped');
+        const blob = recordRTCRecorder.getBlob();
+        const url = URL.createObjectURL(blob);
+        setRecordingBlob(blob);
+        setAudioURL(url);
+        setIsRecording(false);
+        
+        // Stop the stream
+        if (stream) {
+          stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+        }
+        
+        if (recordingInterval.current) {
+          clearInterval(recordingInterval.current);
+        }
+        
+        console.log('[Hybrid Recording] Mobile recording complete, blob size:', blob.size);
+        
+        toast({
+          title: "Recording Complete",
+          description: "Your voice recording was captured successfully on mobile!",
+        });
+      });
+    } else if (mediaRecorder && mediaRecorder.state === 'recording') {
+      // Stop MediaRecorder recording
       mediaRecorder.stop();
-    }
-    if (recordingInterval.current) {
-      clearInterval(recordingInterval.current);
+      if (recordingInterval.current) {
+        clearInterval(recordingInterval.current);
+      }
     }
   };
   
   const cancelRecording = () => {
-    console.log('[Direct Recording] Cancelling recording...');
+    console.log('[Hybrid Recording] Cancelling recording...');
     stopRecording();
     setAudioURL(null);
     setRecordingBlob(null);

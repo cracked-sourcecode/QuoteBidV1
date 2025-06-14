@@ -12,6 +12,8 @@ import LogoUniform from '@/components/ui/logo-uniform';
 import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
 import { getPublicationLogo } from '@/lib/responsive-utils';
+// Import RecordRTC for mobile recording
+import RecordRTC from "recordrtc";
 
 // Function to determine actual opportunity status based on deadline
 const getOpportunityStatus = (opportunity: any) => {
@@ -268,6 +270,7 @@ export default function OpportunityDetail() {
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [recordRTCRecorder, setRecordRTCRecorder] = useState<any>(null); // RecordRTC instance
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [transcript, setTranscript] = useState<string>("");
   const [recorderError, setRecorderError] = useState<string | null>(null);
