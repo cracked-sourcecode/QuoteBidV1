@@ -37,6 +37,8 @@ export default function SavedOpportunitiesPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const { user } = useAuth();
   
+
+  
   // Function to refresh saved opportunities data
   const refreshSavedOpportunities = () => {
     console.log('🔄 Refreshing saved opportunities...');
@@ -259,13 +261,13 @@ export default function SavedOpportunitiesPage() {
         {/* Header */}
         <div className="px-4 sm:px-6 lg:px-8 py-8 border-b border-blue-500/30">
         <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="bg-blue-600/20 p-2 rounded-lg backdrop-blur-sm border border-blue-500/30">
-                <Bookmark className="h-6 w-6 text-blue-300 fill-blue-300" />
-              </div>
-              <h1 className="text-3xl font-bold text-white">Saved Opportunities</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="bg-blue-600/20 p-2 rounded-lg backdrop-blur-sm border border-blue-500/30">
+              <Bookmark className="h-6 w-6 text-blue-300 fill-blue-300" />
             </div>
-            <p className="text-gray-300 text-base">
+            <h1 className="text-3xl font-bold text-white">Saved Opportunities</h1>
+          </div>
+          <p className="text-gray-300 text-base">
             Your bookmarked media opportunities. Keep track of the opportunities you're most interested in and return to them later.
           </p>
         </div>
@@ -395,11 +397,11 @@ export default function SavedOpportunitiesPage() {
             </div>
           )}
           
-          {/* Results count and sort controls - original layout */}
-          <div className="mt-4 flex justify-between items-center">
+          {/* Results count and sort controls - mobile optimized */}
+          <div className="mt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-              <p className="text-white font-medium">
+              <p className="text-white font-medium text-sm">
                 Showing {displayedOpportunities.length} of {filteredOpportunities.length} saved {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
               </p>
             </div>
@@ -409,11 +411,11 @@ export default function SavedOpportunitiesPage() {
                 <div className="p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
                   <SlidersHorizontal className="h-3 w-3 text-blue-300" />
                 </div>
-                <span className="text-white font-medium">Sort by:</span>
+                <span className="text-white font-medium text-sm">Sort by:</span>
               </div>
               
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[170px] h-10 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
+                <SelectTrigger className="w-[140px] sm:w-[170px] h-9 sm:h-10 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
@@ -426,7 +428,7 @@ export default function SavedOpportunitiesPage() {
                 </SelectContent>
               </Select>
             </div>
-                      </div>
+          </div>
           </div>
         </div>
       )}

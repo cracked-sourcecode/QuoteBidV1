@@ -31,6 +31,7 @@ import { ThemeProvider } from "@/hooks/use-theme";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { AdminProtectedRoute } from "@/lib/admin-protected-route";
 import { useEffect, useState, useContext } from "react";
+import ScrollRestoration from "@/components/ScrollRestoration";
 
 import { PriceProvider } from "@/contexts/PriceContext";
 import AdminDashboard from "@/pages/admin/index";
@@ -689,6 +690,7 @@ function App() {
           <PriceProvider>
             <TooltipProvider>
               <Toaster />
+              <ScrollRestoration />
               <Router />
             </TooltipProvider>
           </PriceProvider>

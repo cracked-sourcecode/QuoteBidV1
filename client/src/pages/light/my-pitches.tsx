@@ -229,7 +229,7 @@ export default function MyPitches() {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
 
-  // Calculate simple stats
+    // Calculate simple stats
   const stats = useMemo(() => {
     const submitted = allPitches.filter(p => !p.isDraft).length;
     const published = allPitches.filter(p => ['successful', 'successful_coverage'].includes(p.status)).length;
@@ -315,112 +315,105 @@ export default function MyPitches() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="max-w-5xl mx-auto px-4 py-6">
-        {/* Header Section */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">My Pitches</h1>
-              <p className="text-gray-600 text-sm">Track your submissions and view published articles</p>
-            </div>
-            <button 
-              onClick={() => setLocation('/opportunities')}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm"
-            >
-              <Plus className="h-4 w-4" />
-              Browse Opportunities
-            </button>
-          </div>
-          
-          {/* Enhanced Stats Row */}
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-3 border border-amber-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-amber-700 mb-1">Drafts</p>
-                  <p className="text-xl font-bold text-amber-900">{stats.drafts}</p>
-                </div>
-                <div className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center">
-                  <Save className="h-4 w-4 text-white" />
-                </div>
+    <div className="w-full bg-white min-h-screen">
+      {/* Header with gradient background */}
+      <div className="px-4 sm:px-6 lg:px-8 py-8 border-b border-gray-200 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50">
+        <div className="max-w-5xl mx-auto px-4 py-6">
+          {/* Header Section */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-4 sm:p-6 mb-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">My Pitches</h1>
+                <p className="text-gray-600 text-xs sm:text-sm">Track your submissions and view published articles</p>
               </div>
-            </div>
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 border border-blue-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-blue-700 mb-1">Submitted</p>
-                  <p className="text-xl font-bold text-blue-900">{stats.submitted}</p>
-                </div>
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <Target className="h-4 w-4 text-white" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-green-700 mb-1">Published</p>
-                  <p className="text-xl font-bold text-green-900">{stats.published}</p>
-                </div>
-                <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-                  <Award className="h-4 w-4 text-white" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Search and Filter Controls */}
-          <div className="space-y-4">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <input
-                type="text"
-                placeholder="Search your pitches by title, publication, or outlet..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white text-gray-900 placeholder-gray-500 hover:border-gray-400 transition-colors"
-              />
+              <button 
+                onClick={() => setLocation('/opportunities')}
+                className="hidden sm:flex bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-semibold transition-all duration-200 items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-xs sm:text-sm flex-shrink-0"
+              >
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Browse Opportunities</span>
+                <span className="sm:hidden">Browse</span>
+              </button>
             </div>
             
-            {/* Status Filter */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-gray-700 font-medium">Filter by status:</span>
-              {[
-                { key: "all", label: "All", count: allPitches.length },
-                { key: "draft", label: "Drafts", count: stats.drafts },
-                { key: "pending", label: "Pending", count: allPitches.filter(p => getStage({ id: p.id, userId: p.userId, content: p.content, status: p.status as PitchStatus, bidAmount: p.bidAmount, createdAt: p.createdAt, updatedAt: p.updatedAt, opportunityId: p.opportunityId, isDraft: p.isDraft, paymentIntentId: p.paymentIntentId, opportunity: p.opportunity }) === "pending").length },
-                { key: "sent", label: "Sent", count: allPitches.filter(p => { const stage = getStage({ id: p.id, userId: p.userId, content: p.content, status: p.status as PitchStatus, bidAmount: p.bidAmount, createdAt: p.createdAt, updatedAt: p.updatedAt, opportunityId: p.opportunityId, isDraft: p.isDraft, paymentIntentId: p.paymentIntentId, opportunity: p.opportunity }); return stage === "sent_to_reporter" || stage === "sent"; }).length },
-                { key: "interested", label: "Interested", count: allPitches.filter(p => { const stage = getStage({ id: p.id, userId: p.userId, content: p.content, status: p.status as PitchStatus, bidAmount: p.bidAmount, createdAt: p.createdAt, updatedAt: p.updatedAt, opportunityId: p.opportunityId, isDraft: p.isDraft, paymentIntentId: p.paymentIntentId, opportunity: p.opportunity }); return stage === "reporter_interested" || stage === "interested"; }).length },
-                { key: "published", label: "Published", count: stats.published },
-                { key: "rejected", label: "Rejected", count: allPitches.filter(p => { const stage = getStage({ id: p.id, userId: p.userId, content: p.content, status: p.status as PitchStatus, bidAmount: p.bidAmount, createdAt: p.createdAt, updatedAt: p.updatedAt, opportunityId: p.opportunityId, isDraft: p.isDraft, paymentIntentId: p.paymentIntentId, opportunity: p.opportunity }); return stage === "reporter_not_interested" || stage === "not_interested"; }).length }
-              ].map(filter => (
-                <button
-                  key={filter.key}
-                  onClick={() => setStatusFilter(filter.key)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 flex items-center space-x-1 ${
-                    statusFilter === filter.key
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900"
-                  }`}
+            {/* Enhanced Stats Row */}
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4">
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-2 sm:p-3 border border-amber-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-amber-700 mb-0.5">Drafts</p>
+                    <p className="text-base sm:text-xl font-bold text-amber-900">{stats.drafts}</p>
+                  </div>
+                  <div className="w-5 h-5 sm:w-8 sm:h-8 bg-amber-600 rounded-lg flex items-center justify-center">
+                    <Save className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-white" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-2 sm:p-3 border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-blue-700 mb-0.5">Submitted</p>
+                    <p className="text-base sm:text-xl font-bold text-blue-900">{stats.submitted}</p>
+                  </div>
+                  <div className="w-5 h-5 sm:w-8 sm:h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <Target className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-white" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-2 sm:p-3 border border-green-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-green-700 mb-0.5">Published</p>
+                    <p className="text-base sm:text-xl font-bold text-green-900">{stats.published}</p>
+                  </div>
+                  <div className="w-5 h-5 sm:w-8 sm:h-8 bg-green-600 rounded-lg flex items-center justify-center">
+                    <Award className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-white" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Search and Filter Controls */}
+            <div className="space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  type="text"
+                  placeholder="Search your pitches by title, publication, or outlet..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white text-gray-900 placeholder-gray-500 hover:border-gray-400 transition-colors"
+                />
+              </div>
+              
+              {/* Status Filter */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-700 font-medium">Filter by status:</span>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium bg-white text-gray-700 hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors min-w-[140px] appearance-none bg-no-repeat bg-right pr-8 cursor-pointer shadow-none"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                    backgroundPosition: 'right 0.5rem center',
+                    backgroundSize: '1.5em 1.5em'
+                  }}
                 >
-                  <span>{filter.label}</span>
-                  <span className={`px-1.5 py-0.5 rounded text-xs ${
-                    statusFilter === filter.key 
-                      ? "bg-blue-500/30 text-blue-100" 
-                      : "bg-gray-200 text-gray-600"
-                  }`}>
-                    {filter.count}
-                  </span>
-                </button>
-              ))}
+                  <option value="all">All ({allPitches.length})</option>
+                  <option value="draft">Drafts ({stats.drafts})</option>
+                  <option value="pending">Pending ({allPitches.filter(p => getStage({ id: p.id, userId: p.userId, content: p.content, status: p.status as PitchStatus, bidAmount: p.bidAmount, createdAt: p.createdAt, updatedAt: p.updatedAt, opportunityId: p.opportunityId, isDraft: p.isDraft, paymentIntentId: p.paymentIntentId, opportunity: p.opportunity }) === "pending").length})</option>
+                  <option value="sent">Sent ({allPitches.filter(p => { const stage = getStage({ id: p.id, userId: p.userId, content: p.content, status: p.status as PitchStatus, bidAmount: p.bidAmount, createdAt: p.createdAt, updatedAt: p.updatedAt, opportunityId: p.opportunityId, isDraft: p.isDraft, paymentIntentId: p.paymentIntentId, opportunity: p.opportunity }); return stage === "sent_to_reporter" || stage === "sent"; }).length})</option>
+                  <option value="interested">Interested ({allPitches.filter(p => { const stage = getStage({ id: p.id, userId: p.userId, content: p.content, status: p.status as PitchStatus, bidAmount: p.bidAmount, createdAt: p.createdAt, updatedAt: p.updatedAt, opportunityId: p.opportunityId, isDraft: p.isDraft, paymentIntentId: p.paymentIntentId, opportunity: p.opportunity }); return stage === "reporter_interested" || stage === "interested"; }).length})</option>
+                  <option value="published">Published ({stats.published})</option>
+                  <option value="rejected">Rejected ({allPitches.filter(p => { const stage = getStage({ id: p.id, userId: p.userId, content: p.content, status: p.status as PitchStatus, bidAmount: p.bidAmount, createdAt: p.createdAt, updatedAt: p.updatedAt, opportunityId: p.opportunityId, isDraft: p.isDraft, paymentIntentId: p.paymentIntentId, opportunity: p.opportunity }); return stage === "reporter_not_interested" || stage === "not_interested"; }).length})</option>
+                </select>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Content Section */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 overflow-hidden">
+          {/* Content Section */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 overflow-hidden">
           {allPitches.length === 0 ? (
             <div className="text-center py-12 px-6">
               <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center">
@@ -446,7 +439,10 @@ export default function MyPitches() {
               <p className="text-gray-600 text-sm mb-4">
                 Try different search terms or clear the search to see all your pitches.
               </p>
-              <Button onClick={() => setSearchQuery("")} variant="outline" className="rounded-lg px-4 py-2 border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900">
+              <Button onClick={() => {
+                setSearchQuery("");
+                setStatusFilter("all");
+              }} variant="outline" className="rounded-lg px-4 py-2 border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900">
                 Clear Search
               </Button>
             </div>
@@ -459,21 +455,21 @@ export default function MyPitches() {
                 const createdDate = formatDate(pitch.createdAt);
                 
                 return (
-                  <div key={pitch.id} className={`p-4 hover:bg-gray-50/50 transition-all duration-200 ${index === 0 ? 'rounded-t-2xl' : ''} ${index === paginatedPitches.length - 1 ? 'rounded-b-2xl' : ''}`}>
-                    <div className="flex items-center justify-between">
+                  <div key={pitch.id} className={`p-3 sm:p-4 hover:bg-gray-50/50 transition-all duration-200 ${index === 0 ? 'rounded-t-2xl' : ''} ${index === paginatedPitches.length - 1 ? 'rounded-b-2xl' : ''}`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
                       {/* Left: Title and Publication */}
-                      <div className="flex-1 min-w-0 mr-4">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="font-semibold text-gray-900 max-w-xl truncate">
+                      <div className="flex-1 min-w-0 sm:mr-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 mb-2 gap-2 sm:gap-0">
+                          <h3 className="font-semibold text-gray-900 text-sm sm:text-base line-clamp-2 sm:max-w-xl sm:truncate">
                             {pitch.opportunity?.title || `Pitch #${pitch.id}`}
                           </h3>
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${statusDisplay.color} shadow-sm`}>
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${statusDisplay.color} shadow-sm w-fit`}>
                             <StatusIcon className="h-3 w-3 mr-1" />
                             {statusDisplay.label}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <span className="font-medium text-gray-700 text-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-xs sm:text-sm text-gray-500 gap-1 sm:gap-0">
+                          <span className="font-medium text-gray-700 text-xs sm:text-sm">
                             {pitch.opportunity?.publication?.name || pitch.opportunity?.outlet || "Unknown Publication"}
                           </span>
                           <span className="flex items-center">
@@ -481,9 +477,8 @@ export default function MyPitches() {
                             {createdDate}
                           </span>
                           {pitch.bidAmount && !pitch.isDraft && (
-                            <span className="flex items-center font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-lg text-xs">
-                              <DollarSign className="h-3 w-3 mr-0.5" />
-                              {pitch.bidAmount}
+                            <span className="flex items-center font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-lg text-xs w-fit">
+                              Pitch Price: ${pitch.bidAmount}
                             </span>
                           )}
                         </div>
@@ -495,24 +490,24 @@ export default function MyPitches() {
                           <Button size="sm" onClick={() => {
                             // Navigate to opportunity detail page and scroll to pitch section
                             setLocation(`/opportunities/${pitch.opportunity?.id || pitch.opportunityId}#pitch-section`);
-                          }} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-3 py-1.5 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all text-xs">
+                          }} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-3 py-1.5 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all text-xs flex-1 sm:flex-initial">
                             <Edit className="h-3 w-3 mr-1" />
                             Continue
                           </Button>
                         ) : (
                           <>
                             {['pending'].includes(pitch.status) && (
-                              <Button size="sm" variant="outline" onClick={() => handleEditPitch(pitch)} className="px-3 py-1.5 rounded-lg border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-xs">
+                              <Button size="sm" variant="outline" onClick={() => handleEditPitch(pitch)} className="px-3 py-1.5 rounded-lg border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-xs flex-1 sm:flex-initial">
                                 <Edit className="h-3 w-3 mr-1" />
                                 Edit
                               </Button>
                             )}
-                            <Button size="sm" variant="outline" onClick={() => handleReviewPitch(pitch)} className="px-3 py-1.5 rounded-lg border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-xs">
+                            <Button size="sm" variant="outline" onClick={() => handleReviewPitch(pitch)} className="px-3 py-1.5 rounded-lg border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-xs flex-1 sm:flex-initial">
                               <Eye className="h-3 w-3 mr-1" />
                               Details
                             </Button>
                             {pitch.article?.url && (
-                              <Button size="sm" asChild className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 px-3 py-1.5 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all text-xs">
+                              <Button size="sm" asChild className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 px-3 py-1.5 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all text-xs flex-1 sm:flex-initial">
                                 <a href={pitch.article.url} target="_blank" rel="noopener noreferrer">
                                   <ExternalLink className="h-3 w-3 mr-1" />
                                   Article
@@ -563,28 +558,40 @@ export default function MyPitches() {
             
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="px-6 py-4 border-t border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <div className="px-4 sm:px-6 py-4 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                  <div className="flex items-center justify-center sm:justify-start space-x-2 text-xs sm:text-sm text-gray-600">
                     <span>
                       Showing {((currentPage - 1) * PITCHES_PER_PAGE) + 1} to {Math.min(currentPage * PITCHES_PER_PAGE, filteredPitches.length)} of {filteredPitches.length} pitches
                     </span>
                   </div>
                   
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-center space-x-1 sm:space-x-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentPage(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className="border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed px-2 sm:px-3 py-1.5"
                     >
-                      <ChevronLeft className="h-4 w-4 mr-1" />
-                      Previous
+                      <ChevronLeft className="h-4 w-4 sm:mr-1" />
+                      <span className="hidden sm:inline">Previous</span>
                     </Button>
                     
                     <div className="flex items-center space-x-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      {Array.from({ length: Math.min(totalPages, 3) }, (_, i) => {
+                        let page;
+                        if (totalPages <= 3) {
+                          page = i + 1;
+                        } else if (currentPage <= 2) {
+                          page = i + 1;
+                        } else if (currentPage >= totalPages - 1) {
+                          page = totalPages - 2 + i;
+                        } else {
+                          page = currentPage - 1 + i;
+                        }
+                        return page;
+                      }).map((page) => (
                         <Button
                           key={page}
                           variant={currentPage === page ? "default" : "outline"}
@@ -592,13 +599,26 @@ export default function MyPitches() {
                           onClick={() => setCurrentPage(page)}
                           className={
                             currentPage === page
-                              ? "bg-blue-600 text-white shadow-md px-3 py-1.5"
-                              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 px-3 py-1.5"
+                              ? "bg-blue-600 text-white shadow-md px-2 sm:px-3 py-1.5 text-xs sm:text-sm"
+                              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 px-2 sm:px-3 py-1.5 text-xs sm:text-sm"
                           }
                         >
                           {page}
                         </Button>
                       ))}
+                      {totalPages > 3 && currentPage < totalPages - 1 && (
+                        <>
+                          <span className="text-gray-400 px-1">...</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(totalPages)}
+                            className="border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 px-2 sm:px-3 py-1.5 text-xs sm:text-sm"
+                          >
+                            {totalPages}
+                          </Button>
+                        </>
+                      )}
                     </div>
                     
                     <Button
@@ -606,10 +626,10 @@ export default function MyPitches() {
                       size="sm"
                       onClick={() => setCurrentPage(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      className="border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed px-2 sm:px-3 py-1.5"
                     >
-                      Next
-                      <ChevronRight className="h-4 w-4 ml-1" />
+                      <span className="hidden sm:inline">Next</span>
+                      <ChevronRight className="h-4 w-4 sm:ml-1" />
                     </Button>
                   </div>
                 </div>
@@ -617,6 +637,7 @@ export default function MyPitches() {
             )}
             </>
           )}
+          </div>
         </div>
       </div>
 

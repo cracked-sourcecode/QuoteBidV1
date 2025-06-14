@@ -41,6 +41,25 @@ export default function OpportunitiesPage() {
   const [subscriptionExpiry, setSubscriptionExpiry] = useState<Date | null>(null);
   const { user } = useAuth();
   
+  // Scroll to top when component mounts (for mobile navigation)
+  useEffect(() => {
+    // Use setTimeout to ensure it happens after the page has fully loaded
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      // Backup scroll for mobile devices
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    
+    // Immediate scroll
+    scrollToTop();
+    
+    // Delayed scroll as backup for mobile
+    const timer = setTimeout(scrollToTop, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
   // Fetch opportunities from the API
   useEffect(() => {
     const fetchOpportunities = async () => {
@@ -365,69 +384,69 @@ export default function OpportunitiesPage() {
             {/* Active filters */}
             {(tierFilter !== 'all' || statusFilter !== 'all' || industryFilter !== 'all' || searchQuery) && (
               <div className="mt-4 relative">
-                <div className="relative bg-slate-800/80 backdrop-blur-2xl rounded-xl border border-slate-600/60 py-3 px-4 shadow-xl">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center">
-                      <div className="p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg mr-2 border border-blue-400/30">
+                <div className="relative bg-slate-800/80 backdrop-blur-2xl rounded-xl border border-slate-600/60 py-2.5 px-3 shadow-xl">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center min-w-0 flex-1">
+                      <div className="p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg mr-2 border border-blue-400/30 flex-shrink-0">
                         <Filter className="h-3 w-3 text-blue-300" />
                       </div>
-                      <span className="text-white font-medium text-sm">Active Filters</span>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-1.5">
-                      {tierFilter !== 'all' && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-6 px-2 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-lg font-medium transition-all duration-300" 
-                          onClick={() => setTierFilter('all')}
-                        >
-                          Tier: {tierFilter}
-                          <span className="ml-1 text-sm">×</span>
-                        </Button>
-                      )}
+                      <span className="text-white font-medium text-sm mr-2 flex-shrink-0">Active Filters</span>
                       
-                      {statusFilter !== 'all' && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-6 px-2 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-lg font-medium transition-all duration-300" 
-                          onClick={() => setStatusFilter('all')}
-                        >
-                          Status: {statusFilter}
-                          <span className="ml-1 text-sm">×</span>
-                        </Button>
-                      )}
-                      
-                      {industryFilter !== 'all' && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-6 px-2 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-lg font-medium transition-all duration-300" 
-                          onClick={() => setIndustryFilter('all')}
-                        >
-                          Industry: {industryFilter}
-                          <span className="ml-1 text-sm">×</span>
-                        </Button>
-                      )}
-                      
-                      {searchQuery && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-6 px-2 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-lg font-medium transition-all duration-300" 
-                          onClick={() => setSearchQuery('')}
-                        >
-                          Search: "{searchQuery}"
-                          <span className="ml-1 text-sm">×</span>
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-1 min-w-0 overflow-x-auto scrollbar-hide">
+                        {tierFilter !== 'all' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-5 px-1.5 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-md font-medium transition-all duration-300 flex-shrink-0" 
+                            onClick={() => setTierFilter('all')}
+                          >
+                            T{tierFilter}
+                            <span className="ml-0.5 text-xs">×</span>
+                          </Button>
+                        )}
+                        
+                        {statusFilter !== 'all' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-5 px-1.5 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-md font-medium transition-all duration-300 flex-shrink-0" 
+                            onClick={() => setStatusFilter('all')}
+                          >
+                            {statusFilter === 'open' ? 'Open' : statusFilter}
+                            <span className="ml-0.5 text-xs">×</span>
+                          </Button>
+                        )}
+                        
+                        {industryFilter !== 'all' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-5 px-1.5 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-md font-medium transition-all duration-300 flex-shrink-0" 
+                            onClick={() => setIndustryFilter('all')}
+                          >
+                            {industryFilter.length > 8 ? `${industryFilter.substring(0, 8)}...` : industryFilter}
+                            <span className="ml-0.5 text-xs">×</span>
+                          </Button>
+                        )}
+                        
+                        {searchQuery && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-5 px-1.5 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-md font-medium transition-all duration-300 flex-shrink-0" 
+                            onClick={() => setSearchQuery('')}
+                          >
+                            "{searchQuery.length > 6 ? `${searchQuery.substring(0, 6)}...` : searchQuery}"
+                            <span className="ml-0.5 text-xs">×</span>
+                          </Button>
+                        )}
+                      </div>
                     </div>
             
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="ml-auto h-6 px-2 text-xs text-slate-300 hover:text-white hover:bg-slate-700/80 rounded-lg font-medium transition-all duration-300"
+                      className="h-5 px-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-700/80 rounded-md font-medium transition-all duration-300 flex-shrink-0"
                       onClick={() => {
                         setTierFilter('all');
                         setStatusFilter('open');
@@ -435,7 +454,7 @@ export default function OpportunitiesPage() {
                         setSearchQuery('');
                       }}
                     >
-                      Clear All
+                      Clear
                     </Button>
                   </div>
                 </div>

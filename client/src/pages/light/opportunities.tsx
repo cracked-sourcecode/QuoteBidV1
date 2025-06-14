@@ -41,6 +41,25 @@ export default function OpportunitiesPage() {
   const [subscriptionExpiry, setSubscriptionExpiry] = useState<Date | null>(null);
   const { user } = useAuth();
   
+  // Scroll to top when component mounts (for mobile navigation)
+  useEffect(() => {
+    // Use setTimeout to ensure it happens after the page has fully loaded
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      // Backup scroll for mobile devices
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    
+    // Immediate scroll
+    scrollToTop();
+    
+    // Delayed scroll as backup for mobile
+    const timer = setTimeout(scrollToTop, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
   // Fetch opportunities from the API
   useEffect(() => {
     const fetchOpportunities = async () => {
@@ -364,53 +383,57 @@ export default function OpportunitiesPage() {
         
         {/* Active filters */}
         {(tierFilter !== 'all' || statusFilter !== 'all' || industryFilter !== 'all' || searchQuery) && (
-          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-100">
-            <div className="flex items-center">
-              <Filter className="h-3 w-3 text-gray-500 mr-1" />
-              <span className="text-xs text-gray-600">Active filters:</span>
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center min-w-0 flex-1">
+                <Filter className="h-3 w-3 text-gray-500 mr-1 flex-shrink-0" />
+                <span className="text-xs text-gray-600 mr-2 flex-shrink-0">Active filters:</span>
+                
+                <div className="flex items-center gap-1 min-w-0 overflow-x-auto scrollbar-hide">
+                  {tierFilter !== 'all' && (
+                    <Button variant="outline" size="sm" className="h-5 text-xs rounded-md px-1.5 py-0 flex-shrink-0" onClick={() => setTierFilter('all')}>
+                      T{tierFilter}
+                      <span className="ml-0.5">×</span>
+                    </Button>
+                  )}
+                  
+                  {statusFilter !== 'all' && (
+                    <Button variant="outline" size="sm" className="h-5 text-xs rounded-md px-1.5 py-0 flex-shrink-0" onClick={() => setStatusFilter('all')}>
+                      {statusFilter === 'open' ? 'Open' : statusFilter}
+                      <span className="ml-0.5">×</span>
+                    </Button>
+                  )}
+                  
+                  {industryFilter !== 'all' && (
+                    <Button variant="outline" size="sm" className="h-5 text-xs rounded-md px-1.5 py-0 flex-shrink-0" onClick={() => setIndustryFilter('all')}>
+                      {industryFilter.length > 8 ? `${industryFilter.substring(0, 8)}...` : industryFilter}
+                      <span className="ml-0.5">×</span>
+                    </Button>
+                  )}
+                  
+                  {searchQuery && (
+                    <Button variant="outline" size="sm" className="h-5 text-xs rounded-md px-1.5 py-0 flex-shrink-0" onClick={() => setSearchQuery('')}>
+                      "{searchQuery.length > 6 ? `${searchQuery.substring(0, 6)}...` : searchQuery}"
+                      <span className="ml-0.5">×</span>
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 text-xs px-1.5 py-0 flex-shrink-0"
+                onClick={() => {
+                  setTierFilter('all');
+                  setStatusFilter('open');
+                  setIndustryFilter('all');
+                  setSearchQuery('');
+                }}
+              >
+                Clear
+              </Button>
             </div>
-            
-            {tierFilter !== 'all' && (
-              <Button variant="outline" size="sm" className="h-6 text-xs rounded-full px-2 py-0" onClick={() => setTierFilter('all')}>
-                Tier: {tierFilter}
-                <span className="ml-1">×</span>
-              </Button>
-            )}
-            
-            {statusFilter !== 'all' && (
-              <Button variant="outline" size="sm" className="h-6 text-xs rounded-full px-2 py-0" onClick={() => setStatusFilter('all')}>
-                Status: {statusFilter}
-                <span className="ml-1">×</span>
-              </Button>
-            )}
-            
-            {industryFilter !== 'all' && (
-              <Button variant="outline" size="sm" className="h-6 text-xs rounded-full px-2 py-0" onClick={() => setIndustryFilter('all')}>
-                Industry: {industryFilter}
-                <span className="ml-1">×</span>
-              </Button>
-            )}
-            
-            {searchQuery && (
-              <Button variant="outline" size="sm" className="h-6 text-xs rounded-full px-2 py-0" onClick={() => setSearchQuery('')}>
-                Search: "{searchQuery}"
-                <span className="ml-1">×</span>
-              </Button>
-            )}
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-xs px-2 py-0 ml-auto"
-              onClick={() => {
-                setTierFilter('all');
-                setStatusFilter('open');
-                setIndustryFilter('all');
-                setSearchQuery('');
-              }}
-            >
-              Clear all
-            </Button>
           </div>
         )}
       </div>

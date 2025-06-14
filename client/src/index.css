@@ -281,6 +281,7 @@ body {
   transition: background-color 0.2s ease-in-out;
   background-color: #0f172a; /* Changed to slate-900 to match home gradient */
   min-height: 100vh;
+  margin: 0;
 }
 
 /* Notification dot */

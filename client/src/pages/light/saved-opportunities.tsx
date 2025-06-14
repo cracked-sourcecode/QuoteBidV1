@@ -316,30 +316,32 @@ export default function SavedOpportunitiesPage() {
       
       {/* Results count and sort - only show if there are saved opportunities */}
       {savedOpportunities.length > 0 && (
-        <div className="px-4 sm:px-6 lg:px-8 py-3 bg-white border-b border-gray-200 flex justify-between items-center">
-          <p className="text-xs text-gray-600">
-            Showing {displayedOpportunities.length} of {filteredOpportunities.length} saved {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
-          </p>
-          
-          <div className="flex items-center gap-2">
-            <SlidersHorizontal className="h-3 w-3 text-gray-500" />
-            <span className="text-xs text-gray-600 mr-1">Sort by:</span>
-            <Select
-              value={sortBy}
-              onValueChange={setSortBy}
-            >
-              <SelectTrigger className="w-[170px] h-7 text-xs border-none shadow-none px-1">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="deadline">Deadline (Soonest)</SelectItem>
-                  <SelectItem value="posted">Recently Posted</SelectItem>
-                  <SelectItem value="price-low">Price (Low to High)</SelectItem>
-                  <SelectItem value="price-high">Price (High to Low)</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+        <div className="px-4 sm:px-6 lg:px-8 py-3 bg-white border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
+            <p className="text-xs text-gray-600">
+              Showing {displayedOpportunities.length} of {filteredOpportunities.length} saved {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
+            </p>
+            
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="h-3 w-3 text-gray-500" />
+              <span className="text-xs text-gray-600 mr-1">Sort by:</span>
+              <Select
+                value={sortBy}
+                onValueChange={setSortBy}
+              >
+                <SelectTrigger className="w-[140px] sm:w-[170px] h-7 text-xs border-none shadow-none px-1">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="deadline">Deadline (Soonest)</SelectItem>
+                    <SelectItem value="posted">Recently Posted</SelectItem>
+                    <SelectItem value="price-low">Price (Low to High)</SelectItem>
+                    <SelectItem value="price-high">Price (High to Low)</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       )}

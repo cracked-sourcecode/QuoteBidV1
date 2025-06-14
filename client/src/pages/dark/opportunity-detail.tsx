@@ -601,21 +601,36 @@ export default function OpportunityDetail() {
     return () => clearTimeout(autoSaveTimer);
   }, [pitchContent, draftId, userPitchStatus?.hasSubmitted, createDraft, saveDraft]);
 
-  // Scroll to pitch section if anchor is present
+  // Scroll to pitch section if anchor is present - FIXED for mobile navigation
   useEffect(() => {
     if (window.location.hash === '#pitch-section') {
-      // Small delay to ensure the page has rendered
-      setTimeout(() => {
+      // Multiple attempts to ensure scroll works even during loading
+      const scrollToPitchSection = () => {
         const element = document.getElementById('pitch-section');
         if (element) {
-          element.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center' 
-          });
+          // Force scroll to top first to prevent conflicts
+          window.scrollTo(0, 0);
+          
+          // Then scroll to pitch section
+          setTimeout(() => {
+            element.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center' 
+            });
+          }, 100);
         }
-      }, 500);
+        return element !== null;
+      };
+
+      // Try immediately and with delays
+      const attempts = [0, 300, 600, 1000, 1500];
+      attempts.forEach(delay => {
+        setTimeout(() => {
+          scrollToPitchSection();
+        }, delay);
+      });
     }
-  }, [isLoading, userPitchStatus]);
+  }, []); // Remove dependencies to prevent conflicts with loading states
 
   // Real-time price history state
   const [realTimePriceHistory, setRealTimePriceHistory] = useState<any[]>([]);

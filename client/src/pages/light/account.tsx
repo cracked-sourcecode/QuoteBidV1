@@ -1127,9 +1127,45 @@ export default function AccountPage() {
             </Button>
           </div>
 
-          {/* Account Settings Section - Simplified for desktop only */}
+          {/* Navigation Menu */}
           <div className="pt-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Quick Actions</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Navigation</h3>
+            <nav className="space-y-1">
+              <a 
+                href="/account" 
+                className="flex items-center py-2 px-3 text-sm font-medium rounded-md bg-blue-600 text-blue-100 shadow-lg"
+              >
+                <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Profile
+              </a>
+              
+              <a 
+                href="/opportunities" 
+                className="flex items-center py-2 px-3 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                </svg>
+                Opportunities
+              </a>
+              
+              <a 
+                href="/my-pitches" 
+                className="flex items-center py-2 px-3 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                My Pitches
+              </a>
+            </nav>
+          </div>
+
+          {/* Account Settings Section */}
+          <div className="pt-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Account Settings</h3>
             <div className="space-y-1">
               <button 
                 onClick={() => setSubscriptionModalOpen(true)}
