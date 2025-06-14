@@ -1102,10 +1102,11 @@ export default function AccountPage() {
       
       {/* Sidebar - Mobile Optimized */}
       <div 
-        className={`w-72 lg:w-72 min-h-screen bg-white border-r border-gray-200 p-4 lg:p-6 fixed overflow-y-auto transition-transform duration-300 ease-in-out z-40 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 pt-16 lg:pt-6`} 
-        style={{ maxHeight: '100vh' }}
+        className={`w-72 lg:w-72 h-screen bg-white border-r border-gray-200 fixed transition-transform duration-300 ease-in-out z-40 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`} 
+        style={{ height: '100vh' }}
       >
-        <div className="space-y-6">
+        <div className="h-full overflow-y-auto pt-16 lg:pt-6 px-4 lg:px-6 pb-4 lg:pb-6">
+          <div className="space-y-6">
           {/* Profile Avatar & Basic Info */}
           <div className="flex flex-col items-center text-center">
             <div 
@@ -1291,12 +1292,20 @@ export default function AccountPage() {
               </a>
             </div>
           </div>
+          
+          {/* Help text at bottom of sidebar */}
+          <div className="pt-6 mt-6 border-t border-gray-200">
+            <p className="text-xs text-gray-500 text-center">
+              Need help? <a href="mailto:support@quotebid.com" className="text-blue-600 hover:text-blue-500 hover:underline">Contact Support</a>
+            </p>
+          </div>
+        </div>
         </div>
       </div>
 
       {/* Main Content - Mobile Responsive */}
       <div className="lg:ml-72 flex-1 bg-white min-h-screen">
-        <div className="pt-16 lg:pt-0 px-4 lg:px-8 py-4 lg:py-8 account-content-area">
+        <div className="pt-16 lg:pt-0 px-4 lg:px-8 py-4 lg:py-8">
           <div className="max-w-6xl mx-auto">
             {/* Mobile Profile Section */}
             <div className="lg:hidden mb-6">
@@ -1328,9 +1337,11 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {/* Desktop Header */}
-            <div className="hidden lg:block">
-              <h1 className="text-2xl font-bold mb-6">Profile Dashboard</h1>
+            {/* Desktop Header - Aligned with sidebar profile */}
+            <div className="hidden lg:block mb-2">
+              <div className="flex items-center h-32">
+                <h1 className="text-3xl font-bold">Profile Dashboard</h1>
+              </div>
             </div>
           
           {!user ? (
