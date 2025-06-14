@@ -664,7 +664,7 @@ export default function AccountPage() {
             });
           } else {
             toast({
-              title: "Couldn't auto-detect article info",
+              title: "Could not auto-detect article info",
               description: "Please enter the article details manually",
               variant: "default",
             });
@@ -2276,7 +2276,7 @@ export default function AccountPage() {
                   <DialogDescription className="text-slate-400">
                     {editingMediaItem 
                       ? 'Update the details about this media coverage item.'
-                      : 'Add details about media coverage you\'ve received to showcase on your profile.'
+                      : 'Add details about media coverage you have received to showcase on your profile.'
                     }
                   </DialogDescription>
                 </DialogHeader>
@@ -2304,7 +2304,7 @@ export default function AccountPage() {
                             ) : editingMediaItem ? (
                               "Enter the URL of the article or media coverage."
                             ) : (
-                              "Paste the article URL first - we'll automatically detect the title and date for you!"
+                              "Paste the article URL first - we will automatically detect the title and date for you!"
                             )}
                           </FormDescription>
                           <FormMessage />
@@ -2576,7 +2576,6 @@ export default function AccountPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-
 
           </div>
         </div>
