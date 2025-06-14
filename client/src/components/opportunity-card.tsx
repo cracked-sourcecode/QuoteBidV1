@@ -563,6 +563,22 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
                 New
               </Badge>
             )}
+
+            {/* Fallback badge when no other badges are active */}
+            {!isPremium && !isUrgent && !isHot && !isTrending && !isNew && (
+              <Badge className={cn(
+                "flex items-center gap-1 rounded-full font-medium text-xs px-2 py-0.5",
+                theme === 'dark' 
+                  ? "bg-gradient-to-r from-slate-600 to-slate-700 text-slate-200 border border-slate-500/50"
+                  : "bg-gray-100 text-gray-700"
+              )}>
+                <span className={cn(
+                  "w-1.5 h-1.5 rounded-full",
+                  theme === 'dark' ? "bg-slate-300" : "bg-gray-500"
+                )}></span> 
+                Available
+              </Badge>
+            )}
           </div>
           
           {/* Deadline info */}

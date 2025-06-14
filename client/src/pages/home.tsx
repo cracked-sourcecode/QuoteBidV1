@@ -98,7 +98,7 @@ export default function Home() {
         </header>
       
       {/* ——— HERO ——— */}
-      <section className="relative z-20 pt-24 md:pt-40 pb-24 px-6 overflow-hidden">
+      <section className="relative z-20 pt-16 md:pt-24 pb-24 px-6 overflow-hidden">
 
         
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16 relative z-10">

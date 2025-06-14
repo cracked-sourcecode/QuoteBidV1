@@ -115,34 +115,34 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
 
   
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-      <div className="bg-gradient-to-br from-blue-900 via-purple-900 to-violet-900 rounded-3xl shadow-2xl overflow-hidden">
+    <div className="w-full max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 pb-8 sm:pb-12">
+      <div className="bg-gradient-to-br from-blue-900 via-purple-900 to-violet-900 rounded-2xl sm:rounded-3xl shadow-2xl">
         {/* Header Section */}
-        <div className="bg-gradient-to-r from-blue-800 to-purple-800 text-white p-8 sm:p-10 text-center">
-          <h2 className="text-3xl sm:text-4xl font-black mb-4 text-white">
+        <div className="bg-gradient-to-r from-blue-800 to-purple-800 text-white p-4 sm:p-6 text-center rounded-t-2xl sm:rounded-t-3xl">
+          <h2 className="text-2xl sm:text-3xl font-black mb-2 sm:mb-3 text-white">
             Complete Your Expert Profile
           </h2>
-          <p className="text-lg text-blue-100 font-medium">
+          <p className="text-sm sm:text-base text-blue-100 font-medium">
             Tell us about your expertise so journalists can find you for the perfect media opportunities
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 sm:p-10 space-y-8">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5 pb-20">
           {/* Avatar Upload Section */}
-          <div className="mb-10 text-center">
-            <Label className="text-lg font-semibold text-white mb-6 block">
+          <div className="mb-4 sm:mb-5 text-center">
+            <Label className="text-base font-semibold text-white mb-3 block">
               Profile Photo
             </Label>
             <div className="relative inline-block">
-              <div className="w-36 h-36 rounded-full overflow-hidden bg-white/20 flex items-center justify-center mx-auto border-2 border-white/40 shadow-xl">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-white/20 flex items-center justify-center mx-auto border-2 border-white/40 shadow-xl">
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Profile preview" className="w-full h-full object-cover" />
                 ) : (
                   <AvatarSVG />
                 )}
               </div>
-              <label htmlFor="avatar-upload" className="absolute bottom-2 right-2 bg-white text-purple-600 rounded-full p-3 cursor-pointer shadow-xl hover:bg-gray-100 transition-all hover:scale-110">
-                <Camera className="h-6 w-6" />
+              <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-white text-purple-600 rounded-full p-2 cursor-pointer shadow-xl hover:bg-gray-100 transition-all hover:scale-110">
+                <Camera className="h-4 w-4" />
                 <input
                   id="avatar-upload"
                   type="file"
@@ -152,17 +152,17 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
                 />
               </label>
             </div>
-            <p className="text-base text-white/80 mt-4 font-medium">
+            <p className="text-xs sm:text-sm text-white/80 mt-2 font-medium">
               Professional headshots get 7x more responses
             </p>
           </div>
 
           {/* Form Fields */}
-          <div className="space-y-8">
-            {/* Name and Location */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+          <div className="space-y-4">
+            {/* Name, Location, and Title in a 3-column layout on larger screens */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               <div>
-                <Label htmlFor="fullName" className="text-lg font-semibold text-white mb-4 block">
+                <Label htmlFor="fullName" className="text-sm font-semibold text-white mb-2 block">
                   Full Name *
                 </Label>
                 <Input 
@@ -172,11 +172,11 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
                   onChange={e => setFullName(e.target.value)} 
                   required 
                   placeholder="Your full name"
-                  className="w-full px-4 py-3 text-base rounded-xl bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl"
+                  className="w-full px-3 py-2 text-sm rounded-lg bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl h-10"
                 />
               </div>
               <div>
-                <Label htmlFor="location" className="text-lg font-semibold text-white mb-4 block">
+                <Label htmlFor="location" className="text-sm font-semibold text-white mb-2 block">
                   Location *
                 </Label>
                 <Input 
@@ -186,30 +186,28 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
                   onChange={e => setLocation(e.target.value)} 
                   required 
                   placeholder="City, State, Country"
-                  className="w-full px-4 py-3 text-base rounded-xl bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl"
+                  className="w-full px-3 py-2 text-sm rounded-lg bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl h-10"
+                />
+              </div>
+              <div className="sm:col-span-2 lg:col-span-1">
+                <Label htmlFor="title" className="text-sm font-semibold text-white mb-2 block">
+                  Professional Title *
+                </Label>
+                <Input 
+                  id="title" 
+                  type="text" 
+                  value={title} 
+                  onChange={e => setTitle(e.target.value)} 
+                  required
+                  placeholder="CEO, Founder, Expert, etc."
+                  className="w-full px-3 py-2 text-sm rounded-lg bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl h-10"
                 />
               </div>
             </div>
 
-            {/* Professional Title */}
-            <div>
-              <Label htmlFor="title" className="text-lg font-semibold text-white mb-4 block">
-                Professional Title *
-              </Label>
-              <Input 
-                id="title" 
-                type="text" 
-                value={title} 
-                onChange={e => setTitle(e.target.value)} 
-                required
-                placeholder="CEO, Founder, Expert, etc."
-                className="w-full px-4 py-3 text-base rounded-xl bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl"
-              />
-            </div>
-
             {/* Bio */}
             <div>
-              <Label htmlFor="bio" className="text-lg font-semibold text-white mb-4 block">
+              <Label htmlFor="bio" className="text-sm font-semibold text-white mb-2 block">
                 Professional Bio *
               </Label>
               <textarea 
@@ -218,16 +216,16 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
                 onChange={e => setBio(e.target.value)} 
                 required 
                 placeholder="Describe your expertise, experience, and what makes you a valuable source for journalists..."
-                className="w-full px-4 py-3 text-base rounded-xl bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all min-h-[140px] resize-none shadow-lg hover:shadow-xl font-sans"
+                className="w-full px-3 py-2 text-sm rounded-lg bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all min-h-[80px] sm:min-h-[100px] resize-none shadow-lg hover:shadow-xl font-sans"
               />
             </div>
 
             {/* Online Presence Section */}
-            <div className="bg-white/10 rounded-2xl p-8">
-              <h3 className="font-semibold text-xl mb-8 text-white">Online Presence (Optional)</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <div className="bg-white/10 rounded-xl p-3 sm:p-4 overflow-visible">
+              <h3 className="font-semibold text-base mb-3 text-white">Online Presence (Optional)</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="linkedin" className="text-lg font-semibold text-white mb-4 block">
+                  <Label htmlFor="linkedin" className="text-sm font-medium text-white mb-1 block">
                     LinkedIn
                   </Label>
                   <Input 
@@ -236,11 +234,11 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
                     value={linkedin} 
                     onChange={e => setLinkedin(e.target.value)} 
                     placeholder="https://linkedin.com/in/username"
-                    className="w-full px-4 py-3 text-base rounded-xl bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl"
+                    className="w-full px-3 py-2 text-sm rounded-lg bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl h-9"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="website" className="text-lg font-semibold text-white mb-4 block">
+                  <Label htmlFor="website" className="text-sm font-medium text-white mb-1 block">
                     Website
                   </Label>
                   <Input 
@@ -249,11 +247,11 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
                     value={website} 
                     onChange={e => setWebsite(e.target.value)} 
                     placeholder="https://yourwebsite.com"
-                    className="w-full px-4 py-3 text-base rounded-xl bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl"
+                    className="w-full px-3 py-2 text-sm rounded-lg bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl h-9"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="twitter" className="text-lg font-semibold text-white mb-4 block">
+                  <Label htmlFor="twitter" className="text-sm font-medium text-white mb-1 block">
                     X / Twitter
                   </Label>
                   <Input 
@@ -262,11 +260,11 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
                     value={twitter} 
                     onChange={e => setTwitter(e.target.value)} 
                     placeholder="https://x.com/username"
-                    className="w-full px-4 py-3 text-base rounded-xl bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl"
+                    className="w-full px-3 py-2 text-sm rounded-lg bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl h-9"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="instagram" className="text-lg font-semibold text-white mb-4 block">
+                  <Label htmlFor="instagram" className="text-sm font-medium text-white mb-1 block">
                     Instagram
                   </Label>
                   <Input 
@@ -275,22 +273,23 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
                     value={instagram} 
                     onChange={e => setInstagram(e.target.value)} 
                     placeholder="https://instagram.com/username"
-                    className="w-full px-4 py-3 text-base rounded-xl bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl"
+                    className="w-full px-3 py-2 text-sm rounded-lg bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl h-9"
                   />
                 </div>
               </div>
               
               {/* Do-Follow Link Section */}
-              <div className="mt-8">
-                <Label htmlFor="doFollow" className="text-lg font-semibold text-white mb-4 block">
+              <div className="mt-4 mb-8">
+                <Label htmlFor="doFollow" className="text-sm font-medium text-white mb-1 block">
                   Do-Follow Link (For article placements)
                 </Label>
-                <div className="relative">
+                <div className="relative z-50">
                   <select 
                     id="doFollow" 
                     value={doFollow} 
                     onChange={e => setDoFollow(e.target.value)} 
-                    className="w-full px-4 py-3 text-base rounded-xl bg-white text-black border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all appearance-none shadow-lg hover:shadow-xl font-sans"
+                    className="w-full px-3 py-2 text-sm rounded-lg bg-white text-black border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all appearance-none shadow-lg hover:shadow-xl font-sans h-9 relative z-50"
+                    style={{ position: 'relative' }}
                   >
                     <option value="" className="bg-white text-black">Select a do-follow link</option>
                     <option value="None" className="bg-white text-black">None</option>
@@ -299,11 +298,11 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
                     <option value="Twitter" className="bg-white text-black">X</option>
                     <option value="Instagram" className="bg-white text-black">Instagram</option>
                   </select>
-                  <svg className="pointer-events-none absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <svg className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-600 z-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
-                <p className="text-base text-white/80 mt-4">
+                <p className="text-xs text-white/80 mt-1">
                   Select which link to include at the end of quotes in articles
                 </p>
               </div>
@@ -312,12 +311,12 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
             {/* Submit Button */}
             <Button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-blue-700 text-white py-4 rounded-xl text-lg font-bold shadow-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl" 
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-blue-700 text-white py-3 rounded-lg text-base font-bold shadow-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl" 
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Completing Profile...
                 </>
               ) : (

@@ -849,21 +849,21 @@ export default function RegisterPage() {
                 
                 {/* Password strength indicator - shown below both password fields */}
                 {form.password && (
-                  <div className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
-                    <div className="bg-slate-700/50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-600/30">
-                      <div className="flex items-center justify-between mb-2 sm:mb-3">
-                        <span className="text-xs sm:text-sm font-medium text-white">Password Strength</span>
+                  <div className="mt-2 sm:mt-3 space-y-1 sm:space-y-2">
+                    <div className="bg-slate-700/50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-600/30">
+                      <div className="flex items-center justify-between mb-1 sm:mb-2">
+                        <span className="text-xs font-medium text-white">Password Strength</span>
                         {passwordValidation.strengthText && (
-                          <span className={`text-xs sm:text-sm font-bold ${passwordValidation.strengthColor}`}>
+                          <span className={`text-xs font-bold ${passwordValidation.strengthColor}`}>
                             {passwordValidation.strengthText}
                           </span>
                         )}
                       </div>
                       
                       {/* Strength bar */}
-                      <div className="w-full bg-slate-600 rounded-full h-1.5 sm:h-2 mb-3 sm:mb-4">
+                      <div className="w-full bg-slate-600 rounded-full h-1 sm:h-1.5 mb-2 sm:mb-3">
                         <div 
-                          className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
+                          className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${
                             passwordValidation.strength === 0 ? 'w-0' :
                             passwordValidation.strength <= 2 ? 'w-2/5 bg-red-400' :
                             passwordValidation.strength <= 3 ? 'w-3/5 bg-yellow-400' :
@@ -874,30 +874,30 @@ export default function RegisterPage() {
                       </div>
 
                       {/* Requirements checklist */}
-                      <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+                      <div className="space-y-1 text-xs">
                         <div className={`flex items-center space-x-2 ${passwordValidation.requirements.minLength ? 'text-green-400' : 'text-gray-400'}`}>
-                          {passwordValidation.requirements.minLength ? <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" /> : <X className="h-3 w-3 sm:h-4 sm:w-4" />}
+                          {passwordValidation.requirements.minLength ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
                           <span>At least 8 characters</span>
                         </div>
                         <div className={`flex items-center space-x-2 ${passwordValidation.requirements.uppercase ? 'text-green-400' : 'text-gray-400'}`}>
-                          {passwordValidation.requirements.uppercase ? <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" /> : <X className="h-3 w-3 sm:h-4 sm:w-4" />}
+                          {passwordValidation.requirements.uppercase ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
                           <span>At least one uppercase letter</span>
                         </div>
                         <div className={`flex items-center space-x-2 ${passwordValidation.requirements.lowercase ? 'text-green-400' : 'text-gray-400'}`}>
-                          {passwordValidation.requirements.lowercase ? <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" /> : <X className="h-3 w-3 sm:h-4 sm:w-4" />}
+                          {passwordValidation.requirements.lowercase ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
                           <span>At least one lowercase letter</span>
                         </div>
                         <div className={`flex items-center space-x-2 ${passwordValidation.requirements.number ? 'text-green-400' : 'text-gray-400'}`}>
-                          {passwordValidation.requirements.number ? <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" /> : <X className="h-3 w-3 sm:h-4 sm:w-4" />}
+                          {passwordValidation.requirements.number ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
                           <span>At least one number</span>
                         </div>
                         <div className={`flex items-center space-x-2 ${passwordValidation.requirements.special ? 'text-green-400' : 'text-gray-400'}`}>
-                          {passwordValidation.requirements.special ? <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" /> : <X className="h-3 w-3 sm:h-4 sm:w-4" />}
+                          {passwordValidation.requirements.special ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
                           <span>At least one special character (!@#$%^&*)</span>
                         </div>
                         {form.confirmPassword && (
                           <div className={`flex items-center space-x-2 ${passwordsMatch ? 'text-green-400' : 'text-red-400'}`}>
-                            {passwordsMatch ? <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" /> : <X className="h-3 w-3 sm:h-4 sm:w-4" />}
+                            {passwordsMatch ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
                             <span>Passwords match</span>
                           </div>
                         )}
@@ -906,7 +906,7 @@ export default function RegisterPage() {
                   </div>
                 )}
                 
-                <div className="flex items-start mt-3 sm:mt-4">
+                <div className="flex items-start mt-5 sm:mt-6">
                   <input 
                     type="checkbox" 
                     name="agreeTerms" 
@@ -920,7 +920,7 @@ export default function RegisterPage() {
                   </label>
                 </div>
                 
-                <div className="mt-16 sm:mt-20 lg:mt-24 pt-2 sm:pt-4">
+                <div className="mt-6 sm:mt-8 lg:mt-10 pt-2 sm:pt-4">
                 <Button 
                   type="submit" 
                   className="w-full py-2.5 sm:py-3 text-sm sm:text-base lg:text-base font-semibold rounded-lg sm:rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-violet-700 text-white transition-all duration-300 shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed" 
