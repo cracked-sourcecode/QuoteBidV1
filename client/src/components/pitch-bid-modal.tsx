@@ -310,13 +310,23 @@ export default function PitchBidModal({
     console.log('[Hybrid Recording] Starting recording...');
     console.log('[Hybrid Recording] Mobile device:', isMobileDevice());
     console.log('[Hybrid Recording] iOS device:', isIOSDevice());
+    console.log('[Hybrid Recording] User agent:', navigator.userAgent);
+    console.log('[Hybrid Recording] Location protocol:', location.protocol);
     
     try {
       setRecorderError(null);
 
       // Check basic recording support
       if (!isRecordingSupported()) {
+        console.log('[Hybrid Recording] Recording not supported');
         setRecorderError('Microphone access is not available on this device. Please use the text pitch option instead.');
+        return;
+      }
+
+      // Check HTTPS for iOS
+      if (isIOSDevice() && location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        console.log('[Hybrid Recording] iOS requires HTTPS');
+        setRecorderError('Voice recording requires a secure connection on iOS. Please use the text pitch option instead.');
         return;
       }
 
@@ -333,46 +343,66 @@ export default function PitchBidModal({
       
       const mediaStream = await navigator.mediaDevices.getUserMedia(mediaStreamConstraints);
       console.log('[Hybrid Recording] Got media stream:', mediaStream);
+      console.log('[Hybrid Recording] Audio tracks:', mediaStream.getAudioTracks());
       setStream(mediaStream);
 
       // Use RecordRTC for mobile devices (especially iOS)
       if (isMobileDevice()) {
         console.log('[Hybrid Recording] Using RecordRTC for mobile recording');
         
-        const recorder = new RecordRTC(mediaStream, {
-          type: 'audio',
-          mimeType: isIOSDevice() ? 'audio/wav' : 'audio/webm',
-          recorderType: RecordRTC.StereoAudioRecorder,
-          numberOfAudioChannels: 1,
-          desiredSampRate: 16000,
-          bufferSize: 4096,
-          audioBitsPerSecond: 128000
-        });
+                  try {
+            // Simplified RecordRTC configuration for iOS compatibility
+            const recorderConfig = {
+              type: 'audio' as const,
+              mimeType: isIOSDevice() ? 'audio/wav' as const : 'audio/webm' as const,
+              recorderType: RecordRTC.StereoAudioRecorder,
+              numberOfAudioChannels: 1 as const,
+              desiredSampRate: 16000
+            };
 
-        recorder.startRecording();
-        setRecordRTCRecorder(recorder);
-        setIsRecording(true);
-        setRecordingTime(0);
+            console.log('[Hybrid Recording] RecordRTC config:', recorderConfig);
+            
+            const recorder = new RecordRTC(mediaStream, recorderConfig);
 
-        // Start timer
-        recordingInterval.current = setInterval(() => {
-          setRecordingTime(prev => {
-            const newTime = prev + 1;
-            if (newTime >= 120) { // Max 2 minutes
-              stopRecording();
-              return 120;
-            }
-            return newTime;
-          });
-        }, 1000);
+          console.log('[Hybrid Recording] RecordRTC instance created');
+          
+          recorder.startRecording();
+          console.log('[Hybrid Recording] RecordRTC recording started');
+          
+          setRecordRTCRecorder(recorder);
+          setIsRecording(true);
+          setRecordingTime(0);
 
-        console.log('[Hybrid Recording] RecordRTC recording started successfully!');
-        
-        if (isMobileDevice()) {
+          // Start timer
+          recordingInterval.current = setInterval(() => {
+            setRecordingTime(prev => {
+              const newTime = prev + 1;
+              if (newTime >= 120) { // Max 2 minutes
+                stopRecording();
+                return 120;
+              }
+              return newTime;
+            });
+          }, 1000);
+
+          console.log('[Hybrid Recording] RecordRTC recording setup complete!');
+          
           toast({
             title: "Recording Started",
-            description: "Mobile recording active. Speak clearly into your device's microphone.",
+            description: isIOSDevice() ? "iOS recording active. Speak clearly!" : "Mobile recording active. Speak clearly!",
           });
+
+        } catch (recordRTCError) {
+          console.error('[Hybrid Recording] RecordRTC error:', recordRTCError);
+          const errorMsg = recordRTCError instanceof Error ? recordRTCError.message : 'Unknown recording error';
+          setRecorderError(`Recording failed: ${errorMsg}. Please use the text pitch option instead.`);
+          setIsRecording(false);
+          
+          // Clean up stream
+          if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+          }
+          return;
         }
       } 
       // Use MediaRecorder for desktop
@@ -451,22 +481,30 @@ export default function PitchBidModal({
       let errorMessage = 'Failed to start recording';
       
       if (err instanceof Error) {
-        if (err.message.includes('Permission denied') || err.message.includes('NotAllowedError')) {
+        console.log('[Hybrid Recording] Error details:', {
+          name: err.name,
+          message: err.message,
+          stack: err.stack
+        });
+        
+        if (err.message.includes('Permission denied') || err.message.includes('NotAllowedError') || err.name === 'NotAllowedError') {
           if (isMobileDevice()) {
-            errorMessage = 'Microphone access denied. Please enable microphone permissions in your browser settings and try again, or use the text pitch option.';
+            errorMessage = 'Microphone permission denied. On iPhone: Go to Settings > Safari > Camera & Microphone > Allow. Then try again or use text pitch.';
           } else {
             errorMessage = 'Microphone access denied. Please allow microphone access and try again.';
           }
-        } else if (err.message.includes('NotFoundError')) {
-          errorMessage = 'No microphone found. Please check your device and try again, or use the text pitch option.';
+        } else if (err.message.includes('NotFoundError') || err.name === 'NotFoundError') {
+          errorMessage = 'No microphone found on this device. Please use the text pitch option instead.';
+        } else if (err.message.includes('NotSupportedError') || err.name === 'NotSupportedError') {
+          errorMessage = 'Audio recording not supported on this device/browser. Please use the text pitch option instead.';
         } else if (err.message.includes('timeout')) {
           errorMessage = 'Microphone access timed out. Please try again or use the text pitch option.';
         } else if (isIOSDevice()) {
-          errorMessage = 'Recording not available on this iOS version. Please use the text pitch option instead.';
+          errorMessage = `iOS recording error: ${err.message}. Please use the text pitch option instead.`;
         } else if (isMobileDevice()) {
-          errorMessage = 'Mobile recording not available. Please use the text pitch option instead.';
+          errorMessage = `Mobile recording error: ${err.message}. Please use the text pitch option instead.`;
         } else {
-          errorMessage = err.message;
+          errorMessage = `Recording error: ${err.message}`;
         }
       }
       
