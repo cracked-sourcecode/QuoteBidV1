@@ -905,25 +905,113 @@ export default function OpportunityDetail() {
     return 1; // Default
   };
 
-  // Voice recording functions
+  // Mobile detection utility
+  const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
+
+  const isIOSDevice = () => {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  };
+
+  // Check if recording is supported
+  const isRecordingSupported = () => {
+    return !!(navigator.mediaDevices && 
+              navigator.mediaDevices.getUserMedia && 
+              window.MediaRecorder);
+  };
+
+  // Voice recording functions - Mobile Compatible
   const startRecording = async () => {
     console.log('[Voice Recording] Starting recording...');
+    console.log('[Voice Recording] Mobile device:', isMobileDevice());
+    console.log('[Voice Recording] iOS device:', isIOSDevice());
+    console.log('[Voice Recording] Recording supported:', isRecordingSupported());
+    
     try {
       setRecorderError(null);
-      
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+
+      // Check if recording is supported
+      if (!isRecordingSupported()) {
+        setRecorderError('Audio recording is not supported on this device/browser. Please type your pitch instead.');
+        return;
+      }
+
+      // iOS specific checks
+      if (isIOSDevice()) {
+        // Check if we're in a secure context (HTTPS)
+        if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+          setRecorderError('Audio recording requires HTTPS on iOS devices. Please type your pitch instead.');
+          return;
+        }
+
+        // Check if MediaRecorder is available
+        if (!window.MediaRecorder) {
+          setRecorderError('Audio recording is not available on this iOS version. Please type your pitch instead.');
+          return;
+        }
+      }
+
+      // Request microphone access with mobile-optimized settings
+      let mediaStreamConstraints = {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true
         }
-      });
+      };
+
+      // iOS specific audio constraints
+      if (isIOSDevice()) {
+        mediaStreamConstraints = {
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        };
+      }
+
+      console.log('[Voice Recording] Requesting microphone access...');
+      
+      // Try to get media stream with timeout for mobile
+      const mediaStream = await Promise.race([
+        navigator.mediaDevices.getUserMedia(mediaStreamConstraints),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Microphone access timeout')), 10000)
+        )
+      ]) as MediaStream;
       
       console.log('[Voice Recording] Got media stream:', mediaStream);
       setStream(mediaStream);
       
+      // Determine the best MIME type for the device
+      let mimeType = 'audio/webm;codecs=opus';
+      
+      if (isIOSDevice()) {
+        // iOS preferred formats
+        const iosTypes = ['audio/mp4', 'audio/aac', 'audio/wav'];
+        for (const type of iosTypes) {
+          if (MediaRecorder.isTypeSupported(type)) {
+            mimeType = type;
+            break;
+          }
+        }
+      } else if (isMobileDevice()) {
+        // Android preferred formats
+        const androidTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+        for (const type of androidTypes) {
+          if (MediaRecorder.isTypeSupported(type)) {
+            mimeType = type;
+            break;
+          }
+        }
+      }
+
+      console.log('[Voice Recording] Using MIME type:', mimeType);
+      
       const recorder = new MediaRecorder(mediaStream, {
-        mimeType: 'audio/webm;codecs=opus'
+        mimeType: mimeType
       });
       
       const chunks: Blob[] = [];
@@ -937,7 +1025,7 @@ export default function OpportunityDetail() {
       
       recorder.onstop = async () => {
         console.log('[Voice Recording] Recording stopped, creating blob...');
-        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const blob = new Blob(chunks, { type: mimeType });
         setRecordingBlob(blob);
         setIsRecording(false);
         
@@ -951,6 +1039,11 @@ export default function OpportunityDetail() {
         
         console.log('[Voice Recording] Recording complete, blob size:', blob.size);
         
+        // Mobile-specific success message
+        if (isMobileDevice()) {
+          console.log('[Voice Recording] Mobile recording completed successfully!');
+        }
+        
         // Use setTimeout to prevent any synchronous issues
         setTimeout(async () => {
           try {
@@ -963,11 +1056,18 @@ export default function OpportunityDetail() {
       
       recorder.onerror = (event) => {
         console.error('[Voice Recording] Recording error:', event);
-        setRecorderError('Recording failed. Please try again.');
+        let errorMessage = 'Recording failed. Please try again.';
+        
+        if (isMobileDevice()) {
+          errorMessage = 'Mobile recording failed. Please check microphone permissions and try again, or type your pitch instead.';
+        }
+        
+        setRecorderError(errorMessage);
         setIsRecording(false);
       };
       
-      recorder.start(100);
+      // Start recording
+      recorder.start(isMobileDevice() ? 1000 : 100); // Larger chunks for mobile
       setMediaRecorder(recorder);
       setIsRecording(true);
       setRecordingTime(0);
@@ -1117,19 +1217,23 @@ export default function OpportunityDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 relative overflow-hidden">
+      {/* Additional depth layers */}
+      <div className="absolute inset-0 bg-gradient-to-t from-blue-100/30 via-transparent to-white/20" />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-100/30 via-transparent to-indigo-100/30" />
+      
       {/* Main Content */}
-      <div className="mx-auto px-4 py-4">
-        {/* White Container Wrapper */}
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden">
-          <div className="px-6 pb-6">
-            {/* Compact Professional Header with Logo + Name - ORIGINAL DESIGN */}
-            <div className="pt-6 pb-4 border-b border-gray-200">
-              <div className="flex items-center space-x-4 mb-4">
+      <div className="relative z-10 mx-auto px-3 sm:px-4 py-3 sm:py-4">
+        {/* Light Container Wrapper */}
+        <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden">
+          <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+            {/* Compact Professional Header with Logo + Name */}
+            <div className="pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-gray-200/50">
+              <div className="flex items-start space-x-3 sm:space-x-4 mb-3 sm:mb-4">
                 {/* Logo Container */}
                 <div className="flex-shrink-0">
                   {getLogoUrl() && !logoFailed ? (
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 flex-shrink-0 flex items-center justify-center bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="w-16 h-16 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 flex-shrink-0 flex items-center justify-center bg-white rounded-lg border border-gray-200/50 overflow-hidden shadow-md">
                       <img
                         src={getLogoUrl()}
                         alt={`${opportunity.outlet} logo`}
@@ -1141,8 +1245,8 @@ export default function OpportunityDetail() {
                       />
                     </div>
                   ) : (
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 flex-shrink-0 flex items-center justify-center bg-white rounded-lg border border-gray-200 overflow-hidden">
-                      <span className="text-gray-600 font-bold text-base sm:text-lg md:text-xl lg:text-2xl">
+                    <div className="w-16 h-16 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 flex-shrink-0 flex items-center justify-center bg-white rounded-lg border border-gray-200/50 overflow-hidden shadow-md">
+                      <span className="text-gray-700 font-bold text-lg sm:text-base md:text-lg lg:text-xl xl:text-2xl">
                         {opportunity.outlet?.split(' ').map((word: string) => word[0]).join('').slice(0, 2).toUpperCase() || 'NA'}
                       </span>
                     </div>
@@ -1150,35 +1254,35 @@ export default function OpportunityDetail() {
                 </div>
 
                 {/* Publication Name and Tier */}
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3">
-                    <h2 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl font-bold text-gray-900">
+                <div className="flex-1 min-w-0 flex flex-col">
+                  <div className="flex items-start justify-between mb-1">
+                    <h2 className="text-xl sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">
                       {opportunity.outlet}
                     </h2>
-                    <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md px-3 py-1.5 text-xs sm:text-sm font-semibold">
+                    <Badge className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-md px-2 py-0.5 text-xs font-semibold rounded-full flex-shrink-0 ml-2">
                       Tier {getTierDisplay(opportunity.tier)}
                     </Badge>
                   </div>
                   {/* Optional: Add publication tagline or category */}
-                  <p className="text-sm sm:text-base text-gray-600 mt-1">Premium Media Opportunity</p>
+                  <p className="text-sm text-gray-600 leading-tight">Premium Media Opportunity</p>
                 </div>
               </div>
             </div>
 
             {/* Opportunity Title */}
-            <div className="pt-6 mb-6">
-              <h1 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl font-bold text-black leading-tight">
+            <div className="pt-4 sm:pt-6 mb-4 sm:mb-6">
+              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-black leading-tight">
                 {opportunity.title}
               </h1>
             </div>
 
             {/* Topic Tags - Compact inline display */}
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6">
               <div className="flex items-center flex-wrap gap-2">
                 {(opportunity.topicTags || []).map((tag: string, index: number) => (
                   <div 
                     key={`${tag}-${index}`}
-                    className="text-xs sm:text-sm px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full shadow-sm border border-gray-200 hover:bg-gray-150 transition-colors"
+                    className="text-xs sm:text-sm px-2.5 sm:px-3 py-1 sm:py-1.5 bg-gray-100 text-gray-700 rounded-full shadow-sm border border-gray-200 hover:bg-gray-150 transition-colors"
                   >
                     {tag}
                   </div>
@@ -1187,34 +1291,34 @@ export default function OpportunityDetail() {
             </div>
 
             {/* Key Info Row - More colorful design with left-aligned dates */}
-            <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl p-4 mb-6 border border-blue-200/20 shadow-md">
+            <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl p-2 sm:p-4 mb-4 sm:mb-6 border border-blue-200/20 shadow-md">
               {/* Posted Date - Left aligned */}
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg shadow-md">
-                  <Calendar className="h-5 w-5 text-white" />
+              <div className="flex items-center space-x-2">
+                <div className="p-1 sm:p-2 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg shadow-md">
+                  <Calendar className="h-3 w-3 sm:h-5 sm:w-5 text-white" />
                 </div>
                 <div className="text-left">
                   <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Posted</div>
-                  <div className="text-sm font-bold text-gray-900">
+                  <div className="text-xs sm:text-sm font-bold text-gray-900">
                     {format(new Date(opportunity.postedAt || opportunity.createdAt), 'MMM d, yyyy')}
                   </div>
                 </div>
               </div>
 
               {/* Separator */}
-              <div className="h-12 w-px bg-gradient-to-b from-transparent via-blue-300 to-transparent"></div>
+              <div className="h-8 sm:h-12 w-px bg-gradient-to-b from-transparent via-blue-300 to-transparent"></div>
 
               {/* Deadline - Left aligned */}
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg shadow-md">
-                  <Clock className="h-5 w-5 text-white" />
+              <div className="flex items-center space-x-2">
+                <div className="p-1 sm:p-2 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg shadow-md">
+                  <Clock className="h-3 w-3 sm:h-5 sm:w-5 text-white" />
                 </div>
                 <div className="text-left">
                   <div className="text-xs font-semibold text-orange-600 uppercase tracking-wide">Deadline</div>
-                  <div className="text-sm font-bold text-gray-900 flex items-center space-x-2">
+                  <div className="text-xs sm:text-sm font-bold text-gray-900 flex items-center space-x-1 sm:space-x-2">
                     <span>{format(new Date(opportunity.deadline), 'MMM d, yyyy')}</span>
                     {isToday && (
-                      <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-2 py-0.5 shadow-md animate-pulse">
+                      <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-1 py-0.5 shadow-md animate-pulse">
                         Today
                       </Badge>
                     )}
@@ -1223,18 +1327,18 @@ export default function OpportunityDetail() {
               </div>
 
               {/* Separator */}
-              <div className="h-12 w-px bg-gradient-to-b from-transparent via-green-300 to-transparent"></div>
+              <div className="h-8 sm:h-12 w-px bg-gradient-to-b from-transparent via-green-300 to-transparent"></div>
 
               {/* Status - Left aligned */}
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-br from-green-400 to-green-500 rounded-lg shadow-md">
-                  <DollarSign className="h-5 w-5 text-white" />
+              <div className="flex items-center space-x-2">
+                <div className="p-1 sm:p-2 bg-gradient-to-br from-green-400 to-green-500 rounded-lg shadow-md">
+                  <DollarSign className="h-3 w-3 sm:h-5 sm:w-5 text-white" />
                 </div>
                 <div className="text-left">
                   <div className="flex items-center space-x-2 mb-1">
                   <div className="text-xs font-semibold text-green-600 uppercase tracking-wide">Current Price</div>
                   </div>
-                  <div className={`text-sm font-bold ${priceData ? 'text-blue-600' : 'text-gray-900'} transition-colors duration-300`}>
+                  <div className={`text-xs sm:text-sm font-bold ${priceData ? 'text-blue-600' : 'text-gray-900'} transition-colors duration-300`}>
                     ${currentPrice}
                   </div>
                 </div>
@@ -1242,79 +1346,81 @@ export default function OpportunityDetail() {
             </div>
 
             {/* Live Activity - Enhanced with gradients */}
-            <div className="mb-10">
-              <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-2xl border border-purple-200/30 p-6 shadow-lg">
-                <div className="flex items-center space-x-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="relative flex items-center justify-center w-6 h-6">
-                      <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-400/50"></span>
+            <div className="mb-6 sm:mb-8 lg:mb-10">
+              <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-2xl border border-purple-200/30 p-4 sm:p-6 shadow-lg">
+                <div className="flex flex-col lg:flex-row lg:items-center space-y-3 lg:space-y-0 lg:space-x-6">
+                  <div className="flex items-center space-x-3 sm:space-x-4">
+                    <div className="relative flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6">
+                      <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-400/50"></span>
                     </div>
-                    <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Live Activity:</span>
+                    <span className="text-base sm:text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Live Activity:</span>
                   </div>
                   
-                  <div className={`flex items-center space-x-2 px-4 py-2 rounded-xl shadow-md ${
-                    priceIncrease >= 0 
-                      ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50'
-                      : 'bg-gradient-to-r from-red-50 to-red-100 border border-red-200/50'
-                  }`}>
-                    {priceIncrease >= 0 ? (
-                    <TrendingUp className="h-5 w-5 text-green-600" />
-                    ) : (
-                      <TrendingDown className="h-5 w-5 text-red-600" />
-                    )}
-                    <span className={`text-sm font-semibold ${
-                      priceIncrease >= 0 ? 'text-green-700' : 'text-red-700'
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 lg:space-x-4">
+                    <div className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-xl shadow-md ${
+                      priceIncrease >= 0 
+                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50'
+                        : 'bg-gradient-to-r from-red-50 to-red-100 border border-red-200/50'
                     }`}>
-                      ${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'} 
-                      {realTimePriceHistory.length > 0 ? ' (live pricing)' : ' (last hour)'}
-                    </span>
-                  </div>
-                  
-                  {pitches.filter(pitch => {
-                    const pitchDate = new Date(pitch.createdAt);
-                    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-                    return pitchDate > oneHourAgo;
-                  }).length > 0 && (
-                  <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-cyan-50 px-4 py-2 rounded-xl border border-blue-200/50 shadow-md">
-                    <Flame className="h-5 w-5 text-blue-600" />
-                      <span className="text-sm font-semibold text-blue-700">
-                        {pitches.filter(pitch => {
-                          const pitchDate = new Date(pitch.createdAt);
-                          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-                          return pitchDate > oneHourAgo;
-                        }).length} pitches (last hour)
+                      {priceIncrease >= 0 ? (
+                      <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                      ) : (
+                        <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
+                      )}
+                      <span className={`text-sm font-semibold ${
+                        priceIncrease >= 0 ? 'text-green-700' : 'text-red-700'
+                      }`}>
+                        ${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'} 
+                        {realTimePriceHistory.length > 0 ? ' (live pricing)' : ' (last hour)'}
                       </span>
-                  </div>
-                  )}
-                  
-                  <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-50 to-amber-50 px-4 py-2 rounded-xl border border-orange-200/50 shadow-md">
-                    <Clock className="h-5 w-5 text-orange-600" />
-                    <span className="text-sm font-semibold text-orange-700">
-                      {Math.max(0, Math.ceil((new Date(opportunity.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60)))}h remaining
-                    </span>
+                    </div>
+                    
+                    {pitches.filter(pitch => {
+                      const pitchDate = new Date(pitch.createdAt);
+                      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+                      return pitchDate > oneHourAgo;
+                    }).length > 0 && (
+                    <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-cyan-50 px-3 sm:px-4 py-2 rounded-xl border border-blue-200/50 shadow-md">
+                      <Flame className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                        <span className="text-sm font-semibold text-blue-700">
+                          {pitches.filter(pitch => {
+                            const pitchDate = new Date(pitch.createdAt);
+                            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+                            return pitchDate > oneHourAgo;
+                          }).length} pitches (last hour)
+                        </span>
+                    </div>
+                    )}
+                    
+                    <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-50 to-amber-50 px-3 sm:px-4 py-2 rounded-xl border border-orange-200/50 shadow-md">
+                      <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
+                      <span className="text-sm font-semibold text-orange-700">
+                        {Math.max(0, Math.ceil((new Date(opportunity.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60)))}h remaining
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Opportunity Brief Card - Lighter, more professional blue */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl overflow-hidden mb-10 shadow-lg border border-blue-200/50">
-              <div className="p-6">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl overflow-hidden mb-6 sm:mb-8 lg:mb-10 shadow-lg border border-blue-200/50">
+              <div className="p-4 sm:p-6">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex space-x-1.5">
-                      <span className="w-3 h-3 bg-blue-500 rounded-full shadow-md animate-pulse"></span>
-                      <span className="w-3 h-3 bg-blue-400 rounded-full shadow-md animate-pulse animation-delay-200"></span>
-                      <span className="w-3 h-3 bg-blue-300 rounded-full shadow-md animate-pulse animation-delay-400"></span>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
+                  <div className="flex items-center space-x-3 sm:space-x-4">
+                    <div className="flex space-x-1 sm:space-x-1.5">
+                      <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-blue-500 rounded-full shadow-md animate-pulse"></span>
+                      <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-blue-400 rounded-full shadow-md animate-pulse animation-delay-200"></span>
+                      <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-blue-300 rounded-full shadow-md animate-pulse animation-delay-400"></span>
                     </div>
-                    <h3 className="text-xl font-semibold text-blue-900 tracking-wide">
+                    <h3 className="text-lg sm:text-xl font-semibold text-blue-900 tracking-wide">
                       Opportunity Brief
                     </h3>
                   </div>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 gap-2 sm:gap-0">
                     <span className="text-sm font-medium text-blue-700">Classification:</span>
-                    <Badge className={`border-0 px-4 py-2 font-semibold shadow-sm ${
+                    <Badge className={`border-0 px-3 sm:px-4 py-1.5 sm:py-2 font-semibold shadow-sm w-fit ${
                       getOpportunityStatus(opportunity) === 'open' 
                         ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
                         : 'bg-gradient-to-r from-red-400 to-pink-500 text-white'
@@ -1326,14 +1432,14 @@ export default function OpportunityDetail() {
 
                 {/* Content */}
                 {!isBriefMinimized && (
-                  <div className="mb-6">
+                  <div className="mb-4 sm:mb-6">
                     <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm overflow-hidden border border-blue-100">
-                      <div className="p-6">
-                        <div className="text-black text-lg leading-loose space-y-4 font-medium">
+                      <div className="p-4 sm:p-6">
+                        <div className="text-black text-base sm:text-lg leading-relaxed sm:leading-loose space-y-3 sm:space-y-4 font-medium">
                           {opportunity.summary ? (
                             <div className="whitespace-pre-wrap">
                               {opportunity.summary.split('\n\n').map((paragraph: string, index: number) => (
-                                <p key={index} className="mb-4 last:mb-0 font-medium text-black">
+                                <p key={index} className="mb-3 sm:mb-4 last:mb-0 font-medium text-black">
                                   {paragraph.split('\n').map((line: string, lineIndex: number) => (
                                     <span key={lineIndex}>
                                       {line}
@@ -1345,10 +1451,10 @@ export default function OpportunityDetail() {
                             </div>
                           ) : (
                             <div>
-                              <p className="font-semibold text-black mb-4 text-xl">
+                              <p className="font-semibold text-black mb-3 sm:mb-4 text-lg sm:text-xl">
                                 {opportunity.title}
                               </p>
-                              <p className="text-black leading-loose text-lg font-medium">
+                              <p className="text-black leading-relaxed sm:leading-loose text-base sm:text-lg font-medium">
                                 This opportunity is seeking expert commentary and insights. Please provide your relevant experience and perspective in your pitch.
                               </p>
                             </div>
@@ -1365,9 +1471,9 @@ export default function OpportunityDetail() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsBriefMinimized(!isBriefMinimized)}
-                    className="flex items-center space-x-3 text-blue-700 hover:text-blue-900 hover:bg-blue-100/50 transition-all duration-200 px-4 py-3 rounded-xl font-medium"
+                    className="flex items-center space-x-2 sm:space-x-3 text-blue-700 hover:text-blue-900 hover:bg-blue-100/50 transition-all duration-200 px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-medium"
                   >
-                    <ChevronUp className={`h-5 w-5 transition-transform duration-300 ${isBriefMinimized ? 'rotate-180' : ''}`} />
+                    <ChevronUp className={`h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-300 ${isBriefMinimized ? 'rotate-180' : ''}`} />
                     <span className="text-sm">{isBriefMinimized ? 'Expand Brief' : 'Minimize Brief'}</span>
                   </Button>
                 </div>
@@ -1376,38 +1482,38 @@ export default function OpportunityDetail() {
 
             {/* Marketplace Pricing Section - Enhanced with gradients */}
             <div className="bg-gradient-to-br from-indigo-50 via-white to-purple-50 rounded-3xl border border-indigo-200/30 overflow-hidden shadow-xl">
-              <div className="grid grid-cols-2 gap-0">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
                 {/* Price Trend Section - Left Side */}
-                <div className="p-8 border-r border-gray-200/50">
-                  <div className="mb-6">
-                    {/* Live Status Indicator removed */}
-
-                    {/* Interactive Price Chart */}
-                    <PriceTrendChart
-                      data={priceDataForChart.map(p => ({
-                        t: new Date(p.timestamp).toISOString(),
-                        p: p.price
-                      }))}
-                      live={isConnected && !!priceData}
-                      theme="light"
-                    />
+                <div className="p-3 sm:p-4 lg:p-6 lg:border-r border-gray-200/50">
+                  <div className="mb-3 sm:mb-4">
+                    {/* Interactive Price Chart - Mobile Optimized */}
+                    <div className="w-full">
+                      <PriceTrendChart
+                        data={priceDataForChart.map(p => ({
+                          t: new Date(p.timestamp).toISOString(),
+                          p: p.price
+                        }))}
+                        live={isConnected && !!priceData}
+                        theme="light"
+                      />
+                    </div>
 
                     {/* Enhanced price range and timeline info */}
-                    <div className="space-y-4 mt-20">
+                    <div className="space-y-2 sm:space-y-3 mt-4 sm:mt-6">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-2">
-                                                      <span className="text-green-600 font-bold text-lg">${Math.min(...priceDataForChart.map((p: any) => p.price))}</span>
-                          <span className="text-gray-500 text-sm">Low</span>
+                          <span className="text-green-600 font-bold text-sm sm:text-base">${Math.min(...priceDataForChart.map((p: any) => p.price))}</span>
+                          <span className="text-gray-500 text-xs sm:text-sm">Low</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                                                      <span className="text-red-500 font-bold text-lg">${Math.max(...priceDataForChart.map((p: any) => p.price))}</span>
-                          <span className="text-gray-500 text-sm">High</span>
+                          <span className="text-red-500 font-bold text-sm sm:text-base">${Math.max(...priceDataForChart.map((p: any) => p.price))}</span>
+                          <span className="text-gray-500 text-xs sm:text-sm">High</span>
                         </div>
                       </div>
                       
                       {/* Timeline information */}
-                      <div className="flex justify-end items-center text-xs text-gray-500 border-t pt-3">
-                        <div className="flex items-center space-x-4">
+                      <div className="flex justify-end items-center text-xs text-gray-500 border-t pt-2">
+                        <div className="flex items-center space-x-3 sm:space-x-4">
                           {opportunity && (
                             <>
                               <span>Started {format(new Date(opportunity.postedAt || opportunity.createdAt), 'MMM d')}</span>
@@ -1417,19 +1523,15 @@ export default function OpportunityDetail() {
                           )}
                         </div>
                       </div>
-                      
-
-                      
-                      
                     </div>
                   </div>
                 </div>
 
                 {/* Current Price & Pitch Section - Right Side */}
-                <div className="p-8 relative">
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="text-xl font-bold text-gray-900">Current Price</h3>
+                <div className="p-4 sm:p-6 lg:p-8 relative border-t lg:border-t-0 border-gray-200/50">
+                  <div className="mb-4 sm:mb-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-2">
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-900">Current Price</h3>
                       <div className="flex items-center space-x-2 text-green-600 text-sm font-medium">
                         <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                         <span>
@@ -1438,24 +1540,24 @@ export default function OpportunityDetail() {
                       </div>
                     </div>
 
-                    <div className="flex items-baseline space-x-3 mb-2">
-                      <span className={`text-4xl font-bold ${
+                    <div className="flex flex-col sm:flex-row sm:items-baseline sm:space-x-3 mb-2 gap-1 sm:gap-0">
+                      <span className={`text-3xl sm:text-4xl font-bold ${
                         priceTrend === 'up' ? 'text-green-600' :
                         priceTrend === 'down' ? 'text-red-600' :
                         priceData ? 'text-blue-600' : 'text-gray-900'
                       } transition-colors duration-300`}>${currentPrice}</span>
                       {priceIncrease !== 0 && (
-                        <div className={`flex items-center space-x-1 text-lg font-semibold ${priceIncrease >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          <TrendingUp className={`h-5 w-5 ${priceIncrease < 0 ? 'rotate-180' : ''}`} />
+                        <div className={`flex items-center space-x-1 text-base sm:text-lg font-semibold ${priceIncrease >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <TrendingUp className={`h-4 w-4 sm:h-5 sm:w-5 ${priceIncrease < 0 ? 'rotate-180' : ''}`} />
                           <span>{priceIncrease >= 0 ? '+' : ''}${priceIncrease}</span>
                         </div>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
                       <div className="flex items-center space-x-2">
                         <span className={`w-3 h-3 rounded-full ${priceData || isConnected ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`}></span>
-                        <span className="text-gray-600 font-medium">
+                        <span className="text-gray-600 font-medium text-sm sm:text-base">
                           {priceData || isConnected ? 'Dynamic pricing active' : 'Static pricing'}
                         </span>
                       </div>

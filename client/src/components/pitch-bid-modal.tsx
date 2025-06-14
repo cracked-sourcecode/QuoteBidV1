@@ -271,29 +271,152 @@ export default function PitchBidModal({
   }, [bids, isBidsLoading, currentHighestBid, timeRemaining, bidCount, 
       urgencyType, priceJumpPercentage, slotsFilledCount, slotsLeftCount, expertViewCount]);
   
-  // Direct recording functions
+  // Mobile detection utility
+  const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
+
+  const isIOSDevice = () => {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  };
+
+  // Check if recording is supported
+  const isRecordingSupported = () => {
+    return !!(navigator.mediaDevices && 
+              navigator.mediaDevices.getUserMedia && 
+              window.MediaRecorder);
+  };
+
+  // Direct recording functions - Mobile Compatible
   const startRecording = async () => {
     console.log('[Direct Recording] Starting recording...');
+    console.log('[Direct Recording] Mobile device:', isMobileDevice());
+    console.log('[Direct Recording] iOS device:', isIOSDevice());
+    console.log('[Direct Recording] Recording supported:', isRecordingSupported());
+    
     try {
       setRecorderError(null);
-      
-      // Request microphone access
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+
+      // Check if recording is supported
+      if (!isRecordingSupported()) {
+        setRecorderError('Audio recording is not supported on this device/browser. Please use the text pitch option instead.');
+        return;
+      }
+
+      // iOS specific checks
+      if (isIOSDevice()) {
+        // Check if we're in a secure context (HTTPS)
+        if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+          setRecorderError('Audio recording requires HTTPS on iOS devices. Please use the text pitch option instead.');
+          return;
+        }
+
+        // Check if MediaRecorder is available
+        if (!window.MediaRecorder) {
+          setRecorderError('Audio recording is not available on this iOS version. Please use the text pitch option instead.');
+          return;
+        }
+
+        // Check supported formats for iOS
+        const iosSupportedTypes = [
+          'audio/mp4',
+          'audio/aac',
+          'audio/wav',
+          'audio/webm;codecs=opus',
+          'audio/webm'
+        ];
+        
+        let supportedType = null;
+        for (const type of iosSupportedTypes) {
+          if (MediaRecorder.isTypeSupported(type)) {
+            supportedType = type;
+            break;
+          }
+        }
+
+        if (!supportedType) {
+          setRecorderError('No supported audio format found for this iOS device. Please use the text pitch option instead.');
+          return;
+        }
+      }
+
+      // Request microphone access with mobile-optimized settings
+      let mediaStreamConstraints = {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true
         }
-      });
+      };
+
+      // iOS specific audio constraints
+      if (isIOSDevice()) {
+        mediaStreamConstraints = {
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        };
+      }
+
+      console.log('[Direct Recording] Requesting microphone access...');
+      
+      // Try to get media stream with timeout for mobile
+      const mediaStream = await Promise.race([
+        navigator.mediaDevices.getUserMedia(mediaStreamConstraints),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Microphone access timeout')), 10000)
+        )
+      ]) as MediaStream;
       
       console.log('[Direct Recording] Got media stream:', mediaStream);
       setStream(mediaStream);
       
-      // Create MediaRecorder
-      const recorder = new MediaRecorder(mediaStream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
+      // Determine the best MIME type for the device
+      let mimeType = 'audio/webm;codecs=opus';
       
+      if (isIOSDevice()) {
+        // iOS preferred formats
+        const iosTypes = ['audio/mp4', 'audio/aac', 'audio/wav'];
+        for (const type of iosTypes) {
+          if (MediaRecorder.isTypeSupported(type)) {
+            mimeType = type;
+            break;
+          }
+        }
+      } else if (isMobileDevice()) {
+        // Android preferred formats
+        const androidTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+        for (const type of androidTypes) {
+          if (MediaRecorder.isTypeSupported(type)) {
+            mimeType = type;
+            break;
+          }
+        }
+      }
+
+      console.log('[Direct Recording] Using MIME type:', mimeType);
+
+      // Create MediaRecorder with mobile-optimized settings
+      const recorderOptions: MediaRecorderOptions = {
+        mimeType: mimeType
+      };
+
+      // Add bitrate for supported browsers
+      if (MediaRecorder.isTypeSupported(mimeType)) {
+        try {
+          const recorder = new MediaRecorder(mediaStream, {
+            ...recorderOptions,
+            audioBitsPerSecond: 128000
+          });
+          console.log('[Direct Recording] MediaRecorder created with bitrate');
+        } catch (e) {
+          console.log('[Direct Recording] Bitrate not supported, using basic options');
+        }
+      }
+
+      const recorder = new MediaRecorder(mediaStream, recorderOptions);
       const chunks: Blob[] = [];
       
       recorder.ondataavailable = (event) => {
@@ -305,7 +428,7 @@ export default function PitchBidModal({
       
       recorder.onstop = () => {
         console.log('[Direct Recording] Recording stopped, creating blob...');
-        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const blob = new Blob(chunks, { type: mimeType });
         const url = URL.createObjectURL(blob);
         setRecordingBlob(blob);
         setAudioURL(url);
@@ -321,16 +444,30 @@ export default function PitchBidModal({
         }
         
         console.log('[Direct Recording] Recording complete, blob size:', blob.size);
+        
+        // Mobile-specific success message
+        if (isMobileDevice()) {
+          toast({
+            title: "Recording Complete",
+            description: "Your voice recording was captured successfully on mobile!",
+          });
+        }
       };
       
       recorder.onerror = (event) => {
         console.error('[Direct Recording] Recording error:', event);
-        setRecorderError('Recording failed. Please try again.');
+        let errorMessage = 'Recording failed. Please try again.';
+        
+        if (isMobileDevice()) {
+          errorMessage = 'Mobile recording failed. Please check microphone permissions and try again, or use text pitch instead.';
+        }
+        
+        setRecorderError(errorMessage);
         setIsRecording(false);
       };
       
       // Start recording
-      recorder.start(100);
+      recorder.start(isMobileDevice() ? 1000 : 100); // Larger chunks for mobile
       setMediaRecorder(recorder);
       setIsRecording(true);
       setRecordingTime(0);
@@ -349,9 +486,40 @@ export default function PitchBidModal({
       
       console.log('[Direct Recording] Recording started successfully!');
       
+      // Mobile-specific success message
+      if (isMobileDevice()) {
+        toast({
+          title: "Recording Started",
+          description: "Mobile recording active. Speak clearly into your device's microphone.",
+        });
+      }
+      
     } catch (err) {
       console.error('[Direct Recording] Error starting recording:', err);
-      setRecorderError(err instanceof Error ? err.message : 'Failed to start recording');
+      
+      let errorMessage = 'Failed to start recording';
+      
+      if (err instanceof Error) {
+        if (err.message.includes('Permission denied') || err.message.includes('NotAllowedError')) {
+          if (isMobileDevice()) {
+            errorMessage = 'Microphone access denied. Please enable microphone permissions in your browser settings and try again, or use the text pitch option.';
+          } else {
+            errorMessage = 'Microphone access denied. Please allow microphone access and try again.';
+          }
+        } else if (err.message.includes('NotFoundError')) {
+          errorMessage = 'No microphone found. Please check your device and try again, or use the text pitch option.';
+        } else if (err.message.includes('timeout')) {
+          errorMessage = 'Microphone access timed out. Please try again or use the text pitch option.';
+        } else if (isIOSDevice()) {
+          errorMessage = 'iOS recording not available. Please use the text pitch option instead.';
+        } else if (isMobileDevice()) {
+          errorMessage = 'Mobile recording not available. Please use the text pitch option instead.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      setRecorderError(errorMessage);
       setIsRecording(false);
     }
   };

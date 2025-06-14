@@ -189,11 +189,11 @@ export default function PriceTrendChart({
 
   if (!chartData || chartData.length === 0) {
     return (
-      <div className="w-full h-[520px]">
+      <div className="w-full h-auto">
         {/* Header with timeframe buttons - themed */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-          <div className="flex flex-wrap items-center gap-3 min-w-0">
-            <div className={`text-xl font-bold whitespace-nowrap ${
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
+            <div className={`text-lg sm:text-xl font-bold whitespace-nowrap ${
               theme === 'dark' 
                 ? 'text-white bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent'
                 : 'text-gray-900'
@@ -202,7 +202,7 @@ export default function PriceTrendChart({
             </div>
 
           </div>
-          <div className={`flex rounded-xl p-1.5 flex-shrink-0 shadow-lg mt-8 ${
+          <div className={`flex rounded-xl p-1 sm:p-1.5 flex-shrink-0 shadow-lg ${
             theme === 'dark' 
               ? 'bg-slate-800/60 backdrop-blur-sm border border-slate-600/30'
               : 'bg-gray-100 border border-gray-200'
@@ -211,7 +211,7 @@ export default function PriceTrendChart({
               <button
                 key={tf.label}
                 onClick={() => handleTimeframeChange(tf)}
-                className={`px-3 lg:px-4 py-2 text-xs lg:text-sm font-semibold rounded-lg transition-all duration-300 whitespace-nowrap ${
+                className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-300 whitespace-nowrap ${
                   selectedTimeframe.label === tf.label
                     ? theme === 'dark'
                       ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/25 ring-1 ring-blue-400/50'
@@ -227,15 +227,15 @@ export default function PriceTrendChart({
           </div>
         </div>
         
-        <div className={`w-full h-[460px] flex items-center justify-center rounded-2xl border shadow-2xl ${
+        <div className={`w-full h-[280px] sm:h-[360px] lg:h-[400px] flex items-center justify-center rounded-2xl border shadow-2xl ${
           theme === 'dark'
             ? 'bg-gradient-to-br from-slate-800/50 to-slate-900/80 backdrop-blur-sm border-slate-600/30'
             : 'bg-white border-gray-200'
         }`}>
-          <div className={`text-center ${theme === 'dark' ? 'text-slate-300' : 'text-gray-600'}`}>
-            <div className="text-4xl mb-4 opacity-60">📈</div>
-            <p className="font-semibold text-lg">No price data for {selectedTimeframe.label} timeframe</p>
-            <p className={`text-sm mt-2 opacity-75 ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'}`}>Try selecting "ALL" to see complete history</p>
+          <div className={`text-center px-4 ${theme === 'dark' ? 'text-slate-300' : 'text-gray-600'}`}>
+            <div className="text-3xl sm:text-4xl mb-3 sm:mb-4 opacity-60">📈</div>
+            <p className="font-semibold text-base sm:text-lg">No price data for {selectedTimeframe.label} timeframe</p>
+            <p className={`text-xs sm:text-sm mt-2 opacity-75 ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'}`}>Try selecting "ALL" to see complete history</p>
           </div>
         </div>
       </div>
@@ -243,11 +243,11 @@ export default function PriceTrendChart({
   }
 
       return (
-      <div className="w-full h-[520px]">
+      <div className="w-full h-auto">
       {/* Header with live price ticker and controls - themed */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4 min-w-0">
-          <div className={`text-xl font-bold whitespace-nowrap ${
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-4 min-w-0">
+          <div className={`text-lg sm:text-xl font-bold whitespace-nowrap ${
             theme === 'dark' 
               ? 'text-white bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent'
               : 'text-gray-900'
@@ -255,8 +255,8 @@ export default function PriceTrendChart({
             Price History
           </div>
           {priceStats && (
-            <div className="flex flex-wrap items-center gap-4">
-              <div className={`text-4xl font-black transition-all duration-500 whitespace-nowrap ${
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+              <div className={`text-2xl sm:text-3xl lg:text-4xl font-black transition-all duration-500 whitespace-nowrap ${
                 theme === 'dark'
                   ? isAnimating && live 
                     ? 'text-transparent bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 bg-clip-text animate-pulse' 
@@ -265,7 +265,7 @@ export default function PriceTrendChart({
               }`}>
                 ${priceStats.current}
               </div>
-              <div className={`flex items-center space-x-2 text-sm font-bold transition-all duration-500 whitespace-nowrap px-3 py-1.5 rounded-xl ${
+              <div className={`flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm font-bold transition-all duration-500 whitespace-nowrap px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl ${
                 theme === 'dark'
                   ? priceStats.isUp 
                     ? 'text-emerald-300 bg-emerald-500/10 border border-emerald-400/20' 
@@ -274,7 +274,7 @@ export default function PriceTrendChart({
                     ? 'text-green-700 bg-green-50 border border-green-200' 
                     : 'text-red-700 bg-red-50 border border-red-200'
               }`}>
-                <span className={`text-lg ${isAnimating && live ? 'animate-bounce' : ''}`}>
+                <span className={`text-sm sm:text-lg ${isAnimating && live ? 'animate-bounce' : ''}`}>
                   {priceStats.isUp ? '↗' : '↘'}
                 </span>
                 <span>${Math.abs(priceStats.change).toFixed(0)} ({priceStats.isUp ? '+' : ''}{priceStats.changePercent}%)</span>
@@ -283,7 +283,7 @@ export default function PriceTrendChart({
           )}
         </div>
         
-        <div className={`flex rounded-xl p-1.5 flex-shrink-0 shadow-xl mt-8 ${
+        <div className={`flex rounded-xl p-1 sm:p-1.5 flex-shrink-0 shadow-xl ${
           theme === 'dark' 
             ? 'bg-slate-800/60 backdrop-blur-sm border border-slate-600/30'
             : 'bg-gray-100 border border-gray-200'
@@ -292,7 +292,7 @@ export default function PriceTrendChart({
             <button
               key={tf.label}
               onClick={() => handleTimeframeChange(tf)}
-              className={`px-3 lg:px-4 py-2 text-xs lg:text-sm font-semibold rounded-lg transition-all duration-300 whitespace-nowrap ${
+              className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-300 whitespace-nowrap ${
                 selectedTimeframe.label === tf.label
                   ? theme === 'dark'
                     ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/25 ring-1 ring-blue-400/50'
@@ -309,7 +309,7 @@ export default function PriceTrendChart({
       </div>
 
       {/* Interactive chart - themed */}
-      <div className={`h-[460px] rounded-2xl border p-6 shadow-2xl transition-all duration-500 ${
+      <div className={`h-[280px] sm:h-[360px] lg:h-[400px] rounded-2xl border p-3 sm:p-4 lg:p-6 shadow-2xl transition-all duration-500 ${
         theme === 'dark'
           ? `bg-gradient-to-br from-slate-800/40 via-slate-900/60 to-slate-800/40 backdrop-blur-sm border-slate-600/30 ${
               isAnimating ? 'ring-2 ring-cyan-400/50 shadow-cyan-500/20' : 'shadow-slate-900/50'
@@ -317,7 +317,7 @@ export default function PriceTrendChart({
           : 'bg-white border-gray-200 shadow-gray-300/50'
       }`}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
+          <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 10 }}>
             <defs>
               {/* Gradient definitions for different price trends - themed */}
               <linearGradient id={theme === 'dark' ? "bullishGradient" : "bullishGradientLight"} x1="0" y1="0" x2="0" y2="1">
