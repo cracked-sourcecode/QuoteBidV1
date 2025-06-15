@@ -131,7 +131,12 @@ export async function startSignup(req: Request, res: Response) {
       industry,
       password: hashed,
       signup_stage: 'payment',
-      hasAgreedToTerms: true
+      hasAgreedToTerms: true,
+      userPreferences: {
+        theme: "dark",
+        notifications: true,
+        language: "en"
+      }
     }).returning({ id: users.id, email: users.email, isAdmin: users.isAdmin });
     newUser = inserted[0];
     newId = newUser.id as number;

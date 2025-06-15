@@ -558,6 +558,12 @@ export default function RegisterPage() {
             localStorage.setItem('token', data.token);
           }
           
+          // FORCE dark theme for new users immediately
+          console.log('🎨 [REGISTER] Forcing dark theme for new user...');
+          localStorage.setItem('quotebid-theme', 'dark');
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.style.backgroundColor = '#0f172a';
+          
           localStorage.setItem('signup_email', form.email);
           toast({ title: 'Account created!', description: 'Continue to payment...', variant: 'default' });
           setTimeout(() => {
@@ -850,8 +856,8 @@ export default function RegisterPage() {
                 {/* Password strength indicator - shown below both password fields */}
                 {form.password && (
                   <div className="mt-2 sm:mt-3 space-y-1 sm:space-y-2">
-                    <div className="bg-slate-700/50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-600/30">
-                      <div className="flex items-center justify-between mb-1 sm:mb-2">
+                    <div className="bg-slate-700/50 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-2 border border-slate-600/30">
+                      <div className="flex items-center justify-between mb-1 sm:mb-2 lg:mb-1">
                         <span className="text-xs font-medium text-white">Password Strength</span>
                         {passwordValidation.strengthText && (
                           <span className={`text-xs font-bold ${passwordValidation.strengthColor}`}>
@@ -861,9 +867,9 @@ export default function RegisterPage() {
                       </div>
                       
                       {/* Strength bar */}
-                      <div className="w-full bg-slate-600 rounded-full h-1 sm:h-1.5 mb-2 sm:mb-3">
+                      <div className="w-full bg-slate-600 rounded-full h-1 sm:h-1.5 lg:h-1 mb-2 sm:mb-3 lg:mb-2">
                         <div 
-                          className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${
+                          className={`h-1 sm:h-1.5 lg:h-1 rounded-full transition-all duration-300 ${
                             passwordValidation.strength === 0 ? 'w-0' :
                             passwordValidation.strength <= 2 ? 'w-2/5 bg-red-400' :
                             passwordValidation.strength <= 3 ? 'w-3/5 bg-yellow-400' :
@@ -873,32 +879,32 @@ export default function RegisterPage() {
                         />
                       </div>
 
-                      {/* Requirements checklist */}
-                      <div className="space-y-1 text-xs">
-                        <div className={`flex items-center space-x-2 ${passwordValidation.requirements.minLength ? 'text-green-400' : 'text-gray-400'}`}>
-                          {passwordValidation.requirements.minLength ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                          <span>At least 8 characters</span>
+                      {/* Requirements checklist - mobile: original layout, desktop: compact grid */}
+                      <div className="space-y-1 lg:grid lg:grid-cols-2 lg:gap-x-4 lg:gap-y-0.5 lg:space-y-0 text-xs">
+                        <div className={`flex items-center space-x-2 lg:space-x-1.5 ${passwordValidation.requirements.minLength ? 'text-green-400' : 'text-gray-400'}`}>
+                          {passwordValidation.requirements.minLength ? <CheckCircle className="h-3 w-3 lg:h-2.5 lg:w-2.5 flex-shrink-0" /> : <X className="h-3 w-3 lg:h-2.5 lg:w-2.5 flex-shrink-0" />}
+                          <span className="lg:text-xs">At least 8 characters</span>
                         </div>
-                        <div className={`flex items-center space-x-2 ${passwordValidation.requirements.uppercase ? 'text-green-400' : 'text-gray-400'}`}>
-                          {passwordValidation.requirements.uppercase ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                          <span>At least one uppercase letter</span>
+                        <div className={`flex items-center space-x-2 lg:space-x-1.5 ${passwordValidation.requirements.uppercase ? 'text-green-400' : 'text-gray-400'}`}>
+                          {passwordValidation.requirements.uppercase ? <CheckCircle className="h-3 w-3 lg:h-2.5 lg:w-2.5 flex-shrink-0" /> : <X className="h-3 w-3 lg:h-2.5 lg:w-2.5 flex-shrink-0" />}
+                          <span className="lg:text-xs"><span className="lg:hidden">At least one uppercase letter</span><span className="hidden lg:inline">Uppercase</span></span>
                         </div>
-                        <div className={`flex items-center space-x-2 ${passwordValidation.requirements.lowercase ? 'text-green-400' : 'text-gray-400'}`}>
-                          {passwordValidation.requirements.lowercase ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                          <span>At least one lowercase letter</span>
+                        <div className={`flex items-center space-x-2 lg:space-x-1.5 ${passwordValidation.requirements.lowercase ? 'text-green-400' : 'text-gray-400'}`}>
+                          {passwordValidation.requirements.lowercase ? <CheckCircle className="h-3 w-3 lg:h-2.5 lg:w-2.5 flex-shrink-0" /> : <X className="h-3 w-3 lg:h-2.5 lg:w-2.5 flex-shrink-0" />}
+                          <span className="lg:text-xs"><span className="lg:hidden">At least one lowercase letter</span><span className="hidden lg:inline">Lowercase</span></span>
                         </div>
-                        <div className={`flex items-center space-x-2 ${passwordValidation.requirements.number ? 'text-green-400' : 'text-gray-400'}`}>
-                          {passwordValidation.requirements.number ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                          <span>At least one number</span>
+                        <div className={`flex items-center space-x-2 lg:space-x-1.5 ${passwordValidation.requirements.number ? 'text-green-400' : 'text-gray-400'}`}>
+                          {passwordValidation.requirements.number ? <CheckCircle className="h-3 w-3 lg:h-2.5 lg:w-2.5 flex-shrink-0" /> : <X className="h-3 w-3 lg:h-2.5 lg:w-2.5 flex-shrink-0" />}
+                          <span className="lg:text-xs"><span className="lg:hidden">At least one number</span><span className="hidden lg:inline">Number</span></span>
                         </div>
-                        <div className={`flex items-center space-x-2 ${passwordValidation.requirements.special ? 'text-green-400' : 'text-gray-400'}`}>
-                          {passwordValidation.requirements.special ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                          <span>At least one special character (!@#$%^&*)</span>
+                        <div className={`flex items-center space-x-2 lg:space-x-1.5 ${passwordValidation.requirements.special ? 'text-green-400' : 'text-gray-400'}`}>
+                          {passwordValidation.requirements.special ? <CheckCircle className="h-3 w-3 lg:h-2.5 lg:w-2.5 flex-shrink-0" /> : <X className="h-3 w-3 lg:h-2.5 lg:w-2.5 flex-shrink-0" />}
+                          <span className="lg:text-xs"><span className="lg:hidden">At least one special character (!@#$%^&*)</span><span className="hidden lg:inline">Special character (!@#$%^&*)</span></span>
                         </div>
                         {form.confirmPassword && (
-                          <div className={`flex items-center space-x-2 ${passwordsMatch ? 'text-green-400' : 'text-red-400'}`}>
-                            {passwordsMatch ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                            <span>Passwords match</span>
+                          <div className={`flex items-center space-x-2 lg:space-x-1.5 ${passwordsMatch ? 'text-green-400' : 'text-red-400'}`}>
+                            {passwordsMatch ? <CheckCircle className="h-3 w-3 lg:h-2.5 lg:w-2.5 flex-shrink-0" /> : <X className="h-3 w-3 lg:h-2.5 lg:w-2.5 flex-shrink-0" />}
+                            <span className="lg:text-xs">Passwords match</span>
                           </div>
                         )}
                       </div>

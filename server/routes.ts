@@ -347,7 +347,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         signup_stage: 'payment',
         profileCompleted: false,
         premiumStatus: 'free',
-        subscription_status: 'inactive'
+        subscription_status: 'inactive',
+        userPreferences: {
+          theme: "dark",
+          notifications: true,
+          language: "en"
+        }
       });
       const [user] = await getDb().select().from(users).where(eq(users.email, email));
       const token = jwt.sign(
@@ -7988,7 +7993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return user preferences or defaults if not set
       const preferences = user[0].userPreferences || {
-        theme: "light",
+        theme: "dark",
         notifications: true,
         language: "en"
       };
@@ -8019,7 +8024,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate theme values
       const validThemes = ['light', 'dark'];
       const preferences = {
-        theme: validThemes.includes(theme) ? theme : 'light',
+        theme: validThemes.includes(theme) ? theme : 'dark',
         notifications: Boolean(notifications),
         language: typeof language === 'string' ? language : 'en'
       };

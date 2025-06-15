@@ -70,7 +70,7 @@ export const users = pgTable("users", {
     placementSuccess: true
   }),
   userPreferences: jsonb("user_preferences").default({
-    theme: "light",
+    theme: "dark",
     notifications: true,
     language: "en"
   }),

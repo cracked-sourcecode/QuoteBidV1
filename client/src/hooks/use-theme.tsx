@@ -13,11 +13,12 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Initialize with light theme from localStorage or default
+  // Initialize with dark theme from localStorage or default to dark for new users
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem('quotebid-theme');
     console.log('🎨 [THEME] Initial theme from localStorage:', saved);
-    return (saved === 'dark' ? 'dark' : 'light') as Theme;
+    // Default to dark theme for new users (user_preferences.theme = "dark")
+    return (saved === 'light' ? 'light' : 'dark') as Theme;
   });
 
   // Helper function to get user ID from localStorage
@@ -83,7 +84,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       await refreshThemeFromDatabase();
     }, 100);
 
-    return () => clearTimeout(timer);
+    // Listen for user login events to sync theme from database
+    const handleUserLoggedIn = async () => {
+      console.log('🎨 [THEME] User logged in event received, refreshing theme...');
+      // Add a small delay to ensure the token is properly stored
+      setTimeout(async () => {
+        await refreshThemeFromDatabase();
+      }, 200);
+    };
+
+    window.addEventListener('userLoggedIn', handleUserLoggedIn);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('userLoggedIn', handleUserLoggedIn);
+    };
   }, []);
 
   // Update theme and sync to database

@@ -284,23 +284,23 @@ export function EmailPreferences() {
       {/* Save/Reset Buttons */}
       {hasChanges && !updatePreferencesMutation.isPending && (
         <Card className={`${theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-800 border-slate-700'} shadow-sm`}>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="text-center sm:text-left">
                 <h3 className={`font-medium ${theme === 'light' ? 'text-gray-900' : 'text-slate-100'} mb-1`}>Unsaved Changes</h3>
                 <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-slate-400'}`}>You have unsaved changes to your email preferences.</p>
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <Button 
                   variant="outline" 
                   onClick={handleReset}
-                  className={theme === 'light' ? '!bg-white !border-gray-300 !text-gray-700 hover:!bg-gray-50 hover:!text-gray-900' : '!bg-slate-800 !border-slate-600 !text-slate-300 hover:!bg-slate-700 hover:!text-slate-100'}
+                  className={`w-full sm:w-auto ${theme === 'light' ? '!bg-white !border-gray-300 !text-gray-700 hover:!bg-gray-50 hover:!text-gray-900' : '!bg-slate-800 !border-slate-600 !text-slate-300 hover:!bg-slate-700 hover:!text-slate-100'}`}
                 >
                   Reset
                 </Button>
                 <Button 
                   onClick={handleSave}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Save Preferences
                 </Button>

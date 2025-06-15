@@ -1047,7 +1047,7 @@ export default function AccountPage() {
           {/* Profile Avatar & Basic Info */}
           <div className="flex flex-col items-center text-center">
             <div 
-              className="w-32 h-32 rounded-full bg-slate-800 mb-4 relative group cursor-pointer border-2 border-slate-700"
+              className={`w-32 h-32 rounded-full bg-slate-800 mb-4 relative group border-2 border-slate-700 ${isEditing ? 'cursor-pointer' : ''}`}
               onClick={() => isEditing && handleAvatarClick()}
             >
               <>
@@ -1160,7 +1160,7 @@ export default function AccountPage() {
             <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Account Settings</h3>
             <div className="space-y-1">
               <button 
-                onClick={() => setSubscriptionModalOpen(true)}
+                onClick={() => setActiveTab('billing')}
                 className="flex w-full items-center py-2 px-3 text-sm font-medium rounded-md text-slate-300 hover:bg-slate-800 hover:text-slate-100 transition-colors"
               >
                 <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1249,7 +1249,7 @@ export default function AccountPage() {
               <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-700/50 p-6">
                 <div className="flex items-center space-x-4 mb-6">
                   <div 
-                    className="w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-700 relative cursor-pointer overflow-hidden"
+                    className={`w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-700 relative overflow-hidden ${isEditing ? 'cursor-pointer' : ''}`}
                     onClick={() => isEditing && handleAvatarClick()}
                   >
                   {(user.avatar || avatarPreview) && (
@@ -1919,7 +1919,7 @@ export default function AccountPage() {
                 <h3 className="text-lg font-semibold text-slate-100 mb-4">Account Settings</h3>
                 <div className="space-y-3">
                   <button 
-                    onClick={() => setSubscriptionModalOpen(true)}
+                    onClick={() => setActiveTab('billing')}
                     className="flex items-center w-full p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700"
                   >
                     <div className="bg-green-600/20 p-2 rounded-lg mr-3">
@@ -3053,10 +3053,11 @@ export default function AccountPage() {
               </div>
             )}
           </div>
-          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:space-x-2">
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 sm:gap-2">
             {subscription && subscription.status === 'active' && (
               <Button 
                 variant="outline" 
+                className="bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100 w-full sm:w-auto"
                 onClick={() => {
                   setSubscriptionModalOpen(false);
                   setCancelModalOpen(true);
@@ -3065,7 +3066,10 @@ export default function AccountPage() {
                 Cancel Subscription
               </Button>
             )}
-            <Button onClick={() => setSubscriptionModalOpen(false)}>
+            <Button 
+              onClick={() => setSubscriptionModalOpen(false)}
+              className="w-full sm:w-auto"
+            >
               Close
             </Button>
           </DialogFooter>
@@ -3193,14 +3197,14 @@ export default function AccountPage() {
       {/* Password & Security Modal */}
       <Dialog open={passwordModalOpen} onOpenChange={setPasswordModalOpen}>
         <DialogContent className="sm:max-w-[500px] bg-slate-900 border-slate-700">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-slate-100">
+          <DialogHeader className="text-left space-y-2">
+            <DialogTitle className="flex items-center gap-2 text-slate-100 text-left">
               <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
               Change Password
             </DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogDescription className="text-slate-400 text-left">
               Update your account password
             </DialogDescription>
           </DialogHeader>
@@ -3267,10 +3271,11 @@ export default function AccountPage() {
                 )}
               />
               
-              <DialogFooter className="pt-4">
+              <DialogFooter className="pt-4 flex flex-col-reverse sm:flex-row gap-3 sm:gap-2">
                 <Button
                   type="button"
                   variant="outline"
+                  className="bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100 w-full sm:w-auto"
                   onClick={() => {
                     passwordForm.reset();
                     setPasswordModalOpen(false);
@@ -3282,7 +3287,7 @@ export default function AccountPage() {
                 <Button
                   type="submit"
                   disabled={passwordChangeMutation.isPending}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 w-full sm:w-auto"
                 >
                   {passwordChangeMutation.isPending ? (
                     <>
@@ -3302,8 +3307,8 @@ export default function AccountPage() {
       {/* Theme Switch Confirmation Modal */}
       <Dialog open={themeModalOpen} onOpenChange={setThemeModalOpen}>
         <DialogContent className="sm:max-w-md bg-slate-900 border-slate-700">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-slate-100">
+          <DialogHeader className="text-left space-y-2">
+            <DialogTitle className="flex items-center gap-2 text-slate-100 text-left">
               {theme === 'light' ? (
                 <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
@@ -3315,15 +3320,15 @@ export default function AccountPage() {
               )}
               Switch to {theme === 'light' ? 'Dark' : 'Light'} Mode
             </DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogDescription className="text-slate-400 text-left">
               Are you sure you want to switch to {theme === 'light' ? 'dark' : 'light'} mode? This will change the appearance of the entire application.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4">
+          <div className="py-4 text-left">
             <div className="bg-slate-800 rounded-lg p-4 mb-4 border border-slate-700">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                   {theme === 'light' ? (
                     <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
@@ -3334,11 +3339,11 @@ export default function AccountPage() {
                     </svg>
                   )}
                 </div>
-                <div>
-                  <h3 className="font-medium text-slate-100">
+                <div className="text-left">
+                  <h3 className="font-medium text-slate-100 text-left">
                     {theme === 'light' ? 'Dark Mode Experience' : 'Light Mode Experience'}
                   </h3>
-                  <p className="text-sm text-slate-300">
+                  <p className="text-sm text-slate-300 text-left mt-1">
                     {theme === 'light' 
                       ? 'Sleek dark interface designed for evening use and reduced eye strain.'
                       : 'Clean bright interface perfect for daytime use and maximum readability.'
@@ -3348,15 +3353,16 @@ export default function AccountPage() {
               </div>
             </div>
             
-            <p className="text-sm text-slate-400 mb-4">
+            <p className="text-sm text-slate-400 mb-4 text-left">
               You can always switch back at any time from the account settings.
             </p>
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2">
             <Button
               type="button"
               variant="outline"
+              className="bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100 w-full sm:w-auto"
               onClick={() => setThemeModalOpen(false)}
             >
               Cancel
@@ -3367,7 +3373,7 @@ export default function AccountPage() {
                 toggleTheme();
                 setThemeModalOpen(false);
               }}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white w-full sm:w-auto"
             >
               {theme === 'light' ? (
                 <>

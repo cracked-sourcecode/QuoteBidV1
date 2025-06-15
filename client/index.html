@@ -56,7 +56,7 @@
       (function() {
         try {
           const savedTheme = localStorage.getItem('quotebid-theme');
-          const theme = savedTheme || 'light'; // Default to light
+          const theme = savedTheme || 'dark'; // Default to dark for new users
           const bgColor = theme === 'light' ? '#ffffff' : '#0f172a';
           
           // Apply everywhere immediately - maximum coverage
@@ -81,10 +81,10 @@
           }
           
         } catch (e) {
-          // Fallback - always light theme
-          document.documentElement.style.backgroundColor = '#ffffff';
-          document.documentElement.setAttribute('data-theme', 'light');
-          document.documentElement.className = 'theme-light';
+          // Fallback - always dark theme for new users
+          document.documentElement.style.backgroundColor = '#0f172a';
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.className = 'theme-dark';
         }
       })();
     </script>

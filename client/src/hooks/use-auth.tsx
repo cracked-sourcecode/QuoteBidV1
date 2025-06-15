@@ -50,13 +50,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return (await res.json()) as { user: SelectUser, token?: string } | SelectUser;
     },
-    onSuccess: (data: { user: SelectUser, token?: string } | SelectUser) => {
+    onSuccess: async (data: { user: SelectUser, token?: string } | SelectUser) => {
       const user = "user" in data ? data.user : data;
       // Store token if present
       if ("token" in data && data.token) {
         localStorage.setItem("token", data.token);
       }
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Sync theme from database for logged-in user
+      try {
+        // We need to import the theme hook here, but we can't due to circular dependency
+        // So we'll trigger a custom event that the theme provider can listen to
+        window.dispatchEvent(new CustomEvent('userLoggedIn'));
+      } catch (error) {
+        console.log('Failed to sync theme after login:', error);
+      }
+      
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -93,6 +103,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("token", data.token);
       }
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Sync theme from database for new user (should default to dark)
+      try {
+        window.dispatchEvent(new CustomEvent('userLoggedIn'));
+      } catch (error) {
+        console.log('Failed to sync theme after signup:', error);
+      }
     },
     onError: (error: Error) => {
       toast({

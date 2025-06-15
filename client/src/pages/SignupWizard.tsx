@@ -307,6 +307,12 @@ function SignupWizardContent() {
     localStorage.removeItem('signup_data');
     localStorage.removeItem('in_signup_wizard');
     
+    // FORCE dark theme for new users
+    console.log('🎨 [SIGNUP] Forcing dark theme for new user...');
+    localStorage.setItem('quotebid-theme', 'dark');
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.style.backgroundColor = '#0f172a';
+    
     // Invalidate user query to force refetch with new token
     queryClient.invalidateQueries({ queryKey: ['/api/user'] });
     
