@@ -1514,10 +1514,8 @@ export default function OpportunityDetail() {
                 {/* Price Trend Section */}
                 <div className="p-4 sm:p-6 lg:border-r border-slate-600/50">
                   <div className="mb-4 sm:mb-6">
-                    <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Price History</h3>
-                    
                     {/* Interactive Price Chart - Mobile Optimized */}
-                    <div className="w-full -mx-2 sm:mx-0">
+                    <div className="w-full">
                       <PriceTrendChart
                         data={priceDataForChart.map(p => ({
                           t: new Date(p.timestamp).toISOString(),
