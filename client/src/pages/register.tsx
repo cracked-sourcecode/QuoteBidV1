@@ -175,12 +175,19 @@ export default function RegisterPage() {
   // Debounced uniqueness check for email
   const checkEmailUnique = React.useCallback(
     debounce(async (email: string) => {
-      if (!email || !emailRegex.test(email)) {
+      if (!email) {
+        setEmailUnique(true);
+        setEmailChecking(false);
+        setEmailValid(true); // Don't show error for empty field
+        return;
+      }
+      if (!emailRegex.test(email)) {
         setEmailUnique(true);
         setEmailChecking(false);
         setEmailValid(false);
         return;
       }
+      // Email format is valid, set this immediately
       setEmailValid(true);
       setEmailChecking(true);
       try {
@@ -192,7 +199,7 @@ export default function RegisterPage() {
       }
       setEmailChecking(false);
     }, 400),
-    []
+    [emailRegex]
   );
 
   // Debounced uniqueness check for phone
@@ -231,18 +238,15 @@ export default function RegisterPage() {
     [countryCode]
   );
 
-  // Watch username, email, and phone changes
+  // Watch username and phone changes (but NOT email - email only validates on blur)
   useEffect(() => {
     if (form.username) {
       checkUsernameUnique(form.username);
     }
-    if (form.email) {
-      checkEmailUnique(form.email);
-    }
     if (form.phone) {
       checkPhoneUnique(form.phone);
     }
-  }, [form.username, checkUsernameUnique, form.email, checkEmailUnique, form.phone, checkPhoneUnique]);
+  }, [form.username, checkUsernameUnique, form.phone, checkPhoneUnique]);
 
   // Track if form has been submitted to show errors
   const [formSubmitted, setFormSubmitted] = useState(false);
@@ -254,6 +258,37 @@ export default function RegisterPage() {
       setErrors(errs);
     }
   }, [usernameUnique, emailUnique, emailValid, phoneUnique, phoneValid, passwordValidation.isValid, passwordsMatch, form, countryCode, formSubmitted]);
+
+  // Handle email errors in real-time - both showing and clearing
+  useEffect(() => {
+    if (!form.email) {
+      // Clear error for empty field
+      setErrors((prev: any) => {
+        const newErrors = { ...prev };
+        delete newErrors.email;
+        return newErrors;
+      });
+    } else if (form.email && !emailChecking) {
+      // Only update errors when not currently checking
+      setErrors((prev: any) => {
+        const newErrors = { ...prev };
+        
+        // Check format first using the same regex as validation
+        if (!emailRegex.test(form.email)) {
+          newErrors.email = 'Please enter a valid email address.';
+        } else if (!emailValid) {
+          newErrors.email = 'Please enter a valid email address.';
+        } else if (!emailUnique) {
+          newErrors.email = 'Email is already in use.';
+        } else {
+          // Email is valid and unique - clear any errors
+          delete newErrors.email;
+        }
+        
+        return newErrors;
+      });
+    }
+  }, [emailValid, emailUnique, emailChecking, form.email, emailRegex]);
 
   // Validation helpers
   const validate = () => {
@@ -268,7 +303,7 @@ export default function RegisterPage() {
     }
     
     // Email validation - format AND uniqueness AND validity  
-    if (!form.email || !/^[^@]+@[^@]+\.[a-zA-Z]{2,}$/.test(form.email)) {
+    if (!form.email || !emailRegex.test(form.email)) {
       errs.email = 'Please enter a valid email address.';
     } else if (!emailValid) {
       errs.email = 'Please enter a valid email address.';
@@ -321,15 +356,11 @@ export default function RegisterPage() {
     }
     
     if (field === 'email') {
-      if (!form.email || !/^[^@]+@[^@]+\.[a-zA-Z]{2,}$/.test(form.email)) {
-        currentErrors.email = 'Please enter a valid email address.';
-      } else if (!emailValid) {
-        currentErrors.email = 'Please enter a valid email address.';
-      } else if (!emailUnique) {
-        currentErrors.email = 'Email is already in use.';
-      } else {
-        delete currentErrors.email;
-      }
+      // Trigger email validation on blur
+      checkEmailUnique(form.email);
+      
+      // Don't set any errors here - let the async validation handle it
+      // This prevents race conditions between immediate validation and async validation
     }
     
     if (field === 'companyName') {
@@ -749,8 +780,8 @@ export default function RegisterPage() {
                       name="email"
                       value={form.email}
                       onChange={e => {
-                        // Allow uppercase but convert to lowercase for email
-                        const value = e.target.value.toLowerCase();
+                        // Allow uppercase but convert to lowercase for email, remove all spaces
+                        const value = e.target.value.toLowerCase().replace(/\s/g, '');
                         setForm(f => ({ ...f, email: value }));
                       }}
                       onBlur={() => handleBlur('email')}

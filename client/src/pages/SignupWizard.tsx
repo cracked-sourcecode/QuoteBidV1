@@ -485,19 +485,9 @@ function SignupWizardContent() {
   } else if (currentStage === 'profile') {
     return <ProfileStep onComplete={handleProfileComplete} />;
   } else if (currentStage === 'ready') {
-    // The navigation is already handled in handleProfileComplete
+    // This should now be handled by SignupWizardMain, but include as fallback
     return (
       <div className="p-12 mb-8 text-center">
-        <div className="mb-8">
-          <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
-            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h1 className="text-4xl font-black mb-4 text-white">Welcome to QuoteBid!</h1>
-          <p className="text-xl text-blue-100 mb-6 font-medium">Your account has been successfully created.</p>
-          <p className="text-blue-200">Redirecting you to opportunities in a moment...</p>
-        </div>
         <Loader2 className="h-10 w-10 animate-spin mx-auto text-blue-300" />
       </div>
     );
@@ -517,9 +507,50 @@ function SignupWizardContent() {
 export default function SignupWizard() {
   return (
     <SignupWizardProvider>
-      <SignupWizardComponent>
-        <SignupWizardContent />
-      </SignupWizardComponent>
+      <SignupWizardMain />
     </SignupWizardProvider>
+  );
+}
+
+function SignupWizardMain() {
+  const { currentStage } = useSignupWizard();
+  
+  // If on ready stage (loading screen), render ONLY the loading screen - NO header, footer, or progress bar
+  if (currentStage === 'ready') {
+    return (
+      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-purple-900 to-violet-900 flex items-center justify-center relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+          <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-violet-400 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+        </div>
+        
+        {/* Loading content - Perfectly centered */}
+        <div className="relative z-10 text-center px-6 w-full max-w-md">
+          {/* Success icon */}
+          <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl animate-pulse">
+            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          
+          {/* Text content */}
+          <h1 className="text-4xl md:text-5xl font-black mb-6 text-white">Welcome to QuoteBid!</h1>
+          <p className="text-xl md:text-2xl text-blue-100 mb-4 font-medium">Your account has been successfully created.</p>
+          <p className="text-lg text-blue-200 mb-8">Redirecting you to opportunities in a moment...</p>
+          
+          {/* Loading spinner */}
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-300" />
+        </div>
+      </div>
+    );
+  }
+  
+  // For all other stages, use the normal wrapper with header/footer
+  return (
+    <SignupWizardComponent>
+      <SignupWizardContent />
+    </SignupWizardComponent>
   );
 }
