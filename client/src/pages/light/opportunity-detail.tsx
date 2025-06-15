@@ -1393,22 +1393,29 @@ export default function OpportunityDetail() {
                     <span className="text-base sm:text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Live Activity:</span>
                   </div>
                   
-                  <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 lg:space-x-4">
-                    <div className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-xl shadow-md ${
+                  <div className="flex flex-row flex-wrap items-center gap-2 sm:gap-3 lg:gap-4">
+                    <div className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-md ${
                       priceIncrease >= 0 
                         ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50'
                         : 'bg-gradient-to-r from-red-50 to-red-100 border border-red-200/50'
                     }`}>
                       {priceIncrease >= 0 ? (
-                      <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                      <TrendingUp className="h-3 w-3 sm:h-5 sm:w-5 text-green-600" />
                       ) : (
-                        <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
+                        <TrendingDown className="h-3 w-3 sm:h-5 sm:w-5 text-red-600" />
                       )}
-                      <span className={`text-sm font-semibold ${
+                      <span className={`text-xs sm:text-sm font-semibold ${
                         priceIncrease >= 0 ? 'text-green-700' : 'text-red-700'
                       }`}>
                         ${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'} 
-                        {realTimePriceHistory.length > 0 ? ' (live pricing)' : ' (last hour)'}
+                        {realTimePriceHistory.length > 0 ? ' (live)' : ' (last hour)'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-1 sm:space-x-2 bg-gradient-to-r from-orange-50 to-amber-50 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl border border-orange-200/50 shadow-md">
+                      <Clock className="h-3 w-3 sm:h-5 sm:w-5 text-orange-600" />
+                      <span className="text-xs sm:text-sm font-semibold text-orange-700">
+                        {Math.max(0, Math.ceil((new Date(opportunity.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60)))}h remaining
                       </span>
                     </div>
                     
@@ -1417,9 +1424,9 @@ export default function OpportunityDetail() {
                       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
                       return pitchDate > oneHourAgo;
                     }).length > 0 && (
-                    <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-cyan-50 px-3 sm:px-4 py-2 rounded-xl border border-blue-200/50 shadow-md">
-                      <Flame className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-                        <span className="text-sm font-semibold text-blue-700">
+                    <div className="flex items-center space-x-1 sm:space-x-2 bg-gradient-to-r from-blue-50 to-cyan-50 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl border border-blue-200/50 shadow-md">
+                      <Flame className="h-3 w-3 sm:h-5 sm:w-5 text-blue-600" />
+                        <span className="text-xs sm:text-sm font-semibold text-blue-700">
                           {pitches.filter(pitch => {
                             const pitchDate = new Date(pitch.createdAt);
                             const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
@@ -1428,13 +1435,6 @@ export default function OpportunityDetail() {
                         </span>
                     </div>
                     )}
-                    
-                    <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-50 to-amber-50 px-3 sm:px-4 py-2 rounded-xl border border-orange-200/50 shadow-md">
-                      <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
-                      <span className="text-sm font-semibold text-orange-700">
-                        {Math.max(0, Math.ceil((new Date(opportunity.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60)))}h remaining
-                      </span>
-                    </div>
                   </div>
                 </div>
               </div>
