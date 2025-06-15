@@ -953,9 +953,12 @@ export default function OpportunityDetail() {
 
   // Check if recording is supported
   const isRecordingSupported = () => {
-    return !!(navigator.mediaDevices && 
-              navigator.mediaDevices.getUserMedia && 
-              window.MediaRecorder);
+    try {
+      return !!(navigator.mediaDevices && 
+                window.MediaRecorder);
+    } catch {
+      return false;
+    }
   };
 
   // Voice recording functions - Mobile Compatible
@@ -1331,12 +1334,12 @@ export default function OpportunityDetail() {
             <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl p-2 sm:p-4 mb-4 sm:mb-6 border border-blue-200/20 shadow-md">
               {/* Posted Date - Left aligned */}
               <div className="flex items-center space-x-2">
-                <div className="p-1 sm:p-2 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg shadow-md">
-                  <Calendar className="h-3 w-3 sm:h-5 sm:w-5 text-white" />
+                <div className="p-1 sm:p-2 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg shadow-md flex items-center justify-center">
+                  <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
                 <div className="text-left">
-                  <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Posted</div>
-                  <div className="text-xs sm:text-sm font-bold text-gray-900">
+                  <div className="text-[11px] sm:text-xs font-semibold text-blue-600 uppercase tracking-wide">Posted</div>
+                  <div className="text-[11px] sm:text-sm font-bold text-gray-900">
                     {format(new Date(opportunity.postedAt || opportunity.createdAt), 'MMM d, yyyy')}
                   </div>
                 </div>
@@ -1347,12 +1350,12 @@ export default function OpportunityDetail() {
 
               {/* Deadline - Left aligned */}
               <div className="flex items-center space-x-2">
-                <div className="p-1 sm:p-2 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg shadow-md">
-                  <Clock className="h-3 w-3 sm:h-5 sm:w-5 text-white" />
+                <div className="p-1 sm:p-2 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg shadow-md flex items-center justify-center">
+                  <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
                 <div className="text-left">
-                  <div className="text-xs font-semibold text-orange-600 uppercase tracking-wide">Deadline</div>
-                  <div className="text-xs sm:text-sm font-bold text-gray-900 flex items-center space-x-1 sm:space-x-2">
+                  <div className="text-[11px] sm:text-xs font-semibold text-orange-600 uppercase tracking-wide">Deadline</div>
+                  <div className="text-[11px] sm:text-sm font-bold text-gray-900 flex items-center space-x-1 sm:space-x-2">
                     <span>{format(new Date(opportunity.deadline), 'MMM d, yyyy')}</span>
                     {isToday && (
                       <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-1 py-0.5 shadow-md animate-pulse">
@@ -1368,14 +1371,14 @@ export default function OpportunityDetail() {
 
               {/* Status - Left aligned */}
               <div className="flex items-center space-x-2">
-                <div className="p-1 sm:p-2 bg-gradient-to-br from-green-400 to-green-500 rounded-lg shadow-md">
-                  <DollarSign className="h-3 w-3 sm:h-5 sm:w-5 text-white" />
+                <div className="p-1 sm:p-2 bg-gradient-to-br from-green-400 to-green-500 rounded-lg shadow-md flex items-center justify-center">
+                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
                 <div className="text-left">
                   <div className="flex items-center space-x-2 mb-1">
-                  <div className="text-xs font-semibold text-green-600 uppercase tracking-wide">Current Price</div>
+                  <div className="text-[11px] sm:text-xs font-semibold text-green-600 uppercase tracking-wide">Current Price</div>
                   </div>
-                  <div className={`text-xs sm:text-sm font-bold ${priceData ? 'text-blue-600' : 'text-gray-900'} transition-colors duration-300`}>
+                  <div className={`text-[11px] sm:text-sm font-bold ${priceData ? 'text-blue-600' : 'text-gray-900'} transition-colors duration-300`}>
                     ${currentPrice}
                   </div>
                 </div>
@@ -1384,99 +1387,94 @@ export default function OpportunityDetail() {
 
             {/* Live Activity - Enhanced with gradients */}
             <div className="mb-6 sm:mb-8 lg:mb-10">
-              <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-2xl border border-purple-200/30 p-4 sm:p-6 shadow-lg">
-                <div className="flex flex-col lg:flex-row lg:items-center space-y-3 lg:space-y-0 lg:space-x-6">
-                  <div className="flex items-center space-x-3 sm:space-x-4">
-                    <div className="relative flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6">
-                      <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-400/50"></span>
+              <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl border border-blue-200/20 p-2 sm:p-4 mb-4 sm:mb-6 shadow-md">
+                <div className="flex flex-row flex-wrap items-center gap-1 sm:gap-2 lg:gap-4">
+                  <div className="flex items-center space-x-1 sm:space-x-2">
+                    <div className="relative flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4">
+                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-400/50"></span>
                     </div>
-                    <span className="text-base sm:text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Live Activity:</span>
+                    <span className="text-sm sm:text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Live Activity:</span>
                   </div>
                   
-                  <div className="flex flex-row flex-wrap items-center gap-2 sm:gap-3 lg:gap-4">
-                    <div className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-md ${
-                      priceIncrease >= 0 
-                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50'
-                        : 'bg-gradient-to-r from-red-50 to-red-100 border border-red-200/50'
-                    }`}>
-                      {priceIncrease >= 0 ? (
-                      <TrendingUp className="h-3 w-3 sm:h-5 sm:w-5 text-green-600" />
-                      ) : (
-                        <TrendingDown className="h-3 w-3 sm:h-5 sm:w-5 text-red-600" />
-                      )}
-                      <span className={`text-xs sm:text-sm font-semibold ${
-                        priceIncrease >= 0 ? 'text-green-700' : 'text-red-700'
-                      }`}>
-                        ${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'} 
-                        {realTimePriceHistory.length > 0 ? ' (live)' : ' (last hour)'}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-1 sm:space-x-2 bg-gradient-to-r from-orange-50 to-amber-50 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl border border-orange-200/50 shadow-md">
-                      <Clock className="h-3 w-3 sm:h-5 sm:w-5 text-orange-600" />
-                      <span className="text-xs sm:text-sm font-semibold text-orange-700">
-                        {Math.max(0, Math.ceil((new Date(opportunity.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60)))}h remaining
-                      </span>
-                    </div>
-                    
-                    {pitches.filter(pitch => {
-                      const pitchDate = new Date(pitch.createdAt);
-                      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-                      return pitchDate > oneHourAgo;
-                    }).length > 0 && (
-                    <div className="flex items-center space-x-1 sm:space-x-2 bg-gradient-to-r from-blue-50 to-cyan-50 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl border border-blue-200/50 shadow-md">
-                      <Flame className="h-3 w-3 sm:h-5 sm:w-5 text-blue-600" />
-                        <span className="text-xs sm:text-sm font-semibold text-blue-700">
-                          {pitches.filter(pitch => {
-                            const pitchDate = new Date(pitch.createdAt);
-                            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-                            return pitchDate > oneHourAgo;
-                          }).length} pitches (last hour)
-                        </span>
-                    </div>
+                  <div className={`flex items-center space-x-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg shadow-md ${
+                    priceIncrease >= 0 
+                      ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50'
+                      : 'bg-gradient-to-r from-red-50 to-red-100 border border-red-200/50'
+                  }`}>
+                    {priceIncrease >= 0 ? (
+                    <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+                    ) : (
+                      <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
                     )}
+                    <span className={`text-xs sm:text-sm font-semibold ${
+                      priceIncrease >= 0 ? 'text-green-700' : 'text-red-700'
+                    }`}>
+                      ${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-1 bg-gradient-to-r from-orange-50 to-amber-50 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg border border-orange-200/50 shadow-md">
+                    <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />
+                    <span className="text-xs sm:text-sm font-semibold text-orange-700">
+                      {Math.max(0, Math.ceil((new Date(opportunity.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60)))}h remaining
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Opportunity Brief Card - Lighter, more professional blue */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl overflow-hidden mb-6 sm:mb-8 lg:mb-10 shadow-lg border border-blue-200/50">
-              <div className="p-4 sm:p-6">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl overflow-hidden mb-4 sm:mb-6 shadow-lg border border-blue-200/50 relative">
+              {/* Classification Badge - Top Right */}
+              <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10">
+                <Badge className={`border-0 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-semibold shadow-sm ${
+                  getOpportunityStatus(opportunity) === 'open' 
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+                    : 'bg-gradient-to-r from-red-400 to-pink-500 text-white'
+                }`}>
+                  {getOpportunityStatus(opportunity).charAt(0).toUpperCase() + getOpportunityStatus(opportunity).slice(1)}
+                </Badge>
+              </div>
+              
+              <div className="p-3 sm:p-4">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
-                  <div className="flex items-center space-x-3 sm:space-x-4">
-                    <div className="flex space-x-1 sm:space-x-1.5">
-                      <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-blue-500 rounded-full shadow-md animate-pulse"></span>
-                      <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-blue-400 rounded-full shadow-md animate-pulse animation-delay-200"></span>
-                      <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-blue-300 rounded-full shadow-md animate-pulse animation-delay-400"></span>
+                <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
+                  {/* Title Row */}
+                  <div className="flex items-center space-x-2 sm:space-x-3 pr-16 sm:pr-20">
+                    <div className="flex space-x-1">
+                      <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-blue-500 rounded-full shadow-md animate-pulse"></span>
+                      <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-blue-400 rounded-full shadow-md animate-pulse animation-delay-200"></span>
+                      <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-blue-300 rounded-full shadow-md animate-pulse animation-delay-400"></span>
                     </div>
-                    <h3 className="text-lg sm:text-xl font-semibold text-blue-900 tracking-wide">
+                    <h3 className="text-base sm:text-lg font-semibold text-blue-900 tracking-wide">
                       Opportunity Brief
                     </h3>
                   </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 gap-2 sm:gap-0">
-                    <span className="text-sm font-medium text-blue-700">Classification:</span>
-                    <Badge className={`border-0 px-3 sm:px-4 py-1.5 sm:py-2 font-semibold shadow-sm w-fit ${
-                      getOpportunityStatus(opportunity) === 'open' 
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-                        : 'bg-gradient-to-r from-red-400 to-pink-500 text-white'
-                    }`}>
-                      {getOpportunityStatus(opportunity).charAt(0).toUpperCase() + getOpportunityStatus(opportunity).slice(1)}
-                    </Badge>
+                  
+                  {/* Expand/Minimize Button */}
+                  <div className="flex justify-start">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsBriefMinimized(!isBriefMinimized)}
+                      className="flex items-center space-x-2 text-blue-700 hover:text-blue-900 hover:bg-blue-100/50 transition-all duration-200 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg font-medium"
+                    >
+                      <ChevronUp className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform duration-300 ${isBriefMinimized ? 'rotate-180' : ''}`} />
+                      <span className="text-xs sm:text-sm">{isBriefMinimized ? 'Expand Brief' : 'Minimize Brief'}</span>
+                    </Button>
                   </div>
                 </div>
 
                 {/* Content */}
                 {!isBriefMinimized && (
-                  <div className="mb-4 sm:mb-6">
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm overflow-hidden border border-blue-100">
-                      <div className="p-4 sm:p-6">
-                        <div className="text-black text-base sm:text-lg leading-relaxed sm:leading-loose space-y-3 sm:space-y-4 font-medium">
+                  <div className="mb-3 sm:mb-4">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm overflow-hidden border border-blue-100">
+                      <div className="p-3 sm:p-4">
+                        <div className="text-black text-sm sm:text-base leading-relaxed space-y-2 sm:space-y-3 font-medium">
                           {opportunity.summary ? (
                             <div className="whitespace-pre-wrap">
                               {opportunity.summary.split('\n\n').map((paragraph: string, index: number) => (
-                                <p key={index} className="mb-3 sm:mb-4 last:mb-0 font-medium text-black">
+                                <p key={index} className="mb-2 sm:mb-3 last:mb-0 font-medium text-black">
                                   {paragraph.split('\n').map((line: string, lineIndex: number) => (
                                     <span key={lineIndex}>
                                       {line}
@@ -1488,10 +1486,10 @@ export default function OpportunityDetail() {
                             </div>
                           ) : (
                             <div>
-                              <p className="font-semibold text-black mb-3 sm:mb-4 text-lg sm:text-xl">
+                              <p className="font-semibold text-black mb-2 sm:mb-3 text-base sm:text-lg">
                                 {opportunity.title}
                               </p>
-                              <p className="text-black leading-relaxed sm:leading-loose text-base sm:text-lg font-medium">
+                              <p className="text-black leading-relaxed text-sm sm:text-base font-medium">
                                 This opportunity is seeking expert commentary and insights. Please provide your relevant experience and perspective in your pitch.
                               </p>
                             </div>
@@ -1502,30 +1500,21 @@ export default function OpportunityDetail() {
                   </div>
                 )}
 
-                {/* Minimize Button */}
-                <div className="flex justify-start">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsBriefMinimized(!isBriefMinimized)}
-                    className="flex items-center space-x-2 sm:space-x-3 text-blue-700 hover:text-blue-900 hover:bg-blue-100/50 transition-all duration-200 px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-medium"
-                  >
-                    <ChevronUp className={`h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-300 ${isBriefMinimized ? 'rotate-180' : ''}`} />
-                    <span className="text-sm">{isBriefMinimized ? 'Expand Brief' : 'Minimize Brief'}</span>
-                  </Button>
-                </div>
+
               </div>
             </div>
 
             {/* Marketplace Pricing Section - Enhanced with gradients */}
             <div id="pitch-section" style={{position: 'absolute', transform: 'translateY(-60px)'}}></div>
-            <div className="bg-gradient-to-br from-indigo-50 via-white to-purple-50 rounded-3xl border border-indigo-200/30 overflow-hidden shadow-xl">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
-                {/* Price Trend Section - Left Side */}
-                <div className="p-3 sm:p-4 lg:p-6 lg:border-r border-gray-200/50">
-                  <div className="mb-3 sm:mb-4">
+            <div className="bg-gradient-to-br from-indigo-50 via-white to-purple-50 rounded-2xl border border-indigo-200/30 overflow-hidden shadow-xl">
+              <div className="flex flex-col lg:grid lg:grid-cols-2 gap-0">
+                {/* Price Trend Section */}
+                <div className="p-4 sm:p-6 lg:border-r border-gray-200/50">
+                  <div className="mb-4 sm:mb-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Price History</h3>
+                    
                     {/* Interactive Price Chart - Mobile Optimized */}
-                    <div className="w-full">
+                    <div className="w-full -mx-2 sm:mx-0">
                       <PriceTrendChart
                         data={priceDataForChart.map(p => ({
                           t: new Date(p.timestamp).toISOString(),
@@ -1537,21 +1526,21 @@ export default function OpportunityDetail() {
                     </div>
 
                     {/* Enhanced price range and timeline info */}
-                    <div className="space-y-2 sm:space-y-3 mt-4 sm:mt-6">
+                    <div className="space-y-3 sm:space-y-4 mt-4 sm:mt-6 px-2 sm:px-0">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-2">
-                          <span className="text-green-600 font-bold text-sm sm:text-base">${Math.min(...priceDataForChart.map((p: any) => p.price))}</span>
-                          <span className="text-gray-500 text-xs sm:text-sm">Low</span>
+                          <span className="text-green-600 font-bold text-base sm:text-lg">${Math.min(...priceDataForChart.map((p: any) => p.price))}</span>
+                          <span className="text-gray-500 text-sm">Low</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <span className="text-red-500 font-bold text-sm sm:text-base">${Math.max(...priceDataForChart.map((p: any) => p.price))}</span>
-                          <span className="text-gray-500 text-xs sm:text-sm">High</span>
+                          <span className="text-red-500 font-bold text-base sm:text-lg">${Math.max(...priceDataForChart.map((p: any) => p.price))}</span>
+                          <span className="text-gray-500 text-sm">High</span>
                         </div>
                       </div>
                       
                       {/* Timeline information */}
-                      <div className="flex justify-end items-center text-xs text-gray-500 border-t pt-2">
-                        <div className="flex items-center space-x-3 sm:space-x-4">
+                      <div className="flex justify-center items-center text-xs text-gray-500 border-t pt-3">
+                        <div className="flex items-center space-x-4">
                           {opportunity && (
                             <>
                               <span>Started {format(new Date(opportunity.postedAt || opportunity.createdAt), 'MMM d')}</span>
@@ -1565,48 +1554,50 @@ export default function OpportunityDetail() {
                   </div>
                 </div>
 
-                {/* Current Price & Pitch Section - Right Side */}
-                <div className="p-4 sm:p-6 lg:p-8 relative border-t lg:border-t-0 border-gray-200/50">
-                  <div className="mb-4 sm:mb-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-2">
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-900">Current Price</h3>
-                      <div className="flex items-center space-x-2 text-green-600 text-sm font-medium">
-                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                        <span>
-                          {Math.round(belowListPercentage)}% {actualPriceDifference >= 0 ? 'above' : 'below'} list price
-                        </span>
+                {/* Current Price & Pitch Section */}
+                <div className="p-4 sm:p-6 relative border-t lg:border-t-0 border-gray-200/50">
+                  <div className="mb-6 sm:mb-8">
+                    {/* Current Price Header */}
+                    <div className="mb-4 sm:mb-6">
+                      <div className="flex flex-col gap-2 mb-3">
+                        <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Current Price</h3>
+                        <div className="flex items-center space-x-2 text-green-600 text-sm font-medium">
+                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          <span>
+                            {Math.round(belowListPercentage)}% {actualPriceDifference >= 0 ? 'above' : 'below'} list price
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2 mb-4">
+                        <div className="flex items-baseline space-x-3">
+                          <span className={`text-4xl sm:text-5xl font-bold ${
+                            priceTrend === 'up' ? 'text-green-600' :
+                            priceTrend === 'down' ? 'text-red-600' :
+                            priceData ? 'text-blue-600' : 'text-gray-900'
+                          } transition-colors duration-300`}>${currentPrice}</span>
+                          {priceIncrease !== 0 && (
+                            <div className={`flex items-center space-x-1 text-lg font-semibold ${priceIncrease >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              <TrendingUp className={`h-5 w-5 ${priceIncrease < 0 ? 'rotate-180' : ''}`} />
+                              <span>{priceIncrease >= 0 ? '+' : ''}${priceIncrease}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {priceData?.lastPriceUpdate && (
+                          <div className="text-xs text-gray-500 flex items-center space-x-1">
+                            <Clock className="h-3 w-3" />
+                            <span>Updated {new Date(priceData.lastPriceUpdate).toLocaleTimeString()}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row sm:items-baseline sm:space-x-3 mb-2 gap-1 sm:gap-0">
-                      <span className={`text-3xl sm:text-4xl font-bold ${
-                        priceTrend === 'up' ? 'text-green-600' :
-                        priceTrend === 'down' ? 'text-red-600' :
-                        priceData ? 'text-blue-600' : 'text-gray-900'
-                      } transition-colors duration-300`}>${currentPrice}</span>
-                      {priceIncrease !== 0 && (
-                        <div className={`flex items-center space-x-1 text-base sm:text-lg font-semibold ${priceIncrease >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          <TrendingUp className={`h-4 w-4 sm:h-5 sm:w-5 ${priceIncrease < 0 ? 'rotate-180' : ''}`} />
-                          <span>{priceIncrease >= 0 ? '+' : ''}${priceIncrease}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
-
-                      {priceData?.lastPriceUpdate && (
-                        <div className="text-xs text-gray-500 flex items-center space-x-1">
-                          <Clock className="h-3 w-3" />
-                          <span>Updated {new Date(priceData.lastPriceUpdate).toLocaleTimeString()}</span>
-                        </div>
-                      )}
-                    </div>
-
                     {/* Pitch Input */}
-                    <div className="mb-6">
+                    <div className="space-y-4 sm:space-y-6">
                       {isCheckingPitchStatus ? (
                         /* Loading Pitch Status */
-                        <div className="bg-gray-50 rounded-2xl border border-gray-200/50 p-8">
+                        <div className="bg-gray-50 rounded-xl border border-gray-200/50 p-6 sm:p-8">
                           <div className="text-center">
                             <div className="flex justify-center mb-4">
                               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -1614,9 +1605,9 @@ export default function OpportunityDetail() {
                             <p className="text-gray-600 font-medium">Checking your pitch status...</p>
                           </div>
                         </div>
-                      ) : userPitchStatus?.hasSubmitted ? (
+                                              ) : userPitchStatus?.hasSubmitted ? (
                         /* Already Submitted State */
-                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200/50 overflow-hidden h-[280px] sm:h-[360px] lg:h-[400px] flex items-center justify-center mt-6">
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200/50 overflow-hidden min-h-[320px] sm:min-h-[360px] flex items-center justify-center">
                           <div className="p-8 text-center flex flex-col justify-center h-full">
                             {/* Success Icon */}
                             <div className="flex justify-center mb-5">
@@ -1673,11 +1664,9 @@ export default function OpportunityDetail() {
                         </div>
                       ) : (
                         /* Normal Pitch Input State */
-                        <>
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center space-x-3">
-                            <label className="text-gray-700 font-semibold text-lg">Craft your pitch</label>
-                            </div>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <label className="text-gray-700 font-semibold text-xl">Craft your pitch</label>
                             <span className={`text-sm font-medium ${
                               remainingChars < 100 ? 'text-red-500' : 'text-gray-500'
                             }`}>
@@ -1690,28 +1679,28 @@ export default function OpportunityDetail() {
                               value={pitchContent}
                               onChange={(e) => setPitchContent(e.target.value)}
                               placeholder="Share your expertise, credentials, and unique perspective that would make you perfect for this story. Explain why you're the ideal expert for this opportunity..."
-                              className="min-h-[240px] w-full p-4 border border-gray-200 rounded-xl bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-50 transition-all duration-200 resize-none text-gray-800 text-base font-medium placeholder:text-gray-400 placeholder:font-normal shadow-sm hover:border-gray-300"
+                              className="min-h-[280px] w-full p-4 sm:p-5 border border-gray-200 rounded-xl bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-50 transition-all duration-200 resize-none text-gray-800 text-base sm:text-lg font-medium placeholder:text-gray-400 placeholder:font-normal shadow-sm hover:border-gray-300"
                               maxLength={maxPitchLength}
                               style={{
                                 fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                                lineHeight: '1.5',
+                                lineHeight: '1.6',
                                 letterSpacing: '0.01em'
                               }}
                             />
                             
                             {/* Word count indicator */}
-                            <div className="absolute bottom-3 right-3 text-xs text-gray-400 bg-white/80 backdrop-blur-sm px-2 py-1 rounded">
+                            <div className="absolute bottom-3 right-3 text-xs text-gray-400 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-sm">
                               {pitchContent.trim().split(/\s+/).filter(word => word.length > 0).length} words
                             </div>
                           </div>
-                        </>
+                        </div>
                       )}
                     </div>
 
                     {/* Record Pitch Button - Only show if not submitted and not loading */}
                     {!isCheckingPitchStatus && !userPitchStatus?.hasSubmitted && (
-                      <div className="mb-6">
-                        <div className="flex items-center justify-between mb-2">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
                           <Button
                             type="button"
                             variant="outline"
@@ -1819,7 +1808,7 @@ export default function OpportunityDetail() {
 
                     {/* Secure Pitch Button - Only show if not submitted and not loading */}
                     {!isCheckingPitchStatus && !userPitchStatus?.hasSubmitted && (
-                      <>
+                      <div className="space-y-4">
                         <Button
                           type="button"
                           onClick={(e) => {
@@ -1827,11 +1816,11 @@ export default function OpportunityDetail() {
                             e.stopPropagation();
                             handleSecurePitch();
                           }}
-                          className={`w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 mb-4 ${
+                          className={`w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 sm:py-5 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 ${
                             priceData ? 'ring-2 ring-blue-300 ring-opacity-50' : ''
                           }`}
                         >
-                          <div className="flex items-center justify-center space-x-2">
+                          <div className="flex items-center justify-center space-x-3">
                             <Lock className="h-5 w-5" />
                             <span>Secure Pitch at ${currentPrice}</span>
                             {priceData && (
@@ -1843,10 +1832,10 @@ export default function OpportunityDetail() {
                         </Button>
 
                         {/* Disclaimer */}
-                        <p className="text-gray-500 text-sm text-center leading-relaxed">
+                        <p className="text-gray-500 text-sm text-center leading-relaxed px-2">
                           By pitching, you agree to pay the accepted market rate at the time of submission—only if you're included in the article.
                         </p>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
