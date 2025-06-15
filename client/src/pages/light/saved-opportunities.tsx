@@ -245,7 +245,7 @@ export default function SavedOpportunitiesPage() {
   return (
     <div className="w-full bg-white min-h-screen">
       {/* Header with gradient background */}
-      <div className="px-4 sm:px-6 lg:px-8 py-8 border-b border-gray-200 bg-gradient-to-r from-purple-50 via-pink-50 to-red-50">
+      <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-gray-200 bg-gradient-to-r from-purple-50 via-pink-50 to-red-50">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -270,7 +270,7 @@ export default function SavedOpportunitiesPage() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search saved opportunities..."
-                className="pl-9"
+                className="pl-9 text-sm sm:text-base placeholder:text-sm sm:placeholder:text-base"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -318,19 +318,19 @@ export default function SavedOpportunitiesPage() {
       {/* Results count and sort - only show if there are saved opportunities */}
       {savedOpportunities.length > 0 && (
         <div className="px-4 sm:px-6 lg:px-8 py-3 bg-white border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
-            <p className="text-xs text-gray-600">
+          <div className="flex flex-row justify-between items-center gap-2">
+            <p className="text-xs sm:text-sm text-gray-600">
               Showing {displayedOpportunities.length} of {filteredOpportunities.length} saved {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
             </p>
             
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal className="h-3 w-3 text-gray-500" />
-              <span className="text-xs text-gray-600 mr-1">Sort by:</span>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <SlidersHorizontal className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-gray-500" />
+              <span className="text-xs sm:text-sm text-gray-600">Sort by:</span>
               <Select
                 value={sortBy}
                 onValueChange={setSortBy}
               >
-                <SelectTrigger className="w-[140px] sm:w-[170px] h-7 text-xs border-none shadow-none px-1">
+                <SelectTrigger className="w-[120px] sm:w-[140px] lg:w-[170px] h-6 sm:h-7 text-xs border-none shadow-none px-1">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>

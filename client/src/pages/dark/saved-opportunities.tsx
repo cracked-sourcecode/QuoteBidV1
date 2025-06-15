@@ -260,7 +260,7 @@ export default function SavedOpportunitiesPage() {
       
       <div className="relative z-10">
         {/* Header */}
-        <div className="px-4 sm:px-6 lg:px-8 py-8 border-b border-blue-500/30">
+        <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-blue-500/30">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="bg-blue-600/20 p-2 rounded-lg backdrop-blur-sm border border-blue-500/30">
@@ -282,154 +282,183 @@ export default function SavedOpportunitiesPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20"></div>
           <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/20"></div>
           
-          <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-8 border-b border-blue-500/30">
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            {/* Search with better visibility */}
-            <div className="relative w-full sm:w-auto sm:flex-grow">
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
-                  <Search className="h-3 w-3 text-blue-300" />
-                </div>
-                <Input
-                  placeholder="Search saved opportunities..."
-                  className="pl-12 pr-4 h-12 bg-slate-800/80 border border-slate-600/60 text-white placeholder:text-slate-300 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300 hover:bg-slate-800/90"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{ outline: 'none', boxShadow: 'none' }}
-                />
-              </div>
-            </div>
-        
-            {/* Filters with better visibility */}
-            <div className="flex flex-wrap gap-4 w-full sm:w-auto">
-              <Select value={tierFilter} onValueChange={setTierFilter}>
-                <SelectTrigger className="w-full sm:w-[160px] h-12 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
-                  <SelectValue placeholder="All Tiers" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
-                  <SelectGroup>
-                    <SelectItem value="all" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">All Tiers</SelectItem>
-                    <SelectItem value="1" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Tier 1</SelectItem>
-                    <SelectItem value="2" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Tier 2</SelectItem>
-                    <SelectItem value="3" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Tier 3</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[160px] h-12 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
-                  <SelectValue placeholder="Open" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
-                  <SelectGroup>
-                    <SelectItem value="all" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">All Status</SelectItem>
-                    <SelectItem value="open" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Open</SelectItem>
-                    <SelectItem value="closed" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Closed</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          {/* Active filters - original style but better visibility */}
-          {(tierFilter !== 'all' || statusFilter !== 'all' || searchQuery) && (
-            <div className="mt-4 relative">
-              <div className="relative bg-slate-800/80 backdrop-blur-2xl rounded-xl border border-slate-600/60 py-3 px-4 shadow-xl">
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center">
-                    <div className="p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg mr-2 border border-blue-400/30">
-                      <Filter className="h-3 w-3 text-blue-300" />
-                    </div>
-                    <span className="text-white font-medium text-sm">Active Filters</span>
+          <div className="relative z-10 px-3 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-blue-500/30">
+            <div className="space-y-4">
+              {/* Search with better visibility - full width on mobile */}
+              <div className="relative w-full">
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
+                    <Search className="h-3 w-3 text-blue-300" />
                   </div>
-                  
-                  <div className="flex flex-wrap gap-1.5">
-                    {tierFilter !== 'all' && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-6 px-2 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-lg font-medium transition-all duration-300" 
-                        onClick={() => setTierFilter('all')}
-                      >
-                        Tier: {tierFilter}
-                        <span className="ml-1 text-sm">×</span>
-                      </Button>
-                    )}
-                    
-                    {statusFilter !== 'all' && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-6 px-2 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-lg font-medium transition-all duration-300" 
-                        onClick={() => setStatusFilter('all')}
-                      >
-                        Status: {statusFilter}
-                        <span className="ml-1 text-sm">×</span>
-                      </Button>
-                    )}
-                    
-                    {searchQuery && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-6 px-2 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-lg font-medium transition-all duration-300" 
-                        onClick={() => setSearchQuery('')}
-                      >
-                        Search: "{searchQuery}"
-                        <span className="ml-1 text-sm">×</span>
-                      </Button>
-                    )}
-                  </div>
-          
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="ml-auto h-6 px-2 text-xs text-slate-300 hover:text-white hover:bg-slate-700/80 rounded-lg font-medium transition-all duration-300"
-                    onClick={() => {
-                      setTierFilter('all');
-                      setStatusFilter('open');
-                      setSearchQuery('');
-                    }}
-                  >
-                    Clear All
-                  </Button>
+                  <Input
+                    placeholder="Search saved opportunities..."
+                    className="pl-12 pr-4 h-11 sm:h-12 bg-slate-800/80 border border-slate-600/60 text-white placeholder:text-slate-300 placeholder:text-sm sm:placeholder:text-base focus:border-blue-400/70 focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300 hover:bg-slate-800/90 text-sm sm:text-base"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{ outline: 'none', boxShadow: 'none' }}
+                  />
                 </div>
               </div>
-            </div>
-          )}
           
-          {/* Results count and sort controls - mobile optimized */}
-          <div className="mt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-              <p className="text-white font-medium text-sm">
-                Showing {displayedOpportunities.length} of {filteredOpportunities.length} saved {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
-              </p>
+              {/* Filters - stacked on mobile, inline on larger screens */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <Select value={tierFilter} onValueChange={setTierFilter}>
+                  <SelectTrigger className="h-11 sm:h-12 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
+                    <SelectValue placeholder="All Tiers" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
+                    <SelectGroup>
+                      <SelectItem value="all" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">All Tiers</SelectItem>
+                      <SelectItem value="1" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Tier 1</SelectItem>
+                      <SelectItem value="2" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Tier 2</SelectItem>
+                      <SelectItem value="3" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Tier 3</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-11 sm:h-12 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
+                    <SelectValue placeholder="Open" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
+                    <SelectGroup>
+                      <SelectItem value="all" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">All Status</SelectItem>
+                      <SelectItem value="open" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Open</SelectItem>
+                      <SelectItem value="closed" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Closed</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={industryFilter} onValueChange={setIndustryFilter}>
+                  <SelectTrigger className="h-11 sm:h-12 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
+                    <SelectValue placeholder="All Industries" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
+                    <SelectGroup>
+                      <SelectItem value="all" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">All Industries</SelectItem>
+                      {INDUSTRY_OPTIONS.map((industry) => (
+                        <SelectItem key={industry.value} value={industry.value} className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">
+                          {industry.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
-                  <SlidersHorizontal className="h-3 w-3 text-blue-300" />
+            {/* Active filters */}
+            {(tierFilter !== 'all' || statusFilter !== 'all' || industryFilter !== 'all' || searchQuery) && (
+              <div className="mt-4 relative">
+                <div className="relative bg-slate-800/80 backdrop-blur-2xl rounded-xl border border-slate-600/60 py-2.5 px-3 shadow-xl">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center min-w-0 flex-1">
+                      <div className="p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg mr-2 border border-blue-400/30 flex-shrink-0">
+                        <Filter className="h-3 w-3 text-blue-300" />
+                      </div>
+                      <span className="text-white font-medium text-sm mr-2 flex-shrink-0">Active Filters</span>
+                      
+                      <div className="flex items-center gap-1 min-w-0 overflow-x-auto scrollbar-hide">
+                        {tierFilter !== 'all' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-5 px-1.5 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-md font-medium transition-all duration-300 flex-shrink-0" 
+                            onClick={() => setTierFilter('all')}
+                          >
+                            T{tierFilter}
+                            <span className="ml-0.5 text-xs">×</span>
+                          </Button>
+                        )}
+                        
+                        {statusFilter !== 'all' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-5 px-1.5 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-md font-medium transition-all duration-300 flex-shrink-0" 
+                            onClick={() => setStatusFilter('all')}
+                          >
+                            {statusFilter === 'open' ? 'Open' : statusFilter}
+                            <span className="ml-0.5 text-xs">×</span>
+                          </Button>
+                        )}
+                        
+                        {industryFilter !== 'all' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-5 px-1.5 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-md font-medium transition-all duration-300 flex-shrink-0" 
+                            onClick={() => setIndustryFilter('all')}
+                          >
+                            {industryFilter.length > 8 ? `${industryFilter.substring(0, 8)}...` : industryFilter}
+                            <span className="ml-0.5 text-xs">×</span>
+                          </Button>
+                        )}
+                        
+                        {searchQuery && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-5 px-1.5 text-xs bg-slate-700/80 border-slate-500/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/50 hover:text-white rounded-md font-medium transition-all duration-300 flex-shrink-0" 
+                            onClick={() => setSearchQuery('')}
+                          >
+                            "{searchQuery.length > 6 ? `${searchQuery.substring(0, 6)}...` : searchQuery}"
+                            <span className="ml-0.5 text-xs">×</span>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+            
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 px-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-700/80 rounded-md font-medium transition-all duration-300 flex-shrink-0"
+                      onClick={() => {
+                        setTierFilter('all');
+                        setStatusFilter('open');
+                        setIndustryFilter('all');
+                        setSearchQuery('');
+                      }}
+                    >
+                      Clear
+                    </Button>
+                  </div>
                 </div>
-                <span className="text-white font-medium text-sm">Sort by:</span>
+              </div>
+            )}
+            
+            {/* Results count and sort controls - mobile optimized */}
+            <div className="mt-4 flex flex-row justify-between items-center gap-2">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <p className="text-white font-medium text-xs sm:text-sm">
+                  Showing {displayedOpportunities.length} of {filteredOpportunities.length} saved {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
+                </p>
               </div>
               
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[140px] sm:w-[170px] h-9 sm:h-10 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
-                  <SelectGroup>
-                    <SelectItem value="deadline" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Deadline (Soonest)</SelectItem>
-                    <SelectItem value="posted" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Recently Posted</SelectItem>
-                    <SelectItem value="price-low" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Price (Low to High)</SelectItem>
-                    <SelectItem value="price-high" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Price (High to Low)</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="p-0.5 sm:p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
+                    <SlidersHorizontal className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-blue-300" />
+                  </div>
+                  <span className="text-white font-medium text-xs sm:text-sm">Sort by:</span>
+                </div>
+                
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-[120px] sm:w-[140px] lg:w-[170px] h-8 sm:h-9 lg:h-10 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300 text-xs sm:text-sm" style={{ outline: 'none', boxShadow: 'none' }}>
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
+                    <SelectGroup>
+                      <SelectItem value="deadline" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Deadline (Soonest)</SelectItem>
+                      <SelectItem value="posted" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Recently Posted</SelectItem>
+                      <SelectItem value="price-low" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Price (Low to High)</SelectItem>
+                      <SelectItem value="price-high" className="text-white hover:bg-blue-500/20 focus:bg-blue-500/20">Price (High to Low)</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
           </div>
         </div>
       )}
@@ -472,6 +501,7 @@ export default function SavedOpportunitiesPage() {
                 onClick={() => {
                   setTierFilter('all');
                   setStatusFilter('open');
+                  setIndustryFilter('all');
                   setSearchQuery('');
                 }}
               >

@@ -299,7 +299,7 @@ export default function OpportunitiesPage() {
       
       <div className="relative z-10">
         {/* Header */}
-        <div className="px-4 sm:px-6 lg:px-8 py-8 border-b border-blue-500/30">
+        <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-blue-500/30">
         <div>
             <h1 className="text-3xl font-bold text-white mb-2">Media Opportunities</h1>
             <p className="text-gray-300 text-base">
@@ -327,7 +327,7 @@ export default function OpportunitiesPage() {
                   </div>
                   <Input
                     placeholder="Search by title, outlet, or tag"
-                    className="pl-12 pr-4 h-11 sm:h-12 bg-slate-800/80 border border-slate-600/60 text-white placeholder:text-slate-300 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300 hover:bg-slate-800/90"
+                    className="pl-12 pr-4 h-11 sm:h-12 bg-slate-800/80 border border-slate-600/60 text-white placeholder:text-slate-300 placeholder:text-sm sm:placeholder:text-base focus:border-blue-400/70 focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300 hover:bg-slate-800/90 text-sm sm:text-base"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{ outline: 'none', boxShadow: 'none' }}
@@ -463,24 +463,24 @@ export default function OpportunitiesPage() {
             )}
             
             {/* Results count and sort controls - mobile optimized */}
-            <div className="mt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
-              <div className="flex items-center gap-3">
+            <div className="mt-4 flex flex-row justify-between items-center gap-2">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                <p className="text-white font-medium text-sm">
+                <p className="text-white font-medium text-xs sm:text-sm">
                   Showing {displayedOpportunities.length} of {filteredOpportunities.length} {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
                 </p>
               </div>
               
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
-                    <SlidersHorizontal className="h-3 w-3 text-blue-300" />
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="p-0.5 sm:p-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
+                    <SlidersHorizontal className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-blue-300" />
                   </div>
-                  <span className="text-white font-medium text-sm">Sort by:</span>
+                  <span className="text-white font-medium text-xs sm:text-sm">Sort by:</span>
                 </div>
                 
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-[140px] sm:w-[170px] h-9 sm:h-10 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300" style={{ outline: 'none', boxShadow: 'none' }}>
+                  <SelectTrigger className="w-[120px] sm:w-[140px] lg:w-[170px] h-8 sm:h-9 lg:h-10 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300 text-xs sm:text-sm" style={{ outline: 'none', boxShadow: 'none' }}>
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">
