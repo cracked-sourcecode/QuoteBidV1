@@ -1400,27 +1400,27 @@ export default function OpportunityDetail() {
                   </div>
                   
                   <div className={`flex items-center space-x-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg ${
-                    priceIncrease >= 0 
-                      ? 'bg-green-600/20 border border-green-400/40'
-                      : 'bg-blue-600/20 border border-blue-400/40'
-                  }`}>
-                    {priceIncrease >= 0 ? (
-                      <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-300" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-blue-300" />
-                    )}
-                    <span className={`text-xs sm:text-sm font-semibold ${
-                      priceIncrease >= 0 ? 'text-green-200' : 'text-blue-200'
+                      priceIncrease >= 0 
+                        ? 'bg-green-600/20 border border-green-400/40'
+                        : 'bg-blue-600/20 border border-blue-400/40'
                     }`}>
-                      ${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'}
-                    </span>
-                  </div>
-                  
+                      {priceIncrease >= 0 ? (
+                      <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-300" />
+                      ) : (
+                      <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-blue-300" />
+                      )}
+                    <span className={`text-xs sm:text-sm font-semibold ${
+                        priceIncrease >= 0 ? 'text-green-200' : 'text-blue-200'
+                      }`}>
+                        ${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'} 
+                      </span>
+                    </div>
+                    
                   <div className="flex items-center space-x-1 bg-blue-600/20 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg border border-blue-400/40">
                     <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-blue-300" />
                     <span className="text-xs sm:text-sm font-semibold text-blue-200">
-                      {Math.max(0, Math.ceil((new Date(opportunity.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60)))}h remaining
-                    </span>
+                        {Math.max(0, Math.ceil((new Date(opportunity.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60)))}h remaining
+                      </span>
                   </div>
                 </div>
               </div>
@@ -1431,12 +1431,12 @@ export default function OpportunityDetail() {
               {/* Classification Badge - Top Right */}
               <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10">
                 <Badge className={`border-0 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-semibold shadow-sm ${
-                  getOpportunityStatus(opportunity) === 'open' 
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-                    : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
-                }`}>
-                  {getOpportunityStatus(opportunity).charAt(0).toUpperCase() + getOpportunityStatus(opportunity).slice(1)}
-                </Badge>
+                      getOpportunityStatus(opportunity) === 'open' 
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+                        : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
+                    }`}>
+                      {getOpportunityStatus(opportunity).charAt(0).toUpperCase() + getOpportunityStatus(opportunity).slice(1)}
+                    </Badge>
               </div>
               
               <div className="p-3 sm:p-4">
@@ -1513,7 +1513,10 @@ export default function OpportunityDetail() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
                 {/* Price Trend Section - Left Side */}
                 <div className="p-3 sm:p-4 lg:p-6 lg:border-r border-slate-600/50">
-                  <div className="mb-3 sm:mb-4">
+                  <div className="mb-4 sm:mb-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-2">
+                      <h3 className="text-lg sm:text-xl font-bold text-white">Price History</h3>
+                    </div>
                     {/* Interactive Price Chart - Mobile Optimized */}
                     <div className="w-full">
                       <PriceTrendChart
@@ -1556,7 +1559,7 @@ export default function OpportunityDetail() {
                 </div>
 
                 {/* Current Price & Pitch Section - Right Side */}
-                <div className="p-4 sm:p-6 lg:p-8 relative border-t lg:border-t-0 border-slate-600/50">
+                <div className="p-3 sm:p-4 lg:p-6 relative border-t lg:border-t-0 border-slate-600/50">
                   <div className="mb-4 sm:mb-6">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-2">
                       <h3 className="text-lg sm:text-xl font-bold text-white">Current Price</h3>
@@ -1569,7 +1572,7 @@ export default function OpportunityDetail() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row sm:items-baseline sm:space-x-3 mb-2 gap-1 sm:gap-0">
-                      <span className={`text-3xl sm:text-4xl font-bold ${
+                      <span className={`text-2xl sm:text-3xl lg:text-4xl font-black ${
                         priceTrend === 'up' ? 'text-green-400' :
                         priceTrend === 'down' ? 'text-red-400' :
                         priceData ? 'text-blue-400' : 'text-white'

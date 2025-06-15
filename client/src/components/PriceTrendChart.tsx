@@ -192,16 +192,6 @@ export default function PriceTrendChart({
       <div className="w-full h-auto">
         {/* Header with timeframe buttons - themed */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
-            <div className={`text-lg sm:text-xl font-bold whitespace-nowrap ${
-              theme === 'dark' 
-                ? 'text-white bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent'
-                : 'text-gray-900'
-            }`}>
-              Price History
-            </div>
-
-          </div>
           <div className={`flex rounded-xl p-1 sm:p-1.5 flex-shrink-0 shadow-lg ${
             theme === 'dark' 
               ? 'bg-slate-800/60 backdrop-blur-sm border border-slate-600/30'
@@ -247,13 +237,6 @@ export default function PriceTrendChart({
       {/* Header with live price ticker and controls - themed */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-4 min-w-0">
-          <div className={`text-lg sm:text-xl font-bold whitespace-nowrap ${
-            theme === 'dark' 
-              ? 'text-white bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent'
-              : 'text-gray-900'
-          }`}>
-            Price History
-          </div>
           {priceStats && (
             <div className="flex flex-wrap items-center gap-2 sm:gap-4">
               <div className={`text-2xl sm:text-3xl lg:text-4xl font-black transition-all duration-500 whitespace-nowrap ${
