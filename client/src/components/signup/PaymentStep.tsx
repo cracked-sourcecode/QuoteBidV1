@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, Lock, AlertCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { advanceSignupStage, getSignupEmail } from '@/lib/signup-wizard';
+import { conditionalToast } from '@/lib/mobile-utils';
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
 import { apiRequest } from '@/lib/queryClient';
 import { useLocation } from 'wouter';
@@ -132,7 +133,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
       
       if (advanceResult.stage === 'profile') {
         setStage('profile');
-        toast({ 
+        conditionalToast(toast, { 
           title: 'Payment Successful!', 
           description: 'Your subscription is now active. Let\'s complete your profile.' 
         });
@@ -145,7 +146,7 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
       if (!errorMessage) {
         setErrorMessage(error.message || 'There was an error processing your payment. Please try again.');
       }
-      toast({ 
+      conditionalToast(toast, { 
         title: 'Payment Error', 
         description: errorMessage || error.message || 'There was an error processing your payment.', 
         variant: 'destructive' 

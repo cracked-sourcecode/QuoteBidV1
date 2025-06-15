@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Upload, Camera, Check } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { getSignupEmail, getSignupData, updateSignupProfile, clearSignupData } from '@/lib/signup-wizard';
+import { conditionalToast } from '@/lib/mobile-utils';
 import { useSignupWizard } from '@/contexts/SignupWizardContext';
 import { post } from '@/lib/api';
 import { apiFetch } from '@/lib/apiFetch';
@@ -55,12 +56,12 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      toast({ title: 'Error', description: 'Email not found. Please restart the signup process.', variant: 'destructive' });
+      conditionalToast(toast, { title: 'Error', description: 'Email not found. Please restart the signup process.', variant: 'destructive' });
       return;
     }
     // Only validate required fields
     if (!fullName.trim() || !location.trim() || !title.trim() || !bio.trim()) {
-      toast({ title: 'Required Fields', description: 'Please fill out all required fields to complete your profile.', variant: 'destructive' });
+      conditionalToast(toast, { title: 'Required Fields', description: 'Please fill out all required fields to complete your profile.', variant: 'destructive' });
       return;
     }
     setIsLoading(true);
@@ -108,7 +109,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
         throw new Error('Failed to complete signup - no token received');
       }
     } catch (error: any) {
-      toast({ title: 'Profile Update Error', description: error.message || 'There was an error updating your profile. Please try again.', variant: 'destructive' });
+      conditionalToast(toast, { title: 'Profile Update Error', description: error.message || 'There was an error updating your profile. Please try again.', variant: 'destructive' });
     }
     setIsLoading(false);
   };

@@ -7,6 +7,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Loader2, CheckCircle, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SignupWizardProvider, useSignupWizard } from '@/contexts/SignupWizardContext';
+import { conditionalToast } from '@/lib/mobile-utils';
 import { PaymentStep } from '@/components/signup/PaymentStep';
 import { ProfileStep } from '@/components/signup/ProfileStep';
 import { post } from '@/lib/api';
@@ -243,7 +244,7 @@ function SignupWizardContent() {
 
   const handleStartSignup = async () => {
     if (!inputEmail || !inputEmail.includes('@') || !password || !username || !fullName || !companyName || !phone || !industry) {
-      toast({
+      conditionalToast(toast, {
         title: 'Missing Information',
         description: 'Please fill out all required fields to begin.',
         variant: 'destructive',
@@ -253,7 +254,7 @@ function SignupWizardContent() {
 
     // Validate password requirements
     if (!passwordValidation.isValid) {
-      toast({
+      conditionalToast(toast, {
         title: 'Password Requirements Not Met',
         description: 'Please ensure your password meets all security requirements.',
         variant: 'destructive',
@@ -285,7 +286,7 @@ function SignupWizardContent() {
       localStorage.setItem('signup_highest_step', '1'); // Starting at step 1 (payment)
       setStage('payment');
     } catch (err: any) {
-      toast({ title: 'Signup Error', description: err.message, variant: 'destructive' });
+      conditionalToast(toast, { title: 'Signup Error', description: err.message, variant: 'destructive' });
     }
     setIsLoading(false);
   };

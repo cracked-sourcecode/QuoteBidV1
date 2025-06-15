@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { conditionalToast } from "@/lib/mobile-utils";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -61,7 +62,7 @@ export default function ResetPassword() {
       validateToken(resetToken);
     } else {
       setIsValidToken(false);
-      toast({
+      conditionalToast(toast, {
         title: "Invalid Reset Link",
         description: "The password reset link is missing or invalid.",
         variant: "destructive",
@@ -84,7 +85,7 @@ export default function ResetPassword() {
       } else {
         const error = await response.json();
         setIsValidToken(false);
-        toast({
+        conditionalToast(toast, {
           title: "Invalid Reset Link",
           description: error.message || "The password reset link has expired or is invalid.",
           variant: "destructive",
@@ -92,7 +93,7 @@ export default function ResetPassword() {
       }
     } catch (error) {
       setIsValidToken(false);
-      toast({
+      conditionalToast(toast, {
         title: "Connection Error",
         description: "Unable to validate reset link. Please try again.",
         variant: "destructive",
@@ -104,7 +105,7 @@ export default function ResetPassword() {
     e.preventDefault();
     
     if (!password || !confirmPassword) {
-      toast({
+      conditionalToast(toast, {
         title: "Missing Information",
         description: "Please fill in all fields.",
         variant: "destructive",
@@ -113,7 +114,7 @@ export default function ResetPassword() {
     }
 
     if (!passwordValidation.isValid) {
-      toast({
+      conditionalToast(toast, {
         title: "Password Requirements Not Met",
         description: "Please ensure your password meets all security requirements.",
         variant: "destructive",
@@ -122,7 +123,7 @@ export default function ResetPassword() {
     }
 
     if (password !== confirmPassword) {
-      toast({
+      conditionalToast(toast, {
         title: "Passwords Don't Match",
         description: "Please make sure both passwords are the same.",
         variant: "destructive",
@@ -145,7 +146,7 @@ export default function ResetPassword() {
       });
 
       if (response.ok) {
-        toast({
+        conditionalToast(toast, {
           title: "Password Reset Successful!",
           description: "Your password has been updated. You can now log in with your new password.",
         });
@@ -154,14 +155,14 @@ export default function ResetPassword() {
         setTimeout(() => navigate("/login"), 2000);
       } else {
         const error = await response.json();
-        toast({
+        conditionalToast(toast, {
           title: "Reset Failed",
           description: error.message || "Failed to reset password. Please try again.",
           variant: "destructive",
         });
       }
     } catch (error) {
-      toast({
+      conditionalToast(toast, {
         title: "Connection Error",
         description: "Unable to reset password. Please try again.",
         variant: "destructive",

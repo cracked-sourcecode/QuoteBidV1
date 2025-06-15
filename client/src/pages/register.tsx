@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
 import { CheckCircle, X } from 'lucide-react';
+import { conditionalToast } from '@/lib/mobile-utils';
 
 // Add custom CSS for animations
 const customStyles = `
@@ -565,16 +566,16 @@ export default function RegisterPage() {
           document.documentElement.style.backgroundColor = '#0f172a';
           
           localStorage.setItem('signup_email', form.email);
-          toast({ title: 'Account created!', description: 'Continue to payment...', variant: 'default' });
+          conditionalToast(toast, { title: 'Account created!', description: 'Continue to payment...', variant: 'default' });
           setTimeout(() => {
             navigate('/signup-wizard');
           }, 1200);
         } else {
           const data = await res.json();
-          toast({ title: 'Signup Error', description: data.message || 'Failed to create account', variant: 'destructive' });
+          conditionalToast(toast, { title: 'Signup Error', description: data.message || 'Failed to create account', variant: 'destructive' });
         }
       } catch (err) {
-        toast({ title: 'Signup Error', description: 'Failed to create account', variant: 'destructive' });
+        conditionalToast(toast, { title: 'Signup Error', description: 'Failed to create account', variant: 'destructive' });
       }
     }
   };
