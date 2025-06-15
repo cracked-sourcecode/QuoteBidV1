@@ -1506,11 +1506,11 @@ export default function OpportunityDetail() {
 
             {/* Marketplace Pricing Section - Enhanced with gradients */}
             <div id="pitch-section" style={{position: 'absolute', transform: 'translateY(-60px)'}}></div>
-            <div className="bg-gradient-to-br from-indigo-50 via-white to-purple-50 rounded-2xl border border-indigo-200/30 overflow-hidden shadow-xl">
-              <div className="flex flex-col lg:grid lg:grid-cols-2 gap-0">
-                {/* Price Trend Section */}
-                <div className="p-4 sm:p-6 lg:border-r border-gray-200/50">
-                  <div className="mb-4 sm:mb-6">
+            <div className="bg-gradient-to-br from-indigo-50 via-white to-purple-50 rounded-3xl border border-indigo-200/30 overflow-hidden shadow-xl">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                {/* Price Trend Section - Left Side */}
+                <div className="p-3 sm:p-4 lg:p-6 lg:border-r border-gray-200/50">
+                  <div className="mb-3 sm:mb-4">
                     {/* Interactive Price Chart - Mobile Optimized */}
                     <div className="w-full">
                       <PriceTrendChart
@@ -1524,21 +1524,21 @@ export default function OpportunityDetail() {
                     </div>
 
                     {/* Enhanced price range and timeline info */}
-                    <div className="space-y-3 sm:space-y-4 mt-4 sm:mt-6 px-2 sm:px-0">
+                    <div className="space-y-2 sm:space-y-3 mt-4 sm:mt-6">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-2">
-                          <span className="text-green-600 font-bold text-base sm:text-lg">${Math.min(...priceDataForChart.map((p: any) => p.price))}</span>
-                          <span className="text-gray-500 text-sm">Low</span>
+                          <span className="text-green-600 font-bold text-sm sm:text-base">${Math.min(...priceDataForChart.map((p: any) => p.price))}</span>
+                          <span className="text-gray-500 text-xs sm:text-sm">Low</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <span className="text-red-500 font-bold text-base sm:text-lg">${Math.max(...priceDataForChart.map((p: any) => p.price))}</span>
-                          <span className="text-gray-500 text-sm">High</span>
+                          <span className="text-red-500 font-bold text-sm sm:text-base">${Math.max(...priceDataForChart.map((p: any) => p.price))}</span>
+                          <span className="text-gray-500 text-xs sm:text-sm">High</span>
                         </div>
                       </div>
                       
                       {/* Timeline information */}
-                      <div className="flex justify-center items-center text-xs text-gray-500 border-t pt-3">
-                        <div className="flex items-center space-x-4">
+                      <div className="flex justify-end items-center text-xs text-gray-500 border-t pt-2">
+                        <div className="flex items-center space-x-3 sm:space-x-4">
                           {opportunity && (
                             <>
                               <span>Started {format(new Date(opportunity.postedAt || opportunity.createdAt), 'MMM d')}</span>
@@ -1552,50 +1552,48 @@ export default function OpportunityDetail() {
                   </div>
                 </div>
 
-                {/* Current Price & Pitch Section */}
-                <div className="p-4 sm:p-6 relative border-t lg:border-t-0 border-gray-200/50">
-                  <div className="mb-6 sm:mb-8">
-                    {/* Current Price Header */}
-                    <div className="mb-4 sm:mb-6">
-                      <div className="flex flex-col gap-2 mb-3">
-                        <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Current Price</h3>
-                        <div className="flex items-center space-x-2 text-green-600 text-sm font-medium">
-                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                          <span>
-                            {Math.round(belowListPercentage)}% {actualPriceDifference >= 0 ? 'above' : 'below'} list price
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-2 mb-4">
-                        <div className="flex items-baseline space-x-3">
-                          <span className={`text-4xl sm:text-5xl font-bold ${
-                            priceTrend === 'up' ? 'text-green-600' :
-                            priceTrend === 'down' ? 'text-red-600' :
-                            priceData ? 'text-blue-600' : 'text-gray-900'
-                          } transition-colors duration-300`}>${currentPrice}</span>
-                          {priceIncrease !== 0 && (
-                            <div className={`flex items-center space-x-1 text-lg font-semibold ${priceIncrease >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              <TrendingUp className={`h-5 w-5 ${priceIncrease < 0 ? 'rotate-180' : ''}`} />
-                              <span>{priceIncrease >= 0 ? '+' : ''}${priceIncrease}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {priceData?.lastPriceUpdate && (
-                          <div className="text-xs text-gray-500 flex items-center space-x-1">
-                            <Clock className="h-3 w-3" />
-                            <span>Updated {new Date(priceData.lastPriceUpdate).toLocaleTimeString()}</span>
-                          </div>
-                        )}
+                {/* Current Price & Pitch Section - Right Side */}
+                <div className="p-4 sm:p-6 lg:p-8 relative border-t lg:border-t-0 border-gray-200/50">
+                  <div className="mb-4 sm:mb-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-2">
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-900">Current Price</h3>
+                      <div className="flex items-center space-x-2 text-green-600 text-sm font-medium">
+                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                        <span>
+                          {Math.round(belowListPercentage)}% {actualPriceDifference >= 0 ? 'above' : 'below'} list price
+                        </span>
                       </div>
                     </div>
 
+                    <div className="flex flex-col sm:flex-row sm:items-baseline sm:space-x-3 mb-2 gap-1 sm:gap-0">
+                      <span className={`text-3xl sm:text-4xl font-bold ${
+                        priceTrend === 'up' ? 'text-green-600' :
+                        priceTrend === 'down' ? 'text-red-600' :
+                        priceData ? 'text-blue-600' : 'text-gray-900'
+                      } transition-colors duration-300`}>${currentPrice}</span>
+                      {priceIncrease !== 0 && (
+                        <div className={`flex items-center space-x-1 text-base sm:text-lg font-semibold ${priceIncrease >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <TrendingUp className={`h-4 w-4 sm:h-5 sm:w-5 ${priceIncrease < 0 ? 'rotate-180' : ''}`} />
+                          <span>{priceIncrease >= 0 ? '+' : ''}${priceIncrease}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+
+                      {priceData?.lastPriceUpdate && (
+                        <div className="text-xs text-gray-500 flex items-center space-x-1">
+                          <Clock className="h-3 w-3" />
+                          <span>Updated {new Date(priceData.lastPriceUpdate).toLocaleTimeString()}</span>
+                        </div>
+                      )}
+                    </div>
+
                     {/* Pitch Input */}
-                    <div className="space-y-4 sm:space-y-6">
+                    <div className="mb-6">
                       {isCheckingPitchStatus ? (
                         /* Loading Pitch Status */
-                        <div className="bg-gray-50 rounded-xl border border-gray-200/50 p-6 sm:p-8">
+                        <div className="bg-gray-50 rounded-2xl border border-gray-200/50 p-8">
                           <div className="text-center">
                             <div className="flex justify-center mb-4">
                               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -1603,9 +1601,9 @@ export default function OpportunityDetail() {
                             <p className="text-gray-600 font-medium">Checking your pitch status...</p>
                           </div>
                         </div>
-                                              ) : userPitchStatus?.hasSubmitted ? (
+                      ) : userPitchStatus?.hasSubmitted ? (
                         /* Already Submitted State */
-                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200/50 overflow-hidden min-h-[320px] sm:min-h-[360px] flex items-center justify-center">
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200/50 overflow-hidden h-[280px] sm:h-[360px] lg:h-[400px] flex items-center justify-center mt-6">
                           <div className="p-8 text-center flex flex-col justify-center h-full">
                             {/* Success Icon */}
                             <div className="flex justify-center mb-5">
@@ -1662,9 +1660,11 @@ export default function OpportunityDetail() {
                         </div>
                       ) : (
                         /* Normal Pitch Input State */
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <label className="text-gray-700 font-semibold text-xl">Craft your pitch</label>
+                        <>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-3">
+                            <label className="text-gray-700 font-semibold text-lg">Craft your pitch</label>
+                            </div>
                             <span className={`text-sm font-medium ${
                               remainingChars < 100 ? 'text-red-500' : 'text-gray-500'
                             }`}>
@@ -1677,28 +1677,28 @@ export default function OpportunityDetail() {
                               value={pitchContent}
                               onChange={(e) => setPitchContent(e.target.value)}
                               placeholder="Share your expertise, credentials, and unique perspective that would make you perfect for this story. Explain why you're the ideal expert for this opportunity..."
-                              className="min-h-[280px] w-full p-4 sm:p-5 border border-gray-200 rounded-xl bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-50 transition-all duration-200 resize-none text-gray-800 text-base sm:text-lg font-medium placeholder:text-gray-400 placeholder:font-normal shadow-sm hover:border-gray-300"
+                              className="min-h-[240px] w-full p-4 border border-gray-200 rounded-xl bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-50 transition-all duration-200 resize-none text-gray-800 text-base font-medium placeholder:text-gray-400 placeholder:font-normal shadow-sm hover:border-gray-300"
                               maxLength={maxPitchLength}
                               style={{
                                 fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                                lineHeight: '1.6',
+                                lineHeight: '1.5',
                                 letterSpacing: '0.01em'
                               }}
                             />
                             
                             {/* Word count indicator */}
-                            <div className="absolute bottom-3 right-3 text-xs text-gray-400 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-sm">
+                            <div className="absolute bottom-3 right-3 text-xs text-gray-400 bg-white/80 backdrop-blur-sm px-2 py-1 rounded">
                               {pitchContent.trim().split(/\s+/).filter(word => word.length > 0).length} words
                             </div>
                           </div>
-                        </div>
+                        </>
                       )}
                     </div>
 
                     {/* Record Pitch Button - Only show if not submitted and not loading */}
                     {!isCheckingPitchStatus && !userPitchStatus?.hasSubmitted && (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
+                      <div className="mb-6">
+                        <div className="flex items-center justify-between mb-2">
                           <Button
                             type="button"
                             variant="outline"
@@ -1806,7 +1806,7 @@ export default function OpportunityDetail() {
 
                     {/* Secure Pitch Button - Only show if not submitted and not loading */}
                     {!isCheckingPitchStatus && !userPitchStatus?.hasSubmitted && (
-                      <div className="space-y-4">
+                      <>
                         <Button
                           type="button"
                           onClick={(e) => {
@@ -1814,11 +1814,11 @@ export default function OpportunityDetail() {
                             e.stopPropagation();
                             handleSecurePitch();
                           }}
-                          className={`w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 sm:py-5 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 ${
+                          className={`w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 mb-4 ${
                             priceData ? 'ring-2 ring-blue-300 ring-opacity-50' : ''
                           }`}
                         >
-                          <div className="flex items-center justify-center space-x-3">
+                          <div className="flex items-center justify-center space-x-2">
                             <Lock className="h-5 w-5" />
                             <span>Secure Pitch at ${currentPrice}</span>
                             {priceData && (
@@ -1830,10 +1830,10 @@ export default function OpportunityDetail() {
                         </Button>
 
                         {/* Disclaimer */}
-                        <p className="text-gray-500 text-sm text-center leading-relaxed px-2">
+                        <p className="text-gray-500 text-sm text-center leading-relaxed">
                           By pitching, you agree to pay the accepted market rate at the time of submission—only if you're included in the article.
                         </p>
-                      </div>
+                      </>
                     )}
                   </div>
                 </div>

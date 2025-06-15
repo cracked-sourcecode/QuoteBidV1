@@ -227,7 +227,7 @@ export default function PriceTrendChart({
           </div>
         </div>
         
-        <div className={`w-full h-[320px] sm:h-[360px] lg:h-[400px] flex items-center justify-center rounded-2xl border shadow-2xl ${
+        <div className={`w-full h-[280px] sm:h-[360px] lg:h-[400px] flex items-center justify-center rounded-2xl border shadow-2xl ${
           theme === 'dark'
             ? 'bg-gradient-to-br from-slate-800/50 to-slate-900/80 backdrop-blur-sm border-slate-600/30'
             : 'bg-white border-gray-200'
@@ -309,7 +309,7 @@ export default function PriceTrendChart({
       </div>
 
       {/* Interactive chart - themed */}
-      <div className={`h-[320px] sm:h-[360px] lg:h-[400px] rounded-2xl border p-2 sm:p-3 lg:p-6 shadow-2xl transition-all duration-500 ${
+      <div className={`h-[280px] sm:h-[360px] lg:h-[400px] rounded-2xl border p-3 sm:p-4 lg:p-6 shadow-2xl transition-all duration-500 ${
         theme === 'dark'
           ? `bg-gradient-to-br from-slate-800/40 via-slate-900/60 to-slate-800/40 backdrop-blur-sm border-slate-600/30 ${
               isAnimating ? 'ring-2 ring-cyan-400/50 shadow-cyan-500/20' : 'shadow-slate-900/50'
@@ -317,7 +317,7 @@ export default function PriceTrendChart({
           : 'bg-white border-gray-200 shadow-gray-300/50'
       }`}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+          <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 10 }}>
             <defs>
               {/* Gradient definitions for different price trends - themed */}
               <linearGradient id={theme === 'dark' ? "bullishGradient" : "bullishGradientLight"} x1="0" y1="0" x2="0" y2="1">
@@ -361,8 +361,8 @@ export default function PriceTrendChart({
             
             {/* Grid - themed */}
             <CartesianGrid 
-              strokeDasharray="3 6" 
-              opacity={theme === 'dark' ? 0.2 : 0.4} 
+              strokeDasharray="2 4" 
+              opacity={theme === 'dark' ? 0.15 : 0.3} 
               stroke={theme === 'dark' ? "#64748b" : "#e5e7eb"}
             />
             
@@ -370,18 +370,16 @@ export default function PriceTrendChart({
               dataKey="displayTime"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: theme === 'dark' ? '#94a3b8' : '#6b7280', fontWeight: 600 }}
+              tick={{ fontSize: 11, fill: theme === 'dark' ? '#94a3b8' : '#6b7280', fontWeight: 500 }}
               interval="preserveStartEnd"
-              height={25}
             />
             
             <YAxis
               domain={priceDomain}
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: theme === 'dark' ? '#94a3b8' : '#6b7280', fontWeight: 600 }}
+              tick={{ fontSize: 11, fill: theme === 'dark' ? '#94a3b8' : '#6b7280', fontWeight: 500 }}
               tickFormatter={(value) => `$${Math.round(value)}`}
-              width={35}
             />
             
             <Tooltip content={<CustomTooltip live={live} theme={theme} />} />
