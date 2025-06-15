@@ -83,10 +83,10 @@ function LogoutHandler() {
   }, [hasLoggedOut, authContext]); // Include dependencies
   
   return (
-    <div className="flex justify-center items-center h-screen bg-white">
+    <div className="flex justify-center items-center h-screen bg-slate-900">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-        <p className="text-lg">Logging out...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
+        <p className="text-lg text-slate-200">Logging out...</p>
       </div>
     </div>
   );
@@ -119,18 +119,14 @@ function Router() {
           {() => {
             const { user, isLoading } = useAuth();
             
-            // If we're still loading the user state, show the home page
-            // This prevents the white screen during logout
-            if (isLoading) {
+            // Show home page while loading or if no user
+            // This prevents flashing and unnecessary redirects
+            if (isLoading || !user) {
               return <Home />;
             }
             
-            // Only redirect if we have a confirmed logged-in user
-            if (user) {
-              return <Redirect to="/opportunities" />;
-            }
-            
-            return <Home />;
+            // Only redirect authenticated users
+            return <Redirect to="/opportunities" />;
           }}
         </Route>
         <Route path="/login" component={LoginPage} />

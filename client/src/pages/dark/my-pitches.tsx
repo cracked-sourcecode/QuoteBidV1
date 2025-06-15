@@ -287,7 +287,9 @@ export default function MyPitches() {
     }
   };
 
-  if (isLoading) {
+  // Skip loading screen on mobile (pull-to-refresh handles it)
+  const isMobile = window.innerWidth <= 768;
+  if (isLoading && !isMobile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-purple-900">
         <div className="max-w-4xl mx-auto px-4 py-8">

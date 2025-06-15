@@ -285,7 +285,9 @@ export default function MyPitches() {
     }
   };
 
-  if (isLoading) {
+  // Skip loading screen on mobile (pull-to-refresh handles it)
+  const isMobile = window.innerWidth <= 768;
+  if (isLoading && !isMobile) {
     return (
       <div className="w-full bg-white min-h-screen">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">

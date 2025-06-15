@@ -278,8 +278,9 @@ export default function OpportunitiesPage() {
 
   const hasMoreOpportunities = displayedOpportunities.length < filteredOpportunities.length;
   
-  // Loading state
-  if (isLoading) {
+  // Loading state - Skip on mobile (pull-to-refresh handles it)
+  const isMobile = window.innerWidth <= 768;
+  if (isLoading && !isMobile) {
     return (
       <div className="container max-w-7xl py-10 flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center">
@@ -487,13 +488,13 @@ export default function OpportunitiesPage() {
             ))}
             </div>
 
-            {/* Infinite Scroll Sentinel */}
+            {/* Infinite Scroll Sentinel - Hide loading indicator on mobile */}
             {hasMoreOpportunities && (
               <div 
                 id="scroll-sentinel" 
                 className="flex items-center justify-center py-8"
               >
-                {isLoadingMore && (
+                {isLoadingMore && !isMobile && (
                   <div className="flex items-center space-x-3 text-gray-600 text-sm">
                     <Loader2 className="h-5 w-5 animate-spin" />
                     <span>Loading more opportunities...</span>

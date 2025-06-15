@@ -167,7 +167,8 @@
   }
 
   body {
-    @apply bg-qlightgray text-foreground font-sans antialiased;
+    @apply text-foreground font-sans antialiased;
+    /* Background controlled by theme system in HTML */
   }
   :root {
     --background: 0 0% 100%;
@@ -273,13 +274,13 @@
 /* Global styles */
 html {
   scroll-behavior: smooth;
-  background-color: #0f172a; /* Changed to slate-900 to match home gradient */
+  /* Background controlled by theme system in HTML head */
 }
 
+/* Body background now controlled by HTML theme system */
 body {
   font-family: 'Inter', sans-serif;
   transition: background-color 0.2s ease-in-out;
-  background-color: #0f172a; /* Changed to slate-900 to match home gradient */
   min-height: 100vh;
   margin: 0;
 }
@@ -436,14 +437,14 @@ body {
 /* Ensure smooth page transitions */
 #root {
   min-height: 100vh;
-  background-color: white;
+  background-color: inherit; /* Inherit from body/html theme */
   position: relative;
   z-index: 1;
 }
 
-/* Loading state for navigation */
+/* Loading state for navigation - inherit theme */
 body.navigating {
-  background-color: #0f172a !important; /* Changed to slate-900 to match home gradient */
+  /* Background controlled by theme system */
 }
 
 body.navigating #root {

@@ -1012,8 +1012,11 @@ export default function AccountPage() {
 
   if (!user) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-qpurple" />
+      <div className="flex justify-center items-center min-h-screen bg-slate-900">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-400 mb-3" />
+          <p className="text-slate-400 text-sm">Loading account...</p>
+        </div>
       </div>
     );
   }
@@ -1037,76 +1040,10 @@ export default function AccountPage() {
 
   return (
     <div className="flex min-h-screen bg-slate-900 relative overflow-hidden">
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div 
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
-          onClick={() => setSidebarOpen(false)} 
-          aria-hidden="true"
-        />
-      )}
-      
-      {/* Mobile Header - New */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-slate-900 border-b border-slate-700 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-md bg-slate-800 border border-slate-700 shadow-sm"
-            aria-label="Toggle sidebar"
-          >
-            <Menu className="h-5 w-5 text-slate-300" />
-          </button>
-          
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex-shrink-0 overflow-hidden">
-              {(user.avatar || avatarPreview) && (
-                <img 
-                  src={avatarPreview || user.avatar || ''} 
-                  alt={user.fullName || 'Profile'} 
-                  className="w-full h-full object-cover"
-                />
-              )}
-              {!(user.avatar || avatarPreview) && (
-                <div className="flex items-center justify-center w-full h-full bg-slate-700 text-slate-300 font-bold text-sm">
-                  {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
-                </div>
-              )}
-            </div>
-            <div className="text-right">
-              <h1 className="text-sm font-semibold text-slate-100 truncate max-w-32">{user.fullName}</h1>
-              <p className="text-xs text-slate-400">Account Settings</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Sidebar Toggle - Hidden in favor of header */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="hidden lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-slate-800 border border-slate-700 shadow-lg"
-        aria-label="Toggle sidebar"
-      >
-        <svg
-          className="h-5 w-5 text-slate-300"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          {sidebarOpen ? (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          )}
-        </svg>
-      </button>
-
-      {/* Sidebar - Mobile Optimized */}
-      <div 
-        className={`w-72 lg:w-72 h-screen bg-slate-900 border-r border-slate-700 fixed transition-transform duration-300 ease-in-out z-40 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`} 
-        style={{ height: '100vh' }}
-      >
+      {/* Desktop Sidebar (unchanged) */}
+      <div className="hidden lg:block w-72 h-screen bg-slate-900 border-r border-slate-700 fixed" style={{ height: '100vh' }}>
         <div className="h-full overflow-y-auto pt-16 lg:pt-6 px-4 lg:px-6 pb-4 lg:pb-6">
-          <div className="space-y-6">
+        <div className="space-y-6">
           {/* Profile Avatar & Basic Info */}
           <div className="flex flex-col items-center text-center">
             <div 
@@ -1299,18 +1236,22 @@ export default function AccountPage() {
               Need help? <a href="mailto:support@quotebid.com" className="text-blue-400 hover:text-blue-300 hover:underline">Contact Support</a>
             </p>
           </div>
-        </div>
+          </div>
         </div>
       </div>
 
-      {/* Main Content - Mobile Responsive */}
-      <div className="lg:ml-72 flex-1 bg-slate-900 min-h-screen">
-        <div className="pt-16 lg:pt-0 px-4 lg:px-8 py-4 lg:py-8">
-          <div className="max-w-6xl mx-auto">
-            {/* Mobile Profile Section */}
-            <div className="lg:hidden mb-6">
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-800 border-2 border-slate-700 relative flex-shrink-0 overflow-hidden">
+      {/* Mobile Layout */}
+      <div className="lg:hidden bg-slate-900 min-h-screen">
+        <div className="px-4 py-6 space-y-6 overflow-y-auto">
+          {(activeTab === 'info' || !activeTab) && (
+            <div className="space-y-6">
+              {/* 1. Mobile Profile Header */}
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-700/50 p-6">
+                <div className="flex items-center space-x-4 mb-6">
+                  <div 
+                    className="w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-700 relative cursor-pointer overflow-hidden"
+                    onClick={() => isEditing && handleAvatarClick()}
+                  >
                   {(user.avatar || avatarPreview) && (
                     <img 
                       src={avatarPreview || user.avatar || ''} 
@@ -1319,26 +1260,813 @@ export default function AccountPage() {
                     />
                   )}
                   {!(user.avatar || avatarPreview) && (
-                    <div className="flex items-center justify-center w-full h-full bg-slate-700 text-slate-300 font-bold text-xl sm:text-2xl">
+                      <div className="flex items-center justify-center w-full h-full bg-slate-700 text-slate-300 font-bold text-2xl">
                       {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  )}
+                    {isEditing && (
+                      <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
+                        <span className="text-white text-xs font-medium">Edit</span>
                     </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-xl sm:text-2xl font-bold text-slate-100 truncate">{user.fullName}</h1>
+                    <h1 className="text-xl font-bold text-slate-100 truncate">{user.fullName}</h1>
                   <p className="text-sm text-slate-400">@{user.username}</p>
-                  {user.location && (
-                    <p className="text-sm text-slate-400">{user.location}</p>
-                  )}
-                  {user.title && (
-                    <p className="text-sm text-slate-300 font-medium">{user.title}</p>
+                    {user.location && <p className="text-sm text-slate-400">{user.location}</p>}
+                    {user.title && <p className="text-sm text-slate-300 font-medium">{user.title}</p>}
+                  </div>
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-slate-500"
+                  onClick={() => {
+                    setIsEditing(!isEditing);
+                  }}
+                >
+                  <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  {isEditing ? 'Cancel Edit' : 'Edit Profile'}
+                </Button>
+              </div>
+
+              {/* 1. Edit Profile Section */}
+              {isEditing && (
+                <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-700/50 p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-semibold text-slate-100">Edit Profile</h3>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-slate-300 hover:text-slate-100"
+                      onClick={() => setIsEditing(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                      {/* Profile photo upload section */}
+                      <div className="text-center mb-6">
+                        <div className="w-24 h-24 rounded-full bg-slate-800 border-2 border-slate-700 relative overflow-hidden mx-auto mb-4">
+                          {(user.avatar || avatarPreview) ? (
+                            <img 
+                              src={avatarPreview || user.avatar || ''}
+                              alt={user.fullName || 'Profile'}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center w-full h-full bg-slate-700 text-slate-300 font-bold text-2xl">
+                              {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                          )}
+                        </div>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={handleAvatarClick}
+                          className="bg-slate-800 border-slate-600 text-slate-200"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Change Photo
+                        </Button>
+                      </div>
+
+                      {/* ALL Fields for mobile - same as desktop */}
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="fullName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-slate-200">Full Name*</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="John Smith" 
+                                  className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="location"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-slate-200">Location*</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="New York, NY" 
+                                  className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-slate-200">Email*</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="email" 
+                                  placeholder="john@example.com" 
+                                  className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                  {...field}
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    checkEmailUnique(e.target.value);
+                                  }}
+                                />
+                              </FormControl>
+                              <div className="h-4 mt-1">
+                                {emailChecking && <div className="text-xs text-slate-400">Checking email...</div>}
+                                {!emailChecking && !emailValid && <div className="text-xs text-red-400">Please enter a valid email address.</div>}
+                                {!emailChecking && emailValid && !emailUnique && <div className="text-xs text-red-400">Email is already in use.</div>}
+                </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="phone_number"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-slate-200">Phone</FormLabel>
+                              <div className="flex gap-3">
+                                <select
+                                  value={countryCode}
+                                  onChange={(e) => setCountryCode(e.target.value)}
+                                  className="rounded-md border border-slate-600 bg-slate-800 text-slate-200 px-2 py-2 w-20 text-sm"
+                                >
+                                  {COUNTRY_CODES.map(({ code, country, flag }) => (
+                                    <option key={code} value={code} style={{ backgroundColor: 'rgb(30 41 59)', color: 'rgb(226 232 240)' }}>
+                                      {flag} {code}
+                                    </option>
+                                  ))}
+                                </select>
+                                <FormControl>
+                                  <Input 
+                                    type="tel" 
+                                    placeholder="Phone number"
+                                    className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                    value={formattedPhone}
+                                    onChange={(e) => {
+                                      const cleaned = e.target.value.replace(/[^\d\s\-() ]/g, '');
+                                      const formatted = formatPhoneNumber(cleaned, countryCode);
+                                      setFormattedPhone(formatted);
+                                      
+                                      const digitsOnly = cleaned.replace(/\D/g, '');
+                                      const fullPhone = countryCode + digitsOnly;
+                                      field.onChange(fullPhone);
+                                      
+                                      checkPhoneUnique(formatted);
+                                    }}
+                                  />
+                                </FormControl>
+              </div>
+                              <div className="h-4 mt-1">
+                                {phoneChecking && <div className="text-xs text-slate-400">Checking phone number...</div>}
+                                {!phoneChecking && !phoneValid && <div className="text-xs text-red-400">Please enter a valid phone number.</div>}
+                                {!phoneChecking && phoneValid && !phoneUnique && <div className="text-xs text-red-400">Phone number is already in use.</div>}
+            </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="title"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-slate-200">Professional Title</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="CEO of QuoteBid" 
+                                  className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="bio"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-slate-200">Professional Bio*</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Describe your background, expertise, and what you can offer to journalists..."
+                                  className="min-h-[100px] bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="industry"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-slate-200">Primary Industry*</FormLabel>
+                              <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-100">
+                                    <SelectValue placeholder="Select your industry" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="bg-slate-800 border-slate-600 text-slate-100">
+                                  {INDUSTRY_OPTIONS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value} className="text-slate-100 hover:bg-slate-700">
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="doFollowLink"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-slate-200">
+                                Do-Follow Link
+                                <span className="text-slate-400 text-xs ml-2">(For article placements)</span>
+                              </FormLabel>
+                              <Select
+                                value={field.value || "website"}
+                                onValueChange={field.onChange}
+                                required
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-100">
+                                    <SelectValue placeholder="Select a link to use in articles" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="bg-slate-800 border-slate-600 text-slate-100">
+                                  <SelectItem value="website" className="text-slate-100 hover:bg-slate-700">Website</SelectItem>
+                                  <SelectItem value="linkedIn" className="text-slate-100 hover:bg-slate-700">LinkedIn</SelectItem>
+                                  <SelectItem value="instagram" className="text-slate-100 hover:bg-slate-700">Instagram</SelectItem>
+                                  <SelectItem value="twitter" className="text-slate-100 hover:bg-slate-700">X</SelectItem>
+                                  <SelectItem value="other" className="text-slate-100 hover:bg-slate-700">Other URL</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Social Media Fields */}
+                        <div className="border-t border-slate-700 pt-4">
+                          <h4 className="text-sm font-medium text-slate-200 mb-4">Social Media & Links</h4>
+                          
+                          <div className="space-y-4">
+                            <FormField
+                              control={form.control}
+                              name="linkedIn"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-slate-200">LinkedIn</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="https://linkedin.com/in/username" 
+                                      className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                      {...field} 
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="website"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-slate-200">Website</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="https://yourwebsite.com" 
+                                      className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                      {...field} 
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="instagram"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-slate-200">Instagram</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="https://instagram.com/username" 
+                                      className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                      {...field} 
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="twitter"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-slate-200">X</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="https://x.com/username" 
+                                      className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                      {...field} 
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="otherProfileUrl"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-slate-200">Other URL (Optional)</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="https://yourwebsite.com" 
+                                      className="bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-400"
+                                      {...field} 
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 pt-6">
+                        <Button 
+                          type="button" 
+                          variant="outline"  
+                          className="flex-1 bg-slate-800 border-slate-600 text-slate-300"
+                          onClick={() => setIsEditing(false)}
+                          disabled={profileUpdateMutation.isPending}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          type="submit"
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                          disabled={profileUpdateMutation.isPending}
+                        >
+                          {profileUpdateMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            'Save'
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </div>
+              )}
+
+              {/* 2. Profile Overview Section */}
+              {!isEditing && (
+                <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-700/50 p-6">
+                  <h3 className="text-lg font-semibold text-slate-100 mb-4">Profile Overview</h3>
+                  
+                  {/* Bio Section */}
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-slate-300 mb-2">About</h4>
+                    <div className="text-slate-400 text-sm">
+                      {user.bio ? (
+                        <p className="whitespace-pre-line">{user.bio}</p>
+                      ) : (
+                        <p className="italic">No bio added yet. Tap Edit Profile to add one.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Quick Info */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                      <h4 className="text-xs font-medium text-slate-500 mb-1">INDUSTRY</h4>
+                      <p className="text-slate-300 text-sm">{user.industry || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-medium text-slate-500 mb-1">LOCATION</h4>
+                      <p className="text-slate-300 text-sm">{user.location || 'Not specified'}</p>
+                    </div>
+                  </div>
+
+                  {/* Social Links */}
+                  {(user.linkedIn || user.twitter || user.instagram || user.website) && (
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-300 mb-3">Connect</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {user.linkedIn && (
+                          <a href={user.linkedIn} target="_blank" rel="noopener noreferrer" className="bg-blue-600/20 text-blue-400 px-3 py-1 rounded-full text-xs">
+                            LinkedIn
+                          </a>
+                        )}
+                        {user.twitter && (
+                          <a href={user.twitter} target="_blank" rel="noopener noreferrer" className="bg-slate-600/50 text-slate-300 px-3 py-1 rounded-full text-xs">
+                            X
+                          </a>
+                        )}
+                        {user.instagram && (
+                          <a href={user.instagram} target="_blank" rel="noopener noreferrer" className="bg-pink-600/20 text-pink-400 px-3 py-1 rounded-full text-xs">
+                            Instagram
+                          </a>
+                        )}
+                        {user.website && (
+                          <a href={user.website} target="_blank" rel="noopener noreferrer" className="bg-purple-600/20 text-purple-400 px-3 py-1 rounded-full text-xs">
+                            Website
+                          </a>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
-              </div>
-            </div>
+              )}
 
+              {/* 4. Navigation */}
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-700/50 p-6">
+                <h3 className="text-lg font-semibold text-slate-100 mb-4">Navigation</h3>
+                <div className="grid grid-cols-1 gap-3">
+                  <a href="/opportunities" className="flex items-center p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700">
+                    <div className="bg-blue-600/20 p-2 rounded-lg mr-3">
+                      <svg className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-slate-100">Opportunities</h4>
+                      <p className="text-sm text-slate-400">Browse media opportunities</p>
+                    </div>
+                  </a>
+                  
+                  <a href="/my-pitches" className="flex items-center p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700">
+                    <div className="bg-purple-600/20 p-2 rounded-lg mr-3">
+                      <svg className="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-slate-100">My Pitches</h4>
+                      <p className="text-sm text-slate-400">Track your submissions</p>
+                    </div>
+                  </a>
+                </div>
+              </div>
+
+              {/* 3. Mobile Media Coverage Section */}
+              {!isEditing && (
+                <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-700/50 p-6">
+                  <div className="mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-lg font-semibold text-slate-100">Media Coverage</h3>
+                    </div>
+                    <p className="text-xs text-slate-400">Powered by QuoteBid</p>
+                  </div>
+
+                  {(mediaCoverage && mediaCoverage.length > 0) ? (
+                    <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
+                      <div className="space-y-4">
+                        {mediaCoverage.map((coverage: any, index: number) => {
+                        // Get logo URL with fallback system
+                        const getLogoUrl = () => {
+                          const logo = coverage.publicationLogo;
+                          
+                          // First try the database logo
+                          if (logo && logo.trim() && logo !== 'null' && logo !== 'undefined') {
+                            const logoUrl = logo.startsWith('http') || logo.startsWith('data:') 
+                              ? logo 
+                              : `${window.location.origin}${logo}`;
+                            return logoUrl;
+                          }
+                          
+                          // Fallback: try to find logo from publications database
+                          if (coverage.publication && allPublications) {
+                            const publication = allPublications.find(pub => 
+                              pub.name.toLowerCase() === coverage.publication.toLowerCase()
+                            );
+                            
+                            if (publication && publication.logo) {
+                              const dbLogo = publication.logo;
+                              const logoUrl = dbLogo.startsWith('http') || dbLogo.startsWith('data:') 
+                                ? dbLogo 
+                                : `${window.location.origin}${dbLogo}`;
+                              return logoUrl;
+                            }
+                          }
+                          
+                          return '';
+                        };
+
+                        const logoUrl = getLogoUrl();
+                        
+                        return (
+                        <div key={`coverage-${coverage.id}`} className="bg-slate-900 rounded-xl border border-slate-700 shadow-sm p-4 hover:shadow-md transition-all duration-300">
+                          {/* Gradient accent line */}
+                          <div className="w-full h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-4"></div>
+                          
+                          {/* Publication logo and content */}
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-white border border-gray-200 overflow-hidden">
+                              {logoUrl ? (
+                                <img
+                                  src={logoUrl}
+                                  alt={`${coverage.publication || 'Publication'} logo`}
+                                  className="w-full h-full object-contain"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    const fallback = e.currentTarget.nextElementSibling;
+                                    if (fallback && fallback instanceof HTMLElement) {
+                                      fallback.style.display = 'flex';
+                                    }
+                                  }}
+                                />
+                              ) : null}
+                              <div 
+                                className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg"
+                                style={{ display: logoUrl ? 'none' : 'flex' }}
+                              >
+                                <span className="text-xs font-semibold text-white text-center">
+                                  {coverage.publication?.split(' ').map((word: string) => word[0]).join('').slice(0, 2).toUpperCase() || 'NA'}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-slate-100 text-base leading-tight mb-2 line-clamp-2">{coverage.title}</h4>
+                              
+                              <div className="flex items-center mb-3">
+                                <div className="flex items-center text-sm text-slate-300">
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                                  <span className="font-medium">{coverage.publication || 'Publication'}</span>
+                                  {coverage.articleDate && (
+                                    <>
+                                      <span className="mx-2 text-slate-500">•</span>
+                                      <span className="text-slate-400 text-xs">
+                                        {new Date(coverage.articleDate).toLocaleDateString()}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-blue-300 border border-blue-500/30">
+                                  <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                  {coverage.source === 'billing_manager' || coverage.source === 'pitch_success' ? 'Earned' : 'Coverage'}
+                                </span>
+                                
+                                {coverage.url && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    asChild
+                                    className="text-blue-400 border-blue-500/30 bg-blue-600/10 hover:bg-blue-600/20 text-xs"
+                                  >
+                                    <a href={coverage.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                                      <ExternalLink className="h-3 w-3 mr-1" />
+                                      View
+                                    </a>
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <div className="flex flex-col items-center max-w-sm mx-auto">
+                        <div className="w-16 h-16 bg-gradient-to-br from-slate-700 via-slate-600 to-slate-700 rounded-xl flex items-center justify-center mb-4">
+                          <svg className="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <h4 className="text-base font-medium text-slate-100 mb-2">No published articles yet</h4>
+                        <p className="text-sm text-slate-400 mb-4 text-center leading-relaxed">When you get quoted through QuoteBid opportunities, your published articles will appear here.</p>
+                        <Button variant="default" size="sm" asChild className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0">
+                          <a href="/opportunities" className="flex items-center text-sm">
+                            <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            Browse Opportunities
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 5. Account Settings */}
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-700/50 p-6">
+                <h3 className="text-lg font-semibold text-slate-100 mb-4">Account Settings</h3>
+                <div className="space-y-3">
+                  <button 
+                    onClick={() => setSubscriptionModalOpen(true)}
+                    className="flex items-center w-full p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700"
+                  >
+                    <div className="bg-green-600/20 p-2 rounded-lg mr-3">
+                      <CreditCard className="h-5 w-5 text-green-400" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-medium text-slate-100">Subscription & Billing</h4>
+                      <p className="text-sm text-slate-400">Manage your subscription</p>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={() => setActiveTab('email-preferences')}
+                    className="flex items-center w-full p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700"
+                  >
+                    <div className="bg-indigo-600/20 p-2 rounded-lg mr-3">
+                      <Mail className="h-5 w-5 text-indigo-400" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-medium text-slate-100">Email Preferences</h4>
+                      <p className="text-sm text-slate-400">Manage email settings</p>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={() => setPasswordModalOpen(true)}
+                    className="flex items-center w-full p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700"
+                  >
+                    <div className="bg-red-600/20 p-2 rounded-lg mr-3">
+                      <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-medium text-slate-100">Change Password</h4>
+                      <p className="text-sm text-slate-400">Update your password</p>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={() => setThemeModalOpen(true)}
+                    className="flex items-center w-full p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700"
+                  >
+                    <div className="bg-amber-600/20 p-2 rounded-lg mr-3">
+                      {theme === 'light' ? (
+                        <svg className="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                      ) : (
+                        <svg className="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-medium text-slate-100">{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</h4>
+                      <p className="text-sm text-slate-400">Switch theme</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* 6. Help & Support */}
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-700/50 p-6">
+                <h3 className="text-lg font-semibold text-slate-100 mb-4">Help & Support</h3>
+                <div className="grid grid-cols-1 gap-3">
+                  <a href="mailto:support@quotebid.com" className="flex items-center p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700">
+                    <div className="bg-blue-600/20 p-2 rounded-lg mr-3">
+                      <Mail className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-slate-100">Contact Support</h4>
+                      <p className="text-sm text-slate-400">Get help via email</p>
+                    </div>
+                  </a>
+                  
+                  <a href="https://calendly.com/rubicon-pr-group/quotebid" target="_blank" rel="noopener noreferrer" className="flex items-center p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700">
+                    <div className="bg-indigo-600/20 p-2 rounded-lg mr-3">
+                      <Phone className="h-5 w-5 text-indigo-400" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-slate-100">Book a Call</h4>
+                      <p className="text-sm text-slate-400">Schedule a consultation</p>
+                    </div>
+                  </a>
+                </div>
+              </div>
+
+
+
+
+            </div>
+          )}
+
+          {/* Mobile Billing Section */}
+          {activeTab === 'billing' && (
+            <div className="space-y-6">
+              {/* Back Button */}
+              <div className="flex items-center mb-4">
+                <button 
+                  onClick={() => setActiveTab('info')}
+                  className="flex items-center text-slate-300 hover:text-slate-100"
+                >
+                  <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to Profile
+                </button>
+              </div>
+              
+              <BillingTabContent 
+                user={user} 
+                subscription={subscription} 
+                isLoadingSubscription={isLoadingSubscription}
+                onOpenSubscriptionModal={() => setSubscriptionModalOpen(true)}
+              />
+            </div>
+          )}
+
+          {/* Mobile Email Preferences Section */}
+          {activeTab === 'email-preferences' && (
+            <div className="space-y-6">
+              {/* Back Button */}
+              <div className="flex items-center mb-4">
+                <button 
+                  onClick={() => setActiveTab('info')}
+                  className="flex items-center text-slate-300 hover:text-slate-100"
+                >
+                  <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to Profile
+                </button>
+              </div>
+              
+              <EmailPreferences />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop Main Content */}
+      <div className="hidden lg:block lg:ml-72 flex-1 bg-slate-900 min-h-screen">
+        <div className="pt-0 px-8 py-8">
+          <div className="max-w-6xl mx-auto">
             {/* Desktop Header - Aligned with sidebar profile */}
-            <div className="hidden lg:block mb-2">
+            <div className="mb-2">
               <div className="flex items-center h-32">
                 <h1 className="text-3xl font-bold text-slate-100">Profile Dashboard</h1>
               </div>
@@ -1798,12 +2526,15 @@ export default function AccountPage() {
             </div>
           ) : !user ? (
             <div className="flex items-center justify-center p-12">
-              <Loader2 className="h-8 h-8 animate-spin text-qpurple" />
+              <div className="flex flex-col items-center">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-400 mb-3" />
+                <p className="text-slate-400 text-sm">Loading profile...</p>
+              </div>
             </div>
           ) : (
             <>
               {/* Desktop Header with name and title */}
-              <div className="hidden lg:block mb-6">
+              <div className="mb-6">
                 {user.fullName && (
                   <h2 className="text-xl font-semibold mb-1 text-slate-100">{user.fullName}</h2>
                 )}
@@ -1821,9 +2552,6 @@ export default function AccountPage() {
                   <Button variant="ghost" size="sm" className="ml-2 text-slate-300 hover:text-slate-100 hover:bg-slate-800" onClick={() => {
                     setIsEditing(true);
                     setActiveTab('info');
-                    // Force scroll to the top of the content area
-                    const contentArea = document.querySelector('.account-content-area');
-                    if (contentArea) contentArea.scrollTop = 0;
                   }}>
                     <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -1833,109 +2561,20 @@ export default function AccountPage() {
                 </div>
               </div>
 
-              {/* Mobile Edit Button */}
-              <div className="lg:hidden mb-4">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-slate-500"
-                  onClick={() => {
-                    setIsEditing(true);
-                    setActiveTab('info');
-                  }}
-                >
-                  <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  Edit Profile
-                </Button>
-              </div>
-              
-              {/* Mobile Account Settings Navigation */}
-              <div className="lg:hidden mb-6">
-                <Card className="bg-slate-800 border-slate-700">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
-                      <SettingsIcon className="h-5 w-5" />
-                      Quick Settings
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600 hover:border-slate-500 flex flex-col items-center gap-1 h-auto py-3"
-                        onClick={() => setSubscriptionModalOpen(true)}
-                      >
-                        <CreditCard className="h-4 w-4" />
-                        <span className="text-xs">Billing</span>
-                      </Button>
-                      
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600 hover:border-slate-500 flex flex-col items-center gap-1 h-auto py-3"
-                        onClick={() => setPasswordModalOpen(true)}
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                        <span className="text-xs">Password</span>
-                      </Button>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600 hover:border-slate-500 flex flex-col items-center gap-1 h-auto py-3"
-                        onClick={() => setThemeModalOpen(true)}
-                      >
-                        {theme === 'light' ? (
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                          </svg>
-                        ) : (
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                          </svg>
-                        )}
-                        <span className="text-xs">{theme === 'light' ? 'Dark' : 'Light'}</span>
-                      </Button>
-                      
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600 hover:border-slate-500 flex flex-col items-center gap-1 h-auto py-3"
-                        asChild
-                      >
-                        <a href="mailto:support@quotebid.com">
-                          <HelpCircle className="h-4 w-4" />
-                          <span className="text-xs">Support</span>
-                        </a>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Tabs */}
+              {/* Desktop Tabs */}
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-4 lg:mb-6 bg-slate-800 border border-slate-700 h-auto">
-                  <TabsTrigger value="info" className="flex flex-col lg:flex-row items-center gap-1 lg:gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100 py-2 lg:py-3 text-xs lg:text-sm">
+                <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-800 border border-slate-700 h-auto">
+                  <TabsTrigger value="info" className="flex items-center gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100 py-3 text-sm">
                     <User className="h-4 w-4" />
-                    <span className="hidden lg:inline">Profile</span>
-                    <span className="lg:hidden">Info</span>
+                    <span>Profile</span>
                   </TabsTrigger>
-                  <TabsTrigger value="billing" className="flex flex-col lg:flex-row items-center gap-1 lg:gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100 py-2 lg:py-3 text-xs lg:text-sm">
+                  <TabsTrigger value="billing" className="flex items-center gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100 py-3 text-sm">
                     <CreditCard className="h-4 w-4" />
                     <span>Billing</span>
                   </TabsTrigger>
-                  <TabsTrigger value="email-preferences" className="flex flex-col lg:flex-row items-center gap-1 lg:gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100 py-2 lg:py-3 text-xs lg:text-sm">
+                  <TabsTrigger value="email-preferences" className="flex items-center gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100 py-3 text-sm">
                     <Mail className="h-4 w-4" />
-                    <span className="hidden lg:inline">Email Preferences</span>
-                    <span className="lg:hidden">Email</span>
+                    <span>Email Preferences</span>
                   </TabsTrigger>
                 </TabsList>
 
@@ -2101,6 +2740,7 @@ export default function AccountPage() {
 
                 <div className="bg-slate-950 rounded-xl border border-slate-700 shadow-xl overflow-hidden">
                   {(mediaCoverage && mediaCoverage.length > 0) ? (
+                    <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
                     <div className="p-6">
                       <div className="grid grid-cols-1 gap-6">
                         {/* Media coverage from database */}
@@ -2242,7 +2882,7 @@ export default function AccountPage() {
                           );
                         })}
                       </div>
-
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center py-16 px-6">
@@ -2353,7 +2993,10 @@ export default function AccountPage() {
           <div className="space-y-4 py-4">
             {isLoadingSubscription ? (
               <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-border" />
+                <div className="flex flex-col items-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-400 mb-3" />
+                  <p className="text-slate-400 text-sm">Loading subscription...</p>
+                </div>
               </div>
             ) : subscription ? (
               <>

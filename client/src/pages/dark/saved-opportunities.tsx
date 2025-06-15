@@ -229,8 +229,9 @@ export default function SavedOpportunitiesPage() {
     setLocation(`/opportunities/${opportunityId}`);
   };
   
-  // Loading state
-  if (isLoading) {
+  // Loading state - Skip on mobile (pull-to-refresh handles it)
+  const isMobile = window.innerWidth <= 768;
+  if (isLoading && !isMobile) {
     return (
       <div className="min-h-screen relative overflow-hidden">
         {/* Premium dark gradient backdrop - matching opportunities page */}
@@ -450,9 +451,9 @@ export default function SavedOpportunitiesPage() {
                 ))}
               </div>
 
-              {/* Infinite scroll trigger */}
+              {/* Infinite scroll trigger - Hide loading indicator on mobile */}
               <div id="scroll-trigger" className="h-10 flex items-center justify-center">
-                {isLoadingMore && (
+                {isLoadingMore && !isMobile && (
                   <div className="flex items-center gap-2 text-slate-400">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     <span className="text-sm">Loading more saved opportunities...</span>
