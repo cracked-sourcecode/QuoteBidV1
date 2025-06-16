@@ -5302,10 +5302,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all pitches (admin only)
+  // Get all SUBMITTED pitches (admin only) - excludes drafts
   app.get("/api/admin/pitches", requireAdminAuth, async (req: Request, res: Response) => {
     try {
-      console.log("Admin requesting all pitches");
+      console.log("Admin requesting all SUBMITTED pitches (excluding drafts)");
       
       // Disable caching for this endpoint to ensure fresh data
       res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -5320,9 +5320,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { samplePitches } = await import('./data/pitches');
       
       try {
-        // First try to get pitches with full relations
-        console.log("Fetching pitches with relations");
-        const pitchesWithRelations = await storage.getAllPitchesWithRelations();
+        // First try to get pitches with full relations - EXCLUDING DRAFTS
+        console.log("Fetching SUBMITTED pitches with relations (filtering out drafts)");
+        const allPitchesWithRelations = await storage.getAllPitchesWithRelations();
+        
+        // CRITICAL FIX: Filter out drafts for admin panel
+        const pitchesWithRelations = allPitchesWithRelations.filter(pitch => 
+          !pitch.isDraft && pitch.status !== 'draft'
+        );
         
         console.log(`Retrieved ${pitchesWithRelations.length} pitches with complete relations`);
         
@@ -5387,9 +5392,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.json(standardizedPitches);
         }
         
-        // If no pitches with relations found, fall back to basic pitch data
-        console.log("No pitches with relations found, falling back to basic data");
-        const basicPitches = await storage.getAllPitches();
+        // If no pitches with relations found, fall back to basic pitch data - EXCLUDING DRAFTS
+        console.log("No submitted pitches with relations found, falling back to basic data");
+        const allBasicPitches = await storage.getAllPitches();
+        
+        // CRITICAL FIX: Filter out drafts for admin panel
+        const basicPitches = allBasicPitches.filter(pitch => 
+          !pitch.isDraft && pitch.status !== 'draft'
+        );
         
         if (basicPitches.length > 0) {
           // Standardize the pitch format
@@ -5398,17 +5408,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userId: pitch.userId || (pitch as any).user_id, // Ensure userId is always in camelCase
           }));
           
-          console.log(`Found ${standardizedBasicPitches.length} pitches with basic data`);
+          console.log(`Found ${standardizedBasicPitches.length} SUBMITTED pitches with basic data`);
           // Log all pitch user IDs
           console.log("Pitch user IDs (basic):", standardizedBasicPitches.map(p => p.userId).join(", "));
           
           return res.json(standardizedBasicPitches);
         }
         
-        // Last resort fallback to direct database query
-        console.log("No pitches found, attempting direct query fallback");
+        // Last resort fallback to direct database query - EXCLUDING DRAFTS
+        console.log("No submitted pitches found, attempting direct query fallback");
         const { pitches } = await import("@shared/schema");
-        const fallbackPitches = await getDb().select().from(pitches);
+        const allFallbackPitches = await getDb().select().from(pitches);
+        
+        // CRITICAL FIX: Filter out drafts for admin panel
+        const fallbackPitches = allFallbackPitches.filter(pitch => 
+          !pitch.isDraft && pitch.status !== 'draft'
+        );
         
         // Standardize direct query results
         const standardizedFallbackPitches = fallbackPitches.map(pitch => {
@@ -5423,14 +5438,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         });
         
-        console.log(`Fallback query found ${standardizedFallbackPitches.length} pitches`);
+        console.log(`Fallback query found ${standardizedFallbackPitches.length} SUBMITTED pitches`);
         return res.json(standardizedFallbackPitches);
       } catch (storageError) {
         console.error("Error fetching pitches with relations:", storageError);
         
         try {
-          // Try basic pitches as fallback
-          const basicPitches = await storage.getAllPitches();
+          // Try basic pitches as fallback - EXCLUDING DRAFTS
+          const allBasicPitches = await storage.getAllPitches();
+          
+          // CRITICAL FIX: Filter out drafts for admin panel  
+          const basicPitches = allBasicPitches.filter(pitch => 
+            !pitch.isDraft && pitch.status !== 'draft'
+          );
           
           // Standardize basic pitches
           const standardizedBasicPitches = basicPitches.map(pitch => ({
@@ -5438,13 +5458,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userId: pitch.userId || (pitch as any).user_id, // Ensure userId is always in camelCase
           }));
           
-          console.log(`Fallback to basic pitches returned ${standardizedBasicPitches.length} results`);
+          console.log(`Fallback to basic SUBMITTED pitches returned ${standardizedBasicPitches.length} results`);
           return res.json(standardizedBasicPitches);
         } catch (basicError) {
-          // Last resort direct query
+          // Last resort direct query - EXCLUDING DRAFTS
           console.error("Error with basic pitches, using direct query:", basicError);
           const { pitches } = await import("@shared/schema");
-          const directPitches = await getDb().select().from(pitches);
+          const allDirectPitches = await getDb().select().from(pitches);
+          
+          // CRITICAL FIX: Filter out drafts for admin panel
+          const directPitches = allDirectPitches.filter(pitch => 
+            !pitch.isDraft && pitch.status !== 'draft'
+          );
           
           // Standardize direct query results
           const standardizedDirectPitches = directPitches.map(pitch => {
@@ -5455,7 +5480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
           });
           
-          console.log(`Direct query fallback found ${standardizedDirectPitches.length} pitches`);
+          console.log(`Direct query fallback found ${standardizedDirectPitches.length} SUBMITTED pitches`);
             
           // Only use sample data when we have no pitches
           if (standardizedDirectPitches.length === 0) {
@@ -5469,6 +5494,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error fetching all pitches:", error);
       res.status(500).json({ message: "Failed to fetch pitches" });
+    }
+  });
+  
+  // Get ALL pitches including drafts (admin debugging only)
+  app.get("/api/admin/pitches/all-including-drafts", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      console.log("Admin requesting ALL pitches including drafts (debug endpoint)");
+      
+      const allPitchesWithRelations = await storage.getAllPitchesWithRelations();
+      console.log(`Retrieved ${allPitchesWithRelations.length} total pitches (including drafts)`);
+      
+      // Separate counts for logging
+      const submittedCount = allPitchesWithRelations.filter(p => !p.isDraft && p.status !== 'draft').length;
+      const draftCount = allPitchesWithRelations.filter(p => p.isDraft || p.status === 'draft').length;
+      
+      console.log(`Breakdown: ${submittedCount} submitted, ${draftCount} drafts`);
+      
+      res.json(allPitchesWithRelations);
+    } catch (error: any) {
+      console.error("Error fetching all pitches including drafts:", error);
+      res.status(500).json({ message: "Failed to fetch all pitches" });
     }
   });
   

@@ -363,7 +363,7 @@ export class DatabaseStorage implements IStorage {
     // Add pitch data to each opportunity
     const opportunitiesWithPitches = await Promise.all(
       opportunitiesWithPublications.map(async (opportunity) => {
-        // Get all pitches for this opportunity with user data
+        // Get all SUBMITTED pitches for this opportunity with user data (exclude drafts)
         const opportunityPitches = await getDb()
           .select({
             id: pitches.id,
@@ -385,7 +385,13 @@ export class DatabaseStorage implements IStorage {
           })
           .from(pitches)
           .leftJoin(users, eq(pitches.userId, users.id))
-          .where(eq(pitches.opportunityId, opportunity.id))
+          .where(
+            and(
+              eq(pitches.opportunityId, opportunity.id),
+              eq(pitches.isDraft, false),
+              ne(pitches.status, 'draft')
+            )
+          )
           .orderBy(desc(pitches.createdAt));
 
         // Calculate pitch count
