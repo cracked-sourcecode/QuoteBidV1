@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, FileText, Building } from "lucide-react";
 
 interface PitchEditModalProps {
   isOpen: boolean;
@@ -150,95 +150,100 @@ export default function DarkPitchEditModal({ isOpen, onClose, pitch }: PitchEdit
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-[95vw] sm:w-full max-w-md sm:max-w-3xl h-[90vh] sm:max-h-[90vh] overflow-hidden bg-slate-800/95 backdrop-blur-sm border-slate-700/50 text-white">
-        <div className="flex flex-col h-full">
-          <DialogHeader className="flex-shrink-0 pb-4 border-b border-slate-700/50">
-            <DialogTitle className="text-base sm:text-xl font-semibold text-white leading-tight">
+      <DialogContent className="w-[95vw] max-w-2xl rounded-2xl bg-slate-800/95 backdrop-blur-sm border-slate-700/50 text-white max-h-[85vh] overflow-hidden">
+        <div className="flex flex-col max-h-[85vh]">
+          <DialogHeader className="space-y-2 sm:space-y-3 flex-shrink-0">
+            <DialogTitle className="text-lg sm:text-xl font-semibold flex items-center gap-2 text-white">
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
               Edit Pitch
             </DialogTitle>
-            <DialogDescription className="text-gray-300 text-sm mt-2">
-              Update your pitch content
+            <DialogDescription className="text-sm text-gray-300">
+              Update your pitch content for this opportunity
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-1 overflow-y-auto py-4 space-y-4">
-            <div>
-              <h3 className="text-sm font-medium mb-2 text-gray-200">Opportunity</h3>
-              <div className="p-3 bg-slate-700/50 rounded-md border border-slate-600/50">
-                <h4 className="font-medium text-white text-sm sm:text-base">{pitch.opportunity?.title}</h4>
-                {pitch.opportunity?.outlet && (
-                  <p className="text-xs sm:text-sm text-gray-300 mt-1">{pitch.opportunity.outlet}</p>
-                )}
+          <div className="flex-1 overflow-y-auto py-4 space-y-4 min-h-0">
+            {/* Opportunity Info - Mobile Optimized */}
+            <div className="p-3 sm:p-4 rounded-lg border bg-slate-700/50 border-slate-600/50">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <Building className="h-4 w-4 mt-0.5 flex-shrink-0 text-blue-400" />
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-medium text-sm leading-tight text-white">
+                    {pitch.opportunity?.title}
+                  </h4>
+                  {pitch.opportunity?.outlet && (
+                    <p className="text-xs mt-1 text-gray-300">
+                      {pitch.opportunity.outlet}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
             
-            <div>
-              <h3 className="text-sm font-medium mb-2 text-gray-200">Your Pitch</h3>
+            {/* Pitch Content - Mobile Optimized */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-200">
+                Your Pitch
+              </label>
+              
               {!canEdit && (
-                <div className="p-2 mb-2 bg-yellow-900/30 text-yellow-300 text-xs sm:text-sm rounded flex items-center border border-yellow-700/50">
-                  <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
+                <div className="p-3 rounded-lg flex items-start gap-2 text-sm bg-yellow-900/30 text-yellow-300 border border-yellow-700/50">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <span>This pitch cannot be edited because it has already been sent to the reporter.</span>
                 </div>
               )}
+              
               <Textarea 
                 value={content} 
                 onChange={(e) => setContent(e.target.value)} 
                 placeholder="Enter your pitch details here..."
-                className="min-h-[150px] sm:min-h-[200px] bg-slate-700/50 border-slate-600 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="min-h-[100px] sm:min-h-[120px] resize-none text-sm sm:text-base outline-none focus:outline-none ring-0 focus:ring-2 focus:ring-blue-500 shadow-none focus:shadow-none border-2 bg-slate-700/50 border-slate-600 text-white placeholder-gray-400 focus:border-blue-500"
                 disabled={isLoading || !canEdit}
+                style={{ outline: 'none', boxShadow: 'none' }}
               />
+              
+              <div className="text-xs text-gray-400">
+                {content.length} characters
+              </div>
             </div>
           </div>
 
-          <DialogFooter className="flex-shrink-0 flex flex-col space-y-3 pt-4 border-t border-slate-700/50">
-            {canEdit ? (
-              <>
+          <DialogFooter className="flex-shrink-0 pt-4 border-t border-slate-700/50 border-opacity-20">
+            {/* Mobile: Stack buttons vertically, Desktop: Side by side */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+              <Button 
+                variant="outline" 
+                onClick={onClose} 
+                disabled={isLoading}
+                className="flex-1 h-11 border-slate-600 bg-slate-800/50 text-gray-300 hover:bg-slate-700 hover:text-white"
+              >
+                Cancel
+              </Button>
+              
+              {canEdit ? (
                 <Button 
                   onClick={handleSubmit} 
-                  disabled={isLoading} 
-                  variant="default"
-                  size="lg"
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+                  disabled={isLoading || !content.trim()} 
+                  className="flex-1 h-11 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
                 >
                   {submitMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating Pitch...
+                      Updating...
                     </>
                   ) : (
                     "Update Pitch"
                   )}
                 </Button>
+              ) : (
                 <Button 
-                  variant="outline" 
-                  onClick={onClose} 
-                  disabled={isLoading}
-                  size="lg"
-                  className="w-full border-slate-600 bg-slate-800/50 text-gray-300 hover:bg-slate-700 hover:text-white backdrop-blur-sm"
-                >
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button 
-                  variant="secondary" 
                   disabled
-                  size="lg"
-                  className="w-full bg-slate-700/50 text-gray-400 border-slate-600"
+                  className="flex-1 h-11 bg-slate-700/50 text-gray-400"
                 >
-                  Cannot Edit (Already Sent)
+                  Cannot Edit
                 </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={onClose} 
-                  size="lg"
-                  className="w-full border-slate-600 bg-slate-800/50 text-gray-300 hover:bg-slate-700 hover:text-white backdrop-blur-sm"
-                >
-                  Close
-                </Button>
-              </>
-            )}
+              )}
+            </div>
           </DialogFooter>
         </div>
       </DialogContent>

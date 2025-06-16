@@ -6,7 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, FileText, Building } from "lucide-react";
 
 interface PitchEditModalProps {
   isOpen: boolean;
@@ -160,134 +160,144 @@ export default function PitchEditModal({ isOpen, onClose, pitch }: PitchEditModa
 
   const isLoading = updateMutation.isPending || submitMutation.isPending;
 
-    // Theme-aware classes with mobile optimization
-  const dialogClasses = isDarkTheme 
-    ? "w-[95vw] sm:w-full max-w-md sm:max-w-3xl h-[90vh] sm:max-h-[90vh] overflow-hidden bg-slate-800/95 backdrop-blur-sm border-slate-700/50 text-white" 
-    : "w-[95vw] sm:w-full max-w-md sm:max-w-3xl h-[90vh] sm:max-h-[90vh] overflow-hidden";
-    
-    const titleClasses = isDarkTheme 
-    ? "text-base sm:text-xl font-semibold text-white leading-tight" 
-    : "text-base sm:text-xl font-semibold leading-tight";
-    
-  const descriptionClasses = isDarkTheme 
-    ? "text-gray-300 text-sm mt-2" 
-    : "text-sm mt-2";
-    
-  const cardClasses = isDarkTheme 
-    ? "p-3 bg-slate-700/50 rounded-md border border-slate-600/50" 
-    : "p-3 bg-muted rounded-md";
-    
-  const labelClasses = isDarkTheme 
-    ? "text-sm font-medium mb-2 text-gray-200" 
-    : "text-sm font-medium mb-2";
-    
-  const titleTextClasses = isDarkTheme 
-    ? "font-medium text-white text-sm sm:text-base" 
-    : "font-medium text-sm sm:text-base";
-    
-  const subtitleClasses = isDarkTheme 
-    ? "text-xs sm:text-sm text-gray-300 mt-1" 
-    : "text-xs sm:text-sm text-muted-foreground mt-1";
-    
-  const warningClasses = isDarkTheme 
-    ? "p-2 mb-2 bg-yellow-900/30 text-yellow-300 text-xs sm:text-sm rounded flex items-center border border-yellow-700/50" 
-    : "p-2 mb-2 bg-yellow-50 text-yellow-700 text-xs sm:text-sm rounded flex items-center";
-    
-  const textareaClasses = isDarkTheme 
-    ? "min-h-[150px] sm:min-h-[200px] bg-slate-700/50 border-slate-600 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500 text-sm" 
-    : "min-h-[150px] sm:min-h-[200px] text-sm";
-
-      return (
+  return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className={dialogClasses}>
-        <div className="flex flex-col h-full">
-          <DialogHeader className="flex-shrink-0 pb-4 border-b">
-            <DialogTitle className={titleClasses}>
+      <DialogContent className={`w-[95vw] max-w-2xl rounded-2xl ${
+        isDarkTheme 
+          ? "bg-slate-800/95 backdrop-blur-sm border-slate-700/50 text-white" 
+          : "bg-white border-gray-200"
+      } max-h-[85vh] overflow-hidden`}>
+        <div className="flex flex-col max-h-[85vh]">
+          <DialogHeader className="space-y-2 sm:space-y-3 flex-shrink-0">
+            <DialogTitle className={`text-lg sm:text-xl font-semibold flex items-center gap-2 ${
+              isDarkTheme ? "text-white" : "text-gray-900"
+            }`}>
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
               Edit Pitch
             </DialogTitle>
-            <DialogDescription className={descriptionClasses}>
-              Update your pitch content
+            <DialogDescription className={`text-sm ${
+              isDarkTheme ? "text-gray-300" : "text-gray-600"
+            }`}>
+              Update your pitch content for this opportunity
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-1 overflow-y-auto py-4 space-y-4">
-            <div>
-              <h3 className={labelClasses}>Opportunity</h3>
-              <div className={cardClasses}>
-                <h4 className={titleTextClasses}>{pitch.opportunity?.title}</h4>
-                {pitch.opportunity?.outlet && (
-                  <p className={subtitleClasses}>{pitch.opportunity.outlet}</p>
-                )}
+          <div className="flex-1 overflow-y-auto py-4 space-y-4 min-h-0">
+            {/* Opportunity Info - Mobile Optimized */}
+            <div className={`p-3 sm:p-4 rounded-lg border ${
+              isDarkTheme 
+                ? "bg-slate-700/50 border-slate-600/50" 
+                : "bg-gray-50 border-gray-200"
+            }`}>
+              <div className="flex items-start gap-2 sm:gap-3">
+                <Building className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
+                  isDarkTheme ? "text-blue-400" : "text-blue-600"
+                }`} />
+                <div className="min-w-0 flex-1">
+                  <h4 className={`font-medium text-sm leading-tight ${
+                    isDarkTheme ? "text-white" : "text-gray-900"
+                  }`}>
+                    {pitch.opportunity?.title}
+                  </h4>
+                  {pitch.opportunity?.outlet && (
+                    <p className={`text-xs mt-1 ${
+                      isDarkTheme ? "text-gray-300" : "text-gray-600"
+                    }`}>
+                      {pitch.opportunity.outlet}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
             
-            <div>
-              <h3 className={labelClasses}>Your Pitch</h3>
+            {/* Pitch Content - Mobile Optimized */}
+            <div className="space-y-2">
+              <label className={`text-sm font-medium ${
+                isDarkTheme ? "text-gray-200" : "text-gray-700"
+              }`}>
+                Your Pitch
+              </label>
+              
               {!canEdit && (
-                <div className={warningClasses}>
-                  <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
+                <div className={`p-3 rounded-lg flex items-start gap-2 text-sm ${
+                  isDarkTheme 
+                    ? "bg-yellow-900/30 text-yellow-300 border border-yellow-700/50" 
+                    : "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                }`}>
+                  <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <span>This pitch cannot be edited because it has already been sent to the reporter.</span>
                 </div>
               )}
+              
               <Textarea 
                 value={content} 
                 onChange={(e) => setContent(e.target.value)} 
                 placeholder="Enter your pitch details here..."
-                className={textareaClasses}
+                className={`min-h-[100px] sm:min-h-[120px] resize-none text-sm sm:text-base outline-none focus:outline-none ring-0 focus:ring-2 focus:ring-blue-500 shadow-none focus:shadow-none border-2 ${
+                  isDarkTheme 
+                    ? "bg-slate-700/50 border-slate-600 text-white placeholder-gray-400 focus:border-blue-500" 
+                    : "bg-white border-gray-300 focus:border-blue-500"
+                }`}
                 disabled={isLoading || !canEdit}
+                style={{ outline: 'none', boxShadow: 'none' }}
               />
+              
+              <div className={`text-xs ${
+                isDarkTheme ? "text-gray-400" : "text-gray-500"
+              }`}>
+                {content.length} characters
+              </div>
             </div>
           </div>
 
-          <DialogFooter className="flex-shrink-0 flex flex-col space-y-3 pt-4 border-t">
-            {canEdit ? (
-              <>
+          <DialogFooter className="flex-shrink-0 pt-4 border-t border-opacity-20">
+            {/* Mobile: Stack buttons vertically, Desktop: Side by side */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+              <Button 
+                variant="outline" 
+                onClick={onClose} 
+                disabled={isLoading}
+                className={`flex-1 h-11 ${
+                  isDarkTheme 
+                    ? "border-slate-600 bg-slate-800/50 text-gray-300 hover:bg-slate-700 hover:text-white" 
+                    : "border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                Cancel
+              </Button>
+              
+              {canEdit ? (
                 <Button 
                   onClick={handleSubmit} 
-                  disabled={isLoading} 
-                  variant="default"
-                  size="lg"
-                  className={`w-full ${isDarkTheme ? "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white" : ""}`}
+                  disabled={isLoading || !content.trim()} 
+                  className={`flex-1 h-11 ${
+                    isDarkTheme 
+                      ? "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white" 
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}
                 >
                   {submitMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating Pitch...
+                      Updating...
                     </>
                   ) : (
                     "Update Pitch"
                   )}
                 </Button>
+              ) : (
                 <Button 
-                  variant="outline" 
-                  onClick={onClose} 
-                  disabled={isLoading}
-                  size="lg"
-                  className={`w-full ${isDarkTheme ? "border-slate-600 bg-slate-800/50 text-gray-300 hover:bg-slate-700 hover:text-white backdrop-blur-sm" : ""}`}
-                >
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button 
-                  variant="secondary" 
                   disabled
-                  size="lg"
-                  className={`w-full ${isDarkTheme ? "bg-slate-700/50 text-gray-400 border-slate-600" : ""}`}
+                  className={`flex-1 h-11 ${
+                    isDarkTheme 
+                      ? "bg-slate-700/50 text-gray-400" 
+                      : "bg-gray-200 text-gray-500"
+                  }`}
                 >
-                  Cannot Edit (Already Sent)
+                  Cannot Edit
                 </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={onClose} 
-                  size="lg"
-                  className={`w-full ${isDarkTheme ? "border-slate-600 bg-slate-800/50 text-gray-300 hover:bg-slate-700 hover:text-white backdrop-blur-sm" : ""}`}
-                >
-                  Close
-                </Button>
-              </>
-            )}
+              )}
+            </div>
           </DialogFooter>
         </div>
       </DialogContent>

@@ -19,7 +19,10 @@ import {
   ArrowRight,
   TrendingUp,
   Sparkles,
-  Zap
+  Zap,
+  User,
+  Building2,
+  Globe
 } from "lucide-react";
 import PitchProgressTracker from "@/components/pitch-progress-tracker";
 import { useState } from "react";
@@ -37,47 +40,62 @@ const getStatusDisplay = (status: string) => {
     case 'pending':
       return { 
         label: 'Under Review', 
-        color: 'bg-blue-100 text-blue-800 border border-blue-200', 
-        icon: Clock
+        color: 'bg-blue-600', 
+        icon: Clock,
+        bgGradient: 'from-blue-600/10 to-indigo-600/10',
+        borderColor: 'border-blue-400/30'
       };
     case 'sent':
     case 'sent_to_reporter':
       return { 
         label: 'Sent to Reporter', 
-        color: 'bg-purple-100 text-purple-800 border border-purple-200', 
-        icon: Send
+        color: 'bg-blue-600', 
+        icon: Send,
+        bgGradient: 'from-blue-600/10 to-blue-500/10',
+        borderColor: 'border-blue-400/30'
       };
     case 'interested':
     case 'reporter_interested':
       return { 
         label: 'Reporter Interested', 
-        color: 'bg-amber-100 text-amber-800 border border-amber-200', 
-        icon: Eye
+        color: 'bg-purple-600', 
+        icon: Eye,
+        bgGradient: 'from-purple-600/10 to-violet-600/10',
+        borderColor: 'border-purple-400/30'
       };
     case 'successful':
     case 'successful_coverage':
       return { 
         label: 'Published', 
-        color: 'bg-green-100 text-green-800 border border-green-200', 
-        icon: Award
+        color: 'bg-green-600', 
+        icon: Award,
+        bgGradient: 'from-green-600/10 to-emerald-600/10',
+        borderColor: 'border-green-400/30'
       };
     case 'not_interested':
+    case 'reporter_not_interested':
       return { 
         label: 'Not Selected', 
-        color: 'bg-red-100 text-red-800 border border-red-200', 
-        icon: XCircle
+        color: 'bg-red-600', 
+        icon: XCircle,
+        bgGradient: 'from-red-600/10 to-rose-600/10',
+        borderColor: 'border-red-400/30'
       };
     case 'draft':
       return { 
         label: 'Draft', 
-        color: 'bg-gray-100 text-gray-800 border border-gray-200', 
-        icon: FileText
+        color: 'bg-gray-600', 
+        icon: FileText,
+        bgGradient: 'from-gray-600/10 to-slate-600/10',
+        borderColor: 'border-gray-400/30'
       };
     default:
       return { 
         label: 'Under Review', 
-        color: 'bg-blue-100 text-blue-800 border border-blue-200', 
-        icon: Clock
+        color: 'bg-blue-600', 
+        icon: Clock,
+        bgGradient: 'from-blue-600/10 to-indigo-600/10',
+        borderColor: 'border-blue-400/30'
       };
   }
 };
@@ -91,491 +109,479 @@ export default function PitchReviewModal({ isOpen, onClose, pitch }: PitchReview
   // Detect if we're in dark theme based on the current route
   const isDarkTheme = location.includes('/dark/') || location.includes('dark');
 
-  // DEBUG: Log pitch data to see what we're getting
-  if (isOpen) {
-    console.log("🔍 MODAL DEBUG: Pitch data received:", {
-      id: pitch.id,
-      status: pitch.status,
-      hasArticle: !!pitch.article,
-      articleUrl: pitch.article?.url,
-      articleTitle: pitch.article?.title,
-      fullPitchObject: pitch
-    });
-  }
-
   const stage = getStage(pitch);
-  
-  let mappedStage = stage;
-  if (!(stage in stageCopy)) {
-    if (stage === 'sent') mappedStage = 'sent_to_reporter';
-    else if (stage === 'interested') mappedStage = 'reporter_interested';
-    else if (stage === 'not_interested') mappedStage = 'reporter_not_interested';
-    else if (stage === 'successful') mappedStage = 'successful_coverage';
-    else mappedStage = 'pending';
-  }
-  
-  const stageInfo = stageCopy[mappedStage as keyof typeof stageCopy];
   const statusDisplay = getStatusDisplay(stage);
   const StatusIcon = statusDisplay.icon;
   const createdDate = new Date(pitch.createdAt);
   
-  const isPending = stage === 'draft' || stage === 'pending';
-  const isInProgress = stage === 'sent_to_reporter' || stage === 'reporter_interested' || 
-                       stage === 'sent' || stage === 'interested';
   const isSuccessful = stage === 'successful_coverage' || stage === 'successful';
-  const isRejected = stage === 'reporter_not_interested' || stage === 'not_interested';
 
-  // Theme-aware classes
-  const dialogClasses = isDarkTheme 
-    ? "w-[95vw] sm:w-full max-w-md sm:max-w-2xl lg:max-w-4xl h-[90vh] sm:max-h-[90vh] overflow-hidden flex flex-col bg-slate-800/95 backdrop-blur-sm border-slate-700/50 text-white" 
-    : "w-[95vw] sm:w-full max-w-md sm:max-w-2xl lg:max-w-4xl h-[90vh] sm:max-h-[90vh] overflow-hidden flex flex-col";
+  // Get publication logo URL with localhost detection
+  const getLogoUrl = () => {
+    const logo = pitch.opportunity?.publication?.logo;
     
-  const headerClasses = isDarkTheme 
-    ? "border-b border-slate-700/50 pb-4 flex-shrink-0" 
-    : "border-b border-gray-200 pb-4 flex-shrink-0";
+    if (!logo || !logo.trim() || logo === 'null' || logo === 'undefined') {
+      return '';
+    }
     
-  const titleClasses = isDarkTheme 
-    ? "text-base sm:text-xl font-bold text-white mb-2 leading-tight" 
-    : "text-base sm:text-xl font-bold text-gray-900 mb-2 leading-tight";
+    // Convert localhost URLs to relative paths for mobile compatibility
+    if (logo.startsWith('http://localhost:5050/')) {
+      const relativePath = logo.replace('http://localhost:5050', '');
+      return `${window.location.origin}${relativePath}`;
+    }
     
-  const statusBadgeClasses = (baseColor: string) => isDarkTheme 
-    ? `inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${baseColor.replace('50', '900/30').replace('200', '700/50').replace('600', '400').replace('700', '300').replace('800', '200').replace('900', '100')}` 
-    : `inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${baseColor}`;
+    // Handle other URLs normally
+    if (logo.startsWith('http') || logo.startsWith('data:')) {
+      return logo;
+    }
     
-  const linkBadgeClasses = isDarkTheme 
-    ? "flex items-center bg-blue-900/30 px-3 py-1 rounded-full border border-blue-700/50 text-blue-300" 
-    : "flex items-center bg-blue-50 px-3 py-1 rounded-full border border-blue-200 text-blue-700";
-    
-  const metaTextClasses = isDarkTheme 
-    ? "flex items-center space-x-4 text-sm text-gray-300" 
-    : "flex items-center space-x-4 text-sm text-gray-600";
-    
-  const successTextClasses = isDarkTheme 
-    ? "flex items-center text-green-300" 
-    : "flex items-center text-green-700";
-    
-  const bidAmountClasses = isDarkTheme 
-    ? "bg-green-900/30 border border-green-700/50 rounded-lg px-4 py-3 text-center" 
-    : "bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-center";
-    
-  const bidLabelClasses = isDarkTheme 
-    ? "text-xs font-medium text-green-300 uppercase mb-1" 
-    : "text-xs font-medium text-green-700 uppercase mb-1";
-    
-  const bidValueClasses = isDarkTheme 
-    ? "text-lg font-bold text-green-200" 
-    : "text-lg font-bold text-green-800";
-    
-  const successBannerClasses = isDarkTheme 
-    ? "mt-4 pt-4 border-t border-slate-700/50 flex items-center justify-between bg-green-900/30 rounded-lg px-4 py-3 border border-green-700/50" 
-    : "mt-4 pt-4 border-t border-gray-200 flex items-center justify-between bg-green-50 rounded-lg px-4 py-3 border border-green-200";
-    
-  const successIconTextClasses = isDarkTheme 
-    ? "flex items-center text-green-300" 
-    : "flex items-center text-green-700";
-    
-  const successTitleClasses = isDarkTheme 
-    ? "font-semibold text-green-200" 
-    : "font-semibold text-green-800";
-    
-  const successSubtitleClasses = isDarkTheme 
-    ? "text-sm text-green-300" 
-    : "text-sm text-green-700";
-    
-  const tabBorderClasses = isDarkTheme 
-    ? "flex border-b border-slate-700/50" 
-    : "flex border-b border-gray-200";
-    
-  const activeTabClasses = isDarkTheme 
-    ? "border-b-2 border-blue-500 text-blue-400" 
-    : "border-b-2 border-blue-500 text-blue-600";
-    
-  const inactiveTabClasses = isDarkTheme 
-    ? "text-gray-400 hover:text-gray-200" 
-    : "text-gray-500 hover:text-gray-700";
-    
-  const contentClasses = isDarkTheme 
-    ? "flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-800/30" 
-    : "flex-1 overflow-y-auto p-4 sm:p-6";
-    
-  const cardClasses = isDarkTheme 
-    ? "bg-slate-800/50 rounded-lg border border-slate-700/50 p-4 sm:p-6" 
-    : "bg-white rounded-lg border border-gray-200 p-4 sm:p-6";
-    
-  const cardTitleClasses = isDarkTheme 
-    ? "font-semibold text-white mb-4 flex items-center text-sm sm:text-base" 
-    : "font-semibold text-gray-900 mb-4 flex items-center text-sm sm:text-base";
-    
-  const statusCardClasses = (bgColor: string) => isDarkTheme 
-    ? `rounded-lg p-6 border ${bgColor.replace('50', '900/30').replace('200', '700/50')}` 
-    : `${bgColor} rounded-lg p-6 border ${bgColor.replace('50', '200')}`;
-    
-  const statusIconClasses = (bgColor: string) => isDarkTheme 
-    ? `w-12 h-12 rounded-lg flex items-center justify-center ${bgColor.replace('500', '600')}` 
-    : `w-12 h-12 ${bgColor} rounded-lg flex items-center justify-center`;
-    
-  const statusTitleClasses = (textColor: string) => isDarkTheme 
-    ? `font-semibold text-lg mb-2 ${textColor.replace('900', '200').replace('800', '300').replace('700', '400')}` 
-    : `font-semibold ${textColor} text-lg mb-2`;
-    
-  const statusDescClasses = (textColor: string) => isDarkTheme 
-    ? `mb-4 ${textColor.replace('700', '300').replace('800', '400')}` 
-    : `${textColor} mb-4`;
-    
-  const statusGridClasses = isDarkTheme 
-    ? "grid grid-cols-2 gap-4" 
-    : "grid grid-cols-2 gap-4";
-    
-  const statusGridItemClasses = isDarkTheme 
-    ? "bg-slate-700/50 rounded-lg p-4 border border-slate-600/50" 
-    : "bg-white rounded-lg p-4 border border-gray-200";
-    
-  const statusGridLabelClasses = isDarkTheme 
-    ? "text-sm text-gray-300" 
-    : "text-sm text-gray-600";
-    
-  const statusGridValueClasses = isDarkTheme 
-    ? "font-semibold text-white" 
-    : "font-semibold text-gray-900";
+    // Handle relative paths
+    return `${window.location.origin}${logo}`;
+  };
+
+  const logoUrl = getLogoUrl();
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className={dialogClasses}>
-        <DialogHeader className={headerClasses}>
-          <div className="space-y-4">
-            <div className="flex-1">
-              <DialogTitle className={titleClasses}>
-                {pitch.opportunity?.publication?.name || pitch.opportunity?.outlet || "Publication"}
-              </DialogTitle>
-              <p className={isDarkTheme ? "text-gray-300 text-sm mt-1" : "text-gray-600 text-sm mt-1"}>
-                {pitch.opportunity?.title || `Pitch #${pitch.id}`}
-              </p>
-              
-              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-3">
-                <div className={statusBadgeClasses(statusDisplay.color)}>
-                  <StatusIcon className="h-4 w-4 mr-2" />
-                  {statusDisplay.label}
-                </div>
-                
-                {(isSuccessful || isInProgress) && (
-                  <div className={linkBadgeClasses}>
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    <span className="text-xs sm:text-sm">Do-follow link included</span>
+      <DialogContent className={`w-[95vw] max-w-4xl max-h-[85vh] sm:max-h-[90vh] rounded-2xl sm:rounded-3xl overflow-hidden ${
+        isDarkTheme 
+          ? "bg-slate-800 backdrop-blur-sm border-slate-700/50 text-white" 
+          : "bg-white backdrop-blur-xl border-gray-200/50"
+      } shadow-xl flex flex-col`}>
+        
+        {/* Compact Mobile Header */}
+        <DialogHeader className={`border-b ${isDarkTheme ? 'border-slate-600/50' : 'border-gray-200/50'} p-3 sm:p-6 flex-shrink-0`}>
+          {/* Mobile Compact Layout */}
+          <div className="block sm:hidden">
+            <div className="flex items-center gap-3 mb-2">
+              {/* Small Logo */}
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white border border-gray-200 overflow-hidden shadow-sm flex-shrink-0">
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt={`${pitch.opportunity?.publication?.name || pitch.opportunity?.outlet} logo`}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.parentElement!.innerHTML = `
+                        <div class="w-full h-full ${statusDisplay.color} flex items-center justify-center">
+                          <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                          </svg>
+                        </div>
+                      `;
+                    }}
+                  />
+                ) : (
+                  <div className={`w-full h-full ${statusDisplay.color} flex items-center justify-center`}>
+                    <Building2 className="h-4 w-4 text-white" />
                   </div>
                 )}
               </div>
-
-              <div className={`flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  <span>Submitted {format(createdDate, "MMM d, yyyy")}</span>
-                </div>
-                
-                {isSuccessful && pitch.article && (
-                  <div className={successTextClasses}>
-                    <Award className="h-4 w-4 mr-1" />
-                    <span>Published</span>
+              
+              {/* Title and Status in Same Row */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <DialogTitle className={`text-base font-bold truncate ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                    {pitch.opportunity?.publication?.name || pitch.opportunity?.outlet || "Publication"}
+                  </DialogTitle>
+                  <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md ${statusDisplay.color} shadow-sm flex-shrink-0 ml-2`}>
+                    <StatusIcon className="h-2.5 w-2.5 text-white" />
+                    <span className="text-white font-medium text-xs">{statusDisplay.label}</span>
                   </div>
-                )}
+                </div>
               </div>
             </div>
             
-            <div className="flex items-center justify-between">
-              <div className={bidAmountClasses}>
-                <div className={bidLabelClasses}>
-                  Bid Amount
-                </div>
-                <div className={bidValueClasses}>
+            {/* Compact Info Row */}
+            <div className="flex items-center justify-between gap-3 text-xs">
+              <p className={`truncate flex-1 ${isDarkTheme ? 'text-slate-400' : 'text-gray-600'}`}>
+                {pitch.opportunity?.title || `Pitch #${pitch.id}`}
+              </p>
+              <div className={`px-2 py-1 rounded-md ${
+                isDarkTheme 
+                  ? 'bg-gradient-to-r from-slate-700 to-slate-600 border border-slate-600' 
+                  : 'bg-gradient-to-r from-gray-100 to-gray-50 border border-gray-200'
+              } flex-shrink-0`}>
+                <div className={`text-xs font-medium ${
+                  isDarkTheme ? 'text-green-400' : 'text-green-700'
+                }`}>
                   ${pitch.bidAmount.toLocaleString()}
                 </div>
               </div>
             </div>
+            
+            {/* Compact Meta Info */}
+            <div className="flex items-center justify-between mt-2 text-xs">
+              <div className={`flex items-center gap-1.5 ${isDarkTheme ? 'text-slate-400' : 'text-gray-600'}`}>
+                <Calendar className="h-3 w-3" />
+                <span>Submitted {format(createdDate, "MMM d")}</span>
+              </div>
+              {isSuccessful && (
+                <div className="flex items-center gap-1.5 text-green-500 font-medium">
+                  <Award className="h-3 w-3" />
+                  <span>Published</span>
+                </div>
+              )}
+            </div>
           </div>
           
-          {isSuccessful && pitch.article?.url && (
-            <div className={successBannerClasses}>
-              <div className={successIconTextClasses}>
-                  <CheckCircle2 className="h-5 w-5 mr-2" />
-                  <div>
-                  <div className={successTitleClasses}>Success! Payment processed</div>
-                  <div className={successSubtitleClasses}>Article published</div>
+          {/* Desktop Layout (unchanged) */}
+          <div className="hidden sm:flex sm:items-start gap-4">
+            {/* Publication Logo */}
+            <div className="w-16 h-16 rounded-xl flex items-center justify-center bg-white border border-gray-200 overflow-hidden shadow-lg flex-shrink-0">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={`${pitch.opportunity?.publication?.name || pitch.opportunity?.outlet} logo`}
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.parentElement!.innerHTML = `
+                      <div class="w-full h-full ${statusDisplay.color} flex items-center justify-center">
+                        <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                      </div>
+                    `;
+                  }}
+                />
+              ) : (
+                <div className={`w-full h-full ${statusDisplay.color} flex items-center justify-center`}>
+                  <Building2 className="h-8 w-8 text-white" />
+                </div>
+              )}
+            </div>
+            
+            {/* Publication Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-2">
+                <DialogTitle className={`text-xl font-bold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                  {pitch.opportunity?.publication?.name || pitch.opportunity?.outlet || "Publication"}
+                </DialogTitle>
+                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg ${statusDisplay.color} shadow-sm`}>
+                  <StatusIcon className="h-3 w-3 text-white" />
+                  <span className="text-white font-medium text-xs">{statusDisplay.label}</span>
                 </div>
               </div>
-              <Button 
-                asChild 
-                className={isDarkTheme ? "bg-green-600 hover:bg-green-700 text-white" : "bg-green-600 hover:bg-green-700 text-white"}
-              >
+              <p className={`text-sm leading-tight ${isDarkTheme ? 'text-slate-400' : 'text-gray-600'}`}>
+                {pitch.opportunity?.title || `Pitch #${pitch.id}`}
+              </p>
+            </div>
+            
+            {/* Bid Amount Card */}
+            <div className={`px-4 py-3 rounded-xl ${
+              isDarkTheme 
+                ? 'bg-gradient-to-br from-slate-800/60 to-slate-700/60 border border-slate-600/50' 
+                : 'bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200'
+            } shadow-lg flex-shrink-0`}>
+              <div className={`text-xs font-semibold uppercase tracking-wide mb-1 ${
+                isDarkTheme ? 'text-green-400' : 'text-green-700'
+              }`}>
+                Bid Amount
+              </div>
+              <div className={`text-xl font-bold ${
+                isDarkTheme ? 'text-green-300' : 'text-green-800'
+              }`}>
+                ${pitch.bidAmount.toLocaleString()}
+              </div>
+            </div>
+          </div>
+          
+          {/* Desktop Meta Info Row */}
+          <div className="hidden sm:flex sm:items-center sm:justify-between gap-3 mt-4">
+            <div className="flex items-center gap-6 text-sm">
+              <div className={`flex items-center gap-2 ${isDarkTheme ? 'text-slate-400' : 'text-gray-600'}`}>
+                <Calendar className="h-4 w-4" />
+                <span>Submitted {format(createdDate, "MMM d, yyyy")}</span>
+              </div>
+              {isSuccessful && (
+                <div className="flex items-center gap-2 text-green-500 font-medium">
+                  <Award className="h-4 w-4" />
+                  <span>Published</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Success Banner - Only on Desktop */}
+          {isSuccessful && pitch.article?.url && (
+            <div className={`hidden sm:block mt-4 p-4 rounded-xl ${
+              isDarkTheme 
+                ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700/50' 
+                : 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200'
+            } shadow-lg`}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-green-500 flex items-center justify-center shadow-md">
+                    <CheckCircle2 className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <div className={`font-semibold ${
+                      isDarkTheme ? 'text-green-300' : 'text-green-800'
+                    }`}>
+                      Success! Payment processed
+                    </div>
+                    <div className={`text-sm ${
+                      isDarkTheme ? 'text-green-400' : 'text-green-600'
+                    }`}>
+                      Article published and payment completed
+                    </div>
+                  </div>
+                </div>
+                <Button asChild className="h-11 bg-green-500 hover:bg-green-600 text-white shadow-lg">
                   <a href={pitch.article.url} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     View Article
                   </a>
                 </Button>
+              </div>
             </div>
           )}
         </DialogHeader>
 
-        <div className={tabBorderClasses}>
-          <button 
-            onClick={() => setActiveTab('status')}
-            className={`flex-1 px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium transition-colors ${
-              activeTab === 'status' 
-                ? activeTabClasses 
-                : inactiveTabClasses
-            }`}
-          >
-            <div className="flex items-center justify-center gap-1 sm:gap-2">
-              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Status</span>
-              <span className="sm:hidden">Status</span>
-            </div>
-          </button>
-          <button 
-            onClick={() => setActiveTab('content')}
-            className={`flex-1 px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium transition-colors ${
-              activeTab === 'content' 
-                ? activeTabClasses 
-                : inactiveTabClasses
-            }`}
-          >
-            <div className="flex items-center justify-center gap-1 sm:gap-2">
-              <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Pitch Content</span>
-              <span className="sm:hidden">Content</span>
-            </div>
-          </button>
-          {pitch.article?.url && (
-            <button 
-              onClick={() => setActiveTab('deliverable')}
-              className={`flex-1 px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium transition-colors ${
-                activeTab === 'deliverable' 
-                  ? activeTabClasses 
-                  : inactiveTabClasses
-              }`}
-            >
-              <div className="flex items-center justify-center gap-1 sm:gap-2">
-                <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Deliverable</span>
-                <span className="sm:hidden">Article</span>
-              </div>
-            </button>
-          )}
+        {/* Compact Tab Navigation */}
+        <div className={`border-b ${isDarkTheme ? 'border-slate-600/50' : 'border-gray-200/50'} flex-shrink-0`}>
+          <div className="flex">
+            {[
+              { id: 'status', label: 'Status', icon: TrendingUp },
+              { id: 'content', label: 'Pitch', icon: FileText },
+              ...(pitch.article?.url ? [{ id: 'deliverable', label: 'Article', icon: Globe }] : [])
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex-1 flex items-center justify-center gap-2 px-2 sm:px-6 py-2.5 sm:py-4 text-sm font-medium transition-all duration-200 min-h-[40px] sm:min-h-[44px] ${
+                  activeTab === tab.id
+                    ? isDarkTheme
+                      ? 'text-blue-400 border-b-2 border-blue-400 bg-blue-900/10'
+                      : 'text-blue-600 border-b-2 border-blue-500 bg-blue-50/50'
+                    : isDarkTheme
+                      ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <tab.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="text-xs sm:text-sm">{tab.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
         
-        <div className={contentClasses}>
-          {activeTab === 'status' ? (
-            <div className="space-y-6">
-              <div className={cardClasses}>
-                <h3 className={cardTitleClasses}>
-                  <TrendingUp className={`h-5 w-5 mr-2 ${isDarkTheme ? 'text-blue-400' : 'text-blue-600'}`} />
-                  Progress Timeline
-                </h3>
-                <PitchProgressTracker 
-                  currentStage={stage} 
-                  stageTimestamps={getStageTimestamps(pitch)}
-                  needsFollowUp={pitch.needsFollowUp}
-                  pitch={{
-                    paymentIntentId: pitch.paymentIntentId || null
-                  }}
-                />
-              </div>
-
-              {isPending && (
-                <div className={statusCardClasses("bg-blue-50")}>
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0">
-                      <div className={statusIconClasses("bg-blue-500")}>
-                        <Clock className="h-6 w-6 text-white" />
+        {/* Compact Tab Content */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="p-3 sm:p-6">
+            {activeTab === 'status' && (
+              <div className="space-y-3 sm:space-y-6">
+                {/* Mobile Success Banner */}
+                {isSuccessful && pitch.article?.url && (
+                  <div className={`block sm:hidden p-3 rounded-lg ${
+                    isDarkTheme 
+                      ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700/50' 
+                      : 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200'
+                  } shadow-sm`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-6 h-6 rounded-md bg-green-500 flex items-center justify-center">
+                        <CheckCircle2 className="h-3 w-3 text-white" />
+                      </div>
+                      <div className={`font-medium text-sm ${
+                        isDarkTheme ? 'text-green-300' : 'text-green-800'
+                      }`}>
+                        Success! Published
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <h3 className={statusTitleClasses("text-blue-900")}>Your pitch is being reviewed!</h3>
-                      <p className={statusDescClasses("text-blue-700")}>We've sent your pitch to the reporter. You'll get notified as soon as they respond!</p>
-                      
-                      <div className={statusGridClasses}>
-                        <div className={statusGridItemClasses}>
-                          <div className={statusGridLabelClasses}>Submitted</div>
-                          <div className={statusGridValueClasses}>{format(createdDate, "MMM d, yyyy")}</div>
-                        </div>
-                        <div className={statusGridItemClasses}>
-                          <div className={statusGridLabelClasses}>Bid Amount</div>
-                          <div className={`font-semibold ${isDarkTheme ? 'text-green-300' : 'text-green-600'}`}>${pitch.bidAmount.toFixed(2)}</div>
-                        </div>
-                      </div>
-                    </div>
+                    <Button asChild className="w-full h-9 bg-green-500 hover:bg-green-600 text-white shadow-sm text-sm">
+                      <a href={pitch.article.url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-3 w-3 mr-2" />
+                        View Article
+                      </a>
+                    </Button>
                   </div>
-                </div>
-              )}
+                )}
+                
 
-              {isInProgress && (
-                <div className={statusCardClasses(
-                  stage === 'reporter_interested' 
-                    ? 'bg-purple-50' 
-                    : 'bg-blue-50'
-                )}>
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0">
-                      <div className={statusIconClasses(
-                        stage === 'reporter_interested' 
-                          ? 'bg-purple-500' 
-                          : 'bg-blue-500'
-                      )}>
-                        <StatusIcon className="h-6 w-6 text-white" />
-                      </div>
+                
+                {/* Enhanced Status Card */}
+                <div className={`p-4 sm:p-8 rounded-xl sm:rounded-3xl bg-gradient-to-br ${statusDisplay.bgGradient} border ${statusDisplay.borderColor} shadow-lg sm:shadow-xl`}>
+                  <div className="flex items-start gap-4 sm:gap-6">
+                    <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl ${statusDisplay.color} flex items-center justify-center shadow-lg flex-shrink-0`}>
+                      <StatusIcon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                     </div>
                     <div className="flex-1">
-                      <h3 className={statusTitleClasses(
-                        stage === 'reporter_interested' ? 'text-purple-900' : 'text-blue-900'
-                      )}>
-                        {stage === 'reporter_interested' ? 'Amazing! The reporter is interested!' : 'Your pitch is being reviewed'}
-                      </h3>
-                      <p className={statusDescClasses(
-                        stage === 'reporter_interested' ? 'text-purple-700' : 'text-blue-700'
-                      )}>
-                        {stageInfo.nextSteps}
+                      <div className="flex items-center gap-3 mb-2 sm:mb-3">
+                        <h3 className={`text-lg sm:text-2xl font-bold ${
+                          isDarkTheme ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          {statusDisplay.label}
+                        </h3>
+                        <div className={`px-2 py-1 rounded-md text-xs font-medium ${
+                          isDarkTheme ? 'bg-slate-700/50 text-slate-300' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {format(createdDate, "MMM d, yyyy")}
+                        </div>
+                      </div>
+                      <p className={`text-sm sm:text-base leading-relaxed ${
+                        isDarkTheme ? 'text-slate-300' : 'text-gray-600'
+                      }`}>
+                        {stage === 'pending' && "Your pitch is currently under review. We'll notify you as soon as there's an update!"}
+                        {(stage === 'sent' || stage === 'sent_to_reporter') && "Your pitch has been sent to the reporter. They're reviewing it now."}
+                        {(stage === 'interested' || stage === 'reporter_interested') && "Great news! The reporter is interested in your pitch."}
+                        {(stage === 'successful' || stage === 'successful_coverage') && "Congratulations! Your pitch was successful and has been published."}
+                        {(stage === 'not_interested' || stage === 'reporter_not_interested') && "This pitch wasn't selected this time, but don't give up! New opportunities are added every day. Keep pitching to increase your chances of success!"}
                       </p>
-                      
-                      {stage === 'reporter_interested' && pitch.needsFollowUp && (
-                        <div className={isDarkTheme 
-                          ? "bg-slate-700/50 border border-orange-700/50 rounded-lg p-4" 
-                          : "bg-white border border-orange-200 rounded-lg p-4"
-                        }>
-                          <div className={`flex items-center mb-2 ${isDarkTheme ? 'text-orange-300' : 'text-orange-800'}`}>
-                            <Clock className="h-4 w-4 mr-2" />
-                            <span className="font-semibold">Follow-up needed</span>
-                          </div>
-                          <p className={`text-sm ${isDarkTheme ? 'text-orange-400' : 'text-orange-700'}`}>
-                            Check your email for additional info requests.
-                          </p>
-                        </div>
-                      )}
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {isSuccessful && (
-                <div className={statusCardClasses("bg-green-50")}>
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0">
-                      <div className={statusIconClasses("bg-green-500")}>
-                        <Award className="h-6 w-6 text-white" />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className={statusTitleClasses("text-green-900")}>Congratulations! Your pitch was published!</h3>
-                      <p className={statusDescClasses("text-green-700")}>Your expertise is now live and your payment has been processed!</p>
-                      
-                      <div className={isDarkTheme 
-                        ? "flex items-center bg-slate-700/50 rounded-lg p-4 border border-green-700/50" 
-                        : "flex items-center bg-white rounded-lg p-4 border border-green-200"
-                      }>
-                        <CheckCircle2 className={`h-5 w-5 mr-3 ${isDarkTheme ? 'text-green-400' : 'text-green-500'}`} />
-                        <div>
-                          <div className={`font-semibold ${isDarkTheme ? 'text-green-300' : 'text-green-900'}`}>Payment Processed</div>
-                          <div className={isDarkTheme ? 'text-green-400' : 'text-green-700'}>${pitch.bidAmount.toFixed(2)}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : activeTab === 'content' ? (
-            <div>
-              <div className={cardClasses}>
-                <h3 className={cardTitleClasses}>
-                  <FileText className={`h-5 w-5 mr-2 ${isDarkTheme ? 'text-purple-400' : 'text-purple-600'}`} />
-                  Your Pitch
-                </h3>
-                
-                <div className={isDarkTheme 
-                  ? "bg-slate-700/50 rounded-lg p-6 border border-slate-600/50" 
-                  : "bg-gray-50 rounded-lg p-6 border border-gray-200"
-                }>
-                  <div className={`whitespace-pre-wrap leading-relaxed ${isDarkTheme ? 'text-gray-200' : 'text-gray-900'}`}>
-                    "{pitch.content}" 
-                    
-                    <div className={`mt-4 pt-4 border-t ${isDarkTheme ? 'border-slate-600/50' : 'border-gray-200'}`}>
-                      <span className={isDarkTheme ? 'text-gray-300' : 'text-gray-600'}>— {user ? `${user.fullName}, ${user.title || 'Expert'}` : 'Unknown User'}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className={`flex justify-between items-center mt-4 pt-4 border-t ${isDarkTheme ? 'border-slate-600/50' : 'border-gray-200'}`}>
-                  <div className={`flex items-center ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>
-                    <Calendar className="h-4 w-4 mr-2" />
-                    <span>Submitted {format(createdDate, "MMM d, yyyy")}</span>
-                  </div>
-                  <div className={isDarkTheme 
-                    ? "flex items-center bg-green-900/30 px-3 py-1 rounded-full border border-green-700/50" 
-                    : "flex items-center bg-green-50 px-3 py-1 rounded-full border border-green-200"
-                  }>
-                    <span className={`font-semibold ${isDarkTheme ? 'text-green-300' : 'text-green-700'}`}>${pitch.bidAmount.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div>
-              <div className={cardClasses}>
-                <h3 className={cardTitleClasses}>
-                  <ExternalLink className={`h-5 w-5 mr-2 ${isDarkTheme ? 'text-green-400' : 'text-green-600'}`} />
-                  Published Article
-                </h3>
-                
-                {pitch.article?.url ? (
-                  <div className={statusCardClasses("bg-green-50")}>
-                    <div className="flex items-start space-x-4">
-                      <div className="flex-shrink-0">
-                        <div className={statusIconClasses("bg-green-500")}>
-                          <Award className="h-6 w-6 text-white" />
-                        </div>
+            )}
+
+            {activeTab === 'content' && (
+              <div className="space-y-3 sm:space-y-6">
+                <div className={`p-3 sm:p-6 rounded-lg sm:rounded-2xl ${
+                  isDarkTheme 
+                    ? 'bg-gradient-to-br from-slate-800/60 to-slate-700/60 border border-slate-600/50' 
+                    : 'bg-gradient-to-br from-gray-50/80 to-gray-100/80 border border-gray-200/50'
+                } backdrop-blur-sm shadow-sm sm:shadow-lg`}>
+                  <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-6">
+                    <div className="p-1.5 sm:p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg">
+                      <FileText className="h-3 w-3 sm:h-5 sm:w-5 text-white" />
+                    </div>
+                    <h3 className={`text-base sm:text-lg font-bold ${
+                      isDarkTheme ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      Your Pitch
+                    </h3>
+                  </div>
+                  
+                  {/* Pitch Content - Compact with Scroll */}
+                  <div className={`p-3 sm:p-6 rounded-lg sm:rounded-xl ${
+                    isDarkTheme 
+                      ? 'bg-slate-700/60 backdrop-blur-sm' 
+                      : 'bg-white shadow-sm'
+                  }`}>
+                    <div className={`max-h-[200px] sm:max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 ${
+                      isDarkTheme ? 'scrollbar-thumb-slate-500 scrollbar-track-slate-700' : ''
+                    }`}>
+                      <div className={`text-sm sm:text-lg leading-relaxed italic mb-3 sm:mb-4 pr-2 ${
+                        isDarkTheme ? 'text-slate-200' : 'text-gray-700'
+                      }`}>
+                        "{pitch.content}"
                       </div>
-                      <div className="flex-1">
-                        <h4 className={statusTitleClasses("text-green-900")}>Your Article is Live! 🎉</h4>
-                        <p className={statusDescClasses("text-green-700")}>Congratulations! Your expertise has been published and is now available online.</p>
-                        
-                        <div className={isDarkTheme 
-                          ? "bg-slate-700/50 border border-green-700/50 rounded-lg p-4" 
-                          : "bg-white border border-green-200 rounded-lg p-4"
-                        }>
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <h5 className={`font-semibold mb-1 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Article Details</h5>
-                              {pitch.article.title && (
-                                <p className={`text-sm mb-2 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>{pitch.article.title}</p>
-                              )}
-                              <p className={`text-xs break-all ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>{pitch.article.url}</p>
+                    </div>
+                    <div className={`flex items-center gap-2 pt-3 sm:pt-4 border-t ${
+                      isDarkTheme ? 'border-slate-600/50 text-slate-400' : 'border-gray-200 text-gray-500'
+                    }`}>
+                      <User className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="font-medium text-xs sm:text-sm">
+                        {user ? `${user.fullName}${user.title ? `, ${user.title}` : ''}` : 'Expert'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'deliverable' && (
+              <div className="space-y-3 sm:space-y-6">
+                {pitch.article?.url ? (
+                  <div className={`p-3 sm:p-6 rounded-lg sm:rounded-2xl ${
+                    isDarkTheme 
+                      ? 'bg-gradient-to-br from-slate-800/60 to-slate-700/60 border border-slate-600/50' 
+                      : 'bg-gradient-to-br from-gray-50/80 to-gray-100/80 border border-gray-200/50'
+                  } backdrop-blur-sm shadow-sm sm:shadow-lg`}>
+                    <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-6">
+                      <div className="p-1.5 sm:p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-lg">
+                        <Globe className="h-3 w-3 sm:h-5 sm:w-5 text-white" />
+                      </div>
+                      <h3 className={`text-base sm:text-lg font-bold ${
+                        isDarkTheme ? 'text-white' : 'text-gray-900'
+                      }`}>
+                        Published Article
+                      </h3>
+                    </div>
+                    
+                    {/* Article Card - Mobile Optimized Sizing */}
+                    <div className={`p-2 sm:p-6 rounded-lg sm:rounded-xl ${
+                      isDarkTheme 
+                        ? 'bg-gradient-to-br from-green-900/20 to-emerald-900/20 border border-green-700/30' 
+                        : 'bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200'
+                    } shadow-sm sm:shadow-lg`}>
+                      <div className="flex items-start gap-2 sm:gap-4">
+                        <div className="w-6 h-6 sm:w-12 sm:h-12 rounded-md sm:rounded-xl bg-green-500 flex items-center justify-center shadow-sm sm:shadow-lg flex-shrink-0">
+                          <Award className="h-3 w-3 sm:h-6 sm:w-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className={`text-sm sm:text-lg font-semibold mb-1 sm:mb-2 ${
+                            isDarkTheme ? 'text-green-300' : 'text-green-800'
+                          }`}>
+                            🎉 Your Article is Live!
+                          </h4>
+                          <p className={`mb-2 sm:mb-4 text-xs sm:text-sm ${
+                            isDarkTheme ? 'text-green-400' : 'text-green-700'
+                          }`}>
+                            Congratulations! Your expertise has been published and is now available online.
+                          </p>
+                          
+                          {pitch.article.title && (
+                            <div className={`p-1.5 sm:p-3 rounded-md sm:rounded-lg mb-2 sm:mb-4 ${
+                              isDarkTheme ? 'bg-slate-800/50' : 'bg-white/70'
+                            }`}>
+                              <h5 className={`font-medium mb-0.5 text-xs sm:text-sm ${
+                                isDarkTheme ? 'text-white' : 'text-gray-900'
+                              }`}>
+                                Article Title
+                              </h5>
+                              <p className={`text-xs sm:text-sm leading-tight ${
+                                isDarkTheme ? 'text-slate-300' : 'text-gray-700'
+                              }`}>
+                                {pitch.article.title}
+                              </p>
                             </div>
-                            <Button 
-                              asChild 
-                              className={`ml-4 flex-shrink-0 ${isDarkTheme ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white'}`}
-                            >
-                              <a href={pitch.article.url} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-4 w-4 mr-2" />
-                                Read Article
-                              </a>
-                            </Button>
-                          </div>
+                          )}
+                          
+                          <Button 
+                            asChild 
+                            className="w-full h-8 sm:h-11 bg-green-500 hover:bg-green-600 text-white shadow-sm sm:shadow-lg text-xs sm:text-sm py-1 sm:py-2"
+                          >
+                            <a href={pitch.article.url} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-2.5 w-2.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                              Read Your Published Article
+                            </a>
+                          </Button>
                         </div>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className={isDarkTheme 
-                    ? "bg-slate-700/50 rounded-lg p-6 border border-slate-600/50 text-center" 
-                    : "bg-gray-50 rounded-lg p-6 border border-gray-200 text-center"
-                  }>
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4 ${isDarkTheme ? 'bg-slate-600' : 'bg-gray-300'}`}>
-                      <ExternalLink className={`h-6 w-6 ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`} />
+                  <div className={`p-4 sm:p-8 rounded-lg sm:rounded-2xl text-center ${
+                    isDarkTheme 
+                      ? 'bg-gradient-to-br from-slate-800/60 to-slate-700/60 border border-slate-600/50' 
+                      : 'bg-gradient-to-br from-gray-50/80 to-gray-100/80 border border-gray-200/50'
+                  } backdrop-blur-sm shadow-sm sm:shadow-lg`}>
+                    <div className={`w-8 h-8 sm:w-16 sm:h-16 rounded-lg sm:rounded-2xl flex items-center justify-center mx-auto mb-2 sm:mb-4 ${
+                      isDarkTheme ? 'bg-slate-700' : 'bg-gray-200'
+                    }`}>
+                      <Globe className={`h-4 w-4 sm:h-8 sm:w-8 ${
+                        isDarkTheme ? 'text-slate-400' : 'text-gray-500'
+                      }`} />
                     </div>
-                    <h4 className={`font-semibold mb-2 ${isDarkTheme ? 'text-gray-300' : 'text-gray-700'}`}>No Article Link Available</h4>
-                    <p className={`text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>The published article link will appear here once it's available.</p>
+                    <h4 className={`font-semibold mb-1 sm:mb-2 text-sm sm:text-base ${
+                      isDarkTheme ? 'text-slate-300' : 'text-gray-700'
+                    }`}>
+                      Article Not Yet Available
+                    </h4>
+                    <p className={`text-xs sm:text-sm ${
+                      isDarkTheme ? 'text-slate-400' : 'text-gray-500'
+                    }`}>
+                      The published article link will appear here once it's available.
+                    </p>
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

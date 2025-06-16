@@ -229,6 +229,17 @@ export default function MyPitches() {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
 
+  // Scroll to top helper function
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Handle page change with scroll to top
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    scrollToTop();
+  };
+
 
 
   // Calculate simple stats
@@ -584,7 +595,7 @@ export default function MyPitches() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage(currentPage - 1)}
+                      onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1}
                       className="border-slate-600 bg-slate-800/50 text-gray-300 hover:bg-slate-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm px-2 sm:px-3 py-1.5 text-xs"
                     >
@@ -610,7 +621,7 @@ export default function MyPitches() {
                             key={page}
                             variant={currentPage === page ? "default" : "outline"}
                             size="sm"
-                            onClick={() => setCurrentPage(page)}
+                            onClick={() => handlePageChange(page)}
                             className={
                               currentPage === page
                                 ? "bg-blue-600 text-white shadow-md px-2 sm:px-3 py-1.5 text-xs min-w-[32px] sm:min-w-[36px]"
@@ -626,7 +637,7 @@ export default function MyPitches() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage(currentPage + 1)}
+                      onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages}
                       className="border-slate-600 bg-slate-800/50 text-gray-300 hover:bg-slate-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm px-2 sm:px-3 py-1.5 text-xs"
                     >

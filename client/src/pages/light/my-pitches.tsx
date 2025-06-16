@@ -229,6 +229,17 @@ export default function MyPitches() {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
 
+  // Scroll to top helper function
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Handle page change with scroll to top
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    scrollToTop();
+  };
+
     // Calculate simple stats
   const stats = useMemo(() => {
     const submitted = allPitches.filter(p => !p.isDraft).length;
@@ -582,7 +593,7 @@ export default function MyPitches() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage(currentPage - 1)}
+                      onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1}
                       className="border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed px-2 sm:px-3 py-1.5"
                     >
@@ -608,7 +619,7 @@ export default function MyPitches() {
                           key={page}
                           variant={currentPage === page ? "default" : "outline"}
                           size="sm"
-                          onClick={() => setCurrentPage(page)}
+                          onClick={() => handlePageChange(page)}
                           className={
                             currentPage === page
                               ? "bg-blue-600 text-white shadow-md px-2 sm:px-3 py-1.5 text-xs sm:text-sm"
@@ -624,7 +635,7 @@ export default function MyPitches() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setCurrentPage(totalPages)}
+                            onClick={() => handlePageChange(totalPages)}
                             className="border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 px-2 sm:px-3 py-1.5 text-xs sm:text-sm"
                           >
                             {totalPages}
@@ -636,7 +647,7 @@ export default function MyPitches() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage(currentPage + 1)}
+                      onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages}
                       className="border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed px-2 sm:px-3 py-1.5"
                     >

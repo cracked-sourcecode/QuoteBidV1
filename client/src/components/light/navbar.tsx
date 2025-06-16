@@ -110,7 +110,7 @@ export default function LightNavbar() {
                     <Button variant="ghost" size="sm" className="md:hidden relative p-2 hover:bg-gray-100 focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-transparent focus:bg-gray-100 [&:focus]:ring-0 [&:focus]:outline-none !focus:ring-0 !focus:outline-none">
                       <Bell className="h-5 w-5 text-gray-600" />
                       {unreadCount > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium min-w-[16px]">
+                        <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-medium min-w-[16px]">
                           {unreadCount > 9 ? '9+' : unreadCount}
                         </span>
                       )}
@@ -177,7 +177,7 @@ export default function LightNavbar() {
                     <Button variant="ghost" size="sm" className="hidden sm:flex relative p-2 hover:bg-gray-100 focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-transparent focus:bg-gray-100 [&:focus]:ring-0 [&:focus]:outline-none !focus:ring-0 !focus:outline-none">
                       <Bell className="h-5 w-5 text-gray-600" />
                       {unreadCount > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium min-w-[16px]">
+                        <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-medium min-w-[16px]">
                           {unreadCount > 9 ? '9+' : unreadCount}
                         </span>
                       )}
