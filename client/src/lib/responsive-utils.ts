@@ -166,7 +166,7 @@ export const getPublicationLogo = (publication: Publication | null | undefined):
 
 // Enhanced responsive image classes with mobile-first approach
 export const getResponsiveImageClasses = (baseSize: string = 'w-10 h-10'): string => {
-  return `${baseSize} sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 xl:w-18 xl:h-18 2xl:w-20 2xl:h-20`;
+  return `${baseSize} sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 2xl:w-24 2xl:h-24`;
 };
 
 // Logo container classes that work across all devices
@@ -212,23 +212,7 @@ export const validateImageUrl = async (url: string): Promise<boolean> => {
 // Device-specific optimizations
 export const getDeviceOptimizedClasses = (): string => {
   // Mobile-first responsive classes that work on all devices
-  return `
-    /* Mobile (default) */
-    w-8 h-8
-    /* Small screens */
-    sm:w-10 sm:h-10
-    /* Medium screens */
-    md:w-12 md:h-12
-    /* Large screens */
-    lg:w-14 lg:h-14
-    /* Extra large screens */
-    xl:w-16 xl:h-16
-    /* 2X large screens (retina) */
-    2xl:w-18 2xl:h-18
-    /* Custom breakpoints for very large displays */
-    3xl:w-20 3xl:h-20
-    4xl:w-24 4xl:h-24
-  `.replace(/\s+/g, ' ').trim();
+  return 'w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 xl:w-16 xl:h-16 2xl:w-20 2xl:h-20';
 };
 
 // Debug utilities for retina display issues

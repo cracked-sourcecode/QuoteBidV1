@@ -1510,7 +1510,7 @@ export default function OpportunityDetail() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
                 {/* Price Trend Section - Left Side */}
                 <div className="p-3 sm:p-4 lg:p-6 lg:border-r border-gray-200/50">
-                  <div className="mb-4 sm:mb-6">
+                  <div className="mb-2 sm:mb-6">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-2">
                       <h3 className="text-lg sm:text-xl font-bold text-gray-900">Price History</h3>
                     </div>
@@ -1527,7 +1527,7 @@ export default function OpportunityDetail() {
                     </div>
 
                     {/* Enhanced price range and timeline info */}
-                    <div className="space-y-2 sm:space-y-3 mt-4 sm:mt-6">
+                    <div className="space-y-2 sm:space-y-3 mt-4 sm:mt-6 mb-0 sm:mb-0">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-2">
                           <span className="text-green-600 font-bold text-sm sm:text-base">${Math.min(...priceDataForChart.map((p: any) => p.price))}</span>
@@ -1540,7 +1540,7 @@ export default function OpportunityDetail() {
                       </div>
                       
                       {/* Timeline information */}
-                      <div className="flex justify-end items-center text-xs text-gray-500 border-t pt-2">
+                      <div className="flex justify-end items-center text-xs text-gray-500 border-t pt-3 sm:pt-2">
                         <div className="flex items-center space-x-3 sm:space-x-4">
                           {opportunity && (
                             <>
@@ -1558,25 +1558,25 @@ export default function OpportunityDetail() {
                 {/* Current Price & Pitch Section - Right Side */}
                 <div className="p-3 sm:p-4 lg:p-6 relative border-t lg:border-t-0 border-gray-200/50">
                   <div className="mb-4 sm:mb-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-2">
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-900">Current Price</h3>
-                      <div className="flex items-center space-x-2 text-green-600 text-sm font-medium">
-                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <div className="flex items-center justify-between mb-1 gap-2">
+                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">Current Price</h3>
+                      <div className="flex items-center space-x-1 sm:space-x-2 text-green-600 text-xs sm:text-sm font-medium">
+                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full"></span>
                         <span>
                           {Math.round(belowListPercentage)}% {actualPriceDifference >= 0 ? 'above' : 'below'} list price
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row sm:items-baseline sm:space-x-3 mb-2 gap-1 sm:gap-0">
-                      <span className={`text-2xl sm:text-3xl lg:text-4xl font-black ${
+                    <div className="flex items-baseline space-x-2 sm:space-x-3 mb-2">
+                      <span className={`text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black ${
                         priceTrend === 'up' ? 'text-green-600' :
                         priceTrend === 'down' ? 'text-red-600' :
                         priceData ? 'text-blue-600' : 'text-gray-900'
                       } transition-colors duration-300`}>${currentPrice}</span>
                       {priceIncrease !== 0 && (
-                        <div className={`flex items-center space-x-1 text-base sm:text-lg font-semibold ${priceIncrease >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          <TrendingUp className={`h-4 w-4 sm:h-5 sm:w-5 ${priceIncrease < 0 ? 'rotate-180' : ''}`} />
+                        <div className={`flex items-center space-x-1 text-sm sm:text-base md:text-lg font-semibold ${priceIncrease >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <TrendingUp className={`h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 ${priceIncrease < 0 ? 'rotate-180' : ''}`} />
                           <span>{priceIncrease >= 0 ? '+' : ''}${priceIncrease}</span>
                         </div>
                       )}
@@ -1606,52 +1606,52 @@ export default function OpportunityDetail() {
                         </div>
                       ) : userPitchStatus?.hasSubmitted ? (
                         /* Already Submitted State */
-                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200/50 overflow-hidden h-[280px] sm:h-[360px] lg:h-[400px] flex items-center justify-center mt-6">
-                          <div className="p-8 text-center flex flex-col justify-center h-full">
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200/50 overflow-hidden h-auto min-h-[240px] sm:h-[360px] lg:h-[400px] flex items-center justify-center mt-6">
+                          <div className="p-4 sm:p-8 text-center flex flex-col justify-center h-full">
                             {/* Success Icon */}
-                            <div className="flex justify-center mb-5">
-                              <div className="w-18 h-18 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center shadow-lg">
-                                <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="flex justify-center mb-3 sm:mb-5">
+                              <div className="w-12 h-12 sm:w-18 sm:h-18 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center shadow-lg">
+                                <svg className="w-6 h-6 sm:w-9 sm:h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"></path>
                                 </svg>
                               </div>
                             </div>
                             
                             {/* Title */}
-                            <h3 className="text-xl font-bold text-green-800 mb-4">
+                            <h3 className="text-lg sm:text-xl font-bold text-green-800 mb-2 sm:mb-4">
                               Pitch Already Submitted!
                             </h3>
                             
                             {/* Message */}
-                            <p className="text-green-700 text-base mb-5 leading-relaxed">
+                            <p className="text-green-700 text-sm sm:text-base mb-3 sm:mb-5 leading-relaxed">
                               You've already submitted a pitch for this opportunity. Each user can only submit one pitch per opportunity.
                             </p>
                             
                             {/* Bid Amount Display */}
                             {userPitchStatus.pitch?.bidAmount && (
-                              <div className="bg-white/60 rounded-lg p-4 mb-5 border border-green-200/50">
-                                <div className="text-sm font-medium text-green-600 mb-1">Your bid amount:</div>
-                                <div className="text-2xl font-bold text-green-800">
+                              <div className="bg-white/60 rounded-lg p-3 sm:p-4 mb-3 sm:mb-5 border border-green-200/50">
+                                <div className="text-xs sm:text-sm font-medium text-green-600 mb-1">Your bid amount:</div>
+                                <div className="text-xl sm:text-2xl font-bold text-green-800">
                                   ${userPitchStatus.pitch.bidAmount}
                                 </div>
                               </div>
                             )}
                             
                             {/* Action Buttons */}
-                            <div className="space-y-3">
+                            <div className="space-y-2 sm:space-y-3">
                               <Link href="/opportunities">
-                                <Button className="w-full bg-white hover:bg-gray-50 text-green-700 border border-green-200 font-semibold py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
+                                <Button className="w-full bg-white hover:bg-gray-50 text-green-700 border border-green-200 font-semibold py-2 sm:py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 text-sm sm:text-base">
                                   <div className="flex items-center justify-center space-x-2">
-                                    <ChevronLeft className="h-4 w-4 rotate-180" />
+                                    <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 rotate-180" />
                                     <span>Browse Other Opportunities</span>
                                   </div>
                                 </Button>
                               </Link>
                               
                               <Link href="/my-pitches">
-                                <Button variant="outline" className="w-full bg-white/80 hover:bg-white text-green-700 border border-green-200 font-semibold py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
+                                <Button variant="outline" className="w-full bg-white/80 hover:bg-white text-green-700 border border-green-200 font-semibold py-2 sm:py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 text-sm sm:text-base">
                                   <div className="flex items-center justify-center space-x-2">
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                     </svg>
                                     <span>View My Pitches</span>
@@ -1680,7 +1680,7 @@ export default function OpportunityDetail() {
                               value={pitchContent}
                               onChange={(e) => setPitchContent(e.target.value)}
                               placeholder="Share your expertise, credentials, and unique perspective that would make you perfect for this story. Explain why you're the ideal expert for this opportunity..."
-                              className="min-h-[240px] w-full p-4 border border-gray-200 rounded-xl bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-50 transition-all duration-200 resize-none text-gray-800 text-base font-medium placeholder:text-gray-400 placeholder:font-normal shadow-sm hover:border-gray-300"
+                              className="min-h-[240px] w-full p-4 border border-gray-200 rounded-xl bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-50 transition-all duration-200 resize-none text-gray-800 text-sm sm:text-base font-medium placeholder:text-gray-400 placeholder:font-normal shadow-sm hover:border-gray-300"
                               maxLength={maxPitchLength}
                               style={{
                                 fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
@@ -1844,42 +1844,42 @@ export default function OpportunityDetail() {
             </div>
 
             {/* Competition Momentum Section */}
-            <div className="mt-12 bg-gradient-to-br from-orange-50 to-red-50 rounded-3xl border border-orange-200/50 overflow-hidden">
-              <div className="p-8">
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-orange-100 rounded-xl">
-                      <Flame className="h-6 w-6 text-orange-600" />
+            <div className="mt-6 sm:mt-12 bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl sm:rounded-3xl border border-orange-200/50 overflow-hidden">
+              <div className="p-2.5 sm:p-8">
+                <div className="flex items-center justify-between mb-3 sm:mb-8">
+                  <div className="flex items-center space-x-2 sm:space-x-4">
+                    <div className="p-1.5 sm:p-3 bg-orange-100 rounded-lg sm:rounded-xl">
+                      <Flame className="h-4 w-4 sm:h-6 sm:w-6 text-orange-600" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-gray-900">Competition Momentum</h3>
-                      <p className="text-gray-600 mt-1">Demand level based on expert pitches</p>
+                      <h3 className="text-base sm:text-2xl font-bold text-gray-900">Competition Momentum</h3>
+                      <p className="text-gray-600 text-xs sm:text-base leading-tight">Demand level based on expert pitches</p>
                     </div>
                   </div>
-                  <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 text-sm font-bold shadow-md">
-                    {pitches.length === 0 ? 'No Interest' : 
-                     pitches.length <= 2 ? 'Low Demand' : 
-                     pitches.length <= 5 ? 'Medium Demand' : 
-                     'High Demand'}
+                  <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-bold shadow-md">
+                    {pitches.length === 0 ? 'Low' : 
+                     pitches.length <= 2 ? 'Low' : 
+                     pitches.length <= 5 ? 'Medium' : 
+                     'High'}
                   </Badge>
                 </div>
 
                 {/* Competition Meter */}
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm font-medium text-gray-600">Demand Level</span>
-                    <span className="text-sm font-bold text-orange-600">{Math.min(pitches.length * 15, 100)}% Competitive</span>
+                <div className="mb-3 sm:mb-8">
+                  <div className="flex items-center justify-between mb-1.5 sm:mb-4">
+                    <span className="text-xs sm:text-sm font-medium text-gray-600">Demand Level</span>
+                    <span className="text-xs sm:text-sm font-bold text-orange-600">{Math.min(pitches.length * 15, 100)}% Competitive</span>
                   </div>
                   
                   {/* Progress Bar */}
-                  <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
+                  <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3 shadow-inner">
                     <div 
-                      className="h-3 rounded-full bg-gradient-to-r from-green-400 via-yellow-400 to-orange-400 transition-all duration-1000 ease-out shadow-sm"
+                      className="h-2 sm:h-3 rounded-full bg-gradient-to-r from-green-400 via-yellow-400 to-orange-400 transition-all duration-1000 ease-out shadow-sm"
                       style={{ width: `${Math.min(pitches.length * 15, 100)}%` }}
                     ></div>
                   </div>
                   
-                  <div className="flex justify-between text-xs text-gray-500 mt-2">
+                  <div className="flex justify-between text-xs sm:text-xs text-gray-500 mt-1 sm:mt-2">
                     <span>Low Demand</span>
                     <span>Medium Demand</span>
                     <span>High Demand</span>
@@ -1887,19 +1887,19 @@ export default function OpportunityDetail() {
                 </div>
 
                 {/* Experts Pitched - Combined Display */}
-                <div className="bg-white/50 rounded-2xl p-6 border border-white/60">
+                <div className="bg-white/50 rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-white/60">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2 sm:space-x-4">
                       {/* Count Display */}
-                      <div className="flex items-center justify-center w-16 h-16 bg-blue-500 text-white rounded-xl shadow-md">
-                        <span className="font-bold text-2xl">{pitches.length}</span>
+                      <div className="flex items-center justify-center w-10 h-10 sm:w-16 sm:h-16 bg-blue-500 text-white rounded-lg sm:rounded-xl shadow-md">
+                        <span className="font-bold text-base sm:text-2xl">{pitches.length}</span>
                       </div>
                       
                       {/* Info */}
                       <div>
-                        <div className="text-lg font-bold text-gray-900">Experts Pitched</div>
-                        <div className="text-green-600 text-sm font-semibold">↗ +{pitches.length} today</div>
-                        <div className="text-gray-500 text-sm">Driving current demand level</div>
+                        <div className="text-sm sm:text-lg font-bold text-gray-900">Experts Pitched</div>
+                        <div className="text-green-600 text-xs sm:text-sm font-semibold">↗ +{pitches.length} today</div>
+                        <div className="text-gray-500 text-xs sm:text-sm">Driving current demand level</div>
                       </div>
                     </div>
                     
@@ -1908,7 +1908,7 @@ export default function OpportunityDetail() {
                       {pitches.length > 0 ? (
                         <>
                           {pitches.slice(0, 5).map((pitch, index) => (
-                            <div key={pitch.id} className={`flex items-center justify-center w-10 h-10 rounded-full shadow-md border-2 border-white ${index > 0 ? '-ml-2' : ''}`}>
+                            <div key={pitch.id} className={`flex items-center justify-center w-6 h-6 sm:w-10 sm:h-10 rounded-full shadow-md border border-white ${index > 0 ? '-ml-1 sm:-ml-2' : ''}`}>
                               {pitch.user?.avatar ? (
                                 <img 
                                   src={pitch.user.avatar.startsWith('http') ? pitch.user.avatar : `${window.location.origin}${pitch.user.avatar}`}
@@ -1916,20 +1916,20 @@ export default function OpportunityDetail() {
                                   className="w-full h-full rounded-full object-cover"
                                 />
                               ) : (
-                                <div className="w-full h-full bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                                <div className="w-full h-full bg-blue-500 text-white rounded-full flex items-center justify-center text-xs sm:text-xs font-bold">
                                   {pitch.user?.fullName ? pitch.user.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2) : 'EX'}
                                 </div>
                               )}
                             </div>
                           ))}
                           {pitches.length > 5 && (
-                            <div className="flex items-center justify-center w-10 h-10 bg-gray-600 text-white rounded-full text-xs font-bold shadow-md border-2 border-white -ml-2">
+                            <div className="flex items-center justify-center w-6 h-6 sm:w-10 sm:h-10 bg-gray-600 text-white rounded-full text-xs sm:text-xs font-bold shadow-md border border-white -ml-1 sm:-ml-2">
                               +{pitches.length - 5}
                             </div>
                           )}
                         </>
                       ) : (
-                        <div className="text-gray-500 text-sm">No pitches yet</div>
+                        <div className="text-gray-500 text-xs sm:text-sm">No pitches yet</div>
                       )}
                     </div>
                   </div>

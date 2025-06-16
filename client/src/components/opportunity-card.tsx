@@ -131,33 +131,70 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
     setCurrentPriceState(opportunity.currentPrice);
   }, [opportunity.currentPrice]);
 
-  // Improved logo loading handler for retina displays
+  // Logo loading handler
   const handleLogoLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.target as HTMLImageElement;
-    // For priority images, reduce delay; for lazy images, use standard delay
-    const delay = isPriority ? 10 : 100;
+    
+    // Immediate check for successful load
+    if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+      setLogoLoaded(true);
+      setLogoFailed(false);
+      return;
+    }
+    
+    // For mobile devices, use shorter delay and multiple checks
+    const isMobile = window.innerWidth < 768;
+    const delay = isMobile ? 5 : (isPriority ? 10 : 50);
+    
     setTimeout(() => {
       if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
         setLogoLoaded(true);
         setLogoFailed(false);
       } else {
+        // On mobile, try one more time after a brief delay
+        if (isMobile) {
+          setTimeout(() => {
+            if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+              setLogoLoaded(true);
+              setLogoFailed(false);
+            } else {
+              setLogoFailed(true);
+            }
+          }, 10);
+      } else {
         setLogoFailed(true);
+        }
       }
     }, delay);
   };
 
-  const handleLogoError = () => {
+  const handleLogoError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    console.log(`❌ [${outlet}] Logo failed to load:`, e);
     setLogoFailed(true);
     setLogoLoaded(false);
   };
 
-  // Get logo URL using memoization for performance
+    // Logo URL computation - mobile-compatible with localhost detection
   const logoUrl = useMemo(() => {
-    return outletLogo && outletLogo.trim() && outletLogo !== 'null' && outletLogo !== 'undefined' 
-    ? (outletLogo.startsWith('http') || outletLogo.startsWith('data:') 
-        ? outletLogo 
-        : `${window.location.origin}${outletLogo}`)
-    : '';
+    const logo = outletLogo;
+    
+    if (!logo || !logo.trim() || logo === 'null' || logo === 'undefined') {
+      return '';
+    }
+    
+    // Convert localhost URLs to relative paths for mobile compatibility
+    if (logo.startsWith('http://localhost:5050/')) {
+      const relativePath = logo.replace('http://localhost:5050', '');
+      return `${window.location.origin}${relativePath}`;
+    }
+    
+    // Handle other URLs normally
+    if (logo.startsWith('http') || logo.startsWith('data:')) {
+      return logo;
+    }
+    
+    // Handle relative paths
+    return `${window.location.origin}${logo}`;
   }, [outletLogo]);
 
   // Use default tick interval (no need to fetch admin config for regular users)
@@ -340,11 +377,12 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
                     alt={`${outlet} logo`}
                     className={cn(
                       "w-full h-full object-contain rounded",
-                      theme === 'dark' ? "bg-white/90 p-1" : ""
+                      // Minimal padding on mobile to maximize logo space
+                      "p-0.5 sm:p-1",
+                      theme === 'dark' ? "bg-white/90" : "bg-white"
                     )}
                     loading={isPriority ? "eager" : "lazy"}
                     decoding={isPriority ? "sync" : "async"}
-                    {...(isPriority && { fetchPriority: "high" as any })}
                     onLoad={handleLogoLoad}
                     onError={handleLogoError}
                   />
