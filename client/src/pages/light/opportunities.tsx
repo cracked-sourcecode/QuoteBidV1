@@ -453,9 +453,9 @@ export default function OpportunitiesPage() {
               value={sortBy}
               onValueChange={setSortBy}
             >
-              <SelectTrigger className="w-[120px] sm:w-[140px] lg:w-[170px] h-6 sm:h-7 text-xs border-none shadow-none px-1">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
+                              <SelectTrigger className="w-[120px] sm:w-[140px] lg:w-[170px] h-6 sm:h-7 text-[10px] sm:text-xs border-none shadow-none px-1">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                   <SelectItem value="deadline">Deadline (Soonest)</SelectItem>

@@ -1160,7 +1160,13 @@ export default function AccountPage() {
             <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Account Settings</h3>
             <div className="space-y-1">
               <button 
-                onClick={() => setActiveTab('billing')}
+                onClick={() => {
+                  setActiveTab('billing');
+                  // Scroll to top on mobile
+                  if (window.innerWidth < 1024) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
                 className="flex w-full items-center py-2 px-3 text-sm font-medium rounded-md text-slate-300 hover:bg-slate-800 hover:text-slate-100 transition-colors"
               >
                 <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1242,15 +1248,14 @@ export default function AccountPage() {
 
       {/* Mobile Layout */}
       <div className="lg:hidden bg-slate-900 min-h-screen">
-        <div className="px-4 py-6 space-y-6 overflow-y-auto">
+        <div className="px-4 py-6 space-y-6 overflow-y-auto max-w-full">
           {(activeTab === 'info' || !activeTab) && (
-            <div className="space-y-6">
-              {/* 1. Mobile Profile Header */}
-              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-700/50 p-6">
+            <div className="space-y-6 w-full">
+              {/* 1. Mobile Profile Header - Fixed Width Container */}
+              <div style={{width: 'calc(100vw - 2rem)', minWidth: 'calc(100vw - 2rem)', maxWidth: 'calc(100vw - 2rem)'}} className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-700/50 p-6">
                 <div className="flex items-center space-x-4 mb-6">
                   <div 
-                    className={`w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-700 relative overflow-hidden ${isEditing ? 'cursor-pointer' : ''}`}
-                    onClick={() => isEditing && handleAvatarClick()}
+                    className="w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-700 relative overflow-hidden"
                   >
                   {(user.avatar || avatarPreview) && (
                     <img 
@@ -1264,11 +1269,6 @@ export default function AccountPage() {
                       {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
                     </div>
                   )}
-                    {isEditing && (
-                      <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
-                        <span className="text-white text-xs font-medium">Edit</span>
-                    </div>
-                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                     <h1 className="text-xl font-bold text-slate-100 truncate">{user.fullName}</h1>
@@ -1278,9 +1278,8 @@ export default function AccountPage() {
                   </div>
                 </div>
                 
-                <Button 
-                  variant="outline" 
-                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-slate-500"
+                <button 
+                  className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-200 font-medium hover:bg-slate-700 hover:border-slate-500 transition-colors flex items-center justify-center"
                   onClick={() => {
                     setIsEditing(!isEditing);
                   }}
@@ -1289,12 +1288,12 @@ export default function AccountPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                   {isEditing ? 'Cancel Edit' : 'Edit Profile'}
-                </Button>
+                </button>
               </div>
 
-              {/* 1. Edit Profile Section */}
+              {/* 1. Edit Profile Section - Fixed Width Container */}
               {isEditing && (
-                <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-700/50 p-6">
+                <div style={{width: 'calc(100vw - 2rem)', minWidth: 'calc(100vw - 2rem)', maxWidth: 'calc(100vw - 2rem)'}} className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-700/50 p-6">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-semibold text-slate-100">Edit Profile</h3>
                     <Button 
@@ -1308,7 +1307,7 @@ export default function AccountPage() {
                   </div>
 
                   <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full" style={{width: '100%', minWidth: '100%', maxWidth: '100%'}}>
                       {/* Profile photo upload section */}
                       <div className="text-center mb-6">
                         <div className="w-24 h-24 rounded-full bg-slate-800 border-2 border-slate-700 relative overflow-hidden mx-auto mb-4">
@@ -1337,7 +1336,7 @@ export default function AccountPage() {
                       </div>
 
                       {/* ALL Fields for mobile - same as desktop */}
-                      <div className="space-y-4">
+                      <div className="space-y-4 w-full" style={{width: '100%', minWidth: '100%', maxWidth: '100%'}}>
                         <FormField
                           control={form.control}
                           name="fullName"
@@ -1919,7 +1918,13 @@ export default function AccountPage() {
                 <h3 className="text-lg font-semibold text-slate-100 mb-4">Account Settings</h3>
                 <div className="space-y-3">
                   <button 
-                    onClick={() => setActiveTab('billing')}
+                    onClick={() => {
+                      setActiveTab('billing');
+                      // Scroll to top on mobile
+                      if (window.innerWidth < 1024) {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
                     className="flex items-center w-full p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700"
                   >
                     <div className="bg-green-600/20 p-2 rounded-lg mr-3">
@@ -1932,7 +1937,13 @@ export default function AccountPage() {
                   </button>
 
                   <button 
-                    onClick={() => setActiveTab('email-preferences')}
+                    onClick={() => {
+                      setActiveTab('email-preferences');
+                      // Scroll to top on mobile
+                      if (window.innerWidth < 1024) {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
                     className="flex items-center w-full p-4 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700"
                   >
                     <div className="bg-indigo-600/20 p-2 rounded-lg mr-3">

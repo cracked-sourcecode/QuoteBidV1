@@ -1844,8 +1844,8 @@ export default function OpportunityDetail() {
             </div>
 
             {/* Competition Momentum Section */}
-            <div className="mt-6 sm:mt-12 bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl sm:rounded-3xl border border-orange-200/50 overflow-hidden">
-              <div className="p-2.5 sm:p-8">
+            <div className="mt-6 sm:mt-10 lg:mt-12 bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl sm:rounded-3xl border border-orange-200/50 overflow-hidden">
+              <div className="p-2.5 sm:p-6 lg:p-8">
                 <div className="flex items-center justify-between mb-3 sm:mb-8">
                   <div className="flex items-center space-x-2 sm:space-x-4">
                     <div className="p-1.5 sm:p-3 bg-orange-100 rounded-lg sm:rounded-xl">
@@ -1938,18 +1938,18 @@ export default function OpportunityDetail() {
             </div>
 
             {/* Suggested for You Section */}
-            <div className="mt-12 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 rounded-3xl border border-gray-200/50 overflow-hidden shadow-xl">
-              <div className="p-8">
+            <div className="mt-8 sm:mt-10 lg:mt-12 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 rounded-3xl border border-gray-200/50 overflow-hidden shadow-xl">
+              <div className="p-4 sm:p-6 lg:p-8">
                 {/* Header Section */}
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center space-x-3">
-                      <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
+                      <div className="w-2 h-6 sm:h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
                       <div>
-                        <h3 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
+                        <h3 className="text-xl sm:text-2xl font-bold text-gray-900 flex flex-col sm:flex-row sm:items-center sm:space-x-2">
                           <span>Suggested for you</span>
-                          <span className="text-blue-600">•</span>
-                          <span className="text-lg text-blue-600 font-semibold">
+                          <span className="text-blue-600 hidden sm:inline">•</span>
+                          <span className="text-base sm:text-lg text-blue-600 font-semibold">
                             Active {opportunity?.topicTags?.[0] || 'Related'} Stories
                           </span>
                         </h3>
@@ -1959,16 +1959,16 @@ export default function OpportunityDetail() {
                   <Link href="/opportunities">
                     <Button 
                       variant="outline" 
-                      className="group bg-white/80 backdrop-blur-sm hover:bg-white border-blue-200 text-blue-600 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md px-6 py-3"
+                      className="group bg-white/80 backdrop-blur-sm hover:bg-white border-blue-200 text-blue-600 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 shadow-sm hover:shadow-md px-4 sm:px-6 py-2 sm:py-3"
                     >
-                      <span className="font-semibold">View All</span>
+                      <span className="font-semibold text-sm sm:text-base">View All</span>
                       <ChevronLeft className="h-4 w-4 ml-2 rotate-180 group-hover:translate-x-1 transition-transform duration-200" />
                     </Button>
                   </Link>
                 </div>
 
                 {/* Opportunities Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                   {relatedOpportunities.length > 0 ? (
                     relatedOpportunities.map((relatedOpp, index) => (
                       <Link
@@ -1980,21 +1980,21 @@ export default function OpportunityDetail() {
                           setIsLoading(true);
                         }}
                       >
-                        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200/60 overflow-hidden hover:shadow-xl hover:border-blue-200/60 transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+                        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200/60 overflow-hidden hover:shadow-xl hover:border-blue-200/60 transition-all duration-300 hover:-translate-y-1 sm:hover:-translate-y-2 cursor-pointer group">
                           {/* Card Header */}
-                          <div className="p-6 pb-4">
-                            <div className="flex items-center justify-between mb-4">
+                          <div className="p-4 sm:p-6 pb-3 sm:pb-4">
+                            <div className="flex items-center justify-between mb-3 sm:mb-4">
                               <div className="flex items-center space-x-2">
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md group-hover:from-blue-400 group-hover:to-blue-500 transition-all duration-300">
                                   <span className="text-white text-xs font-bold">
                                     {(relatedOpp.publication?.name || relatedOpp.outlet || 'UK')[0]}
                                   </span>
                                 </div>
-                                <span className="text-sm font-semibold text-gray-600">
+                                <span className="text-xs sm:text-sm font-semibold text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
                                   {relatedOpp.publication?.name || relatedOpp.outlet || 'Unknown Outlet'}
                                 </span>
                               </div>
-                              <Badge className={`text-xs font-bold px-3 py-1.5 shadow-sm border-0 ${
+                              <Badge className={`text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 shadow-lg border-0 ${
                                 getTierDisplay(relatedOpp.tier) === 1 ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white' :
                                 getTierDisplay(relatedOpp.tier) === 2 ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' :
                                 'bg-gradient-to-r from-green-500 to-green-600 text-white'
@@ -2004,35 +2004,35 @@ export default function OpportunityDetail() {
                             </div>
                             
                             {/* Title */}
-                            <h4 className="text-lg font-bold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors line-clamp-2 leading-tight">
+                            <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 group-hover:text-blue-600 transition-colors duration-300 line-clamp-2 leading-tight">
                               {relatedOpp.title}
                             </h4>
                             
                             {/* Status and Time */}
-                            <div className="flex items-center justify-between mb-4">
-                              <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-semibold ${
-                                relatedOpp.status === 'urgent' ? 'bg-red-50 text-red-600 border border-red-200' :
-                                relatedOpp.status === 'trending' ? 'bg-orange-50 text-orange-600 border border-orange-200' :
-                                'bg-green-50 text-green-600 border border-green-200'
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-2 sm:gap-0">
+                              <div className={`flex items-center space-x-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-semibold backdrop-blur-sm ${
+                                relatedOpp.status === 'urgent' ? 'bg-red-50 text-red-600 border border-red-200 shadow-md' :
+                                relatedOpp.status === 'trending' ? 'bg-orange-50 text-orange-600 border border-orange-200 shadow-md' :
+                                'bg-green-50 text-green-600 border border-green-200 shadow-md'
                               }`}>
                                 {relatedOpp.status === 'urgent' ? (
                                   <>
-                                    <Clock className="h-4 w-4" />
+                                    <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
                                     <span>Urgent</span>
                                   </>
                                 ) : relatedOpp.status === 'trending' ? (
                                   <>
-                                    <Flame className="h-4 w-4" />
+                                    <Flame className="h-3 w-3 sm:h-4 sm:w-4" />
                                     <span>Trending</span>
                                   </>
                                 ) : (
                                   <>
-                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
                                     <span>Open</span>
                                   </>
                                 )}
                               </div>
-                              <span className="text-gray-500 text-sm font-medium bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+                              <span className="text-gray-500 text-xs sm:text-sm font-medium bg-gray-50 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 shadow-md">
                                 {relatedOpp.deadline ? 
                                   `${Math.ceil((new Date(relatedOpp.deadline).getTime() - Date.now()) / (1000 * 60 * 60))}h left` :
                                   'Active'
@@ -2042,8 +2042,8 @@ export default function OpportunityDetail() {
                           </div>
                           
                           {/* Card Footer */}
-                          <div className="px-6 pb-6">
-                            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50/50 rounded-xl border border-gray-100">
+                          <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                            <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-blue-50/50 backdrop-blur-sm rounded-xl border border-gray-100 shadow-lg group-hover:from-gray-100 group-hover:to-blue-50/70 transition-all duration-300">
                               <div className="flex items-baseline space-x-2">
                                 <RelatedOpportunityPrice opportunityId={relatedOpp.id} fallbackPrice={relatedOpp.minimumBid || relatedOpp.currentPrice || 0} />
                                 {relatedOpp.increment && (

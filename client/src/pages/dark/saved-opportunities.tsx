@@ -432,7 +432,8 @@ export default function SavedOpportunitiesPage() {
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
                 <p className="text-white font-medium text-xs sm:text-sm">
-                  Showing {displayedOpportunities.length} of {filteredOpportunities.length} saved {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
+                  <span className="hidden sm:inline">Showing {displayedOpportunities.length} of {filteredOpportunities.length} saved {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}</span>
+                  <span className="sm:hidden">Showing {displayedOpportunities.length} of {filteredOpportunities.length} saved</span>
                 </p>
               </div>
               
@@ -445,7 +446,7 @@ export default function SavedOpportunitiesPage() {
                 </div>
                 
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-[120px] sm:w-[140px] lg:w-[170px] h-8 sm:h-9 lg:h-10 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300 text-xs sm:text-sm" style={{ outline: 'none', boxShadow: 'none' }}>
+                  <SelectTrigger className="w-[120px] sm:w-[140px] lg:w-[170px] h-8 sm:h-9 lg:h-10 bg-slate-800/80 border border-slate-600/60 text-white hover:border-blue-400/70 focus:border-blue-400/70 focus:ring-0 focus:ring-offset-0 focus:outline-none ring-0 outline-none [&:focus]:ring-blue-500/30 [&:focus]:border-blue-400/70 [&:focus]:outline-none [&:focus]:shadow-[0_0_0_2px_rgba(59,130,246,0.3)] rounded-xl font-medium transition-all duration-300 text-[10px] sm:text-sm" style={{ outline: 'none', boxShadow: 'none' }}>
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800/95 backdrop-blur-2xl border border-slate-600/60 rounded-xl shadow-2xl">

@@ -106,15 +106,37 @@ export default function LightNavbar() {
               <>
                 {/* Mobile Notifications */}
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild className="focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0">
-                    <Button variant="ghost" size="sm" className="md:hidden relative p-2 hover:bg-gray-100 focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-transparent focus:bg-gray-100 [&:focus]:ring-0 [&:focus]:outline-none !focus:ring-0 !focus:outline-none">
+                  <DropdownMenuTrigger asChild className="!ring-0 !outline-none !focus:ring-0 !focus:outline-none !focus-visible:ring-0 !focus-visible:outline-none">
+                    <button 
+                      className="md:hidden relative p-2"
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                        boxShadow: 'none',
+                        transition: 'none',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'transparent'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      onFocus={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.outline = 'none';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.outline = 'none';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
                       <Bell className="h-5 w-5 text-gray-600" />
                       {unreadCount > 0 && (
                         <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-medium min-w-[16px]">
                           {unreadCount > 9 ? '9+' : unreadCount}
                         </span>
                       )}
-                    </Button>
+                    </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-80">
                     <div className="px-4 py-3 border-b border-gray-100">
@@ -173,15 +195,37 @@ export default function LightNavbar() {
 
                 {/* Desktop Notifications */}
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild className="focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0">
-                    <Button variant="ghost" size="sm" className="hidden sm:flex relative p-2 hover:bg-gray-100 focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-transparent focus:bg-gray-100 [&:focus]:ring-0 [&:focus]:outline-none !focus:ring-0 !focus:outline-none">
+                  <DropdownMenuTrigger asChild className="!ring-0 !outline-none !focus:ring-0 !focus:outline-none !focus-visible:ring-0 !focus-visible:outline-none">
+                    <button 
+                      className="hidden sm:flex relative p-2"
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                        boxShadow: 'none',
+                        transition: 'none',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'transparent'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      onFocus={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.outline = 'none';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.outline = 'none';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
                       <Bell className="h-5 w-5 text-gray-600" />
                       {unreadCount > 0 && (
                         <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-medium min-w-[16px]">
                           {unreadCount > 9 ? '9+' : unreadCount}
                         </span>
                       )}
-                    </Button>
+                    </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-80">
                     <div className="px-4 py-3 border-b border-gray-100">

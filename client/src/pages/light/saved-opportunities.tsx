@@ -320,7 +320,8 @@ export default function SavedOpportunitiesPage() {
         <div className="px-4 sm:px-6 lg:px-8 py-3 bg-white border-b border-gray-200">
           <div className="flex flex-row justify-between items-center gap-2">
             <p className="text-xs sm:text-sm text-gray-600">
-              Showing {displayedOpportunities.length} of {filteredOpportunities.length} saved {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
+              <span className="hidden sm:inline">Showing {displayedOpportunities.length} of {filteredOpportunities.length} saved {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}</span>
+              <span className="sm:hidden">Showing {displayedOpportunities.length} of {filteredOpportunities.length} saved</span>
             </p>
             
             <div className="flex items-center gap-1 sm:gap-2">
@@ -330,7 +331,7 @@ export default function SavedOpportunitiesPage() {
                 value={sortBy}
                 onValueChange={setSortBy}
               >
-                <SelectTrigger className="w-[120px] sm:w-[140px] lg:w-[170px] h-6 sm:h-7 text-xs border-none shadow-none px-1">
+                <SelectTrigger className="w-[120px] sm:w-[140px] lg:w-[170px] h-6 sm:h-7 text-[10px] sm:text-xs border-none shadow-none px-1">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
