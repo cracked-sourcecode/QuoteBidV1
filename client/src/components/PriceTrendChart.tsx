@@ -86,6 +86,18 @@ export default function PriceTrendChart({
 
   const [selectedTimeframe, setSelectedTimeframe] = useState(timeframes[5]); // Default to ALL
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Mobile detection for responsive chart styling
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Handle timeframe changes with smooth transitions
   const handleTimeframeChange = (newTimeframe: typeof timeframes[0]) => {
@@ -221,7 +233,7 @@ export default function PriceTrendChart({
           theme === 'dark'
             ? 'bg-gradient-to-br from-slate-800/50 to-slate-900/80 backdrop-blur-sm border-slate-600/30'
             : 'bg-white border-gray-200'
-        }`}>
+        } ${isMobile ? 'pt-2 px-0 pb-2' : 'p-4'}`}>
           <div className={`text-center px-4 ${theme === 'dark' ? 'text-slate-300' : 'text-gray-600'}`}>
             <div className="text-3xl sm:text-4xl mb-3 sm:mb-4 opacity-60">📈</div>
             <p className="font-semibold text-base sm:text-lg">No price data for {selectedTimeframe.label} timeframe</p>
@@ -292,7 +304,7 @@ export default function PriceTrendChart({
       </div>
 
       {/* Interactive chart - themed */}
-      <div className={`h-[280px] sm:h-[360px] lg:h-[400px] rounded-2xl border p-3 sm:p-4 lg:p-6 shadow-2xl transition-all duration-500 ${
+      <div className={`h-[280px] sm:h-[360px] lg:h-[400px] rounded-2xl border ${isMobile ? 'pt-2 px-0 pb-2' : 'p-4 lg:p-6'} shadow-2xl transition-all duration-500 ${
         theme === 'dark'
           ? `bg-gradient-to-br from-slate-800/40 via-slate-900/60 to-slate-800/40 backdrop-blur-sm border-slate-600/30 ${
               isAnimating ? 'ring-2 ring-cyan-400/50 shadow-cyan-500/20' : 'shadow-slate-900/50'
@@ -300,7 +312,7 @@ export default function PriceTrendChart({
           : 'bg-white border-gray-200 shadow-gray-300/50'
       }`}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 10 }}>
+          <AreaChart data={chartData} margin={{ top: isMobile ? 15 : 10, right: isMobile ? 5 : 5, left: isMobile ? -20 : -25, bottom: isMobile ? 0 : -5 }}>
             <defs>
               {/* Gradient definitions for different price trends - themed */}
               <linearGradient id={theme === 'dark' ? "bullishGradient" : "bullishGradientLight"} x1="0" y1="0" x2="0" y2="1">
@@ -353,7 +365,7 @@ export default function PriceTrendChart({
               dataKey="displayTime"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 11, fill: theme === 'dark' ? '#94a3b8' : '#6b7280', fontWeight: 500 }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: theme === 'dark' ? '#94a3b8' : '#6b7280', fontWeight: 500 }}
               interval="preserveStartEnd"
             />
             
@@ -361,7 +373,7 @@ export default function PriceTrendChart({
               domain={priceDomain}
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 11, fill: theme === 'dark' ? '#94a3b8' : '#6b7280', fontWeight: 500 }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: theme === 'dark' ? '#94a3b8' : '#6b7280', fontWeight: 500 }}
               tickFormatter={(value) => `$${Math.round(value)}`}
             />
             
