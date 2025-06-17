@@ -3887,52 +3887,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `;
           break;
           
-        case 'price-drop-inline':
-          // Inline HTML version from server/lib/email.ts
-          emailHtml = `
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <meta charset="utf-8">
-                <title>Price Drop Alert - QuoteBid</title>
-                <style>
-                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
-                  .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-                  .price-alert { background: #059669; color: white; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0; }
-                  .button { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; }
-                  .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  <div class="header">
-                    <h1>💰 Price Drop Alert!</h1>
-                    <p>QuoteBid Pricing Engine</p>
-                  </div>
-                  <div class="content">
-                    <p>Great news! The price has dropped on an opportunity you've shown interest in:</p>
-                    <div class="price-alert">
-                      <h3 style="margin: 0 0 10px 0;">Yahoo Finance eVTOL Story</h3>
-                      <p style="margin: 0; font-size: 18px;">
-                        <strong>New Price: $275</strong>
-                      </p>
-                    </div>
-                    <p>This could be a great opportunity to submit your pitch at a better price point.</p>
-                    <p style="text-align: center; margin: 30px 0;">
-                      <a href="${frontendUrl}" class="button">View Opportunity</a>
-                    </p>
-                    <div class="footer">
-                      <p>You're receiving this because you've previously shown interest in this opportunity.</p>
-                      <p>© 2024 QuoteBid. All rights reserved.</p>
-                    </div>
-                  </div>
-                </div>
-              </body>
-            </html>
-          `;
-          break;
           
         case 'last-call-inline':
           // Inline HTML version from server/lib/email.ts
@@ -4031,15 +3985,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const templates = [
       { name: 'Welcome Email', path: 'welcome', description: 'Sent to new users after signup', type: 'react' },
       { name: 'Price Drop Alert (React)', path: 'price-drop', description: 'React Email template for price drops', type: 'react' },
-      { name: 'Price Drop Alert (Inline)', path: 'price-drop-inline', description: 'Inline HTML template for price drops', type: 'inline' },
-      { name: 'Last Call Alert', path: 'last-call-inline', description: 'Inline HTML template for deadline alerts', type: 'inline' },
       { name: 'Password Reset', path: 'password-reset', description: 'Password reset email', type: 'inline' },
-      { name: 'Username Reminder', path: 'username-reminder', description: 'Username reminder email', type: 'inline' },
       { name: 'Notification - Opportunity', path: 'notification-opportunity', description: 'New opportunity notification', type: 'react' },
       { name: 'Notification - Pitch Status', path: 'notification-pitch-status', description: 'Pitch acceptance notification', type: 'react' },
       { name: 'Notification - Payment', path: 'notification-payment', description: 'Payment confirmation', type: 'react' },
       { name: 'Notification - Media Coverage', path: 'notification-media-coverage', description: 'Article published notification', type: 'react' },
-      { name: 'Placement Success', path: 'placement-success', description: 'Admin placement notification', type: 'inline' },
     ];
     
     const html = `
