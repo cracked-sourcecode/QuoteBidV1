@@ -459,3 +459,24 @@ body.navigating #root {
 .scale-102 {
   transform: scale(1.02);
 }
+
+/* Smooth spinner animation - fixes glitchy Loader2 rotation */
+@keyframes smooth-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-smooth-spin {
+  animation: smooth-spin 1s linear infinite;
+  transform-origin: center;
+}
+
+/* Override default Tailwind spin for smoother rotation */
+.animate-spin {
+  animation: smooth-spin 1s linear infinite !important;
+  transform-origin: center !important;
+}

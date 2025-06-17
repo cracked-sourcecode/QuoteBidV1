@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { 
   Loader2, 
@@ -32,6 +32,7 @@ import DarkPitchReviewModal from "@/components/dark/pitch-review-modal";
 import { getStage, PitchStatus } from "@/utils/pitchStage";
 import { PitchDTO } from "@/utils/pitchInterfaces";
 import { useToast } from "@/hooks/use-toast";
+import { LoadingScreen } from '@/components/ui/loading-screen';
 
 // Types for pitches
 interface Publication {
@@ -240,8 +241,6 @@ export default function MyPitches() {
     scrollToTop();
   };
 
-
-
   // Calculate simple stats
   const stats = useMemo(() => {
     const submitted = allPitches.filter(p => !p.isDraft).length;
@@ -301,18 +300,7 @@ export default function MyPitches() {
   // Skip loading screen on mobile (pull-to-refresh handles it)
   const isMobile = window.innerWidth <= 768;
   if (isLoading && !isMobile) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-purple-900">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="flex justify-center items-center h-64">
-            <div className="flex items-center space-x-3">
-              <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
-              <span className="text-gray-300">Loading your pitches...</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Loading your pitches..." size="lg" />;
   }
 
   if (hasError) {

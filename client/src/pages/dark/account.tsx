@@ -14,6 +14,7 @@ import { INDUSTRY_OPTIONS } from '@/lib/constants';
 import { format } from 'date-fns';
 import { Link } from 'wouter';
 import { Loader2, CreditCard, CheckCircle, CalendarIcon, ExternalLink, Newspaper, Upload, Trash2, Brain, Mail, Menu, X, Home, MessageSquare, Search, Settings as SettingsIcon, HelpCircle, Phone } from 'lucide-react';
+import { LoadingScreen, CompactLoading } from "@/components/ui/loading-screen";
 
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -30,7 +31,6 @@ import {
 } from '@/components/ui/card';
 import { EditProfileForm } from '@/components/EditProfileForm';
 import { ProfileView } from '@/components/ProfileView';
-import { Spinner } from '@/components/Spinner';
 import { ErrorState } from '@/components/ErrorState';
 import { Button } from '@/components/ui/button';
 import { 
@@ -1014,8 +1014,8 @@ export default function AccountPage() {
     return (
       <div className="flex justify-center items-center min-h-screen bg-slate-900">
         <div className="flex flex-col items-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-400 mb-3" />
-          <p className="text-slate-400 text-sm">Loading account...</p>
+          <LoadingScreen message="Loading account..." size="lg" />
+          <LoadingScreen message="Loading account..." size="sm" />
         </div>
       </div>
     );
@@ -2538,7 +2538,7 @@ export default function AccountPage() {
           ) : !user ? (
             <div className="flex items-center justify-center p-12">
               <div className="flex flex-col items-center">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-400 mb-3" />
+                <LoadingScreen message="Loading account..." size="lg" />
                 <p className="text-slate-400 text-sm">Loading profile...</p>
               </div>
             </div>
@@ -3005,7 +3005,7 @@ export default function AccountPage() {
             {isLoadingSubscription ? (
               <div className="flex justify-center py-8">
                 <div className="flex flex-col items-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-400 mb-3" />
+                  <LoadingScreen message="Loading account..." size="lg" />
                   <p className="text-slate-400 text-sm">Loading subscription...</p>
                 </div>
               </div>

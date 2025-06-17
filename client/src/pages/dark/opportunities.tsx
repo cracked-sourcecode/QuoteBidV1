@@ -20,6 +20,7 @@ import { Opportunity } from '@shared/types/opportunity';
 import { useAuth } from '@/hooks/use-auth';
 import { apiRequest } from '@/lib/queryClient';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
+import { LoadingScreen, CompactLoading } from '@/components/ui/loading-screen';
 
 const OPPORTUNITIES_PER_BATCH = 9; // 3 rows of 3 opportunities each
 
@@ -290,22 +291,7 @@ export default function OpportunitiesPage() {
   // Loading state - Skip on mobile (pull-to-refresh handles it)
   const isMobile = window.innerWidth <= 768;
   if (isLoading && !isMobile) {
-    return (
-      <div className="min-h-screen relative overflow-hidden">
-        {/* Premium dark gradient backdrop - darker with more blue like home.tsx */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900" />
-        {/* Additional depth layers */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20" />
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/20" />
-        
-        <div className="relative z-10 container max-w-7xl py-10 flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center">
-            <Loader2 className="h-10 w-10 animate-spin text-white mb-4" />
-            <p className="text-lg text-blue-300">Loading opportunities...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Loading opportunities..." size="lg" />;
   }
 
   return (
@@ -549,10 +535,7 @@ export default function OpportunitiesPage() {
                 className="flex items-center justify-center py-8"
               >
                 {isLoadingMore && !isMobile && (
-                  <div className="flex items-center space-x-3 text-slate-400 text-sm">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    <span>Loading more opportunities...</span>
-                  </div>
+                  <CompactLoading message="Loading more opportunities..." />
                 )}
               </div>
             )}

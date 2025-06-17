@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/apiFetch';
 import { useLocation } from 'wouter';
 import { Search, Filter, SlidersHorizontal, Loader2, Bookmark, Heart } from 'lucide-react';
+import { LoadingScreen, CompactLoading } from "@/components/ui/loading-screen";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -232,14 +233,7 @@ export default function SavedOpportunitiesPage() {
   // Loading state - Skip on mobile (pull-to-refresh handles it)
   const isMobile = window.innerWidth <= 768;
   if (isLoading && !isMobile) {
-    return (
-      <div className="container max-w-7xl py-10 flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-10 w-10 animate-spin text-blue-600 mb-4" />
-          <p className="text-lg text-gray-600">Loading saved opportunities...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Loading saved opportunities..." size="lg" />;
   }
 
   return (
@@ -374,10 +368,7 @@ export default function SavedOpportunitiesPage() {
                   className="flex items-center justify-center py-8"
                 >
                   {isLoadingMore && !isMobile && (
-                    <div className="flex items-center space-x-3 text-gray-600 text-sm">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      <span>Loading more saved opportunities...</span>
-                    </div>
+                    <CompactLoading message="Loading more saved opportunities..." />
                   )}
                 </div>
               )}

@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Search, Filter, SlidersHorizontal, Loader2, Bookmark } from 'lucide-react';
+import { LoadingScreen, CompactLoading } from '@/components/ui/loading-screen';
 import { apiFetch } from '@/lib/apiFetch';
 import { useLocation } from 'wouter';
-import { Search, Filter, SlidersHorizontal, Loader2, Bookmark } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -70,20 +71,14 @@ export default function OpportunitiesPage() {
   
   // Scroll to top when component mounts (for mobile navigation)
   useEffect(() => {
-    // Use setTimeout to ensure it happens after the page has fully loaded
     const scrollToTop = () => {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      // Backup scroll for mobile devices
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
     };
     
-    // Immediate scroll
     scrollToTop();
-    
-    // Delayed scroll as backup for mobile
     const timer = setTimeout(scrollToTop, 100);
-    
     return () => clearTimeout(timer);
   }, []);
   
@@ -102,7 +97,6 @@ export default function OpportunitiesPage() {
         
         // Map API response to match the Opportunity type format
         const formattedOpportunities = data.map((item: any) => {
-          // Handle API response with either OpportunityWithPublication format or direct Opportunity format
           const opp = item.opportunity || item;
           const pub = item.publication || {};
           
@@ -137,8 +131,6 @@ export default function OpportunitiesPage() {
         setOpportunities(formattedOpportunities);
         
         // Smart logo preloading for initial sign-in experience
-        // Preload logos for first 6 opportunities (above-the-fold) to prevent lag on initial sign-in
-        // while keeping lazy loading for opportunities below the fold
         const preloadCount = Math.min(6, formattedOpportunities.length);
         formattedOpportunities.slice(0, preloadCount).forEach((opp: any) => {
           if (opp.outletLogo && opp.outletLogo.trim() && opp.outletLogo !== 'null' && opp.outletLogo !== 'undefined') {
@@ -146,10 +138,8 @@ export default function OpportunitiesPage() {
               ? opp.outletLogo 
               : `${window.location.origin}${opp.outletLogo}`;
             
-            // Preload the logo image
             const img = new Image();
             img.src = logoUrl;
-            // Add high priority for above-the-fold content
             if ('fetchPriority' in img) {
               (img as any).fetchPriority = 'high';
             }
@@ -174,18 +164,15 @@ export default function OpportunitiesPage() {
         const res = await apiRequest("GET", `/api/user/${user.id}/subscription`);
         const data = await res.json();
         
-        // Check if subscription is expired or past due
         if (data.status === 'past_due' || data.status === 'canceled' || data.status === 'unpaid') {
           setSubscriptionStatus(data.status);
           setShowResubscribeModal(true);
         }
         
-        // Also check expiry date
         if (data.expiresAt) {
           const expiryDate = new Date(data.expiresAt);
           setSubscriptionExpiry(expiryDate);
           
-          // If expired, show the modal
           if (expiryDate < new Date()) {
             setShowResubscribeModal(true);
           }
@@ -202,7 +189,6 @@ export default function OpportunitiesPage() {
   useEffect(() => {
     let filtered = [...opportunities];
     
-    // Apply search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -213,17 +199,14 @@ export default function OpportunitiesPage() {
       );
     }
     
-    // Apply tier filter
     if (tierFilter !== 'all') {
       filtered = filtered.filter(opp => opp.tier === parseInt(tierFilter));
     }
     
-    // Apply status filter - use computed status that considers manual closure and deadline
     if (statusFilter !== 'all') {
       filtered = filtered.filter(opp => getOpportunityStatus(opp) === statusFilter);
     }
     
-    // Apply industry filter
     if (industryFilter !== 'all') {
       filtered = filtered.filter(opp => {
         const oppWithIndustry = opp as Opportunity & { industry?: string };
@@ -231,7 +214,6 @@ export default function OpportunitiesPage() {
       });
     }
     
-    // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'price-low':
@@ -243,7 +225,6 @@ export default function OpportunitiesPage() {
         case 'posted':
           return new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime();
         default:
-          // When no specific sort is selected or as a fallback, sort by creation date (newest first)
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }
     });
@@ -277,7 +258,6 @@ export default function OpportunitiesPage() {
         if (target.isIntersecting && !isLoadingMore && displayedOpportunities.length < filteredOpportunities.length) {
           setIsLoadingMore(true);
           
-          // Small delay for smooth loading
           setTimeout(() => {
             setCurrentBatch(prev => prev + 1);
             setIsLoadingMore(false);
@@ -305,28 +285,25 @@ export default function OpportunitiesPage() {
 
   const hasMoreOpportunities = displayedOpportunities.length < filteredOpportunities.length;
   
-  // Loading state - Skip on mobile (pull-to-refresh handles it)
+  // Loading state
   const isMobile = window.innerWidth <= 768;
   if (isLoading && !isMobile) {
-    return (
-      <div className="container max-w-7xl py-10 flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-10 w-10 animate-spin text-blue-600 mb-4" />
-          <p className="text-lg text-gray-600">Loading opportunities...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Loading opportunities..." size="lg" />;
+  }
+
+  if (isLoading && opportunities.length === 0) {
+    return <LoadingScreen message="Loading opportunities..." size="lg" />;
   }
 
   return (
     <div className="w-full bg-white min-h-screen">
-      {/* Resubscription Modal */}
       <ResubscriptionModal 
         open={showResubscribeModal} 
         onOpenChange={setShowResubscribeModal}
         subscriptionStatus={subscriptionStatus}
         expiryDate={subscriptionExpiry}
       />
+      
       {/* Header with gradient background */}
       <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 border-b border-gray-200 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50">
         <div>
@@ -336,8 +313,6 @@ export default function OpportunitiesPage() {
           </p>
         </div>
       </div>
-      
-
       
       {/* Search and filters */}
       <div className="px-3 sm:px-6 lg:px-8 py-3 sm:py-4 border-b border-gray-200 bg-white">
@@ -355,10 +330,7 @@ export default function OpportunitiesPage() {
           
           {/* Filters - stacked on mobile, inline on larger screens */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-            <Select
-              value={tierFilter}
-              onValueChange={setTierFilter}
-            >
+            <Select value={tierFilter} onValueChange={setTierFilter}>
               <SelectTrigger className="h-10 sm:h-11">
                 <SelectValue placeholder="All Tiers" />
               </SelectTrigger>
@@ -372,10 +344,7 @@ export default function OpportunitiesPage() {
               </SelectContent>
             </Select>
             
-            <Select
-              value={statusFilter}
-              onValueChange={setStatusFilter}
-            >
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="h-10 sm:h-11">
                 <SelectValue placeholder="Open" />
               </SelectTrigger>
@@ -388,10 +357,7 @@ export default function OpportunitiesPage() {
               </SelectContent>
             </Select>
             
-            <Select
-              value={industryFilter}
-              onValueChange={setIndustryFilter}
-            >
+            <Select value={industryFilter} onValueChange={setIndustryFilter}>
               <SelectTrigger className="h-10 sm:h-11">
                 <SelectValue placeholder="All Industries" />
               </SelectTrigger>
@@ -476,11 +442,8 @@ export default function OpportunitiesPage() {
           <div className="flex items-center gap-1 sm:gap-2">
             <SlidersHorizontal className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-gray-500" />
             <span className="text-xs sm:text-sm text-gray-600">Sort by:</span>
-            <Select
-              value={sortBy}
-              onValueChange={setSortBy}
-            >
-                              <SelectTrigger className="w-[120px] sm:w-[140px] lg:w-[170px] h-6 sm:h-7 text-[10px] sm:text-xs border-none shadow-none px-1">
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[120px] sm:w-[140px] lg:w-[170px] h-6 sm:h-7 text-[10px] sm:text-xs border-none shadow-none px-1">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -500,32 +463,29 @@ export default function OpportunitiesPage() {
       <div className="px-4 sm:px-6 lg:px-8 py-8 bg-white">
         {filteredOpportunities.length > 0 ? (
           <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {displayedOpportunities.map((opportunity, index) => (
                 <div 
                   key={opportunity.id}
                   className="opacity-0 animate-[fadeInUp_0.6s_ease-out_forwards]"
                   style={{ animationDelay: `${(index % OPPORTUNITIES_PER_BATCH) * 0.1}s` }}
                 >
-              <OpportunityCard
-                opportunity={opportunity}
-                    isPriority={index < 6} // First 6 cards are above-the-fold priority
-              />
+                  <OpportunityCard
+                    opportunity={opportunity}
+                    isPriority={index < 6}
+                  />
                 </div>
-            ))}
+              ))}
             </div>
 
-            {/* Infinite Scroll Sentinel - Hide loading indicator on mobile */}
+            {/* Infinite Scroll Sentinel */}
             {hasMoreOpportunities && (
               <div 
                 id="scroll-sentinel" 
                 className="flex items-center justify-center py-8"
               >
                 {isLoadingMore && !isMobile && (
-                  <div className="flex items-center space-x-3 text-gray-600 text-sm">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    <span>Loading more opportunities...</span>
-                  </div>
+                  <CompactLoading message="Loading more opportunities..." />
                 )}
               </div>
             )}
@@ -548,9 +508,8 @@ export default function OpportunitiesPage() {
         )}
       </div>
 
-      {/* ——— FOOTER ——— */}
+      {/* Footer */}
       <footer className="relative z-20 bg-white py-16 mt-16">
-        {/* Background effects */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-400 rounded-full mix-blend-multiply filter blur-2xl animate-blob"></div>
           <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-400 rounded-full mix-blend-multiply filter blur-2xl animate-blob animation-delay-2000"></div>

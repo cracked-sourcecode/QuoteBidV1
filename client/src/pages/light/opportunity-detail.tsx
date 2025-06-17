@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useRoute, Link, useLocation } from 'wouter';
 import { ChevronLeft, Calendar, Clock, DollarSign, TrendingUp, TrendingDown, Flame, ChevronUp, Info, Mic, Lock } from 'lucide-react';
 import { format } from 'date-fns';
+import { LoadingScreen } from '@/components/ui/loading-screen';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -823,14 +824,7 @@ export default function OpportunityDetail() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading opportunity details...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Loading opportunity..." size="lg" />;
   }
   
   // Error state

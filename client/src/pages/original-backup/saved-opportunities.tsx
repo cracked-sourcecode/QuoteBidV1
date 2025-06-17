@@ -180,8 +180,8 @@ export default function SavedOpportunitiesPage() {
     return (
       <div className="container max-w-7xl py-10 flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center">
-          <Loader2 className="h-10 w-10 animate-spin text-blue-600 mb-4" />
-          <p className="text-lg text-gray-600">Loading saved opportunities...</p>
+          <CompactLoading size="lg" />
+          <LoadingScreen message="Loading saved opportunities..." size="lg" />
         </div>
       </div>
     );

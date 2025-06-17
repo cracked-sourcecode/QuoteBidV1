@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/apiFetch';
 import { useLocation } from 'wouter';
 import { Search, Filter, SlidersHorizontal, Loader2, Bookmark, Heart } from 'lucide-react';
+import { LoadingScreen, CompactLoading } from '@/components/ui/loading-screen';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -232,22 +233,7 @@ export default function SavedOpportunitiesPage() {
   // Loading state - Skip on mobile (pull-to-refresh handles it)
   const isMobile = window.innerWidth <= 768;
   if (isLoading && !isMobile) {
-    return (
-      <div className="min-h-screen relative overflow-hidden">
-        {/* Premium dark gradient backdrop - matching opportunities page */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900" />
-        {/* Additional depth layers */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20" />
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/20" />
-        
-        <div className="relative z-10 container max-w-7xl py-10 flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center">
-            <Loader2 className="h-10 w-10 animate-spin text-white mb-4" />
-            <p className="text-lg text-blue-300">Loading saved opportunities...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Loading saved opportunities..." size="lg" />;
   }
 
   return (
@@ -484,10 +470,7 @@ export default function SavedOpportunitiesPage() {
               {/* Infinite scroll trigger - Hide loading indicator on mobile */}
               <div id="scroll-trigger" className="h-10 flex items-center justify-center">
                 {isLoadingMore && !isMobile && (
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">Loading more saved opportunities...</span>
-                  </div>
+                  <CompactLoading message="Loading more saved opportunities..." />
                 )}
               </div>
             </div>

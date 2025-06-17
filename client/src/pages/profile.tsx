@@ -3,7 +3,6 @@ import { Helmet } from 'react-helmet';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { ProfileView } from '@/components/ProfileView';
 import { EditProfileForm } from '@/components/EditProfileForm';
-import { Spinner } from '@/components/Spinner';
 import { ErrorState } from '@/components/ErrorState';
 import { User } from '@shared/schema';
 
@@ -30,7 +29,7 @@ export default function ProfilePage() {
   };
 
   if (isLoading) {
-    return <Spinner />;
+    return <LoadingScreen size="lg" />;
   }
 
   if (error || !user) {
