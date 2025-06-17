@@ -1383,7 +1383,7 @@ export default function OpportunityDetail() {
                   <div className="text-[11px] sm:text-sm font-bold text-gray-900 flex items-center space-x-1 sm:space-x-2">
                     <span>{format(new Date(opportunity.deadline), 'MMM d, yyyy')}</span>
                     {isToday && (
-                      <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-1 py-0.5 shadow-md">
+                      <Badge className="hidden sm:inline-flex bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-1 py-0.5 shadow-md">
                         Today
                       </Badge>
                     )}
@@ -1549,24 +1549,29 @@ export default function OpportunityDetail() {
 
             {/* Closed Opportunity Banner */}
             {getOpportunityStatus(opportunity) === 'closed' && (
-              <div className="bg-gradient-to-r from-yellow-100/80 to-orange-100/80 backdrop-blur-sm rounded-lg p-4 mb-6 border border-yellow-300/50">
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Lock className="h-4 w-4 text-yellow-600" />
-            </div>
-                  <div>
-                    <h4 className="text-yellow-800 font-bold text-lg mb-2">Opportunity Closed — Dynamic Pricing Frozen</h4>
-                    <p className="text-yellow-700 leading-relaxed mb-3">
-                      This placement is no longer live. The last recorded market rate was{' '}
-                      <span className="font-bold text-yellow-800">
-                        ${opportunity.lastPrice || opportunity.currentPrice || opportunity.basePrice}
-                      </span>{' '}
-                      before the opportunity was closed. You may still pitch at that fixed price.
-                    </p>
-                    <p className="text-yellow-600/70 text-sm leading-relaxed">
-                      Opportunities close when reporters stop accepting new pitches, or when the deadline has been reached.
-                    </p>
+              <div className="bg-gradient-to-r from-yellow-100/80 to-orange-100/80 backdrop-blur-sm rounded-lg p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 border border-yellow-300/50">
+                {/* Title Row with Icon */}
+                <div className="flex items-start space-x-2 sm:space-x-3 md:space-x-4 mb-3 sm:mb-4">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Lock className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-yellow-600" />
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-yellow-800 font-bold text-base sm:text-lg md:text-xl leading-tight">Opportunity Closed — Dynamic Pricing Frozen</h4>
+                  </div>
+                </div>
+                
+                {/* Description Text - Full Width */}
+                <div className="space-y-3">
+                  <p className="text-yellow-700 leading-relaxed text-sm sm:text-base md:text-lg">
+                    This placement is no longer live. The last recorded market rate was{' '}
+                    <span className="font-bold text-yellow-800 bg-yellow-200/60 px-2 py-1 sm:px-3 sm:py-1 rounded-md">
+                      ${opportunity.lastPrice || opportunity.currentPrice || opportunity.basePrice}
+                    </span>{' '}
+                    before the opportunity was closed. You may still pitch at that fixed price.
+                  </p>
+                  <p className="text-yellow-600/70 text-xs sm:text-sm leading-relaxed">
+                    Opportunities close when reporters stop accepting new pitches, or when the deadline has been reached.
+                  </p>
                 </div>
               </div>
             )}
@@ -2079,32 +2084,46 @@ export default function OpportunityDetail() {
                             
                             {/* Status and Time */}
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-2 sm:gap-0">
-                              <div className={`flex items-center space-x-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-semibold backdrop-blur-sm ${
-                                relatedOpp.status === 'urgent' ? 'bg-red-50 text-red-600 border border-red-200 shadow-md' :
-                                relatedOpp.status === 'trending' ? 'bg-orange-50 text-orange-600 border border-orange-200 shadow-md' :
-                                'bg-green-50 text-green-600 border border-green-200 shadow-md'
-                              }`}>
-                                {relatedOpp.status === 'urgent' ? (
-                                  <>
-                                    <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                                    <span>Urgent</span>
-                                  </>
-                                ) : relatedOpp.status === 'trending' ? (
-                                  <>
-                                    <Flame className="h-3 w-3 sm:h-4 sm:w-4" />
-                                    <span>Trending</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                    <span>Open</span>
-                                  </>
-                                )}
-                              </div>
-                              <span className="text-gray-500 text-xs sm:text-sm font-medium bg-gray-50 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 shadow-md">
+                              {(() => {
+                                // Calculate deadline status first
+                                const hoursLeft = relatedOpp.deadline ? Math.ceil((new Date(relatedOpp.deadline).getTime() - Date.now()) / (1000 * 60 * 60)) : null;
+                                const isClosed = hoursLeft !== null && hoursLeft <= 0;
+                                
+                                // Determine unified status
+                                if (isClosed) {
+                                  return (
+                                    <div className="flex items-center space-x-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-semibold backdrop-blur-sm bg-red-50 text-red-600 border border-red-200 shadow-md">
+                                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-400 rounded-full"></div>
+                                      <span>Closed</span>
+                                    </div>
+                                  );
+                                } else if (relatedOpp.status === 'urgent') {
+                                  return (
+                                    <div className="flex items-center space-x-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-semibold backdrop-blur-sm bg-red-50 text-red-600 border border-red-200 shadow-md">
+                                      <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                                      <span>Urgent</span>
+                                    </div>
+                                  );
+                                } else if (relatedOpp.status === 'trending') {
+                                  return (
+                                    <div className="flex items-center space-x-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-semibold backdrop-blur-sm bg-orange-50 text-orange-600 border border-orange-200 shadow-md">
+                                      <Flame className="h-3 w-3 sm:h-4 sm:w-4" />
+                                      <span>Trending</span>
+                                    </div>
+                                  );
+                                } else {
+                                  return (
+                                    <div className="flex items-center space-x-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-semibold backdrop-blur-sm bg-green-50 text-green-600 border border-green-200 shadow-md">
+                                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                      <span>Open</span>
+                                    </div>
+                                  );
+                                }
+                              })()}
+                              <span className="text-gray-600 text-xs sm:text-sm font-medium bg-gray-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 shadow-md">
                                 {relatedOpp.deadline ? (() => {
                                   const hoursLeft = Math.ceil((new Date(relatedOpp.deadline).getTime() - Date.now()) / (1000 * 60 * 60));
-                                  return hoursLeft <= 0 ? 'Closed' : `${hoursLeft}h left`;
+                                  return hoursLeft <= 0 ? 'Expired' : `${hoursLeft}h left`;
                                 })() : 'Active'}
                               </span>
                             </div>
@@ -2157,11 +2176,11 @@ export default function OpportunityDetail() {
 
                 {/* Additional Info */}
                 {relatedOpportunities.length > 0 && (
-                  <div className="mt-8 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
-                    <div className="flex items-center justify-center space-x-2 text-sm text-blue-700">
-                      <Info className="h-4 w-4" />
-                      <span className="font-medium">
-                        Found {relatedOpportunities.length} related {relatedOpportunities.length === 1 ? 'opportunity' : 'opportunities'} in {opportunity?.topicTags?.[0] || 'your area'}
+                  <div className="mt-8 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-purple-50 backdrop-blur-sm rounded-xl border border-blue-200/50">
+                    <div className="flex items-center justify-center space-x-2 text-xs sm:text-sm text-blue-600">
+                      <Info className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="font-medium text-center">
+                        Found {relatedOpportunities.length} related {relatedOpportunities.length === 1 ? 'opportunity' : 'opportunities'} in {opportunity?.industry || opportunity?.topicTags?.[0] || 'your area'}
                       </span>
                     </div>
                   </div>
