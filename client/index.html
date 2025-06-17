@@ -13,78 +13,109 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z'/%3E%3C/svg%3E" />
     
-    <!-- Prevent white flash by applying theme immediately -->
+    <!-- Prevent theme flash with immediate, consistent styling -->
     <style>
-      /* Aggressive anti-flash - apply to html and body immediately */
+      /* CRITICAL: Apply theme immediately to prevent flash */
       html {
-        background-color: #ffffff !important;
         margin: 0;
         padding: 0;
+        height: 100%;
+        /* Default to dark theme to prevent white flash */
+        background-color: #0f172a !important;
+        color: #e2e8f0;
       }
       
       body {
         margin: 0;
         padding: 0;
-        background-color: #ffffff !important;
-        color: #374151;
+        height: 100%;
+        /* Inherit from html to maintain consistency */
+        background-color: inherit !important;
+        color: inherit;
         font-family: 'Inter', sans-serif;
-        transition: background-color 0.2s ease, color 0.2s ease;
+        /* Smooth transitions for theme changes */
+        transition: background-color 150ms ease-in-out, color 150ms ease-in-out;
       }
       
-      /* Theme-specific overrides */
-      html[data-theme="light"], 
-      body.theme-light {
+      /* Theme-specific styles with !important to override any conflicts */
+      html[data-theme="light"] {
         background-color: #ffffff !important;
-        color: #374151;
+        color: #374151 !important;
       }
       
-      html[data-theme="dark"], 
-      body.theme-dark {
+      html[data-theme="dark"] {
         background-color: #0f172a !important;
-        color: #e2e8f0;
+        color: #e2e8f0 !important;
       }
       
+      /* Ensure root takes full height and inherits theme */
       #root {
         min-height: 100vh;
+        height: 100%;
         background-color: inherit;
+        color: inherit;
+        /* Add transition to root as well */
+        transition: background-color 150ms ease-in-out, color 150ms ease-in-out;
+      }
+
+      /* Loading state styles */
+      .theme-loading {
+        opacity: 0.95;
+        transition: opacity 150ms ease-in-out;
       }
     </style>
     
-    <!-- Apply theme immediately - before any rendering -->
+    <!-- Apply theme immediately - enhanced for consistency -->
     <script>
-      // Execute immediately, no delays
       (function() {
         try {
+          // Get saved theme immediately
           const savedTheme = localStorage.getItem('quotebid-theme');
-          const theme = savedTheme || 'dark'; // Default to dark for new users
-          const bgColor = theme === 'light' ? '#ffffff' : '#0f172a';
+          const theme = savedTheme || 'dark'; // Default to dark for consistency
           
-          // Apply everywhere immediately - maximum coverage
-          document.documentElement.style.backgroundColor = bgColor;
+          // Apply theme to html immediately (most important)
           document.documentElement.setAttribute('data-theme', theme);
           document.documentElement.className = 'theme-' + theme;
           
-          // Apply to body as soon as it exists
+          // Set appropriate background color immediately
+          const bgColor = theme === 'light' ? '#ffffff' : '#0f172a';
+          const textColor = theme === 'light' ? '#374151' : '#e2e8f0';
+          
+          // Apply to html with highest priority
+          document.documentElement.style.setProperty('background-color', bgColor, 'important');
+          document.documentElement.style.setProperty('color', textColor, 'important');
+          
+          // Apply to body when available
+          const applyToBody = () => {
+            if (document.body) {
+              document.body.style.setProperty('background-color', bgColor, 'important');
+              document.body.style.setProperty('color', textColor, 'important');
+              document.body.className = 'theme-' + theme;
+            }
+          };
+          
+          // Apply immediately if body exists, otherwise wait for it
           if (document.body) {
-            document.body.style.backgroundColor = bgColor;
-            document.body.className = 'theme-' + theme;
+            applyToBody();
           } else {
-            // Wait for body if it doesn't exist yet
-            const observer = new MutationObserver(function(mutations) {
+            // Use both DOMContentLoaded and mutation observer for maximum coverage
+            document.addEventListener('DOMContentLoaded', applyToBody);
+            
+            const observer = new MutationObserver(() => {
               if (document.body) {
-                document.body.style.backgroundColor = bgColor;
-                document.body.className = 'theme-' + theme;
+                applyToBody();
                 observer.disconnect();
               }
             });
-            observer.observe(document.documentElement, { childList: true, subtree: true });
+            observer.observe(document.documentElement, { childList: true });
           }
           
         } catch (e) {
-          // Fallback - always dark theme for new users
-          document.documentElement.style.backgroundColor = '#0f172a';
+          // Failsafe: always apply dark theme
           document.documentElement.setAttribute('data-theme', 'dark');
           document.documentElement.className = 'theme-dark';
+          document.documentElement.style.setProperty('background-color', '#0f172a', 'important');
+          document.documentElement.style.setProperty('color', '#e2e8f0', 'important');
         }
       })();
     </script>

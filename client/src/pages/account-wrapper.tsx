@@ -10,11 +10,11 @@ export default function AccountWrapper() {
   const { theme } = useTheme();
   const [isInitializing, setIsInitializing] = useState(true);
   
-  // Give a brief moment for theme initialization to complete
+  // Shorter initialization since theme provider is optimized
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsInitializing(false);
-    }, 100);
+    }, 50);
     
     return () => clearTimeout(timer);
   }, []);

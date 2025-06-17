@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { apiFetch } from '@/lib/apiFetch';
 
 type Theme = 'light' | 'dark';
@@ -8,177 +8,152 @@ interface ThemeContextType {
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
   refreshThemeFromDatabase: () => Promise<void>;
+  isInitialized: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Initialize with dark theme from localStorage or default to dark for new users
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem('quotebid-theme');
-    console.log('🎨 [THEME] Initial theme from localStorage:', saved);
-    // Default to dark theme for new users (user_preferences.theme = "dark")
     return (saved === 'light' ? 'light' : 'dark') as Theme;
   });
+  
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Helper function to get user ID from localStorage
-  const getUserId = () => {
+  const getUserId = useCallback(() => {
     try {
-      console.log('🎨 [THEME] Getting user ID from localStorage...');
       const token = localStorage.getItem('token');
-      if (!token) {
-        console.log('🎨 [THEME] No auth token in localStorage');
-        return null;
-      }
-      
+      if (!token) return null;
       const payload = JSON.parse(atob(token.split('.')[1]));
-      console.log('🎨 [THEME] Decoded token payload:', payload);
       return payload.id;
     } catch (error) {
-      console.log('🎨 [THEME] Error getting user ID:', error);
       return null;
     }
-  };
+  }, []);
 
   // Function to fetch theme from database
-  const fetchThemeFromDatabase = async () => {
+  const fetchThemeFromDatabase = useCallback(async () => {
     const userId = getUserId();
-    if (!userId) {
-      console.log('🎨 [THEME] No user ID, skipping theme fetch');
-      return null;
-    }
+    if (!userId) return null;
 
-    console.log('🎨 [THEME] Fetching theme from database for user:', userId);
-    
     try {
       const response = await apiFetch(`/api/users/${userId}/preferences`);
       const preferences = await response.json();
-      console.log('🎨 [THEME] ✅ Fetched preferences from database:', preferences);
       return preferences.theme || 'light';
     } catch (error) {
-      console.log('🎨 [THEME] ❌ Failed to fetch theme from database:', error);
       return null;
     }
-  };
+  }, [getUserId]);
 
-  // Public method to refresh theme from database (can be called after login)
-  const refreshThemeFromDatabase = async () => {
-    console.log('🎨 [THEME] ===== REFRESH THEME FROM DATABASE =====');
+  // Apply theme to document immediately (synchronous)
+  const applyThemeToDocument = useCallback((newTheme: Theme) => {
+    // Apply with smooth transition
+    document.documentElement.style.transition = 'background-color 150ms ease-in-out, color 150ms ease-in-out';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    
+    const bgColor = newTheme === 'light' ? '#ffffff' : '#0f172a';
+    const textColor = newTheme === 'light' ? '#374151' : '#e2e8f0';
+    
+    document.documentElement.style.setProperty('background-color', bgColor, 'important');
+    document.documentElement.style.setProperty('color', textColor, 'important');
+    
+    if (document.body) {
+      document.body.style.setProperty('background-color', bgColor, 'important');
+      document.body.style.setProperty('color', textColor, 'important');
+    }
+    
+    // Remove transition after a brief moment to prevent interference
+    setTimeout(() => {
+      document.documentElement.style.transition = '';
+    }, 200);
+  }, []);
+
+  // Public method to refresh theme from database
+  const refreshThemeFromDatabase = useCallback(async () => {
     const dbTheme = await fetchThemeFromDatabase();
     if (dbTheme && dbTheme !== theme) {
-      console.log('🎨 [THEME] Updating theme from database:', theme, '->', dbTheme);
       setThemeState(dbTheme);
       localStorage.setItem('quotebid-theme', dbTheme);
-      document.documentElement.setAttribute('data-theme', dbTheme);
-    } else {
-      console.log('🎨 [THEME] Database theme matches current theme or fetch failed');
+      applyThemeToDocument(dbTheme);
     }
-  };
+  }, [fetchThemeFromDatabase, theme, applyThemeToDocument]);
 
-  // Load theme from database on mount and when user ID changes
-  useEffect(() => {
-    console.log('🎨 [THEME] Theme provider mounted, checking for saved theme...');
+  // Update theme and sync to database
+  const updateTheme = useCallback(async (newTheme: Theme) => {
+    // Apply immediately for responsive feel
+    setThemeState(newTheme);
+    localStorage.setItem('quotebid-theme', newTheme);
+    applyThemeToDocument(newTheme);
     
-    // Small delay to ensure authentication is complete
-    const timer = setTimeout(async () => {
-      await refreshThemeFromDatabase();
-    }, 100);
+    // Save to database in background (non-blocking)
+    const userId = getUserId();
+    if (userId) {
+      try {
+        await apiFetch(`/api/users/${userId}/preferences`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            theme: newTheme,
+            notifications: true,
+            language: 'en'
+          }),
+        });
+      } catch (error) {
+        // Silent fail - don't disrupt user experience
+        console.warn('Failed to save theme to database:', error);
+      }
+    }
+  }, [getUserId, applyThemeToDocument]);
 
-    // Listen for user login events to sync theme from database
-    const handleUserLoggedIn = async () => {
-      console.log('🎨 [THEME] User logged in event received, refreshing theme...');
-      // Add a small delay to ensure the token is properly stored
-      setTimeout(async () => {
-        await refreshThemeFromDatabase();
-      }, 200);
+  const toggleTheme = useCallback(() => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    updateTheme(newTheme);
+  }, [theme, updateTheme]);
+
+  const setTheme = useCallback((newTheme: Theme) => {
+    updateTheme(newTheme);
+  }, [updateTheme]);
+
+  // Single initialization effect
+  useEffect(() => {
+    // Apply initial theme immediately
+    applyThemeToDocument(theme);
+    
+    // Set up login listener for theme sync
+    const handleUserLoggedIn = () => {
+      setTimeout(() => {
+        refreshThemeFromDatabase();
+      }, 300);
     };
 
     window.addEventListener('userLoggedIn', handleUserLoggedIn);
+    
+    // Mark as initialized after a brief moment
+    const initTimer = setTimeout(() => {
+      setIsInitialized(true);
+    }, 150);
 
     return () => {
-      clearTimeout(timer);
       window.removeEventListener('userLoggedIn', handleUserLoggedIn);
+      clearTimeout(initTimer);
     };
-  }, []);
+  }, []); // Only run once on mount
 
-  // Update theme and sync to database
-  const updateTheme = async (newTheme: Theme) => {
-    console.log('🎨 [THEME] ===== UPDATE THEME CALLED =====');
-    console.log('🎨 [THEME] updateTheme called with:', newTheme);
-    
-    console.log('🎨 [THEME] Theme changed to:', newTheme);
-    setThemeState(newTheme);
-    
-    // Update localStorage
-    localStorage.setItem('quotebid-theme', newTheme);
-    console.log('🎨 [THEME] Updated localStorage');
-    
-    // Update document data-theme attribute
-    document.documentElement.setAttribute('data-theme', newTheme);
-    console.log('🎨 [THEME] Updated document data-theme attribute');
-    
-    // Save to database if user is logged in
-    const userId = getUserId();
-    if (!userId) {
-      console.log('🎨 [THEME] No user ID, skipping database save');
-      return;
-    }
-
-    console.log('🎨 [THEME] Starting database save for user:', userId);
-    console.log('🎨 [THEME] About to make API call to /api/users/' + userId + '/preferences');
-    
-    try {
-      const response = await apiFetch(`/api/users/${userId}/preferences`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          theme: newTheme,
-          notifications: true,
-          language: 'en'
-        }),
-      });
-
-      const result = await response.json();
-      console.log('🎨 [THEME] ✅ Theme saved to database successfully:', result);
-      
-      // Update local state to match what was actually saved
-      if (result.preferences && result.preferences.theme !== newTheme) {
-        console.log('🎨 [THEME] Database returned different theme, syncing:', result.preferences.theme);
-        setThemeState(result.preferences.theme);
-        localStorage.setItem('quotebid-theme', result.preferences.theme);
-        document.documentElement.setAttribute('data-theme', result.preferences.theme);
-      }
-    } catch (error) {
-      console.log('🎨 [THEME] ❌ Failed to save theme to database:', error);
-    }
-  };
-
-  const toggleTheme = () => {
-    console.log('🎨 [THEME] ===== TOGGLE THEME CALLED =====');
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    console.log('🎨 [THEME] Current theme:', theme);
-    console.log('🎨 [THEME] Switching to:', newTheme);
-    
-    const userId = getUserId();
-    console.log('🎨 [THEME] getUserId() returned:', userId);
-    
-    updateTheme(newTheme);
-  };
-
-  const setTheme = (newTheme: Theme) => {
-    updateTheme(newTheme);
-  };
-
-  // Apply theme to document on every theme change
+  // Apply theme changes immediately when theme state changes
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    console.log('🎨 [THEME] Applied theme to document:', theme);
-  }, [theme]);
+    applyThemeToDocument(theme);
+  }, [theme, applyThemeToDocument]);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme, refreshThemeFromDatabase }}>
+    <ThemeContext.Provider value={{ 
+      theme, 
+      toggleTheme, 
+      setTheme, 
+      refreshThemeFromDatabase, 
+      isInitialized 
+    }}>
       {children}
     </ThemeContext.Provider>
   );
