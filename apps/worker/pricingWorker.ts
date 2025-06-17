@@ -13,7 +13,11 @@ import { config } from "dotenv";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { eq, sql, gt, and, gte } from "drizzle-orm";
-import { subMinutes } from "date-fns";
+import { 
+  isAfter, 
+  subMinutes,
+  differenceInHours 
+} from "date-fns";
 import { 
   opportunities, 
   price_snapshots, 
@@ -22,6 +26,7 @@ import {
   pitches,
   savedOpportunities,
   emailClicks,
+  events,
   type Opportunity
 } from "../../shared/schema";
 import { 
@@ -29,6 +34,7 @@ import {
   type PricingSnapshot, 
   type PricingConfig 
 } from "../../lib/pricing/pricingEngine";
+import { canUpdate } from "../../lib/pricing/cooldown";
 import { shouldSkipGPT } from "./gatekeeper";
 import { queueForGPT } from "./gptPricingAgent";
 import { priceUpdates, systemEvents } from "../wsServer";
@@ -171,7 +177,7 @@ function buildPricingConfig(weights: Record<string, number>, config: any): Prici
       emailClickBoost: Number(config.emailClickBoost) || 0.05,
       outlet_avg_price: weights.outlet_avg_price || -1.0,
       successRateOutlet: weights.successRateOutlet || -0.5,
-      hoursRemaining: weights.hoursRemaining || -1.2,
+      hoursRemaining: weights.hoursRemaining || -0.6,
     },
     priceStep: Number(config.priceStep) || 5,
     elasticity: 1.0, // Default for now, can be made configurable
@@ -232,6 +238,8 @@ async function fetchLiveOpportunities(): Promise<Array<Opportunity & {
   // Get metrics for each opportunity
   const oppsWithMetrics = await Promise.all(
     activeOpps.map(async (opp) => {
+      const now = new Date();
+      
       // Count submitted pitches for this opportunity (excludes drafts)
       const pitchCountResult = await db
         .select({ count: sql<number>`count(*)` })
@@ -262,12 +270,23 @@ async function fetchLiveOpportunities(): Promise<Array<Opportunity & {
       
       const saveCount = Number(saveCountResult[0]?.count || 0);
       
+      // NEW: recent clicks from events table
+      const clickCountResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(events)
+        .where(and(
+          eq(events.opportunityId, opp.id),
+          sql`${events.type} IN ('opp_click', 'email_click')`,
+          gte(events.createdAt, subMinutes(now, 60)) // last 60 min
+        ));
+      const clickCount = Number(clickCountResult[0]?.count || 0);
+      
       return {
         ...opp,
         pitchCount,
-        clickCount: 0, // TODO: Implement click tracking
-        saveCount,     // ✅ Now tracking actual saves!
-        draftCount,    // ✅ Now tracking actual drafts!
+        clickCount,        // ✅ Now using real click data!
+        saveCount,         // ✅ Now tracking actual saves!
+        draftCount,        // ✅ Now tracking actual drafts!
       };
     })
   );
@@ -345,6 +364,7 @@ async function updateOpportunityPrice(
     .set({
       current_price: newPrice.toString(),
       variable_snapshot: snapshot as any,
+      last_price_update: new Date(),
     })
     .where(eq(opportunities.id, opportunityId));
   
@@ -394,6 +414,11 @@ async function processPricingTick(): Promise<void> {
         continue;
       }
       
+      if (!canUpdate(opp.last_price_update)) {
+        console.log(`⏳  OPP ${opp.id} skipped – in cool-down`);
+        continue;
+      }
+      
       const snapshot = await buildPricingSnapshot(opp);
       const newPrice = computePrice(snapshot, pricingConfig);
       const currentPrice = snapshot.current_price;
@@ -406,8 +431,13 @@ async function processPricingTick(): Promise<void> {
           await updateOpportunityPrice(opp.id, newPrice, snapshot, "worker");
           updatedCount++;
           
+          // Calculate band for logging
+          const anchor = snapshot.outlet_avg_price ?? (snapshot.tier === 1 ? 250 : snapshot.tier === 2 ? 175 : 125);
+          const bandFloor = Math.max(pricingConfig.floor, 0.6 * anchor);
+          const bandCeil = Math.min(pricingConfig.ceil, 2.0 * anchor);
+          
           const direction = priceDelta > 0 ? "▲" : "▼";
-          console.log(`💰 OPP ${opp.id} → $${newPrice} (${direction}$${Math.abs(priceDelta)}) [direct]`);
+          console.log(`💰 OPP ${opp.id} → $${newPrice} (${direction}$${Math.abs(priceDelta)}) (band ${bandFloor}-${bandCeil}) [direct]`);
         } else {
           // Queue for GPT decision
           gptBatch.push({
@@ -422,7 +452,7 @@ async function processPricingTick(): Promise<void> {
     
     // Send batch to GPT if we have any
     if (gptBatch.length > 0) {
-      await queueForGPT(gptBatch);
+      await queueForGPT(gptBatch, pricingConfig.priceStep);
     }
     
     console.log(`✅ Tick complete: ${updatedCount} updated, ${skippedCount} queued for GPT, ${liveOpps.length - updatedCount - skippedCount} unchanged`);

@@ -3341,6 +3341,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to check saved status", error: error.message });
     }
   });
+
+  // Events endpoint for tracking user interactions
+  app.post("/api/events", async (req: Request, res: Response) => {
+    try {
+      const { 
+        opportunityId, 
+        type, 
+        userId = null, 
+        sessionId = null, 
+        metadata = {} 
+      } = req.body;
+      
+      if (!opportunityId || !type) {
+        return res.status(400).json({ error: 'opportunityId and type are required' });
+      }
+      
+      // Validate event type
+      const validTypes = ['opp_click', 'email_click', 'page_view', 'bid_attempt', 'save_attempt'];
+      if (!validTypes.includes(type)) {
+        return res.status(400).json({ error: 'Invalid event type' });
+      }
+      
+      // Import events from schema
+      const { events } = await import("@shared/schema");
+      
+      // Insert event into database
+      const [newEvent] = await getDb()
+        .insert(events)
+        .values({
+          opportunityId,
+          type,
+          userId,
+          sessionId,
+          metadata,
+          createdAt: new Date()
+        })
+        .returning();
+      
+      console.log(`📊 Recorded event: ${type} for opportunity ${opportunityId} by user ${userId || 'anonymous'}`);
+      
+      res.status(201).json({ 
+        success: true, 
+        event: newEvent 
+      });
+      
+    } catch (error: any) {
+      console.error('Error recording event:', error);
+      res.status(500).json({ error: 'Failed to record event' });
+    }
+  });
   
   // Email endpoints removed
 

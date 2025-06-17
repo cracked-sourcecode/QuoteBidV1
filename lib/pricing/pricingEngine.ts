@@ -125,30 +125,74 @@ export function calculatePrice(input: PricingSnapshot, cfg: PricingConfig): Pric
  * 4. Risk adj. = (1 - successRateOutlet) × w.successRateOutlet
  * 5. Delta = elasticity × demand + yieldPull - supplyPressure - riskAdj
  * 6. Move = Math.sign(delta) × priceStep
- * 7. Return clamp(currentPrice + move, floor, ceil)
+ * 7. Return clamp(currentPrice + move, bandFloor, bandCeil) with dynamic band
  */
 export function computePrice(input: PricingSnapshot, cfg: PricingConfig): number {
-  const result = calculatePrice(input, cfg);
-  return result.price;
+  const { weights, priceStep, elasticity, floor, ceil } = cfg;
+  
+  // Step 1: Calculate demand score
+  const demandScore = 
+    input.pitches * weights.pitches +
+    input.clicks * weights.clicks +
+    input.saves * weights.saves +
+    input.drafts * weights.drafts +
+    input.emailClicks1h * weights.emailClickBoost;
+
+  // Step 2: Calculate supply pressure (urgency factor)
+  const supplyPressure = calculateSupplyPressure(input.hoursRemaining);
+
+  // Step 3: Calculate yield pull (anchor toward outlet average)
+  const yieldPull = calculateYieldPull(
+    input.outlet_avg_price, 
+    input.current_price
+  );
+
+  // Step 4: Calculate risk adjustment  
+  const riskAdjustment = calculateRiskAdjustment(
+    input.successRateOutlet,
+    weights.successRateOutlet
+  );
+
+  // Step 5: Calculate overall delta
+  const delta = 
+    elasticity * demandScore + 
+    yieldPull - 
+    supplyPressure - 
+    riskAdjustment;
+
+  // Step 6: Calculate price move
+  const move = Math.sign(delta) * priceStep;   // (scaled tick comes in Patch #4)
+  const raw = input.current_price + move;
+
+  // --- NEW dynamic band ---------------------------------
+  const anchor = input.outlet_avg_price ?? tierBase(input.tier);
+  const bandFloor = Math.max(floor, 0.6 * anchor);
+  const bandCeil = Math.min(ceil, 2.0 * anchor);
+  const price = clamp(raw, bandFloor, bandCeil);
+
+  return price;
 }
 
 /**
- * Calculate supply pressure based on hours remaining to deadline
- * When < 24 hours: exponential decay to create urgency
- * When >= 24 hours: linear decay over 72 hours (3 days)
+ * Soft-urgency curve (log-style)
+ * - 24h → 0
+ * - 12h → ~0.7
+ * -  6h → ~1.0
+ * -  1h → ≤ 1.3
+ * Capped at 1.5 so it can never swamp demand.
  */
-function calculateSupplyPressure(hoursRemaining: number): number {
-  if (hoursRemaining < 1) {
-    // Fire sale - maximum pressure
-    return 10;
-  } else if (hoursRemaining < 24) {
-    // Exponential decay for final 24 hours
-    // decay24h creates urgency: 24hrs=0.1, 12hrs=0.5, 6hrs=2, 1hr=8
-    return 8 * Math.pow(0.5, hoursRemaining / 6);
-  } else {
-    // Linear decay over 72 hours
-    return Math.max(0, hoursRemaining / 72);
-  }
+export function calculateSupplyPressure(hoursRemaining: number): number {
+  if (hoursRemaining >= 24) return 0;
+
+  // Avoid log(0) — shift domain by +1
+  const pressure = Math.log10((24 - hoursRemaining) + 1); // 0-to-log10(25)
+
+  // Scale to get desired curve: 12h→0.7, 6h→1.0, 1h→1.3
+  // log10(13) ≈ 1.114 for 12h, so scale by 0.63 to get 0.7
+  const scaledPressure = pressure * 0.63;
+
+  // Normalise to 0-1.5 range and ensure it caps at 1.5
+  return Math.min(1.5, scaledPressure);
 }
 
 /**
@@ -207,4 +251,11 @@ export function getDefaultPricingConfig(): PricingConfig {
     floor: 10,     // Minimum safety floor
     ceil: 10000,   // Maximum safety ceiling
   };
+}
+
+/**
+ * Helper to get tier base price for dynamic band calculation
+ */
+function tierBase(tier: 1 | 2 | 3): number {
+  return tier === 1 ? 250 : tier === 2 ? 175 : 125;
 } 

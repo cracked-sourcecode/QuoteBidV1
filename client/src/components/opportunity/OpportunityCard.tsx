@@ -5,6 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Clock, TrendingUp, TrendingDown, Minus, Award, Target, Trophy, Bookmark } from 'lucide-react';
 import { Opportunity } from '@shared/types/opportunity';
 import { calculateMarketHeat, getMarketPulseIndicators } from '@/lib/marketPulse';
+import { apiFetch } from '@/lib/apiFetch';
+import { useAuth } from '@/hooks/use-auth';
 // Remove individual price fetching for list pages - use bulk data instead
 // import { useOpportunityPrice } from '@/contexts/PriceContext';
 
@@ -23,6 +25,7 @@ export default function OpportunityCard({
 }: OpportunityCardProps) {
   const [timeLeft, setTimeLeft] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+  const { user } = useAuth(); // Add user context for tracking
   
   // 🚀 PERFORMANCE FIX: Use pricing data from opportunities list API instead of individual calls
   // This eliminates dozens of individual API calls that were causing 401 errors and slow loading
@@ -96,6 +99,36 @@ export default function OpportunityCard({
   const tierStyling = getTierStyling(opportunity.tier);
   
   const handleBidClick = () => {
+    // Track opportunity click event
+    const trackClick = async () => {
+      try {
+        await fetch('/api/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            opportunityId: opportunity.id,
+            type: 'opp_click',
+            userId: user?.id || null,
+            sessionId: window.sessionStorage.getItem('sessionId') || null,
+            metadata: {
+              outlet: opportunity.outlet,
+              tier: opportunity.tier,
+              currentPrice: currentPrice,
+              clickType: 'bid_button'
+            }
+          })
+        });
+      } catch (error) {
+        // Don't block action on tracking errors
+        console.error('Failed to track bid click:', error);
+      }
+    };
+    
+    // Track the click (non-blocking)
+    trackClick();
+    
     if (onBidClick) {
       onBidClick(opportunity.id);
     }

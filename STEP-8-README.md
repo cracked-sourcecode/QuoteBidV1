@@ -23,6 +23,10 @@ node scripts/weekly-calibration.js --dry-run
 open $GRAFANA_URL
 ```
 
+## 📚 Internal Documentation
+
+- **[Pricing Agent Runbook & Spec](docs/pricing-agent.md)** - Complete specification and operational guide for the GPT-4o pricing agent
+
 ## 📊 Components Installed
 
 ### 1. Grafana Dashboard & Alerts

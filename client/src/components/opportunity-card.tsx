@@ -263,6 +263,36 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
   const isNew = timeRemaining < (7 * 24 * 60 * 60 * 1000) && daysRemaining >= 6; // Posted recently
 
   const handleCardClick = () => {
+    // Track opportunity click event
+    const trackClick = async () => {
+      try {
+        await apiFetch('/api/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            opportunityId: id,
+            type: 'opp_click',
+            userId: user?.id || null,
+            sessionId: window.sessionStorage.getItem('sessionId') || null,
+            metadata: {
+              outlet,
+              tier,
+              currentPrice: currentPriceState,
+              hasSubscription: hasActiveSubscription
+            }
+          })
+        });
+      } catch (error) {
+        // Don't block navigation on tracking errors
+        console.error('Failed to track click:', error);
+      }
+    };
+    
+    // Track the click (non-blocking)
+    trackClick();
+    
     if (!hasActiveSubscription) {
       setShowPaywallModal(true);
       return;

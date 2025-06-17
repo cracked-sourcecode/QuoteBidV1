@@ -9,6 +9,7 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { eq, sql } from "drizzle-orm";
 import { config } from "dotenv";
 import { opportunities } from "../../shared/schema";
+import { FEATURE_FLAGS } from "../../config/featureFlags";
 
 import { sendPricingNotificationEmail } from "../../server/lib/email";
 // Import database initialization for web push notifications
@@ -50,8 +51,12 @@ setInterval(() => {
   }
 }, 60 * 60 * 1000); // Every hour
 
-// Initialize database
-const neonSql = neon(process.env.DATABASE_URL!);
+// Initialize database with validation
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
+}
+const neonSql = neon(connectionString);
 const db = drizzle(neonSql);
 
 /**
@@ -113,6 +118,12 @@ export async function sendNotification(
 ): Promise<void> {
   console.log(`📨 Sending ${template} notification for opportunity ${opportunityId}...`);
 
+  // Check feature flags - silently return if notifications are disabled
+  if (!FEATURE_FLAGS.ENABLE_PRICE_EMAILS && !FEATURE_FLAGS.ENABLE_PRICE_PUSHES) {
+    console.log('🔕 Notification suppressed by feature flag');
+    return; // 🔇 silenced
+  }
+
   // Check email throttling - prevent sending emails too frequently for the same opportunity
   const now = Date.now();
   const lastEmailTime = lastEmailSentMap.get(opportunityId);
@@ -155,42 +166,50 @@ export async function sendNotification(
     },
   };
 
-  // Send web push notifications (always attempt, doesn't require configuration)
-  // DISABLED: Web push notifications not needed per user request
-  /*
-  try {
-    await sendWebPush(userIds, pushPayload[template]);
-    console.log(`📱 Sent ${template} push notification to ${userIds.length} users for opportunity ${opportunityId}`);
-  } catch (pushError) {
-    console.warn(`⚠️ Failed to send web push notifications:`, pushError);
-    // Don't fail the entire notification process if push fails
-  }
-  */
-  console.log(`📱 Web push notifications disabled for ${template} on opportunity ${opportunityId}`);
-
-  // Send email notifications using our centralized email system
-  try {
-    const success = await sendPricingNotificationEmail(
-      emails,
-      template,
-      opportunityTitle,
-      currentPrice
-    );
-
-    if (success) {
-      console.log(`✅ Sent ${template} email notification to ${emails.length} users for opportunity ${opportunityId}`);
-      
-      // Record successful email send time for throttling
-      lastEmailSentMap.set(opportunityId, now);
-      console.log(`📧 Email throttle timer set for opportunity ${opportunityId}. Next email allowed in ${EMAIL_THROTTLE_MINUTES} minutes.`);
-    } else {
-      console.error(`❌ Failed to send ${template} email notification for opportunity ${opportunityId}`);
+  // Send web push notifications only if enabled
+  if (FEATURE_FLAGS.ENABLE_PRICE_PUSHES) {
+    // DISABLED: Web push notifications not needed per user request
+    /*
+    try {
+      await sendWebPush(userIds, pushPayload[template]);
+      console.log(`📱 Sent ${template} push notification to ${userIds.length} users for opportunity ${opportunityId}`);
+    } catch (pushError) {
+      console.warn(`⚠️ Failed to send web push notifications:`, pushError);
+      // Don't fail the entire notification process if push fails
     }
+    */
+    console.log(`📱 Web push notifications disabled for ${template} on opportunity ${opportunityId}`);
+  } else {
+    console.log('🔕 Push notification suppressed by feature flag');
+  }
 
-  } catch (error) {
-    console.error(`❌ Failed to send ${template} email notification:`, error);
-    // TODO: send Slack DM via webhook so you know instantly
-    // Example: await fetch(process.env.SLACK_WEBHOOK_URL, { method: 'POST', body: JSON.stringify({ text: `QuoteBid email failed: ${error}` }) });
-    throw error;
+  // Send email notifications only if enabled
+  if (FEATURE_FLAGS.ENABLE_PRICE_EMAILS) {
+    try {
+      const success = await sendPricingNotificationEmail(
+        emails,
+        template,
+        opportunityTitle,
+        currentPrice
+      );
+
+      if (success) {
+        console.log(`✅ Sent ${template} email notification to ${emails.length} users for opportunity ${opportunityId}`);
+        
+        // Record successful email send time for throttling
+        lastEmailSentMap.set(opportunityId, now);
+        console.log(`📧 Email throttle timer set for opportunity ${opportunityId}. Next email allowed in ${EMAIL_THROTTLE_MINUTES} minutes.`);
+      } else {
+        console.error(`❌ Failed to send ${template} email notification for opportunity ${opportunityId}`);
+      }
+
+    } catch (error) {
+      console.error(`❌ Failed to send ${template} email notification:`, error);
+      // TODO: send Slack DM via webhook so you know instantly
+      // Example: await fetch(process.env.SLACK_WEBHOOK_URL, { method: 'POST', body: JSON.stringify({ text: `QuoteBid email failed: ${error}` }) });
+      throw error;
+    }
+  } else {
+    console.log('🔕 Email notification suppressed by feature flag');
   }
 } 

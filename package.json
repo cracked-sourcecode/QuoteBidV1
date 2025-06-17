@@ -16,6 +16,7 @@
     "debug-pitches": "NODE_ENV=development tsx server/debug-pitches.ts",
     "worker:once": "npx tsx apps/worker/pricingWorker.ts --once",
     "worker:dev": "npx tsx apps/worker/pricingWorker.ts",
+    "worker:pricing": "npx tsx apps/worker/pricingWorker.ts",
     "ws": "npx tsx apps/wsServer.ts",
     "email:preview": "email dev --dir emails/templates --port 3001",
     "full-stack": "concurrently \"FRONTEND_URL=http://localhost:5050 EMAIL_FROM='QuoteBid <no-reply@quotebid.co>' npm run dev\" \"npm run ws\" \"npm run worker:dev\"",

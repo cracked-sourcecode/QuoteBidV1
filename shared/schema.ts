@@ -125,6 +125,7 @@ export const opportunities = pgTable("opportunities", {
   // Pricing Engine v2 telemetry (added in step-3)
   meta: jsonb("meta"),
   lastDriftAt: bigint("last_drift_at", { mode: "bigint" }),
+  last_price_update: timestamp("last_price_update").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -254,6 +255,17 @@ export const emailClicks = pgTable("email_clicks", {
   id: serial("id").primaryKey(),
   opportunityId: integer("opportunity_id").notNull().references(() => opportunities.id, { onDelete: 'cascade' }),
   clickedAt: timestamp("clicked_at").notNull(),
+});
+
+// Events table for tracking user interactions
+export const events = pgTable("events", {
+  id: serial("id").primaryKey(),
+  opportunityId: integer("opportunity_id").notNull().references(() => opportunities.id, { onDelete: 'cascade' }),
+  type: text("type").notNull(), // 'opp_click', 'email_click', etc.
+  userId: integer("user_id"),
+  sessionId: text("session_id"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Insert schemas
