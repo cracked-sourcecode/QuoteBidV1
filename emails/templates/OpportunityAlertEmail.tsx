@@ -10,28 +10,33 @@ import {
 } from '@react-email/components';
 import EmailFooter from '../components/EmailFooter';
 
-interface PasswordResetEmailProps {
-  userFirstName?: string;
-  username?: string;
-  resetUrl: string;
+interface OpportunityAlertEmailProps {
+  userFirstName: string;
   frontendUrl: string;
+  opportunity: {
+    id: number;
+    title: string;
+    description: string;
+    publicationName: string;
+    industry: string;
+    deadline: string;
+    currentPrice: string;
+    trend: string;
+  };
 }
 
-export default function PasswordResetEmail({
+export default function OpportunityAlertEmail({
   userFirstName,
-  username,
-  resetUrl,
   frontendUrl,
-}: PasswordResetEmailProps) {
-  
-  const displayName = userFirstName || username || 'there';
+  opportunity,
+}: OpportunityAlertEmailProps) {
 
   return (
     <Html lang="en">
       <Head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Password Reset</title>
+        <title>New Opportunity</title>
       </Head>
       <Body style={main}>
         <Container style={container}>
@@ -41,26 +46,27 @@ export default function PasswordResetEmail({
             <Text style={logo}>
               <span style={quotePart}>Quote</span><span style={bidPart}>Bid</span>
             </Text>
+            <Text style={headerSubtitle}>🚨 New Opportunity</Text>
           </Section>
 
           {/* Content */}
           <Section style={content}>
             
-            <Heading style={title}>Reset Password</Heading>
-            
-            <Text style={greeting}>Hi {displayName},</Text>
+            <Text style={greeting}>Hi {userFirstName},</Text>
 
             <Text style={bodyText}>
-              Click the button below to reset your QuoteBid password:
+              New {opportunity.industry} opportunity:
             </Text>
 
-            <a href={resetUrl} style={resetButton}>
-              Reset Password
-            </a>
-
-            <Text style={linkText}>
-              Or copy this link: {resetUrl}
-            </Text>
+            {/* Opportunity */}
+            <div style={opportunityCard}>
+              <Text style={publicationName}>{opportunity.publicationName}</Text>
+              <Heading style={opportunityTitle}>{opportunity.title}</Heading>
+              <Text style={priceText}>{opportunity.currentPrice} • ⏰ {opportunity.deadline}</Text>
+              <a href={`${frontendUrl}/opportunities/${opportunity.id}`} style={pitchButton}>
+                Pitch Now
+              </a>
+            </div>
 
           </Section>
 
@@ -97,7 +103,7 @@ const header = {
 const logo = {
   fontSize: '24px',
   fontWeight: 'bold',
-  margin: '0',
+  margin: '0 0 8px 0',
   color: '#ffffff',
 };
 
@@ -109,33 +115,57 @@ const bidPart = {
   color: '#3b82f6',
 };
 
-const content = {
-  padding: '30px',
-  textAlign: 'center' as const,
+const headerSubtitle = {
+  color: '#fbbf24',
+  fontSize: '14px',
+  margin: '0',
 };
 
-const title = {
-  color: '#1e293b',
-  fontSize: '24px',
-  fontWeight: 'bold',
-  margin: '0 0 20px 0',
+const content = {
+  padding: '30px',
 };
 
 const greeting = {
   color: '#374151',
   fontSize: '16px',
-  margin: '0 0 16px 0',
-  textAlign: 'left' as const,
+  margin: '0 0 12px 0',
 };
 
 const bodyText = {
   color: '#4b5563',
   fontSize: '14px',
-  margin: '0 0 24px 0',
-  textAlign: 'left' as const,
+  margin: '0 0 20px 0',
 };
 
-const resetButton = {
+const opportunityCard = {
+  backgroundColor: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  borderRadius: '8px',
+  padding: '20px',
+  textAlign: 'center' as const,
+};
+
+const publicationName = {
+  color: '#1e293b',
+  fontSize: '14px',
+  fontWeight: 'bold',
+  margin: '0 0 8px 0',
+};
+
+const opportunityTitle = {
+  color: '#1e293b',
+  fontSize: '18px',
+  fontWeight: 'bold',
+  margin: '0 0 12px 0',
+};
+
+const priceText = {
+  color: '#6b7280',
+  fontSize: '14px',
+  margin: '0 0 16px 0',
+};
+
+const pitchButton = {
   backgroundColor: '#3b82f6',
   borderRadius: '8px',
   color: '#ffffff',
@@ -144,12 +174,4 @@ const resetButton = {
   fontWeight: 'bold',
   padding: '12px 24px',
   textDecoration: 'none',
-  margin: '0 0 20px 0',
-};
-
-const linkText = {
-  color: '#6b7280',
-  fontSize: '12px',
-  margin: '0',
-  wordBreak: 'break-all' as const,
 }; 

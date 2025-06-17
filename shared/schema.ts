@@ -62,12 +62,9 @@ export const users = pgTable("users", {
   isPaid: boolean("is_paid").default(false),
   hasAgreedToTerms: boolean("has_agreed_to_terms").default(false),
   emailPreferences: jsonb("email_preferences").default({
-    priceAlerts: true,
-    opportunityNotifications: true,
-    pitchStatusUpdates: true,
-    paymentConfirmations: true,
-    mediaCoverageUpdates: true,
-    placementSuccess: true
+    alerts: true,
+    notifications: true,
+    billing: true
   }),
   userPreferences: jsonb("user_preferences").default({
     theme: "dark",

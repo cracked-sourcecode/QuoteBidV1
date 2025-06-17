@@ -10,83 +10,46 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useTheme } from '@/hooks/use-theme';
 import { 
-  Bell, 
-  DollarSign, 
-  FileText, 
-  CheckCircle,
-  Newspaper,
-  TrendingDown,
-  Clock,
-  Mail
+  Mail, 
+  Key,
+  CheckCircle
 } from 'lucide-react';
 
 interface EmailPreferences {
-  priceAlerts: boolean;
-  opportunityNotifications: boolean;
-  pitchStatusUpdates: boolean;
-  paymentConfirmations: boolean;
-  mediaCoverageUpdates: boolean;
-  placementSuccess: boolean;
+  alerts: boolean;
+  notifications: boolean;
+  billing: boolean;
 }
 
 const EMAIL_CATEGORIES = [
   {
-    id: 'priceAlerts',
-    title: 'Price Drop Alerts',
-    description: 'Get notified when opportunity prices drop or reach last call',
-    icon: TrendingDown,
-    color: 'text-red-600',
-    bgColor: 'bg-red-100',
-    examples: ['Price dropped from $250 to $200', 'Last call - only 2 hours left!']
+    id: 'alerts',
+    title: 'Alerts',
+    description: 'Price drops and urgent opportunity notifications',
+    icon: Mail,
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-100',
+    examples: ['Price drop alerts', 'Last call notifications', 'Hot opportunity alerts']
   },
   {
-    id: 'opportunityNotifications',
-    title: 'New Opportunities',
-    description: 'Notifications about new opportunities in your industry',
-    icon: Bell,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100',
-    examples: ['New tech opportunity posted', 'Opportunity matches your expertise']
-  },
-  {
-    id: 'pitchStatusUpdates',
-    title: 'Pitch Status Updates',
-    description: 'Updates on your pitch submissions and responses',
-    icon: FileText,
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-100',
-    examples: ['Your pitch was accepted!', 'Pitch deadline reminder']
-  },
-  {
-    id: 'paymentConfirmations',
-    title: 'Payment Confirmations',
-    description: 'Receipts and billing confirmations',
-    icon: DollarSign,
+    id: 'billing',
+    title: 'Billing',
+    description: 'Payment confirmations and billing notifications',
+    icon: Key,
     color: 'text-green-600',
     bgColor: 'bg-green-100',
-    examples: ['Payment processed successfully', 'Invoice for successful placement']
+    examples: ['Payment confirmations', 'Billing receipts', 'Subscription updates']
   },
   {
-    id: 'mediaCoverageUpdates',
-    title: 'Media Coverage Updates',
-    description: 'Notifications when your articles are published',
-    icon: Newspaper,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100',
-    examples: ['Your article was published!', 'Media coverage added to portfolio']
-  },
-  {
-    id: 'placementSuccess',
-    title: 'Placement Success',
-    description: 'Confirmations of successful media placements',
-    icon: CheckCircle,
-    color: 'text-emerald-600',
-    bgColor: 'bg-emerald-100',
-    examples: ['Placement confirmed', 'Ready for billing notification']
+    id: 'notifications',
+    title: 'Notifications',
+    description: 'New opportunities and platform updates',
+    icon: Mail,
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-100',
+    examples: ['New opportunity alerts', 'Platform updates', 'Feature announcements']
   }
 ];
-
-
 
 export function EmailPreferences() {
   const { user } = useAuth();
@@ -110,7 +73,13 @@ export function EmailPreferences() {
   // Initialize local preferences when data is loaded
   useEffect(() => {
     if (preferences) {
-      setLocalPreferences(preferences);
+      // Ensure all preferences have proper defaults
+      const defaultedPreferences = {
+        alerts: preferences.alerts !== undefined ? preferences.alerts : true,
+        notifications: preferences.notifications !== undefined ? preferences.notifications : true,
+        billing: preferences.billing !== undefined ? preferences.billing : true
+      };
+      setLocalPreferences(defaultedPreferences);
       setHasChanges(false);
     }
   }, [preferences]);
@@ -173,7 +142,7 @@ export function EmailPreferences() {
       <div className="space-y-6">
         <div className={`h-8 w-64 ${theme === 'light' ? 'bg-gray-200' : 'bg-slate-700'} rounded animate-pulse`} />
         <div className="space-y-4">
-          {[1, 2, 3, 4, 5, 6].map(i => (
+          {[1, 2].map(i => (
             <div key={i} className={`h-24 ${theme === 'light' ? 'bg-gray-200' : 'bg-slate-700'} rounded animate-pulse`} />
           ))}
         </div>
@@ -210,7 +179,7 @@ export function EmailPreferences() {
       <Card className={`${theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-800 border-slate-700'} shadow-sm`}>
         <CardHeader>
           <CardTitle className={`${theme === 'light' ? 'text-gray-900' : 'text-slate-100'} flex items-center gap-2`}>
-            <Bell className="h-5 w-5 text-blue-400" />
+            <Mail className="h-5 w-5 text-blue-400" />
             Notification Preferences
           </CardTitle>
           <CardDescription className={theme === 'light' ? 'text-gray-600' : 'text-slate-400'}>
@@ -270,8 +239,6 @@ export function EmailPreferences() {
           })}
         </CardContent>
       </Card>
-
-
 
       {/* Save Status */}
       {updatePreferencesMutation.isPending && (

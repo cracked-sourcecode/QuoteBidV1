@@ -25,7 +25,7 @@ function getResendInstance(): Resend | null {
  */
 async function checkUserEmailPreference(
   email: string, 
-  preferenceType: 'priceAlerts' | 'opportunityNotifications' | 'pitchStatusUpdates' | 'paymentConfirmations' | 'mediaCoverageUpdates' | 'placementSuccess'
+  preferenceType: 'alerts' | 'notifications' | 'billing'
 ): Promise<boolean> {
   try {
     const { getDb } = await import('../db');
@@ -39,12 +39,9 @@ async function checkUserEmailPreference(
     }
 
     const defaultPreferences = {
-      priceAlerts: true,
-      opportunityNotifications: true,
-      pitchStatusUpdates: true,
-      paymentConfirmations: true,
-      mediaCoverageUpdates: true,
-      placementSuccess: true
+      alerts: true,
+      notifications: true,
+      billing: true
     };
 
     const preferences = user[0].emailPreferences ? 
@@ -263,7 +260,7 @@ export async function sendPricingNotificationEmail(
   // Filter emails based on user preferences
   const allowedEmails = [];
   for (const email of emails) {
-    const allowed = await checkUserEmailPreference(email, 'priceAlerts');
+    const allowed = await checkUserEmailPreference(email, 'alerts');
     if (allowed) {
       allowedEmails.push(email);
     } else {
@@ -485,12 +482,13 @@ export async function sendUserNotificationEmail(
   });
 
   // Map notification types to preference keys
-  const preferenceMap: Record<string, 'priceAlerts' | 'opportunityNotifications' | 'pitchStatusUpdates' | 'paymentConfirmations' | 'mediaCoverageUpdates' | 'placementSuccess'> = {
-    'opportunity': 'opportunityNotifications',
-    'pitch_status': 'pitchStatusUpdates', 
-    'payment': 'paymentConfirmations',
-    'media_coverage': 'mediaCoverageUpdates',
-    'system': 'opportunityNotifications' // Default for system notifications
+  const preferenceMap: Record<string, 'alerts' | 'notifications' | 'billing'> = {
+    'opportunity': 'notifications',
+    'pitch_status': 'notifications',
+    'payment': 'billing',
+    'media_coverage': 'notifications',
+    'system': 'notifications', // Default for system notifications
+    'price_drop': 'alerts' // Price drop alerts
   };
 
   // Check user preferences (skip for security-related emails)

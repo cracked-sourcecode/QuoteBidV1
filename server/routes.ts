@@ -1064,6 +1064,740 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // ============ PAYMENT ENDPOINTS ============
+  // --- PUBLIC REGISTRATION ENDPOINT (must be before any middleware) ---
+  app.post('/api/auth/register', async (req: Request, res: Response) => {
+    const { email, password, username, fullName, companyName, phone, industry } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+    if (!password) return res.status(400).json({ message: 'Password is required' });
+    if (!username) return res.status(400).json({ message: 'Username is required' });
+    if (!fullName) return res.status(400).json({ message: 'Full name is required' });
+    if (!companyName) return res.status(400).json({ message: 'Company name is required' });
+    if (!phone) return res.status(400).json({ message: 'Phone number is required' });
+    if (!industry) return res.status(400).json({ message: 'Industry is required' });
+    try {
+      // Check for existing email
+      let [userByEmail] = await getDb().select().from(users).where(eq(users.email, email));
+      if (userByEmail) {
+        return res.status(400).json({ message: 'User with this email already exists', field: 'email' });
+      }
+      // Check for existing username (case-insensitive)
+      let [userByUsername] = await getDb().select().from(users).where(sql`LOWER(${users.username}) = LOWER(${username})`);
+      if (userByUsername) {
+        return res.status(400).json({ message: 'Username already taken', field: 'username' });
+      }
+      // Check for existing phone (normalize to digits only)
+      const normalizedPhone = phone.replace(/\D/g, '');
+      let [userByPhone] = await getDb().select().from(users).where(sql`REPLACE(REPLACE(REPLACE(REPLACE(${users.phone_number}, '+', ''), '-', ''), ' ', ''), '()', '') LIKE ${'%' + normalizedPhone + '%'}`);
+      if (userByPhone) {
+        return res.status(400).json({ message: 'Phone number already in use', field: 'phone' });
+      }
+      const hashedPassword = await hashPassword(password);
+      await getDb().insert(users).values({
+        username,
+        fullName,
+        email,
+        password: hashedPassword,
+        company_name: companyName,
+        phone_number: phone,
+        industry,
+        signup_stage: 'payment',
+        profileCompleted: false,
+        premiumStatus: 'free',
+        subscription_status: 'inactive',
+        userPreferences: {
+          theme: "dark",
+          notifications: true,
+          language: "en"
+        }
+      });
+      const [user] = await getDb().select().from(users).where(eq(users.email, email));
+      const token = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          signup_stage: user.signup_stage,
+          wizard: true
+        },
+        process.env.JWT_SECRET || 'quotebid_secret',
+        { expiresIn: '7d' }
+      );
+      res.json({
+        success: true,
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          signup_stage: user.signup_stage
+        }
+      });
+    } catch (error: any) {
+      console.error('Error registering user:', error);
+      res.status(500).json({ message: 'Failed to register user' });
+    }
+  });
+
+  // Unified signup start endpoint used by new registration flow
+  app.post('/api/auth/signup/start', startSignup);
+
+  // --- PUBLIC ENDPOINTS (must be before any middleware) ---
+  app.get('/api/test-public', (req, res) => res.json({ ok: true }));
+
+  app.get('/api/users/check-unique', async (req, res) => {
+    try {
+      const { field, value } = req.query;
+      console.log('► [check-unique] field:', field, 'value:', value);
+
+      if (!field || !value || typeof field !== 'string' || typeof value !== 'string') {
+        console.log('► [check-unique] Invalid field or value');
+        return res.status(400).json({ error: 'Invalid field or value' });
+      }
+      type ValidField = 'username' | 'email' | 'phone';
+      if (!['username', 'email', 'phone'].includes(field)) {
+        console.log('► [check-unique] Invalid field name:', field);
+        return res.status(400).json({ error: 'Invalid field name' });
+      }
+      const validField = field as ValidField;
+      const column = validField === 'phone' ? 'phone_number' : validField;
+
+      // Normalize the input value based on field type
+      let normalizedValue = value;
+      if (validField === 'email' || validField === 'username') {
+        normalizedValue = value.toLowerCase().trim();
+      } else if (validField === 'phone') {
+        // Remove non-numeric characters from phone number for consistent comparison
+        normalizedValue = value.replace(/\D/g, '');
+        // Ensure we're not searching with an empty string
+        if (normalizedValue.length === 0) {
+          return res.json({ unique: false, error: 'Invalid phone format' });
+        }
+      }
+
+      // Defensive: check DB connection
+      let existingUser: any[] = [];
+      try {
+        // For username and email: case-insensitive search
+        if (validField === 'email' || validField === 'username') {
+          existingUser = await getDb()
+            .select()
+            .from(users)
+            .where(sql`LOWER(${users[column]}) = LOWER(${normalizedValue})`)
+            .limit(1);
+        } 
+        // For phone: search for the normalized phone number
+        else if (validField === 'phone') {
+          existingUser = await getDb()
+            .select()
+            .from(users)
+            .where(sql`REPLACE(REPLACE(REPLACE(REPLACE(${users.phone_number}, '+', ''), '-', ''), ' ', ''), '()', '') LIKE ${'%' + normalizedValue + '%'}`)
+            .limit(1);
+        }
+      } catch (dbErr: any) {
+        console.error('► [check-unique] DB error:', dbErr);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      console.log('► [check-unique] Found:', existingUser?.length || 0);
+      return res.json({ unique: !existingUser || existingUser.length === 0 });
+    } catch (error: any) {
+      console.error('► [check-unique] General error:', error);
+      return res.status(500).json({ error: 'Failed to check uniqueness' });
+    }
+  });
+
+  // API Routes for pitch messages
+  app.get('/api/pitch-messages/:pitchId', requireAdminAuth, async (req, res) => {
+    try {
+      const { pitchId } = req.params;
+      
+      // Check if the pitch exists
+      const pitch = await storage.getPitchById(parseInt(pitchId));
+      if (!pitch) {
+        return res.status(404).json({ error: 'Pitch not found' });
+      }
+      
+      const messages = await storage.getPitchMessages(parseInt(pitchId));
+      res.json(messages);
+    } catch (error: any) {
+      console.error('Error fetching pitch messages:', error);
+      res.status(500).json({ error: 'Failed to fetch messages' });
+    }
+  });
+
+  app.post('/api/pitch-messages/:pitchId', requireAdminAuth, async (req, res) => {
+    try {
+      const { pitchId } = req.params;
+      const { message } = req.body;
+      
+      if (!message || !message.trim()) {
+        return res.status(400).json({ error: 'Message content is required' });
+      }
+      
+      // Check if the pitch exists
+      const pitch = await storage.getPitchById(parseInt(pitchId));
+      if (!pitch) {
+        return res.status(404).json({ error: 'Pitch not found' });
+      }
+      
+      // Get admin user ID from session
+      const adminId = req.session.adminUser?.id;
+      if (typeof adminId !== 'number') {
+        return res.status(400).json({ error: 'Admin ID not found in session' });
+      }
+      
+      const newMessage = await storage.createPitchMessage({
+        pitchId: parseInt(pitchId),
+        senderId: adminId,
+        isAdmin: true,
+        message,
+        isRead: false
+      });
+      
+      res.status(201).json(newMessage);
+    } catch (error: any) {
+      console.error('Error creating pitch message:', error);
+      res.status(500).json({ error: 'Failed to send message' });
+    }
+  });
+
+  app.post('/api/pitch-messages/mark-read/:pitchId', requireAdminAuth, async (req, res) => {
+    try {
+      const { pitchId } = req.params;
+      
+      // Check if the pitch exists
+      const pitch = await storage.getPitchById(parseInt(pitchId));
+      if (!pitch) {
+        return res.status(404).json({ error: 'Pitch not found' });
+      }
+      
+      // Get admin user ID from session
+      const adminId = req.session.adminUser?.id;
+      
+      if (!adminId) {
+        return res.status(400).json({ error: 'Admin ID not found in session' });
+      }
+      
+      await storage.markPitchMessagesAsRead(parseInt(pitchId), adminId);
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error marking messages as read:', error);
+      res.status(500).json({ error: 'Failed to update messages' });
+    }
+  });
+  // Add public PDF routes and signup wizard routes BEFORE authentication setup
+  // These routes need to be accessible without authentication
+  app.get('/api/onboarding/agreement.pdf', serveAgreementPDF);
+  app.post('/api/onboarding/agreement/upload', handleAgreementUpload);
+  
+  // Register signup stage routes before auth setup
+  app.use('/api/signup-stage', signupStageRouter);
+  // @claude-fix: Add new subscription route
+  app.use('/api/stripe', createSubscriptionRouter);
+  app.use('/api/signup/state', signupStateRouter);
+  app.use('/api/signup', signupRouter);
+  app.use('/api/messages', messagesRouter);
+  
+  // Serve the agreement HTML template
+  app.get('/api/onboarding/agreement.html', serveAgreementHTML);
+  
+  // Generate PDF from HTML and signature
+  app.post('/api/generate-pdf', handleGeneratePDF);
+  
+  // Upload signed agreement
+  app.post('/api/upload-agreement', pdfUpload.single('pdf'), handleSignupAgreementUpload);
+  
+  // AI-powered article information extraction endpoint
+  app.post("/api/ai/extract-article-info", jwtAuth, async (req: Request, res: Response) => {
+    try {
+      // Check authentication manually since we're having middleware issues
+      if (!req.user || !req.user!.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const { url } = req.body;
+
+      if (!url) {
+        return res.status(400).json({ error: 'URL is required' });
+      }
+
+      console.log('AI extraction request for URL:', url);
+
+      // Use the much better getArticleTitle function
+      const title = await getArticleTitle(url);
+      
+      if (title === 'TITLE_NOT_FOUND') {
+        return res.status(400).json({ error: 'Could not extract title from the webpage' });
+      }
+
+      console.log('Successfully extracted title:', title);
+
+      // Extract publication name from URL domain
+      let publicationName = '';
+      try {
+        const urlObj = new URL(url);
+        const hostname = urlObj.hostname.toLowerCase();
+        
+        // Common publication mappings
+        const publicationMap: { [key: string]: string } = {
+          'techcrunch.com': 'TechCrunch',
+          'www.techcrunch.com': 'TechCrunch',
+          'forbes.com': 'Forbes',
+          'www.forbes.com': 'Forbes',
+          'cnn.com': 'CNN',
+          'www.cnn.com': 'CNN',
+          'bbc.com': 'BBC',
+          'www.bbc.com': 'BBC',
+          'reuters.com': 'Reuters',
+          'www.reuters.com': 'Reuters',
+          'bloomberg.com': 'Bloomberg',
+          'www.bloomberg.com': 'Bloomberg',
+          'wsj.com': 'Wall Street Journal',
+          'www.wsj.com': 'Wall Street Journal',
+          'nytimes.com': 'New York Times',
+          'www.nytimes.com': 'New York Times',
+          'businessinsider.com': 'Business Insider',
+          'www.businessinsider.com': 'Business Insider',
+          'marketwatch.com': 'MarketWatch',
+          'www.marketwatch.com': 'MarketWatch',
+          'cnbc.com': 'CNBC',
+          'www.cnbc.com': 'CNBC',
+          'yahoo.com': 'Yahoo',
+          'finance.yahoo.com': 'Yahoo Finance',
+          'news.yahoo.com': 'Yahoo News'
+        };
+        
+        if (publicationMap[hostname]) {
+          publicationName = publicationMap[hostname];
+        } else {
+          // Generic extraction for unknown domains
+          const domain = hostname.replace(/^www\./, '');
+          const parts = domain.split('.');
+          if (parts.length >= 2) {
+            const mainDomain = parts[parts.length - 2];
+            publicationName = mainDomain.charAt(0).toUpperCase() + mainDomain.slice(1);
+          }
+        }
+      } catch (urlError: any) {
+        console.error('Error extracting publication from URL:', urlError);
+        publicationName = 'Unknown Publication';
+      }
+
+      // Return the extracted data
+      res.json({
+        title: title,
+        publication: publicationName,
+        date: null // We're not extracting dates as requested
+      });
+
+    } catch (error: any) {
+      console.error('AI extraction error:', error);
+      res.status(500).json({ error: 'Failed to extract article information: ' + (error instanceof Error ? error.message : String(error)) });
+    }
+  });
+
+  // Helper function to extract publication name from URL
+  function extractPublicationFromURL(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname.toLowerCase();
+      
+      // Define common publication domains
+      const publicationMap: { [key: string]: string } = {
+        'finance.yahoo.com': 'Yahoo Finance',
+        'www.yahoo.com': 'Yahoo',
+        'yahoo.com': 'Yahoo',
+        'cnn.com': 'CNN',
+        'www.cnn.com': 'CNN',
+        'bbc.com': 'BBC',
+        'www.bbc.com': 'BBC',
+        'reuters.com': 'Reuters',
+        'www.reuters.com': 'Reuters',
+        'bloomberg.com': 'Bloomberg',
+        'www.bloomberg.com': 'Bloomberg',
+        'wsj.com': 'Wall Street Journal',
+        'www.wsj.com': 'Wall Street Journal',
+        'nytimes.com': 'New York Times',
+        'www.nytimes.com': 'New York Times',
+        'forbes.com': 'Forbes',
+        'www.forbes.com': 'Forbes',
+        'techcrunch.com': 'TechCrunch',
+        'www.techcrunch.com': 'TechCrunch',
+        'businessinsider.com': 'Business Insider',
+        'www.businessinsider.com': 'Business Insider',
+        'marketwatch.com': 'MarketWatch',
+        'www.marketwatch.com': 'MarketWatch',
+        'cnbc.com': 'CNBC',
+        'www.cnbc.com': 'CNBC'
+      };
+      
+      if (publicationMap[hostname]) {
+        return publicationMap[hostname];
+      }
+      
+      // Generic extraction for unknown domains
+      let domain = hostname.replace(/^www\./, '');
+      
+      // Handle subdomains like finance.yahoo.com
+      const parts = domain.split('.');
+      if (parts.length > 2 && parts[0] !== 'www') {
+        // For subdomains like finance.yahoo.com
+        const subdomain = parts[0];
+        const mainDomain = parts.slice(1).join('.');
+        
+        if (mainDomain === 'yahoo.com') {
+          return `Yahoo ${subdomain.charAt(0).toUpperCase() + subdomain.slice(1)}`;
+        }
+      }
+      
+      // Extract main domain name and capitalize
+      const mainDomain = parts[parts.length - 2];
+      return mainDomain.charAt(0).toUpperCase() + mainDomain.slice(1);
+      
+    } catch (error: any) {
+      console.error('Error extracting publication from URL:', error);
+      return 'Publication';
+    }
+  }
+  
+  // Allow JWT-based auth for API requests
+  app.use(jwtAuth);
+  // Set up regular user authentication
+  setupAuth(app);
+
+  // Endpoint to report the current signup stage for the authenticated user
+  app.get('/api/auth/progress', ensureAuth, (req: Request, res: Response) => {
+    const stage = (req.user as any).signup_stage || 'agreement';
+    res.json({ stage });
+  });
+
+  // Endpoint to update the signup stage for the authenticated user
+  app.patch('/api/auth/stage', ensureAuth, async (req: Request, res: Response) => {
+    const { stage } = req.body as { stage?: string };
+    if (!stage) {
+      return res.status(400).json({ message: 'Stage required' });
+    }
+    await getDb()
+      .update(users)
+      .set({ signup_stage: stage })
+      .where(eq(users.id, req.user!.id));
+    res.json({ success: true });
+  });
+
+  // Signup stage router is already registered above; duplicate registration removed
+  // to avoid redundant handlers after auth setup.
+
+  // Password reset endpoints
+  app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+      
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: 'Please enter a valid email address' });
+      }
+      
+      // Check if user exists with this email
+      const user = await storage.getUserByEmail(email);
+      
+      // Always return success response for security (don't reveal if email exists)
+      // But only send email if user actually exists
+      if (user) {
+        // Generate a JWT reset token with 1 hour expiration
+        const resetToken = jwt.sign(
+          { 
+            userId: user.id, 
+            type: 'password-reset',
+            email: user.email 
+          },
+          process.env.JWT_SECRET || 'default-secret',
+          { expiresIn: '1h' }
+        );
+        
+        // Send the password reset email
+        try {
+          const success = await sendPasswordResetEmail(
+            user.email,
+            resetToken,
+            user.username
+          );
+          
+          if (!success) {
+            console.error('❌ Failed to send password reset email to:', user.email);
+          } else {
+            console.log('✅ Password reset email sent to:', user.email);
+          }
+        } catch (emailError) {
+          console.error('❌ Error sending password reset email:', emailError);
+        }
+      } else {
+        console.log(`🔍 Password reset requested for non-existent email: ${email}`);
+      }
+      
+      // Always return success to prevent email enumeration attacks
+      res.setHeader('Content-Type', 'application/json');
+      res.json({ 
+        success: true, 
+        message: 'If an account with that email exists, we\'ve sent a password reset link.' 
+      });
+    } catch (error: any) {
+      console.error('Error processing forgot password request:', error);
+      res.setHeader('Content-Type', 'application/json');
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/auth/validate-reset-token', async (req: Request, res: Response) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ message: 'Token is required' });
+      }
+      
+      // Verify the JWT token
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as any;
+        
+        // Check if token is for password reset and not expired
+        if (decoded.type !== 'password-reset') {
+          return res.status(400).json({ message: 'Invalid token type' });
+        }
+        
+        // Check if user still exists
+        const user = await storage.getUser(decoded.userId);
+        if (!user) {
+          return res.status(400).json({ message: 'User not found' });
+        }
+        
+        res.json({ valid: true });
+      } catch (jwtError) {
+        return res.status(400).json({ message: 'Invalid or expired reset token' });
+      }
+    } catch (error: any) {
+      console.error('Error validating reset token:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/auth/reset-password', async (req: Request, res: Response) => {
+    try {
+      const { token, newPassword } = req.body;
+      
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: 'Token and new password are required' });
+      }
+      
+      // Comprehensive password validation
+      const passwordValidation = {
+        minLength: newPassword.length >= 8,
+        uppercase: /[A-Z]/.test(newPassword),
+        lowercase: /[a-z]/.test(newPassword),
+        number: /\d/.test(newPassword),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword),
+      };
+
+      const isValidPassword = Object.values(passwordValidation).every(Boolean);
+      
+      if (!isValidPassword) {
+        const missing = [];
+        if (!passwordValidation.minLength) missing.push('at least 8 characters');
+        if (!passwordValidation.uppercase) missing.push('one uppercase letter');
+        if (!passwordValidation.lowercase) missing.push('one lowercase letter');
+        if (!passwordValidation.number) missing.push('one number');
+        if (!passwordValidation.special) missing.push('one special character');
+        
+        return res.status(400).json({ 
+          message: `Password must contain ${missing.join(', ')}`
+        });
+      }
+      
+      // Verify the JWT token
+      let decoded: any;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as any;
+        
+        // Check if token is for password reset
+        if (decoded.type !== 'password-reset') {
+          return res.status(400).json({ message: 'Invalid token type' });
+        }
+      } catch (jwtError) {
+        return res.status(400).json({ message: 'Invalid or expired reset token' });
+      }
+      
+      // Get the user
+      const user = await storage.getUser(decoded.userId);
+      if (!user) {
+        return res.status(400).json({ message: 'User not found' });
+      }
+      
+      // Hash the new password
+      const { hashPassword } = await import('./utils/passwordUtils');
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Update user's password
+      await getDb()
+        .update(users)
+        .set({
+          password: hashedPassword,
+        })
+        .where(eq(users.id, user.id));
+      
+      res.json({ success: true, message: 'Password reset successfully' });
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Set up admin authentication
+  setupAdminAuth(app);
+  
+  // Apply onboarding enforcement middleware to protected routes
+  // NOTE: We're NOT applying this to all /api routes anymore
+  // Instead, we'll apply it selectively to routes that need it
+  
+  // Notifications API - these need authentication
+  app.get("/api/notifications", enforceOnboarding, async (req: Request, res: Response) => {
+    try {
+      if (!isRequestAuthenticated(req)) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      const userId = req.user!.id;
+      
+      // Get notifications for the user, ordered by most recent first
+      const userNotifications = await getDb().select()
+        .from(notifications)
+        .where(eq(notifications.userId, userId))
+        .orderBy(desc(notifications.createdAt));
+
+      return res.json(userNotifications);
+    } catch (error: any) {
+      console.error('Error fetching notifications:', error);
+      return res.status(500).json({ message: 'Failed to fetch notifications' });
+    }
+  });
+  
+  // Count unread notifications
+  app.get("/api/notifications/unread-count", async (req: Request, res: Response) => {
+    try {
+      if (!isRequestAuthenticated(req)) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      const userId = req.user!.id;
+      
+      // Count unread notifications
+      const unreadCount = await getDb().select({ count: sql<number>`count(*)` })
+        .from(notifications)
+        .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+
+      return res.json({ count: Number(unreadCount[0]?.count || 0) });
+    } catch (error: any) {
+      console.error('Error counting unread notifications:', error);
+      return res.status(500).json({ message: 'Failed to count notifications' });
+    }
+  });
+  
+  // Mark a notification as read
+  app.post("/api/notifications/:id/read", async (req: Request, res: Response) => {
+    try {
+      if (!isRequestAuthenticated(req)) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      const notificationId = parseInt(req.params.id);
+      const userId = req.user!.id;
+
+      // Check if notification belongs to user
+      const notification = await getDb().select()
+        .from(notifications)
+        .where(eq(notifications.id, notificationId))
+        .then(results => results[0]);
+
+      if (!notification || notification.userId !== userId) {
+        return res.status(404).json({ message: 'Notification not found' });
+      }
+
+      // Update notification
+      await getDb().update(notifications)
+        .set({ isRead: true })
+        .where(eq(notifications.id, notificationId));
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error marking notification as read:', error);
+      return res.status(500).json({ message: 'Failed to update notification' });
+    }
+  });
+  
+  // Mark all notifications as read
+  app.post("/api/notifications/mark-all-read", async (req: Request, res: Response) => {
+    try {
+      if (!isRequestAuthenticated(req)) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      const userId = req.user!.id;
+
+      // Update all unread notifications
+      await getDb().update(notifications)
+        .set({ isRead: true })
+        .where(eq(notifications.userId, userId));
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error marking all notifications as read:', error);
+      return res.status(500).json({ message: 'Failed to update notifications' });
+    }
+  });
+  
+  // Create sample notifications for testing - DISABLED for real testing
+  app.post("/api/notifications/create-samples", async (req: Request, res: Response) => {
+    return res.status(404).json({ 
+      message: 'Sample notification creation is disabled. Real notifications are now generated automatically based on platform events.' 
+    });
+  });
+  
+  // Clear all notifications for a user (for demo/testing purposes)
+  app.delete("/api/notifications/clear-all", async (req: Request, res: Response) => {
+    try {
+      if (!req.isAuthenticated?.()) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'User ID not found' });
+      }
+
+      // Delete all notifications for this user
+      await getDb().delete(notifications)
+        .where(eq(notifications.userId, userId));
+
+      console.log(`Cleared all notifications for user ${userId}`);
+      return res.json({ success: true, message: 'All notifications cleared successfully' });
+    } catch (error: any) {
+      console.error('Error clearing notifications:', error);
+      return res.status(500).json({ message: 'Failed to clear notifications' });
+    }
+  });
+  
+  // Register admin registration endpoint
+  app.post("/api/admin/register", registerAdmin);
+  
+  // Add endpoint to delete admin users
+  app.post("/api/admin/delete", deleteAdminUser);
+  
+  // Simple endpoint to create a default admin user (for testing/setup)
+  app.post("/api/admin/create-default", createDefaultAdmin);
+  
+  // ============ PAYMENT ENDPOINTS ============
 
   // Create a payment intent for one-time payments or bid authorization
   app.post("/api/create-payment-intent", async (req: Request, res: Response) => {
@@ -3656,22 +4390,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Email Preview Routes for Development - ULTIMATE LIVE RELOAD
   app.get("/api/email-preview/:template", async (req: Request, res: Response) => {
     const { template } = req.params;
+    const queryTimestamp = req.query.t || Date.now();
+    const queryRandom = req.query.r || Math.random().toString(36).substring(2);
     
     // ULTIMATE CACHE DESTRUCTION
     const reloadId = Date.now() + Math.random();
     
     console.log(`\n🚀 ======= EMAIL LIVE RELOAD START (${reloadId}) =======`);
+    console.log(`📊 Query params - t: ${queryTimestamp}, r: ${queryRandom}`);
     
     // DESTROY ALL CACHING - CLIENT AND SERVER
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0, private, no-transform');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '-1');
     res.setHeader('Last-Modified', new Date().toUTCString());
-    res.setHeader('ETag', `"live-reload-${reloadId}"`);
+    res.setHeader('ETag', `"live-reload-${reloadId}-${queryTimestamp}-${queryRandom}"`);
     res.setHeader('Vary', '*');
     res.setHeader('X-Accel-Expires', '0');
     res.setHeader('X-Live-Reload-ID', reloadId.toString());
     res.setHeader('X-Force-Fresh', 'true');
+    res.setHeader('X-Cache-Bust', `${queryTimestamp}-${queryRandom}`);
     
     // ES MODULE LIVE RELOAD (no require.cache manipulation needed)
     console.log('🔥 ES MODULE LIVE RELOAD - Using dynamic imports with cache busting');
@@ -3695,9 +4433,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`🔥 LIVE RENDERING WelcomeEmail - Time: ${liveTimestamp} Hash: ${randomHash}`);
           
           // DYNAMIC IMPORT WITH CACHE BYPASS (ES Module Compatible)
-          const cacheBustQuery = `?t=${liveTimestamp}&h=${randomHash}`;
+          const cacheBustQuery = `?t=${liveTimestamp}&h=${randomHash}&q=${queryTimestamp}&r=${queryRandom}`;
           const modulePath = `../emails/templates/WelcomeEmail.tsx${cacheBustQuery}`;
           console.log(`📂 Dynamic import path: ${modulePath}`);
+          console.log(`🔄 Using query params for extra cache busting: t=${queryTimestamp}, r=${queryRandom}`);
           
           // Fresh ES module import with cache busting
           const FreshWelcomeModule = await import(modulePath);
@@ -3746,98 +4485,1041 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`🎨 HTML Preview: ${emailHtml.substring(0, 200)}...`);
           break;
           
-        case 'price-drop':
-          emailHtml = await render(PriceDropAlert({
-            opportunityTitle: 'Looking For Capital Market Experts For A Story on eVTOL Stocks',
-            oldPrice: 345,
-            newPrice: 275,
-            outlet: 'Yahoo Finance',
-            deadline: 'December 15, 2024 at 3:00 PM EST',
-            frontendUrl,
-            opportunityId: '17',
-          }));
-          break;
+
           
-        case 'notification-opportunity':
-          emailHtml = await render(NotificationEmail({
-            type: 'opportunity',
-            title: 'New PR Opportunity Available',
-            message: 'A major tech publication is seeking expert commentary on emerging AI trends. This is a high-value opportunity with excellent exposure potential.',
-            userName: 'John',
-            linkUrl: `${frontendUrl}/opportunities`,
-            linkText: 'View Opportunities',
-          }));
-          break;
-          
-        case 'notification-pitch-status':
-          emailHtml = await render(NotificationEmail({
-            type: 'pitch_status',
-            title: 'Your Pitch Was Accepted!',
-            message: 'Congratulations! Your pitch for the Bloomberg AI story has been accepted. You will be featured in the upcoming article.',
-            userName: 'John',
-            linkUrl: `${frontendUrl}/my-pitches`,
-            linkText: 'View My Pitches',
-          }));
-          break;
-          
-        case 'notification-payment':
-          emailHtml = await render(NotificationEmail({
-            type: 'payment',
-            title: 'Payment Processed',
-            message: 'Your payment of $275 for the Yahoo Finance placement has been successfully processed. Thank you for using QuoteBid!',
-            userName: 'John',
-            linkUrl: `${frontendUrl}/billing`,
-            linkText: 'View Billing',
-          }));
-          break;
-          
-        case 'notification-media-coverage':
-          emailHtml = await render(NotificationEmail({
-            type: 'media_coverage',
-            title: 'Your Article is Live!',
-            message: 'Your expert commentary is now published! Check out your featured quote in the latest Yahoo Finance article.',
-            userName: 'John',
-            linkUrl: `${frontendUrl}/account?tab=media`,
-            linkText: 'View My Coverage',
-          }));
-          break;
-          
-        case 'password-reset':
-          // Inline HTML version from server/lib/email.ts
+                case 'password-reset':
           const resetToken = 'sample-jwt-token-for-preview';
           const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
           emailHtml = `
             <!DOCTYPE html>
+            <html lang="en">
+              <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+                <meta http-equiv="Pragma" content="no-cache">
+                <meta http-equiv="Expires" content="0">
+                <meta name="cache-bust" content="${queryTimestamp}-${queryRandom}-${reloadId}">
+                <title>Password Reset - QuoteBid (Live Preview ${reloadId})</title>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+                <script>
+                  // AGGRESSIVE CACHE BUSTING - Force fresh page loads
+                  console.log('🔄 Email Preview Cache Buster Active - ID: ${reloadId}');
+                  
+                  // Auto-refresh every 30 seconds if this is a dev preview
+                  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    console.log('🔄 Dev mode detected - Setting up auto-refresh');
+                    
+                    // Add timestamp to prevent caching
+                    const originalFetch = window.fetch;
+                    window.fetch = function(...args) {
+                      if (args[0] && typeof args[0] === 'string') {
+                        const url = new URL(args[0], window.location.href);
+                        url.searchParams.set('cache_bust', Date.now().toString());
+                        args[0] = url.toString();
+                      }
+                      return originalFetch.apply(this, args);
+                    };
+                    
+                    // Force reload when user switches back to tab (for better development experience)
+                    document.addEventListener('visibilitychange', function() {
+                      if (!document.hidden) {
+                        console.log('🔄 Tab became visible - Checking for updates');
+                        setTimeout(() => {
+                          const newUrl = new URL(window.location.href);
+                          newUrl.searchParams.set('t', Date.now().toString());
+                          newUrl.searchParams.set('r', Math.random().toString(36).substring(2));
+                          if (newUrl.href !== window.location.href) {
+                            window.location.href = newUrl.href;
+                          }
+                        }, 500);
+                      }
+                    });
+                  }
+                  
+                  // Disable browser back/forward cache
+                  window.addEventListener('pageshow', function(event) {
+                    if (event.persisted) {
+                      console.log('🔄 Page loaded from cache - Forcing reload');
+                      window.location.reload();
+                    }
+                  });
+                </script>
+                <style>
+                  body {
+                    margin: 0;
+                    padding: 20px;
+                    min-height: 100vh;
+                    background-color: #0a0a0b;
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                    background-image: radial-gradient(circle at 25% 25%, #1a1a2e 0%, transparent 50%), radial-gradient(circle at 75% 75%, #16213e 0%, transparent 50%);
+                  }
+                  .container {
+                    background: linear-gradient(145deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f0f23 100%);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 24px;
+                    margin: 0 auto;
+                    max-width: 680px;
+                    overflow: hidden;
+                    box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                    position: relative;
+                  }
+                  .floating-element-1 {
+                    position: absolute;
+                    top: 20px;
+                    right: 20px;
+                    width: 100px;
+                    height: 100px;
+                    background: linear-gradient(45deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+                    border-radius: 50%;
+                    filter: blur(40px);
+                  }
+                  .floating-element-2 {
+                    position: absolute;
+                    bottom: 30px;
+                    left: 30px;
+                    width: 80px;
+                    height: 80px;
+                    background: linear-gradient(45deg, rgba(59, 130, 246, 0.15), rgba(147, 51, 234, 0.1));
+                    border-radius: 50%;
+                    filter: blur(30px);
+                  }
+                  .header {
+                    background: linear-gradient(135deg, rgba(15, 15, 35, 0.95) 0%, rgba(26, 26, 46, 0.95) 50%, rgba(22, 33, 62, 0.95) 100%);
+                    padding: 60px 40px;
+                    text-align: center;
+                    position: relative;
+                    overflow: hidden;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                  }
+                  .logo-heading {
+                    margin: 0 0 20px 0;
+                    font-size: 48px;
+                    font-weight: 900;
+                    letter-spacing: -0.04em;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 12px;
+                    flex-wrap: wrap;
+                  }
+                  .quote-part {
+                    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #e2e8f0 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                  }
+                  .bid-part {
+                    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                  }
+                  .beta-badge {
+                    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(147, 51, 234, 0.3));
+                    border: 1px solid rgba(99, 102, 241, 0.4);
+                    border-radius: 12px;
+                    padding: 6px 12px;
+                    font-size: 11px;
+                    font-weight: 800;
+                    color: #a5b4fc;
+                    letter-spacing: 0.1em;
+                    backdrop-filter: blur(10px);
+                  }
+                  .main-title {
+                    color: #ffffff;
+                    font-size: 32px;
+                    font-weight: 800;
+                    margin: 0;
+                    line-height: 1.2;
+                  }
+                  .content {
+                    padding: 50px 40px;
+                    background: rgba(255, 255, 255, 0.02);
+                  }
+                  .greeting {
+                    color: #ffffff;
+                    font-size: 24px;
+                    font-weight: 700;
+                    margin: 0 0 20px 0;
+                  }
+                  .message-text {
+                    color: #e2e8f0;
+                    font-size: 18px;
+                    line-height: 1.6;
+                    margin: 0 0 20px 0;
+                    font-weight: 500;
+                  }
+                  .security-notice {
+                    color: #cbd5e1;
+                    font-size: 17px;
+                    line-height: 1.7;
+                    margin: 20px 0;
+                    padding: 20px;
+                    background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(239, 68, 68, 0.1));
+                    border-radius: 16px;
+                    border: 1px solid rgba(220, 38, 38, 0.2);
+                  }
+                  .button-container {
+                    text-align: center;
+                    margin: 40px 0;
+                  }
+                  .reset-button {
+                    display: inline-block;
+                    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
+                    color: #ffffff;
+                    text-decoration: none;
+                    padding: 18px 36px;
+                    border-radius: 16px;
+                    font-size: 18px;
+                    font-weight: 700;
+                    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+                    border: none;
+                    transition: all 0.3s ease;
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                    letter-spacing: -0.01em;
+                  }
+                                     .footer {
+                     background: rgba(0, 0, 0, 0.2);
+                     padding: 40px;
+                     text-align: center;
+                     border-top: 1px solid rgba(255, 255, 255, 0.06);
+                   }
+                   .footer-logo {
+                     margin-bottom: 24px;
+                   }
+                   .footer-logo-text {
+                     margin: 0 0 8px 0;
+                     font-size: 28px;
+                     font-weight: 900;
+                     letter-spacing: -0.02em;
+                     display: flex;
+                     align-items: center;
+                     justify-content: center;
+                     gap: 8px;
+                   }
+                   .footer-quote {
+                     background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #e2e8f0 100%);
+                     -webkit-background-clip: text;
+                     -webkit-text-fill-color: transparent;
+                     background-clip: text;
+                   }
+                   .footer-bid {
+                     background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
+                     -webkit-background-clip: text;
+                     -webkit-text-fill-color: transparent;
+                     background-clip: text;
+                   }
+                   .footer-beta {
+                     background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(147, 51, 234, 0.3));
+                     border: 1px solid rgba(99, 102, 241, 0.4);
+                     border-radius: 8px;
+                     padding: 4px 8px;
+                     font-size: 10px;
+                     font-weight: 800;
+                     color: #a5b4fc;
+                     letter-spacing: 0.1em;
+                   }
+                   .footer-tagline {
+                     color: #94a3b8;
+                     font-size: 14px;
+                     margin: 0;
+                     font-weight: 500;
+                   }
+                   .footer-manage {
+                     margin-bottom: 24px;
+                   }
+                   .manage-preferences-btn {
+                     display: inline-block;
+                     background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2));
+                     border: 1px solid rgba(99, 102, 241, 0.3);
+                     color: #60a5fa;
+                     text-decoration: none;
+                     padding: 12px 24px;
+                     border-radius: 12px;
+                     font-size: 14px;
+                     font-weight: 600;
+                     transition: all 0.3s ease;
+                   }
+                   .footer-links {
+                     margin-bottom: 20px;
+                     display: flex;
+                     align-items: center;
+                     justify-content: center;
+                     gap: 12px;
+                     flex-wrap: wrap;
+                   }
+                   .footer-link {
+                     color: #60a5fa;
+                     text-decoration: none;
+                     font-size: 14px;
+                     font-weight: 500;
+                   }
+                   .footer-separator {
+                     color: #475569;
+                     font-size: 14px;
+                   }
+                   .footer-copyright {
+                     color: #94a3b8;
+                     font-size: 14px;
+                     margin: 8px 0;
+                     font-weight: 500;
+                   }
+                   .footer-mission {
+                     color: #cbd5e1;
+                     font-size: 14px;
+                     margin: 0;
+                     font-weight: 600;
+                     font-style: italic;
+                   }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="floating-element-1"></div>
+                  <div class="floating-element-2"></div>
+                  
+                  <div class="header">
+                    <h1 class="logo-heading">
+                      🔐 <span class="quote-part">Quote</span>
+                      <span class="bid-part">Bid</span>
+                      <span class="beta-badge">BETA</span>
+                    </h1>
+                    
+                    <h2 class="main-title">
+                      Password Reset Request
+                    </h2>
+                  </div>
+
+                  <div class="content">
+                    <p class="greeting">Hi John,</p>
+                    
+                    <p class="message-text">
+                      We received a request to reset your QuoteBid account password. If you made this request, click the button below to reset your password:
+                    </p>
+                    
+                    <div class="button-container">
+                      <a href="${resetUrl}" class="reset-button">
+                        🔑 Reset My Password
+                      </a>
+                    </div>
+                    
+                    <div class="security-notice">
+                      <strong style="color: #fecaca;">Security Notice:</strong><br/>
+                      This link will expire in 1 hour for security reasons. If you didn't request this password reset, please ignore this email. Your password will remain unchanged. For security, this reset link can only be used once.
+                    </div>
+                  </div>
+
+                  <div class="footer">
+                    <div class="footer-logo">
+                      <h3 class="footer-logo-text">
+                        <span class="footer-quote">Quote</span><span class="footer-bid">Bid</span>
+                        <span class="footer-beta">BETA</span>
+                      </h3>
+                      <p class="footer-tagline">The World's First Live Marketplace for Earned Media</p>
+                    </div>
+                    
+                    <div class="footer-manage">
+                      <a href="${frontendUrl}/account?tab=email-preferences" class="manage-preferences-btn">
+                        📧 Manage Email Preferences
+                      </a>
+                    </div>
+                    
+                    <div class="footer-links">
+                      <a href="${frontendUrl}/terms" class="footer-link">Terms of Use</a>
+                      <span class="footer-separator">|</span>
+                      <a href="${frontendUrl}/privacy" class="footer-link">Privacy</a>
+                      <span class="footer-separator">|</span>
+                      <a href="${frontendUrl}/editorial-integrity" class="footer-link">Editorial Integrity</a>
+                    </div>
+                    
+                    <p class="footer-copyright">© 2025 QuoteBid Inc. All rights reserved.</p>
+                    <p class="footer-mission">Built For Experts, Not PR Agencies.</p>
+                  </div>
+                </div>
+              </body>
+            </html>
+          `;
+          break;
+          
+        case 'new-opportunity-alert':
+          // Check if this is a real opportunity alert (has query param with opportunity ID)
+          const realOpportunityId = req.query.opportunityId ? parseInt(req.query.opportunityId as string) : null;
+          let opportunityData = null;
+          let firstName = "Expert"; // Default fallback
+          
+          if (realOpportunityId) {
+            // This is a real opportunity alert - fetch live data
+            try {
+              opportunityData = await storage.getOpportunityWithPublication(realOpportunityId);
+            } catch (error) {
+              console.error('Failed to fetch real opportunity data:', error);
+            }
+          }
+          
+          // Create industry-specific demo data (similar to welcome email)
+          const getIndustryOpportunity = (industry?: string) => {
+            const opportunities = {
+              'Technology': {
+                title: 'AI Startup Experts Needed for Series A Funding Story',
+                description: 'Looking for AI startup founders and VCs to comment on the current Series A market dynamics and emerging AI technologies in 2025.',
+                publicationName: 'TechCrunch',
+                industry: 'Technology',
+                currentPrice: '$342',
+                trend: '+$45 past hour',
+                deadline: '2 days',
+              },
+              'Finance': {
+                title: 'Banking Experts for FOMC Meeting Analysis', 
+                description: 'Banking experts needed to analyze the latest FOMC meeting decisions and their impact on commercial lending and market rates.',
+                publicationName: 'Bloomberg',
+                industry: 'Finance',
+                currentPrice: '$285',
+                trend: '+$32 past hour',
+                deadline: '3 days',
+              },
+              'Healthcare': {
+                title: 'Biotech Experts for Drug Approval Pipeline Story',
+                description: 'Healthcare professionals needed to discuss FDA drug approval trends and biotech pipeline developments for Q1 2025 outlook.',
+                publicationName: 'STAT News',
+                industry: 'Healthcare', 
+                currentPrice: '$298',
+                trend: '+$28 past hour',
+                deadline: '4 days',
+              },
+              'Cryptocurrency': {
+                title: 'Crypto Market Experts for Institutional Adoption Story',
+                description: 'Cryptocurrency experts needed to analyze institutional adoption trends and regulatory landscape developments in 2025.',
+                publicationName: 'CoinDesk',
+                industry: 'Cryptocurrency',
+                currentPrice: '$312',
+                trend: '+$38 past hour', 
+                deadline: '2 days',
+              },
+              'Real Estate': {
+                title: 'Commercial Real Estate Market Analysis',
+                description: 'Real estate experts needed for commercial market trends analysis covering office space, retail, and industrial sectors.',
+                publicationName: 'Wall Street Journal',
+                industry: 'Real Estate',
+                currentPrice: '$256',
+                trend: '+$18 past hour',
+                deadline: '5 days',
+              },
+              'Energy': {
+                title: 'Renewable Energy Investment Experts Needed',
+                description: 'Energy sector analysts needed to discuss renewable energy investment trends and policy impacts on market dynamics.',
+                publicationName: 'Reuters',
+                industry: 'Energy',
+                currentPrice: '$267',
+                trend: '+$22 past hour',
+                deadline: '3 days',
+              }
+            };
+            return opportunities[industry as keyof typeof opportunities] || opportunities['Cryptocurrency'];
+          };
+          
+          // Use real data if available, otherwise fallback to industry-specific demo data
+          const demoData = getIndustryOpportunity(opportunityData?.industry || 'Cryptocurrency');
+          
+                     const opportunityInfo = {
+             id: opportunityData?.id || 1,
+             title: opportunityData?.title || demoData.title,
+             description: opportunityData?.description || opportunityData?.summary || demoData.description,
+             publicationName: opportunityData?.publication?.name || demoData.publicationName,
+             industry: opportunityData?.industry || demoData.industry,
+             tier: opportunityData?.tier || 2, // Use real tier from database
+             currentPrice: demoData.currentPrice, // Use demo pricing for now
+             trend: demoData.trend, // Use demo trend for now  
+             deadline: opportunityData?.deadline ? 
+               Math.ceil((new Date(opportunityData.deadline).getTime() - Date.now()) / (1000 * 3600 * 24)) + " days" : 
+               demoData.deadline
+           };
+          
+          emailHtml = `
+            <!DOCTYPE html>
+            <html lang="en">
+              <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+                <meta http-equiv="Pragma" content="no-cache">
+                <meta http-equiv="Expires" content="0">
+                <meta name="cache-bust" content="${queryTimestamp}-${queryRandom}-${reloadId}">
+                <title>🚨 New Opportunity Alert - QuoteBid (Live Preview ${reloadId})</title>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+                <script>
+                  // AGGRESSIVE CACHE BUSTING - Force fresh page loads
+                  console.log('🔄 New Opportunity Alert Preview Cache Buster Active - ID: ${reloadId}');
+                  
+                  // Auto-refresh and cache busting (similar to password reset)
+                  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    console.log('🔄 Dev mode detected - Cache busting active');
+                    
+                    document.addEventListener('visibilitychange', function() {
+                      if (!document.hidden) {
+                        setTimeout(() => {
+                          const newUrl = new URL(window.location.href);
+                          newUrl.searchParams.set('t', Date.now().toString());
+                          newUrl.searchParams.set('r', Math.random().toString(36).substring(2));
+                          if (newUrl.href !== window.location.href) {
+                            window.location.href = newUrl.href;
+                          }
+                        }, 500);
+                      }
+                    });
+                  }
+                  
+                  window.addEventListener('pageshow', function(event) {
+                    if (event.persisted) {
+                      window.location.reload();
+                    }
+                  });
+                </script>
+                <style>
+                  body {
+                    margin: 0;
+                    padding: 20px;
+                    min-height: 100vh;
+                    background-color: #0a0a0b;
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                    background-image: radial-gradient(circle at 25% 25%, #1a1a2e 0%, transparent 50%), radial-gradient(circle at 75% 75%, #16213e 0%, transparent 50%);
+                  }
+                  .container {
+                    background: linear-gradient(145deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f0f23 100%);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 24px;
+                    margin: 0 auto;
+                    max-width: 680px;
+                    overflow: hidden;
+                    box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                    position: relative;
+                  }
+                  .floating-element-1 {
+                    position: absolute;
+                    top: 20px;
+                    right: 20px;
+                    width: 100px;
+                    height: 100px;
+                    background: linear-gradient(45deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1));
+                    border-radius: 50%;
+                    filter: blur(40px);
+                  }
+                  .floating-element-2 {
+                    position: absolute;
+                    bottom: 30px;
+                    left: 30px;
+                    width: 80px;
+                    height: 80px;
+                    background: linear-gradient(45deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1));
+                    border-radius: 50%;
+                    filter: blur(30px);
+                  }
+                  .header {
+                    background: linear-gradient(135deg, rgba(15, 15, 35, 0.95) 0%, rgba(26, 26, 46, 0.95) 50%, rgba(22, 33, 62, 0.95) 100%);
+                    padding: 60px 40px;
+                    text-align: center;
+                    position: relative;
+                    overflow: hidden;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                  }
+                  .logo-heading {
+                    margin: 0 0 20px 0;
+                    font-size: 48px;
+                    font-weight: 900;
+                    letter-spacing: -0.04em;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 12px;
+                    flex-wrap: wrap;
+                  }
+                  .alert-icon {
+                    font-size: 52px;
+                    animation: pulse 2s infinite;
+                  }
+                  @keyframes pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.1); }
+                  }
+                  .quote-part {
+                    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #e2e8f0 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                  }
+                  .bid-part {
+                    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                  }
+                  .beta-badge {
+                    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(147, 51, 234, 0.3));
+                    border: 1px solid rgba(99, 102, 241, 0.4);
+                    border-radius: 12px;
+                    padding: 6px 12px;
+                    font-size: 11px;
+                    font-weight: 800;
+                    color: #a5b4fc;
+                    letter-spacing: 0.1em;
+                    backdrop-filter: blur(10px);
+                  }
+                  .main-title {
+                    color: #ffffff;
+                    font-size: 32px;
+                    font-weight: 800;
+                    margin: 0;
+                    line-height: 1.2;
+                  }
+                  .alert-section {
+                    padding: 50px 40px;
+                    background: rgba(255, 255, 255, 0.02);
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+                  }
+                  .greeting {
+                    color: #ffffff;
+                    font-size: 24px;
+                    font-weight: 700;
+                    margin: 0 0 20px 0;
+                  }
+                  .intro-text {
+                    color: #e2e8f0;
+                    font-size: 18px;
+                    line-height: 1.6;
+                    margin: 0 0 20px 0;
+                    font-weight: 500;
+                  }
+                  .mission-text {
+                    color: #cbd5e1;
+                    font-size: 17px;
+                    line-height: 1.7;
+                    margin: 0;
+                    padding: 20px;
+                    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+                    border-radius: 16px;
+                    border: 1px solid rgba(99, 102, 241, 0.2);
+                  }
+                  .pro-tips-section {
+                    padding: 50px 40px;
+                    background: rgba(255, 255, 255, 0.02);
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+                  }
+                  .pro-tips-heading {
+                    color: #ffffff;
+                    font-size: 24px;
+                    font-weight: 700;
+                    margin: 0 0 30px 0;
+                    text-align: center;
+                  }
+                                     .tips-grid {
+                     display: flex;
+                     flex-direction: column;
+                     gap: 12px;
+                     max-width: 500px;
+                     margin: 0 auto;
+                   }
+                   .tip-item {
+                     color: #e2e8f0;
+                     font-size: 15px;
+                     line-height: 1.6;
+                     margin: 0;
+                     padding: 12px 16px;
+                     background: rgba(255, 255, 255, 0.04);
+                     border-radius: 8px;
+                     border: 1px solid rgba(255, 255, 255, 0.08);
+                   }
+                  .cta-section {
+                    background: linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #c026d3 100%);
+                    padding: 60px 40px;
+                    text-align: center;
+                    position: relative;
+                    overflow: hidden;
+                  }
+                  .cta-eyebrow {
+                    color: rgba(255, 255, 255, 0.8);
+                    font-size: 12px;
+                    font-weight: 800;
+                    letter-spacing: 0.15em;
+                    margin: 0 0 12px 0;
+                    text-transform: uppercase;
+                  }
+                  .cta-heading {
+                    color: #ffffff;
+                    font-size: 32px;
+                    font-weight: 900;
+                    margin: 0 0 16px 0;
+                    line-height: 1.2;
+                  }
+                  .cta-subtext {
+                    color: rgba(255, 255, 255, 0.9);
+                    font-size: 18px;
+                    margin: 0 0 32px 0;
+                    line-height: 1.4;
+                  }
+                  .cta-button-container {
+                    margin: 0 0 24px 0;
+                  }
+                  .cta-button {
+                    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+                    border-radius: 16px;
+                    color: #1e40af;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 12px;
+                    font-size: 18px;
+                    font-weight: 700;
+                    padding: 18px 36px;
+                    text-decoration: none;
+                    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+                    border: none;
+                    transition: all 0.3s ease;
+                  }
+                  .button-text {
+                    color: #1e40af;
+                  }
+                  .button-arrow {
+                    color: #7c3aed;
+                    font-size: 20px;
+                    font-weight: 900;
+                  }
+                  .cta-footnote {
+                    color: rgba(255, 255, 255, 0.7);
+                    font-size: 14px;
+                    margin: 0;
+                  }
+                  .footer {
+                    background: rgba(0, 0, 0, 0.2);
+                    padding: 40px;
+                    text-align: center;
+                    border-top: 1px solid rgba(255, 255, 255, 0.06);
+                  }
+                  .footer-logo {
+                    margin-bottom: 24px;
+                  }
+                  .footer-logo-text {
+                    margin: 0 0 8px 0;
+                    font-size: 28px;
+                    font-weight: 900;
+                    letter-spacing: -0.02em;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  }
+                  .footer-quote {
+                    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #e2e8f0 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                  }
+                  .footer-bid {
+                    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                  }
+                  .footer-beta {
+                    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(147, 51, 234, 0.3));
+                    border: 1px solid rgba(99, 102, 241, 0.4);
+                    border-radius: 8px;
+                    padding: 4px 8px;
+                    font-size: 10px;
+                    font-weight: 800;
+                    color: #a5b4fc;
+                    letter-spacing: 0.1em;
+                  }
+                  .footer-tagline {
+                    color: #94a3b8;
+                    font-size: 14px;
+                    margin: 0;
+                    font-weight: 500;
+                  }
+                  .footer-manage {
+                    margin-bottom: 24px;
+                  }
+                  .manage-preferences-btn {
+                    display: inline-block;
+                    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2));
+                    border: 1px solid rgba(99, 102, 241, 0.3);
+                    color: #60a5fa;
+                    text-decoration: none;
+                    padding: 12px 24px;
+                    border-radius: 12px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    transition: all 0.3s ease;
+                  }
+                  .footer-links {
+                    margin-bottom: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 12px;
+                    flex-wrap: wrap;
+                  }
+                  .footer-link {
+                    color: #60a5fa;
+                    text-decoration: none;
+                    font-size: 14px;
+                    font-weight: 500;
+                  }
+                  .footer-separator {
+                    color: #475569;
+                    font-size: 14px;
+                  }
+                  .footer-copyright {
+                    color: #94a3b8;
+                    font-size: 14px;
+                    margin: 8px 0;
+                    font-weight: 500;
+                  }
+                  .footer-mission {
+                    color: #cbd5e1;
+                    font-size: 14px;
+                    margin: 0;
+                    font-weight: 600;
+                    font-style: italic;
+                  }
+                  @media (max-width: 600px) {
+                    .content {
+                      padding: 30px 20px;
+                    }
+                    .header {
+                      padding: 40px 20px;
+                    }
+                  }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="floating-element-1"></div>
+                  <div class="floating-element-2"></div>
+                  
+                  <div class="header">
+                    <h1 class="logo-heading">
+                      <span class="alert-icon">🚨</span>
+                      <span class="quote-part">Quote</span>
+                      <span class="bid-part">Bid</span>
+                      <span class="beta-badge">BETA</span>
+                    </h1>
+                    
+                    <h2 class="main-title">
+                      New Opportunity Alert!
+                    </h2>
+                  </div>
+
+                  <div style="padding: 0;">
+                    
+                                        <!-- Alert Introduction -->
+                    <div class="alert-section">
+                      <p class="greeting">
+                        Hi ${firstName},
+                      </p>
+                      
+                      <p class="intro-text">
+                        🎯 Perfect timing! A new opportunity matching your ${opportunityInfo.industry} expertise just became available.
+                      </p>
+                      
+                      <p class="mission-text">
+                        This request was posted just minutes ago and prices are already moving up.<br />
+                        Act fast — the best opportunities get competitive quickly.
+                      </p>
+                    </div>
+
+                    <!-- Live Opportunity Section -->
+                    <div style="padding: 32px 24px; background-color: #111827; margin: 24px 0; border-radius: 12px; border: 1px solid #374151;">
+                      <h3 style="color: #ffffff; font-size: 20px; font-weight: 700; margin: 0 0 16px 0;">📈 Live Opportunity in Your Industry</h3>
+                      <p style="color: #94a3b8; font-size: 14px; margin: 0 0 20px 0;">
+                        Here's the current opportunity matching your ${opportunityInfo.industry} expertise:
+                      </p>
+                      
+                      <div style="background-color: #1f2937; border: 1px solid #374151; border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                        <!-- Card Header -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                          <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 40px; height: 40px; background-color: #1f2937; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 18px; font-weight: bold;">
+                              ${opportunityInfo.publicationName.charAt(0)}
+                            </div>
+                            <div>
+                              <div style="color: #ffffff; font-size: 18px; font-weight: bold; margin: 0;">${opportunityInfo.publicationName}</div>
+                              <div style="color: #94a3b8; font-size: 14px; margin: 0;">Expert Request</div>
+                            </div>
+                          </div>
+                          <div style="padding: 6px 12px; background-color: #3b82f6; border-radius: 20px; color: #ffffff; font-size: 12px; font-weight: bold;">
+                            Tier ${opportunityInfo.tier}
+                          </div>
+                        </div>
+                        
+                        <!-- Category -->
+                        <div style="margin-bottom: 12px;">
+                          <span style="color: #60a5fa; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                            EXPERT REQUEST
+                          </span>
+                        </div>
+                        
+                        <!-- Title -->
+                        <h4 style="color: #ffffff; font-size: 18px; font-weight: 700; margin: 0 0 12px 0; line-height: 1.4;">
+                          ${opportunityInfo.title}
+                        </h4>
+                        
+                        <!-- Description -->
+                        <p style="color: #94a3b8; font-size: 14px; line-height: 1.5; margin: 0 0 16px 0;">
+                          ${opportunityInfo.description}
+                        </p>
+                        
+                        <!-- Category Tag -->
+                        <div style="margin-bottom: 16px;">
+                          <span style="display: inline-block; padding: 6px 12px; background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 20px; font-size: 14px; border: 1px solid rgba(59, 130, 246, 0.4);">
+                            ${opportunityInfo.industry}
+                          </span>
+                        </div>
+                        
+                        <!-- Price Section -->
+                        <div style="background-color: rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                          <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                              <div style="color: #94a3b8; font-size: 12px; margin: 0 0 4px 0;">Current Price</div>
+                              <div style="color: #ffffff; font-size: 32px; font-weight: bold; margin: 0;">${opportunityInfo.currentPrice}</div>
+                            </div>
+                            <div style="text-align: right;">
+                              <span style="color: #22c55e; font-size: 14px; font-weight: 500;">📈 ${opportunityInfo.trend}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- Pitch Now Button -->
+                        <div style="margin-bottom: 16px;">
+                          <a href="${frontendUrl}/opportunities${opportunityInfo.id > 1 ? '/' + opportunityInfo.id : ''}" style="display: block; background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 14px 24px; border-radius: 12px; font-size: 16px; font-weight: bold; text-align: center; box-shadow: 0 8px 20px -4px rgba(59, 130, 246, 0.4); transition: all 0.3s ease; border: none;">
+                            🎯 Pitch Now at ${opportunityInfo.currentPrice}
+                          </a>
+                        </div>
+                        
+                        <!-- Status -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px;">
+                          <div style="display: flex; align-items: center; gap: 8px; color: #94a3b8;">
+                            <span>⏰ ${opportunityInfo.deadline}</span>
+                            <span style="padding: 4px 8px; background-color: rgba(234, 179, 8, 0.2); color: #eab308; border-radius: 12px;">
+                              🔥 Hot
+                            </span>
+                          </div>
+                          <span style="padding: 4px 8px; background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 12px;">
+                            View Details
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Pro Tips Section -->
+                    <div class="pro-tips-section">
+                      <h3 class="pro-tips-heading">
+                        💡 Pro Tips for This Opportunity
+                      </h3>
+                      
+                      <div class="tips-grid">
+                        <p class="tip-item">
+                          <strong>Act Fast:</strong> This ${opportunityInfo.industry} opportunity is getting attention — prices tend to climb as deadlines approach.
+                        </p>
+                        
+                        <p class="tip-item">
+                          <strong>Use Your Voice:</strong> Submit pitches faster and stand out with human delivery.
+                        </p>
+                        
+                        <p class="tip-item">
+                          <strong>Only Pay When It Works:</strong> You're only charged if your quote makes it into the final article.
+                        </p>
+                      </div>
+                    </div>
+
+                    <!-- CTA Section -->
+                    <div class="cta-section">
+                      <p class="cta-eyebrow">READY TO PITCH?</p>
+                      <h3 class="cta-heading">
+                        Secure Your Spot Now
+                      </h3>
+                      <p class="cta-subtext">
+                        This opportunity won't last long. Price is ${opportunityInfo.currentPrice} and climbing.
+                      </p>
+                      
+                      <div class="cta-button-container">
+                        <a href="${frontendUrl}/opportunities${opportunityInfo.id > 1 ? '/' + opportunityInfo.id : ''}" class="cta-button">
+                          <span class="button-text">View Full Opportunity</span>
+                          <span class="button-arrow">→</span>
+                        </a>
+                      </div>
+                      
+                      <p class="cta-footnote">
+                        Opportunities in ${opportunityInfo.industry} are trending up today
+                      </p>
+                    </div>
+
+                  </div>
+
+                  <div class="footer">
+                    <div class="footer-logo">
+                      <h3 class="footer-logo-text">
+                        <span class="footer-quote">Quote</span><span class="footer-bid">Bid</span>
+                        <span class="footer-beta">BETA</span>
+                      </h3>
+                      <p class="footer-tagline">The World's First Live Marketplace for Earned Media</p>
+                    </div>
+                    
+                    <div class="footer-manage">
+                      <a href="${frontendUrl}/account?tab=email-preferences" class="manage-preferences-btn">
+                        📧 Manage Email Preferences
+                      </a>
+                    </div>
+                    
+                    <div class="footer-links">
+                      <a href="${frontendUrl}/terms" class="footer-link">Terms of Use</a>
+                      <span class="footer-separator">|</span>
+                      <a href="${frontendUrl}/privacy" class="footer-link">Privacy</a>
+                      <span class="footer-separator">|</span>
+                      <a href="${frontendUrl}/editorial-integrity" class="footer-link">Editorial Integrity</a>
+                    </div>
+                    
+                    <p class="footer-copyright">© 2025 QuoteBid Inc. All rights reserved.</p>
+                    <p class="footer-mission">Built For Experts, Not PR Agencies.</p>
+                  </div>
+                </div>
+              </body>
+            </html>
+          `;
+          break;
+          
+        case 'draft-reminder':
+          emailHtml = `
+            <!DOCTYPE html>
             <html>
               <head>
                 <meta charset="utf-8">
-                <title>Password Reset - QuoteBid</title>
+                <title>Draft Reminder - QuoteBid</title>
                 <style>
-                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #e2e8f0; background: #1a202c; margin: 0; padding: 0; }
                   .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
-                  .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-                  .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; }
-                  .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+                  .header { background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+                  .content { background: #2d3748; padding: 30px; border-radius: 0 0 8px 8px; }
+                  .reminder-box { background: #744210; color: #fed7aa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f6ad55; }
+                  .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+                  .footer { text-align: center; margin-top: 20px; color: #a0aec0; font-size: 14px; }
                 </style>
               </head>
               <body>
                 <div class="container">
                   <div class="header">
-                    <h1>🔐 Password Reset Request</h1>
-                    <p>QuoteBid Security Team</p>
+                    <h1>📝 Draft Reminder</h1>
+                    <p>QuoteBid Pitch Manager</p>
                   </div>
                   <div class="content">
                     <p>Hello John,</p>
-                    <p>We received a request to reset your QuoteBid account password. If you made this request, click the button below to reset your password:</p>
-                    <p style="text-align: center; margin: 30px 0;">
-                      <a href="${resetUrl}" class="button">Reset My Password</a>
+                    <p>You started a pitch draft but haven't finished it yet. Don't let this opportunity slip away!</p>
+                    <div class="reminder-box">
+                      <h3 style="margin: 0 0 10px 0;">Yahoo Finance - Crypto Analysis</h3>
+                      <p style="margin: 0;">Draft started 2 hours ago</p>
+                    </div>
+                    <p>Complete your draft now and get your voice heard in this story.</p>
+                    <p style="text-align: center;">
+                      <a href="${frontendUrl}/opportunities/123" class="button">Continue Draft</a>
                     </p>
-                    <p><strong>This link will expire in 1 hour for security reasons.</strong></p>
-                    <p>If you didn't request this password reset, please ignore this email. Your password will remain unchanged.</p>
-                    <p>For security, this reset link can only be used once.</p>
                     <div class="footer">
-                      <p>Need help? Contact our support team at support@quotebid.co</p>
                       <p>© 2024 QuoteBid. All rights reserved.</p>
                     </div>
                   </div>
@@ -3847,37 +5529,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `;
           break;
           
-        case 'username-reminder':
-          // Inline HTML version from server/lib/email.ts
+        case 'pitch-received':
           emailHtml = `
             <!DOCTYPE html>
             <html>
               <head>
                 <meta charset="utf-8">
-                <title>Username Reminder - QuoteBid</title>
+                <title>Pitch Received - QuoteBid</title>
                 <style>
-                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #e2e8f0; background: #1a202c; margin: 0; padding: 0; }
                   .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
-                  .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-                  .username { background: #667eea; color: white; padding: 15px; text-align: center; border-radius: 5px; font-size: 18px; font-weight: bold; }
-                  .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+                  .header { background: linear-gradient(135deg, #38b2ac 0%, #319795 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+                  .content { background: #2d3748; padding: 30px; border-radius: 0 0 8px 8px; }
+                  .status-box { background: #065f46; color: #a7f3d0; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }
+                  .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 10px 5px; }
+                  .footer { text-align: center; margin-top: 20px; color: #a0aec0; font-size: 14px; }
                 </style>
               </head>
               <body>
                 <div class="container">
                   <div class="header">
-                    <h1>👤 Username Reminder</h1>
-                    <p>QuoteBid Account Services</p>
+                    <h1>✅ Pitch Received!</h1>
+                    <p>QuoteBid Pitch Manager</p>
                   </div>
                   <div class="content">
-                    <p>Hello,</p>
-                    <p>You requested a reminder of your QuoteBid username. Here it is:</p>
-                    <div class="username">john_doe</div>
-                    <p>You can use this username to log in to your QuoteBid account at <a href="${frontendUrl}">${frontendUrl}</a></p>
-                    <p>If you didn't request this reminder, please ignore this email.</p>
+                    <p>Great! Your pitch has been received and is being processed.</p>
+                    <div class="status-box">
+                      <h3 style="margin: 0 0 10px 0;">Yahoo Finance - Crypto Analysis</h3>
+                      <p style="margin: 0;">Status: Received - You can still edit until it's sent</p>
+                    </div>
+                    <p>Want to make changes? You can still edit your pitch until it's officially sent to the reporter.</p>
+                    <p style="text-align: center;">
+                      <a href="${frontendUrl}/pitch-manager" class="button">Edit Pitch</a>
+                      <a href="${frontendUrl}/pitch-manager" class="button">View Status</a>
+                    </p>
                     <div class="footer">
-                      <p>Need help? Contact our support team at support@quotebid.co</p>
                       <p>© 2024 QuoteBid. All rights reserved.</p>
                     </div>
                   </div>
@@ -3887,45 +5573,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `;
           break;
           
-          
-        case 'last-call-inline':
-          // Inline HTML version from server/lib/email.ts
+        case 'pitch-sent':
           emailHtml = `
             <!DOCTYPE html>
             <html>
               <head>
                 <meta charset="utf-8">
-                <title>Last Call Alert - QuoteBid</title>
+                <title>Pitch Sent - QuoteBid</title>
                 <style>
-                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #e2e8f0; background: #1a202c; margin: 0; padding: 0; }
                   .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
-                  .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-                  .urgent-alert { background: #fef2f2; padding: 20px; border-left: 4px solid #dc2626; border-radius: 8px; margin: 20px 0; }
-                  .button { display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; }
-                  .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+                  .header { background: linear-gradient(135deg, #805ad5 0%, #6b46c1 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+                  .content { background: #2d3748; padding: 30px; border-radius: 0 0 8px 8px; }
+                  .status-box { background: #553c9a; color: #c4b5fd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #8b5cf6; }
+                  .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+                  .footer { text-align: center; margin-top: 20px; color: #a0aec0; font-size: 14px; }
                 </style>
               </head>
               <body>
                 <div class="container">
                   <div class="header">
-                    <h1>⏰ Last Call!</h1>
-                    <p>QuoteBid Deadline Alert</p>
+                    <h1>🚀 Pitch Sent to Reporter!</h1>
+                    <p>QuoteBid Pitch Manager</p>
                   </div>
                   <div class="content">
-                    <p>Time is running out! An opportunity you're interested in is closing soon:</p>
-                    <div class="urgent-alert">
-                      <h3 style="margin: 0 0 10px 0; color: #1f2937;">Yahoo Finance eVTOL Story</h3>
-                      <p style="margin: 0; color: #dc2626;">
-                        <strong>Closing Soon - Current Price: $275</strong>
-                      </p>
+                    <p>Excellent! Your pitch has been officially sent to the journalist.</p>
+                    <div class="status-box">
+                      <h3 style="margin: 0 0 10px 0;">Yahoo Finance - Crypto Analysis</h3>
+                      <p style="margin: 0;">Status: Sent to Reporter Sarah Johnson</p>
                     </div>
-                    <p>Don't miss out! Submit your pitch now before this opportunity expires.</p>
-                    <p style="text-align: center; margin: 30px 0;">
-                      <a href="${frontendUrl}" class="button">Submit Pitch Now</a>
+                    <p>Now we wait for the reporter to review your pitch. You'll be notified of any updates.</p>
+                    <p style="text-align: center;">
+                      <a href="${frontendUrl}/pitch-manager" class="button">Track Progress</a>
                     </p>
                     <div class="footer">
-                      <p style="color: #dc2626; font-weight: bold;">Act fast - this opportunity may not be available much longer!</p>
+                      <p>© 2024 QuoteBid. All rights reserved.</p>
+                    </div>
+                  </div>
+                </div>
+              </body>
+            </html>
+          `;
+          break;
+
+        case 'pitch-interest':
+          emailHtml = `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="utf-8">
+                <title>Pitch Interest - QuoteBid</title>
+                <style>
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #e2e8f0; background: #1a202c; margin: 0; padding: 0; }
+                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                  .header { background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+                  .content { background: #2d3748; padding: 30px; border-radius: 0 0 8px 8px; }
+                  .interest-box { background: #744210; color: #fed7aa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f6ad55; }
+                  .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+                  .footer { text-align: center; margin-top: 20px; color: #a0aec0; font-size: 14px; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="header">
+                    <h1>👀 Reporter Interest!</h1>
+                    <p>QuoteBid Pitch Manager</p>
+                  </div>
+                  <div class="content">
+                    <p>Exciting news! A reporter has shown interest in your pitch.</p>
+                    <div class="interest-box">
+                      <h3 style="margin: 0 0 10px 0;">Yahoo Finance - Crypto Analysis</h3>
+                      <p style="margin: 0;">Reporter Sarah Johnson opened and marked interest</p>
+                    </div>
+                    <p>This is a great sign! The reporter is considering your pitch for their story. Stay tuned for updates.</p>
+                    <p style="text-align: center;">
+                      <a href="${frontendUrl}/pitch-manager" class="button">View Details</a>
+                    </p>
+                    <div class="footer">
+                      <p>© 2024 QuoteBid. All rights reserved.</p>
+                    </div>
+                  </div>
+                </div>
+              </body>
+            </html>
+          `;
+          break;
+
+        case 'pitch-declined':
+          emailHtml = `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="utf-8">
+                <title>Pitch Declined - QuoteBid</title>
+                <style>
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #e2e8f0; background: #1a202c; margin: 0; padding: 0; }
+                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                  .header { background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+                  .content { background: #2d3748; padding: 30px; border-radius: 0 0 8px 8px; }
+                  .declined-box { background: #742a2a; color: #fbb6ce; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f56565; }
+                  .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+                  .footer { text-align: center; margin-top: 20px; color: #a0aec0; font-size: 14px; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="header">
+                    <h1>📝 Pitch Update</h1>
+                    <p>QuoteBid Pitch Manager</p>
+                  </div>
+                  <div class="content">
+                    <p>Your pitch wasn't selected this time, but don't give up!</p>
+                    <div class="declined-box">
+                      <h3 style="margin: 0 0 10px 0;">Yahoo Finance - Crypto Analysis</h3>
+                      <p style="margin: 0;">Status: Not selected for this story</p>
+                    </div>
+                    <p>Every pitch is a learning opportunity. There are always new stories being posted - keep pitching!</p>
+                    <p style="text-align: center;">
+                      <a href="${frontendUrl}/opportunities" class="button">Find New Opportunities</a>
+                    </p>
+                    <div class="footer">
                       <p>© 2024 QuoteBid. All rights reserved.</p>
                     </div>
                   </div>
@@ -3935,31 +5702,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `;
           break;
           
-        case 'placement-success':
-          // Admin placement notification email
+        case 'pitch-success':
           emailHtml = `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
-                <h1 style="color: #4a5568; margin: 0;">QuoteBid</h1>
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="utf-8">
+                <title>Pitch Success - QuoteBid</title>
+                <style>
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #e2e8f0; background: #1a202c; margin: 0; padding: 0; }
+                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                  .header { background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+                  .content { background: #2d3748; padding: 30px; border-radius: 0 0 8px 8px; }
+                  .success-box { background: #065f46; color: #a7f3d0; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }
+                  .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+                  .footer { text-align: center; margin-top: 20px; color: #a0aec0; font-size: 14px; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="header">
+                    <h1>🎉 Success! Your Pitch Was Published!</h1>
+                    <p>QuoteBid Placement Success</p>
               </div>
-              <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
-                <p style="font-size: 16px;">Congrats John!</p>
-                
-                <p style="font-size: 16px; margin-top: 20px;">Your bid of $275 secured your spot in this breaking story:</p>
-                
-                <p style="font-size: 16px; margin-top: 10px;">→ Yahoo Finance eVTOL Analysis – Yahoo Finance</p>
-                
-                <p style="font-size: 16px; margin-top: 10px;">→ <a href="https://finance.yahoo.com/sample-article" style="color: #4a5568;">https://finance.yahoo.com/sample-article</a></p>
-                
-                <p style="font-size: 16px; margin-top: 20px;">A receipt for $275 has been charged to your card on file.</p>
-                
-                <p style="font-size: 16px; margin-top: 10px;">Thank you for trusting our marketplace!</p>
-                
-                <div style="margin-top: 30px; text-align: center;">
-                  <p style="font-size: 14px; color: #718096;">QuoteBid - Connect with top publications</p>
+                  <div class="content">
+                    <p>Congratulations! Your pitch has resulted in a successful placement.</p>
+                    <div class="success-box">
+                      <h3 style="margin: 0 0 10px 0;">Yahoo Finance - Crypto Analysis</h3>
+                      <p style="margin: 0;">Status: Published & Live!</p>
+                    </div>
+                    <p>Your expert commentary is now live and reaching thousands of readers. Well done!</p>
+                    <p style="text-align: center;">
+                      <a href="${frontendUrl}/pitch-manager" class="button">View Publication</a>
+                    </p>
+                    <div class="footer">
+                      <p>© 2024 QuoteBid. All rights reserved.</p>
+                    </div>
+                  </div>
+                </div>
+              </body>
+            </html>
+          `;
+          break;
+
+        case 'placement-billing':
+          emailHtml = `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="utf-8">
+                <title>Placement Billing - QuoteBid</title>
+                <style>
+                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #e2e8f0; background: #1a202c; margin: 0; padding: 0; }
+                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                  .header { background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+                  .content { background: #2d3748; padding: 30px; border-radius: 0 0 8px 8px; }
+                  .billing-box { background: #065f46; color: #a7f3d0; padding: 25px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }
+                  .invoice-section { background: #374151; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #4b5563; }
+                  .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 10px 5px; }
+                  .amount { font-size: 24px; font-weight: bold; color: #10b981; }
+                  .footer { text-align: center; margin-top: 20px; color: #a0aec0; font-size: 14px; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="header">
+                    <h1>💳 You've Been Billed for Your Placement</h1>
+                    <p>QuoteBid Billing Department</p>
+                  </div>
+                  <div class="content">
+                    <p>Congratulations! Your successful placement has been billed.</p>
+                    <div class="billing-box">
+                      <h3 style="margin: 0 0 15px 0;">Yahoo Finance - Crypto Market Analysis</h3>
+                      <p style="margin: 0 0 10px 0;">Published: December 15, 2024</p>
+                      <p style="margin: 0;">Amount Charged: <span class="amount">$275.00</span></p>
+                    </div>
+                    
+                    <div class="invoice-section">
+                      <h4 style="margin: 0 0 15px 0; color: #e2e8f0;">📄 Invoice Details</h4>
+                      <p style="margin: 5px 0;"><strong>Invoice #:</strong> QB-2024-001234</p>
+                      <p style="margin: 5px 0;"><strong>Payment Method:</strong> **** 1234</p>
+                      <p style="margin: 5px 0;"><strong>Transaction ID:</strong> txn_abc123def456</p>
+                    </div>
+                    
+                    <p>View your published article and download your invoice using the links below:</p>
+                    <p style="text-align: center;">
+                      <a href="https://finance.yahoo.com/sample-article" class="button">📰 View Article</a>
+                      <a href="${frontendUrl}/billing/invoice/QB-2024-001234" class="button">📄 Download Invoice</a>
+                    </p>
+                    <div class="footer">
+                      <p>Thank you for using QuoteBid!</p>
+                      <p>© 2024 QuoteBid. All rights reserved.</p>
                 </div>
               </div>
             </div>
+              </body>
+            </html>
           `;
           break;
           
@@ -3977,58 +5815,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Email Preview Index Page
   app.get("/api/email-preview", async (req: Request, res: Response) => {
-    // Disable caching to always show fresh content
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    // AGGRESSIVE CACHE BUSTING - Force fresh reload every time
+    const timestamp = Date.now();
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0, private, no-transform');
     res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    res.setHeader('Expires', '-1');
+    res.setHeader('Last-Modified', new Date().toUTCString());
+    res.setHeader('ETag', `"live-reload-${timestamp}"`);
+    res.setHeader('Vary', '*');
+    res.setHeader('X-Accel-Expires', '0');
+    res.setHeader('X-Live-Reload', timestamp.toString());
+    res.setHeader('X-Force-Fresh', 'true');
     
-    const templates = [
+          const emailCategories = [
+        {
+          name: 'Utility',
+          description: 'Essential account and system utility emails',
+          icon: '🔧',
+          color: 'from-blue-600 to-purple-600',
+          templates: [
       { name: 'Welcome Email', path: 'welcome', description: 'Sent to new users after signup', type: 'react' },
-      { name: 'Price Drop Alert (React)', path: 'price-drop', description: 'React Email template for price drops', type: 'react' },
-      { name: 'Password Reset', path: 'password-reset', description: 'Password reset email', type: 'inline' },
-      { name: 'Notification - Opportunity', path: 'notification-opportunity', description: 'New opportunity notification', type: 'react' },
-      { name: 'Notification - Pitch Status', path: 'notification-pitch-status', description: 'Pitch acceptance notification', type: 'react' },
-      { name: 'Notification - Payment', path: 'notification-payment', description: 'Payment confirmation', type: 'react' },
-      { name: 'Notification - Media Coverage', path: 'notification-media-coverage', description: 'Article published notification', type: 'react' },
+            { name: 'Password Reset', path: 'password-reset', description: 'Password reset email', type: 'inline' }
+          ]
+        },
+        {
+          name: 'Alerts',
+          description: 'Time-sensitive alerts and urgent notifications',
+          icon: '🚨',
+          color: 'from-red-600 to-pink-600',
+          templates: [
+            { name: 'New Opportunity Email', path: 'new-opportunity-alert', description: 'Alert when new opportunity matches user industry', type: 'react' }
+          ]
+        },
+        {
+          name: 'Notifications',
+          description: 'General platform notifications and updates',
+          icon: '📢',
+          color: 'from-orange-600 to-yellow-600',
+          templates: [
+            { name: 'Draft Reminder', path: 'draft-reminder', description: 'Reminder to complete pitch draft', type: 'react' },
+            { name: 'Pitch Received Confirmation', path: 'pitch-received', description: 'Confirmation that pitch was received', type: 'react' },
+            { name: 'Pitch Sent to Reporter', path: 'pitch-sent', description: 'Notification that pitch was sent to journalist', type: 'react' },
+            { name: 'Pitch Interest Shown', path: 'pitch-interest', description: 'Reporter showed interest in pitch', type: 'react' },
+            { name: 'Pitch Declined', path: 'pitch-declined', description: 'Pitch was declined by reporter', type: 'react' },
+            { name: 'Pitch Accepted / Success', path: 'pitch-success', description: 'Pitch resulted in successful placement', type: 'react' }
+          ]
+        },
+        {
+          name: 'Billing',
+          description: 'Payment confirmations, receipts, and billing emails',
+          icon: '💰',
+          color: 'from-green-600 to-emerald-600',
+          templates: [
+            { name: 'Placement Billing', path: 'placement-billing', description: 'Billing notification for successful placement', type: 'react' }
+          ]
+        }
     ];
     
     const html = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>QuoteBid Email Templates - Preview</title>
+          <title>QuoteBid Email Templates - Preview (Live ${timestamp})</title>
+          <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+          <meta http-equiv="Pragma" content="no-cache">
+          <meta http-equiv="Expires" content="0">
+          <meta name="cache-bust" content="${timestamp}">
+          <script>
+            // LIVE RELOAD SYSTEM - Force fresh template previews
+            console.log('📧 Email Template Dashboard - Live Reload Active');
+            
+            // Force all preview links to open with fresh cache-busting parameters
+            document.addEventListener('DOMContentLoaded', function() {
+              const previewLinks = document.querySelectorAll('a[href*="/api/email-preview/"]');
+              previewLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  const baseUrl = this.href.split('?')[0];
+                  const freshUrl = baseUrl + '?t=' + Date.now() + '&r=' + Math.random().toString(36).substring(2);
+                  window.open(freshUrl, '_blank');
+                });
+              });
+              
+              console.log('🔗 Enhanced ' + previewLinks.length + ' preview links with cache busting');
+            });
+            
+            // Auto-refresh dashboard every 60 seconds in dev mode
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+              setTimeout(() => {
+                console.log('🔄 Auto-refreshing email template dashboard');
+                window.location.reload();
+              }, 60000);
+            }
+          </script>
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-            .container { max-width: 1200px; margin: 0 auto; }
+            .container { max-width: 1400px; margin: 0 auto; }
             .header { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); color: white; padding: 40px; border-radius: 20px; margin-bottom: 30px; text-align: center; border: 1px solid rgba(255,255,255,0.2); }
-            .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
-            .card { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 16px; padding: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.3); }
-            .card:hover { transform: translateY(-4px); box-shadow: 0 16px 64px rgba(0,0,0,0.15); }
-            .card h3 { margin: 0 0 12px 0; color: #2d3748; font-size: 18px; font-weight: 700; }
-            .card p { color: #4a5568; margin: 0 0 16px 0; font-size: 14px; line-height: 1.5; }
+            .categories-grid { display: grid; gap: 30px; }
+            .category-section { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 20px; padding: 30px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.3); }
+            .category-header { display: flex; align-items: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid rgba(0,0,0,0.1); }
+            .category-icon { font-size: 2.5rem; margin-right: 20px; }
+            .category-info { flex: 1; }
+            .category-title { margin: 0 0 8px 0; color: #2d3748; font-size: 1.8rem; font-weight: 800; }
+            .category-description { margin: 0; color: #4a5568; font-size: 1rem; line-height: 1.5; }
+            .templates-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+            .template-card { background: rgba(255,255,255,0.8); border-radius: 12px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); transition: all 0.3s ease; border: 1px solid rgba(0,0,0,0.1); }
+            .template-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+            .empty-category { text-align: center; padding: 40px; color: #6b7280; font-style: italic; background: rgba(0,0,0,0.02); border-radius: 12px; border: 2px dashed rgba(0,0,0,0.1); }
+            .template-card h3 { margin: 0 0 12px 0; color: #2d3748; font-size: 18px; font-weight: 700; }
+            .template-card p { color: #4a5568; margin: 0 0 16px 0; font-size: 14px; line-height: 1.5; }
             .btn { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 10px; font-weight: 600; transition: all 0.2s ease; font-size: 14px; }
             .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); }
             .status { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-left: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
             .react { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
             .inline { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
-            .stats { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); margin-top: 30px; padding: 30px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.3); }
-            .problem { color: #dc2626; font-weight: 600; }
-            .solution { color: #059669; font-weight: 600; }
-            ul { padding-left: 20px; }
-            li { margin: 8px 0; line-height: 1.5; }
-            .urgent { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 20px; border-radius: 12px; margin: 20px 0; }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <h1 style="margin: 0 0 16px 0; font-size: 2.5rem; font-weight: 800;">📧 QuoteBid Email Templates</h1>
-              <p style="margin: 0; font-size: 1.2rem; opacity: 0.9;">Preview all email templates that need design improvements</p>
+              <h1 style="margin: 0 0 16px 0; font-size: 2.5rem; font-weight: 800;">📧 QuoteBid Email System</h1>
+              <p style="margin: 0 0 8px 0; font-size: 1.2rem; opacity: 0.9;">Organized email templates by category - Ready for design & development</p>
+              <p style="margin: 0; font-size: 0.9rem; opacity: 0.7;">🔄 Last updated: ${new Date().toLocaleString()} (${timestamp})</p>
             </div>
             
-            <div class="grid">
-              ${templates.map(template => `
-                <div class="card">
+            <div class="categories-grid">
+              ${emailCategories.map(category => `
+                <div class="category-section">
+                  <div class="category-header">
+                    <div class="category-icon">${category.icon}</div>
+                    <div class="category-info">
+                      <h2 class="category-title">${category.name}</h2>
+                      <p class="category-description">${category.description}</p>
+                    </div>
+                  </div>
+                  
+                  <div class="templates-grid">
+                    ${category.templates.length > 0 ? 
+                      category.templates.map(template => `
+                        <div class="template-card">
                   <h3>
                     ${template.name}
                     <span class="status ${template.type}">
@@ -4036,60 +5962,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     </span>
                   </h3>
                   <p>${template.description}</p>
-                  <a href="/api/email-preview/${template.path}" class="btn" target="_blank">
+                          <a href="/api/email-preview/${template.path}?t=${timestamp}&r=${Math.random().toString(36).substring(2)}" class="btn" target="_blank">
                     👁️ Preview Email
                   </a>
                 </div>
-              `).join('')}
+                      `).join('') 
+                      : 
+                      `<div class="empty-category">
+                        <p>📧 No templates yet - Ready for design!</p>
+                      </div>`
+                    }
             </div>
-            
-            <div class="stats">
-              <h2 style="margin: 0 0 20px 0; color: #2d3748;">🎨 Email Design Status</h2>
-              
-              <div class="urgent">
-                <h3 style="margin: 0 0 12px 0;">🚨 URGENT: These emails look terrible!</h3>
-                <p style="margin: 0;">All email templates need immediate design overhaul to match your beautiful homepage theme.</p>
               </div>
-              
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
-                <div>
-                  <h3 class="problem">🔴 Current Problems:</h3>
-                  <ul>
-                    <li>❌ Inconsistent design between React & inline HTML</li>
-                    <li>❌ No dark gradient theme like homepage</li>
-                    <li>❌ Poor typography and visual hierarchy</li>
-                    <li>❌ Outdated colors and layouts</li>
-                    <li>❌ No mobile optimization</li>
-                    <li>❌ Missing QuoteBid brand identity</li>
-                    <li>❌ Basic styling that looks unprofessional</li>
-                  </ul>
+              `).join('')}
                 </div>
                 
-                <div>
-                  <h3 class="solution">✅ Design Goals:</h3>
-                  <ul>
-                    <li>✅ Convert all to React Email components</li>
-                    <li>✅ Apply dark gradient theme (slate→purple→violet)</li>
-                    <li>✅ Modern typography and spacing</li>
-                    <li>✅ Animated gradient backgrounds</li>
-                    <li>✅ Perfect mobile responsiveness</li>
-                    <li>✅ Consistent QuoteBid branding</li>
-                    <li>✅ Professional, stunning visual design</li>
-                  </ul>
-                </div>
-              </div>
-              
-              <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-top: 20px; border-left: 4px solid #3b82f6;">
-                <h4 style="margin: 0 0 10px 0; color: #1e40af;">📋 Next Steps:</h4>
-                <ol style="margin: 0; color: #374151;">
-                  <li>Review each email template above</li>
-                  <li>Start with the most critical templates (welcome, price drop)</li>
-                  <li>Apply unified dark gradient design system</li>
-                  <li>Test mobile responsiveness</li>
-                  <li>Deploy updated templates</li>
-                </ol>
-              </div>
-            </div>
           </div>
         </body>
       </html>
@@ -4964,45 +6851,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store the reset token in the database (you'll need to add a resetToken field to your users table)
       // For this implementation, we'll just send the email without storing the token
       
-      // Send the password reset email using the resend instance from routes.ts
+      // Send the password reset email using the proper designed template
       let emailSent = false;
       
-      if (!resend) {
-        console.error('❌ Resend not initialized in routes.ts');
-        return res.status(500).json({ message: "Email service not configured" });
-      }
-      
       try {
-        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5050'}/reset-password?token=${resetToken}`;
-        
-        const { data, error } = await resend.emails.send({
-          from: process.env.EMAIL_FROM || 'QuoteBid <ben@rubiconprgroup.com>',
-          to: [email],
-          subject: '🔐 Reset Your QuoteBid Password',
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #2563eb;">Reset Your Password</h2>
-              <p>Hi ${user.username || 'there'},</p>
-              <p>We received a request to reset your password for your QuoteBid account.</p>
-              <p style="margin: 30px 0;">
-                <a href="${resetUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Reset Password</a>
-              </p>
-              <p style="font-size: 14px; color: #666;">If the button doesn't work, copy and paste this link into your browser:<br>
-              <a href="${resetUrl}">${resetUrl}</a></p>
-              <p style="font-size: 14px; color: #666;">If you didn't request this, you can safely ignore this email.</p>
-              <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-              <p style="font-size: 12px; color: #999;">Best regards,<br>The QuoteBid Team</p>
-            </div>
-          `,
-        });
-
-        if (error) {
-          console.error('❌ Resend error:', error);
-          return res.status(500).json({ message: "Failed to send password reset email" });
-        }
-
-        console.log('✅ Password reset email sent successfully:', data);
-        emailSent = true;
+        emailSent = await sendPasswordResetEmail(
+          email,
+          resetToken,
+          user.username,
+          user.fullName
+        );
       } catch (emailError: any) {
         console.error('❌ Email error:', emailError);
         return res.status(500).json({ message: "Failed to send password reset email" });
@@ -5327,14 +7185,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newOpportunity = await storage.createOpportunity(opportunityData);
       console.log("Created opportunity:", JSON.stringify(newOpportunity));
       
-      // Notify users in the matching industry
+      // Schedule delayed opportunity alert emails (5-10 minutes to prevent front-running)
       if (opportunityData.industry) {
         try {
-          // Get users who have the matching industry
+          // Get users who have the matching industry for immediate notifications
           const matchingUsers = await storage.getUsersByIndustry(opportunityData.industry);
           
           if (matchingUsers.length > 0) {
-            // Create in-app notifications for each matching user (emails will be sent automatically)
+            console.log(`🎯 Found ${matchingUsers.length} users with matching industry: ${opportunityData.industry}`);
+            
+            // Create immediate in-app notifications (but NO emails yet)
             const notificationPromises = matchingUsers.map(async (user: User) => {
               try {
                 await notificationService.createNotification({
@@ -5355,10 +7215,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             
             await Promise.all(notificationPromises);
-            console.log(`Created ${matchingUsers.length} opportunity notifications (with emails) for new opportunity: ${newOpportunity.title}`);
+            console.log(`Created ${matchingUsers.length} in-app notifications for new opportunity: ${newOpportunity.title}`);
+            
+            // Schedule delayed email alerts (5-10 minutes to prevent front-running)
+            const { scheduleOpportunityAlert } = await import('./jobs/opportunityEmailAlert');
+            const delayMinutes = Math.floor(Math.random() * 6) + 5; // Random delay between 5-10 minutes
+            scheduleOpportunityAlert(newOpportunity.id, delayMinutes);
+            
+            console.log(`📅 Scheduled delayed email alerts for opportunity ${newOpportunity.id} (${delayMinutes} minute delay) for ${matchingUsers.length} users`);
+          } else {
+            console.log(`📭 No users found with matching industry: ${opportunityData.industry}`);
           }
         } catch (notificationError) {
-          console.error("Failed to send notifications:", notificationError);
+          console.error("Failed to schedule notifications:", notificationError);
           // Continue anyway, don't fail the opportunity creation
         }
       }
@@ -8084,13 +9953,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Return email preferences or defaults if not set
-      const preferences = user[0].emailPreferences || {
-        priceAlerts: true,
-        opportunityNotifications: true,
-        pitchStatusUpdates: true,
-        paymentConfirmations: true,
-        mediaCoverageUpdates: true,
-        placementSuccess: true
+      const userPrefs = user[0].emailPreferences || {};
+      const preferences = {
+        alerts: userPrefs.alerts !== undefined ? userPrefs.alerts : true,
+        notifications: userPrefs.notifications !== undefined ? userPrefs.notifications : true,
+        billing: userPrefs.billing !== undefined ? userPrefs.billing : true
       };
 
       res.json(preferences);
@@ -8110,22 +9977,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { 
-        priceAlerts, 
-        opportunityNotifications, 
-        pitchStatusUpdates, 
-        paymentConfirmations, 
-        mediaCoverageUpdates, 
-        placementSuccess 
+        alerts,
+        notifications,
+        billing
       } = req.body;
 
       // Validate that all fields are boolean
       const preferences = {
-        priceAlerts: Boolean(priceAlerts),
-        opportunityNotifications: Boolean(opportunityNotifications),
-        pitchStatusUpdates: Boolean(pitchStatusUpdates),
-        paymentConfirmations: Boolean(paymentConfirmations),
-        mediaCoverageUpdates: Boolean(mediaCoverageUpdates),
-        placementSuccess: Boolean(placementSuccess)
+        alerts: Boolean(alerts),
+        notifications: Boolean(notifications),
+        billing: Boolean(billing)
       };
 
       await getDb().update(users)
