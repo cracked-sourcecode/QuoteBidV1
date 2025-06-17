@@ -419,7 +419,7 @@ export default function DarkNavbar() {
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center space-x-3 py-2 px-3 rounded-lg text-white/80 hover:bg-white/10 transition-colors"
             >
-                              <Settings className="h-5 w-5" />
+              <Settings className="h-5 w-5" />
                 <span className="font-medium">Account Settings</span>
             </Link>
 

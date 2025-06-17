@@ -16,18 +16,39 @@ import { getPublicationLogo } from '@/lib/responsive-utils';
 
 // Function to determine actual opportunity status based on deadline
 const getOpportunityStatus = (opportunity: any) => {
-  if (!opportunity.deadline) return opportunity.status || 'open';
-  
-  const now = new Date();
-  const deadline = new Date(opportunity.deadline);
-  
-  // If deadline has passed, it should be closed regardless of stored status
-  if (deadline < now) {
+  // If manually closed, always return closed
+  if (opportunity.status === 'closed') {
     return 'closed';
   }
   
-  // If deadline hasn't passed, it should be open (unless manually closed)
-  return opportunity.status === 'closed' ? 'closed' : 'open';
+  // If no deadline, use the stored status (default to open)
+  if (!opportunity.deadline) {
+    return opportunity.status || 'open';
+  }
+  
+  const now = new Date();
+  const deadlineDate = new Date(opportunity.deadline);
+  
+  // Set deadline to end of day (23:59:59.999) to allow full day access
+  deadlineDate.setHours(23, 59, 59, 999);
+  
+  // Debug logging for troubleshooting
+  console.log('🔍 Status Check:', {
+    id: opportunity.id,
+    title: opportunity.title?.substring(0, 50),
+    storedStatus: opportunity.status,
+    deadline: deadlineDate.toISOString(),
+    now: now.toISOString(),
+    deadlineInFuture: deadlineDate > now
+  });
+  
+  // If current time is after end of deadline day, it's closed
+  if (now > deadlineDate) {
+    return 'closed';
+  }
+  
+  // If deadline is in the future, it should be open
+  return 'open';
 };
 import { apiRequest } from '@/lib/queryClient';
 import { useOpportunityPrice, usePriceConnection } from '@/contexts/PriceContext';
@@ -551,22 +572,26 @@ export default function OpportunityDetail() {
         }
 
         // Fetch related opportunities by industry
-        if (opportunityData) {
-          try {
-            // Get the primary industry/category from topic tags
-            const primaryCategory = opportunityData.topicTags?.[0] || opportunityData.industry || 'General';
-            const relatedResponse = await apiFetch(`/api/opportunities/related/${encodeURIComponent(primaryCategory)}?exclude=${opportunityId}`, {
-              credentials: 'include'
-            });
-            
-            if (relatedResponse.ok) {
-              const relatedData = await relatedResponse.json();
-              setRelatedOpportunities(relatedData || []);
-            }
-          } catch (relatedError) {
-            console.log('Related opportunities not available, using fallback data');
-            setRelatedOpportunities([]);
+        // CRITICAL FIX: Use primary industry field, not first topic tag
+        const primaryCategory = opportunityData.industry || opportunityData.topicTags?.[0] || 'General';
+        console.log('🎯 [RELATED OPPORTUNITIES] Using primary industry for matching:', {
+          primaryIndustry: opportunityData.industry,
+          firstTopicTag: opportunityData.topicTags?.[0],
+          selectedCategory: primaryCategory,
+          opportunityTitle: opportunityData.title?.substring(0, 50)
+        });
+        try {
+          const relatedResponse = await apiFetch(`/api/opportunities/related/${encodeURIComponent(primaryCategory)}?exclude=${opportunityId}`, {
+            credentials: 'include'
+          });
+          
+          if (relatedResponse.ok) {
+            const relatedData = await relatedResponse.json();
+            setRelatedOpportunities(relatedData || []);
           }
+        } catch (relatedError) {
+          console.log('Related opportunities not available, using fallback data');
+          setRelatedOpportunities([]);
         }
 
         // Check if user has already pitched for this opportunity
@@ -1370,7 +1395,7 @@ export default function OpportunityDetail() {
                   <div className="text-[11px] sm:text-sm font-bold text-white flex items-center space-x-1 sm:space-x-2">
                     <span>{format(new Date(opportunity.deadline), 'MMM d, yyyy')}</span>
                     {isToday && (
-                      <Badge className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs font-bold px-1 py-0.5 animate-pulse">
+                      <Badge className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs font-bold px-1 py-0.5">
                         Today
                       </Badge>
                     )}
@@ -1388,7 +1413,9 @@ export default function OpportunityDetail() {
                 </div>
                 <div className="text-left">
                   <div className="flex items-center space-x-2 mb-0">
-                  <div className="text-[11px] sm:text-xs font-semibold text-green-300 uppercase tracking-wide">Current Price</div>
+                  <div className="text-[11px] sm:text-xs font-semibold text-green-300 uppercase tracking-wide">
+                    {getOpportunityStatus(opportunity) === 'closed' ? 'Final Price' : 'Current Price'}
+                  </div>
                   </div>
                   <div className={`text-[11px] sm:text-sm font-bold ${priceData ? 'text-blue-400' : 'text-white'} transition-colors duration-300`}>
                     ${currentPrice}
@@ -1403,34 +1430,50 @@ export default function OpportunityDetail() {
                 <div className="flex flex-row flex-wrap items-center gap-1 sm:gap-2 lg:gap-4">
                   <div className="flex items-center space-x-1 sm:space-x-2">
                     <div className="relative flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4">
-                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-400/50"></span>
+                      {getOpportunityStatus(opportunity) === 'closed' ? (
+                        <Lock className="w-2 h-2 sm:w-3 sm:h-3 text-gray-400" />
+                      ) : (
+                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-400/50"></span>
+                      )}
                     </div>
-                    <span className="text-sm sm:text-lg font-bold text-white">Live Activity:</span>
+                    <span className="text-sm sm:text-lg font-bold text-white">
+                      {getOpportunityStatus(opportunity) === 'closed' ? 'Final Status:' : 'Live Activity:'}
+                    </span>
                   </div>
                   
-                  <div className={`flex items-center space-x-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg ${
-                      priceIncrease >= 0 
-                        ? 'bg-green-600/20 border border-green-400/40'
-                        : 'bg-blue-600/20 border border-blue-400/40'
-                    }`}>
-                      {priceIncrease >= 0 ? (
-                      <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-300" />
-                      ) : (
-                      <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-blue-300" />
-                      )}
-                    <span className={`text-xs sm:text-sm font-semibold ${
-                        priceIncrease >= 0 ? 'text-green-200' : 'text-blue-200'
-                      }`}>
-                        ${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'} 
+                  {getOpportunityStatus(opportunity) === 'closed' ? (
+                    <div className="flex items-center space-x-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg bg-gray-600/20 border border-gray-400/40">
+                      <span className="text-xs sm:text-sm font-semibold text-gray-200">
+                        Closed at ${opportunity.lastPrice || opportunity.currentPrice || opportunity.basePrice}
                       </span>
                     </div>
-                    
-                  <div className="flex items-center space-x-1 bg-blue-600/20 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg border border-blue-400/40">
-                    <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-blue-300" />
-                    <span className="text-xs sm:text-sm font-semibold text-blue-200">
-                        {Math.max(0, Math.ceil((new Date(opportunity.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60)))}h remaining
-                      </span>
-                  </div>
+                  ) : (
+                    <>
+                      <div className={`flex items-center space-x-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg ${
+                          priceIncrease >= 0 
+                            ? 'bg-green-600/20 border border-green-400/40'
+                            : 'bg-blue-600/20 border border-blue-400/40'
+                        }`}>
+                          {priceIncrease >= 0 ? (
+                          <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-300" />
+                          ) : (
+                          <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-blue-300" />
+                          )}
+                        <span className={`text-xs sm:text-sm font-semibold ${
+                            priceIncrease >= 0 ? 'text-green-200' : 'text-blue-200'
+                          }`}>
+                            ${Math.abs(priceIncrease)} {priceIncrease >= 0 ? 'increase' : 'decrease'} 
+                          </span>
+                        </div>
+                        
+                      <div className="flex items-center space-x-1 bg-blue-600/20 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg border border-blue-400/40">
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-blue-300" />
+                        <span className="text-xs sm:text-sm font-semibold text-blue-200">
+                            {Math.max(0, Math.ceil((new Date(opportunity.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60)))}h remaining
+                          </span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -1442,7 +1485,7 @@ export default function OpportunityDetail() {
                 <Badge className={`border-0 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-semibold shadow-sm ${
                       getOpportunityStatus(opportunity) === 'open' 
                         ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-                        : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
+                        : 'bg-gradient-to-r from-gray-500 to-gray-600 text-white'
                     }`}>
                       {getOpportunityStatus(opportunity).charAt(0).toUpperCase() + getOpportunityStatus(opportunity).slice(1)}
                     </Badge>
@@ -1513,8 +1556,32 @@ export default function OpportunityDetail() {
                 )}
 
 
+                </div>
               </div>
+
+            {/* Closed Opportunity Banner */}
+            {getOpportunityStatus(opportunity) === 'closed' && (
+              <div className="bg-red-950 border border-red-600/70 rounded-lg p-6 mb-6 shadow-xl">
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-red-500/40 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Lock className="h-6 w-6 text-red-200" />
             </div>
+                  <div>
+                    <h4 className="text-red-200 font-bold text-xl mb-3">Opportunity Closed — Dynamic Pricing Frozen</h4>
+                    <p className="text-red-100 leading-relaxed mb-4 text-lg">
+                      This placement is no longer live. The last recorded market rate was{' '}
+                      <span className="font-bold text-red-200 bg-red-800/60 px-3 py-1 rounded-md">
+                        ${opportunity.lastPrice || opportunity.currentPrice || opportunity.basePrice}
+                      </span>{' '}
+                      before the opportunity was closed. You may still pitch at that fixed price.
+                    </p>
+                    <p className="text-red-300 text-sm leading-relaxed">
+                      Opportunities close when reporters stop accepting new pitches, or when the deadline has been reached.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Marketplace Pricing Section - Enhanced with dark gradients */}
             <div id="pitch-section" style={{position: 'absolute', transform: 'translateY(-60px)'}}></div>
@@ -1571,7 +1638,9 @@ export default function OpportunityDetail() {
                 <div className="p-3 sm:p-4 lg:p-6 relative border-t lg:border-t-0 border-slate-600/50">
                   <div className="mb-4 sm:mb-6">
                     <div className="flex items-center justify-between mb-1 gap-2">
-                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-white">Current Price</h3>
+                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-white">
+                        {getOpportunityStatus(opportunity) === 'closed' ? 'Final Price' : 'Current Price'}
+                      </h3>
                       <div className="flex items-center space-x-1 sm:space-x-2 text-green-400 text-xs sm:text-sm font-medium">
                         <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full"></span>
                         <span>
@@ -1962,7 +2031,7 @@ export default function OpportunityDetail() {
                           <span>Suggested for you</span>
                           <span className="text-blue-400 hidden sm:inline">•</span>
                           <span className="text-base sm:text-lg text-blue-400 font-semibold">
-                            Active {opportunity?.topicTags?.[0] || 'Related'} Stories
+                            Active {opportunity?.industry || opportunity?.topicTags?.[0] || 'Related'} Stories
                           </span>
                         </h3>
                       </div>
@@ -2045,10 +2114,10 @@ export default function OpportunityDetail() {
                                 )}
                               </div>
                               <span className="text-blue-200 text-xs sm:text-sm font-medium bg-slate-800/60 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-blue-500/30 shadow-md">
-                                {relatedOpp.deadline ? 
-                                  `${Math.ceil((new Date(relatedOpp.deadline).getTime() - Date.now()) / (1000 * 60 * 60))}h left` :
-                                  'Active'
-                                }
+                                {relatedOpp.deadline ? (() => {
+                                  const hoursLeft = Math.ceil((new Date(relatedOpp.deadline).getTime() - Date.now()) / (1000 * 60 * 60));
+                                  return hoursLeft <= 0 ? 'Closed' : `${hoursLeft}h left`;
+                                })() : 'Active'}
                               </span>
                             </div>
                           </div>

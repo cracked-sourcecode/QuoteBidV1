@@ -126,7 +126,7 @@ function Router() {
             }
             
             // Only redirect authenticated users
-            return <Redirect to="/opportunities" />;
+              return <Redirect to="/opportunities" />;
           }}
         </Route>
         <Route path="/login" component={LoginPage} />

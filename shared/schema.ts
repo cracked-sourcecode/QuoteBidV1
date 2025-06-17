@@ -110,6 +110,8 @@ export const opportunities = pgTable("opportunities", {
   mediaType: text("media_type"),  // Article, TV, Podcast
   description: text("description").notNull(),
   status: text("status").notNull().default("open"),
+  closedAt: timestamp("closed_at"),
+  lastPrice: numeric("last_price", { precision: 10, scale: 2 }),
   tier: text("tier"),  // Tier 1, 2, or 3 for categorizing opportunity value
   industry: text("industry"),  // Industry category like "Capital Markets", "Crypto", etc.
   tags: text("tags").array(),

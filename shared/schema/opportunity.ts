@@ -14,7 +14,8 @@ export const outletTierSchema = z.union([
 // Opportunity status schema
 export const opportunityStatusSchema = z.union([
   z.literal('open'),
-  z.literal('closed')
+  z.literal('closed'),
+  z.literal('expired')
 ]);
 
 // Base opportunity schema

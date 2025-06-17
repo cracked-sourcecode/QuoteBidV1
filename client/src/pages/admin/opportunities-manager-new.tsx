@@ -66,7 +66,8 @@ import {
   Loader2,
   CalendarIcon,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  FileText
 } from "lucide-react";
 import { INDUSTRY_OPTIONS, MEDIA_TYPES, OPPORTUNITY_TIERS, REQUEST_TYPES } from "@/lib/constants";
 import { useLocation } from 'wouter';
@@ -106,16 +107,30 @@ type EditOpportunityFormValues = z.infer<typeof editOpportunitySchema>;
 const getOpportunityStatus = (opportunity: any) => {
   if (!opportunity.deadline) return opportunity.status || 'open';
   
-  const now = new Date();
-  const deadline = new Date(opportunity.deadline);
+  // If manually closed, respect that status first
+  if (opportunity.status === 'closed') return 'closed';
   
-  // If deadline has passed, it should be closed regardless of stored status
-  if (deadline < now) {
+  const now = new Date();
+  const deadlineDate = new Date(opportunity.deadline);
+  
+  // Set deadline to end of day (23:59:59.999) to allow full day access
+  deadlineDate.setHours(23, 59, 59, 999);
+  
+  // Debug logging to help troubleshoot
+  console.log(`Status check for opportunity ${opportunity.id}:`, {
+    now: now.toLocaleString(),
+    deadline: deadlineDate.toLocaleString(),
+    isAfterDeadline: now > deadlineDate,
+    storedStatus: opportunity.status
+  });
+  
+  // If current time is after end of deadline day, it's closed
+  if (now > deadlineDate) {
     return 'closed';
   }
   
-  // If deadline hasn't passed, it should be open (unless manually closed)
-  return opportunity.status === 'closed' ? 'closed' : 'open';
+  // Otherwise it's open
+  return 'open';
 };
 
 export default function OpportunitiesManager() {
@@ -482,13 +497,27 @@ export default function OpportunitiesManager() {
     const selectedPublication = publications?.find(pub => pub.id === data.publicationId);
     const tier = selectedPublication?.tier || "Tier 1"; // Default to Tier 1 if not found
 
-    // Add tier to the submission data
+    // CRITICAL TIMEZONE FIX: Convert deadline date to end-of-day in local timezone
+    let processedDeadline = data.deadline;
+    if (data.deadline) {
+      const deadlineDate = new Date(data.deadline);
+      deadlineDate.setHours(23, 59, 59, 999); // Set to end of selected day
+      processedDeadline = deadlineDate.toISOString(); // Send as ISO string with timezone
+      console.log("🕐 Deadline timezone fix:", {
+        original: data.deadline,
+        processed: processedDeadline,
+        localDisplay: deadlineDate.toLocaleString()
+      });
+    }
+
+    // Add tier and processed deadline to the submission data
     const submissionData = {
       ...data,
+      deadline: processedDeadline,
       tier
     };
 
-    console.log("Submitting opportunity with automatic tier:", submissionData);
+    console.log("Submitting opportunity with automatic tier and timezone-fixed deadline:", submissionData);
     createOpportunityMutation.mutate(submissionData);
   };
   
@@ -579,35 +608,15 @@ export default function OpportunitiesManager() {
       <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-8 border border-white/10 shadow-xl">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <div className="flex items-center space-x-4 mb-2">
-              <h2 className="text-3xl font-bold text-white flex items-center">
-                <Newspaper className="h-8 w-8 mr-3 text-slate-300" />
+            <div>
+              <h1 className="text-3xl font-bold text-white flex items-center mb-2">
+                <FileText className="mr-3 h-8 w-8 text-slate-300" />
                 Opportunity Manager
-              </h2>
-              {/* Live Price Connection Indicator */}
-              <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium ${
-                connectionStatus.connected 
-                  ? 'bg-green-500/20 text-green-300 border border-green-400/30' 
-                  : 'bg-red-500/20 text-red-300 border border-red-400/30'
-              }`}>
-                <div className={`w-2 h-2 rounded-full ${
-                  connectionStatus.connected 
-                    ? 'bg-green-400 animate-pulse' 
-                    : 'bg-red-400'
-                }`}></div>
-                                 <span>
-                   {connectionStatus.connected ? 'Live Pricing' : 'Disconnected'}
-                 </span>
-               </div>
-             </div>
-             <p className="text-slate-300 text-lg">
-               Create and manage PR opportunities with real-time pricing updates
-               {connectionStatus.lastUpdate && (
-                 <span className="block text-sm text-slate-400 mt-1">
-                   Last update: {new Date(connectionStatus.lastUpdate).toLocaleTimeString()}
-                 </span>
-               )}
-             </p>
+              </h1>
+              <p className="text-slate-300 text-lg">
+                Create and manage PR opportunities with real-time pricing updates
+              </p>
+            </div>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
@@ -838,6 +847,13 @@ export default function OpportunitiesManager() {
                   : 'bg-gray-400 shadow-gray-400/50 shadow-lg'
               }`}>
               </div>
+              
+              {/* Closed Badge */}
+              {getOpportunityStatus(opportunity) === 'closed' && (
+                <div className="absolute top-4 left-4 px-3 py-1 bg-gradient-to-r from-gray-500/20 to-gray-600/20 text-gray-300 text-sm font-bold rounded-lg border border-gray-400/30 backdrop-blur-sm">
+                  Closed
+                </div>
+              )}
               
               <CardHeader className="pb-6 pt-6">
                 {/* Publication Header */}
@@ -1870,13 +1886,21 @@ export default function OpportunitiesManager() {
                                         type="date"
                                         value={field.value || ''}
                                         onChange={(e) => field.onChange(e.target.value)}
-                                        min={new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0]}
+                                        min={new Date().toISOString().split('T')[0]}
                                         className="w-full h-14 px-4 text-lg font-medium text-center bg-slate-800/50 border border-white/20 rounded-lg focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none transition-all shadow-sm text-white"
                                       />
                                       {field.value && (
                                         <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-lg p-3 text-center border border-blue-400/20 shadow-sm">
                                           <p className="text-sm text-blue-300 font-medium">
-                                            {format(new Date(field.value), "EEEE, MMMM do, yyyy")}
+                                            {(() => {
+                                              // Fix timezone issue: create date object in local timezone
+                                              const dateParts = field.value.split('-');
+                                              const year = parseInt(dateParts[0]);
+                                              const month = parseInt(dateParts[1]) - 1; // Month is 0-indexed
+                                              const day = parseInt(dateParts[2]);
+                                              const localDate = new Date(year, month, day);
+                                              return format(localDate, "EEEE, MMMM do, yyyy");
+                                            })()}
                                           </p>
                                         </div>
                                       )}

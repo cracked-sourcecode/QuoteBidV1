@@ -431,12 +431,45 @@ export class DatabaseStorage implements IStorage {
 
   async updateOpportunityStatus(id: number, status: string): Promise<Opportunity | undefined> {
     const db = getDb();
-    const [updated] = await db
-      .update(opportunities)
-      .set({ status })
-      .where(eq(opportunities.id, id))
-      .returning();
-    return updated;
+    
+    // If closing the opportunity, also set closedAt and lastPrice
+    if (status === 'closed') {
+      // First get the current opportunity to get the current price
+      const [currentOpp] = await db
+        .select()
+        .from(opportunities)
+        .where(eq(opportunities.id, id))
+        .limit(1);
+      
+      if (!currentOpp) {
+        return undefined;
+      }
+      
+      const lastPrice = currentOpp.currentPrice || currentOpp.minimumBid || 100;
+      const closedAt = new Date();
+      
+      console.log(`Closing opportunity ${id}: setting status=closed, closedAt=${closedAt.toISOString()}, lastPrice=${lastPrice}`);
+      
+      const [updated] = await db
+        .update(opportunities)
+        .set({ 
+          status: 'closed',
+          closedAt,
+          lastPrice
+        })
+        .where(eq(opportunities.id, id))
+        .returning();
+      
+      return updated;
+    } else {
+      // For other status updates, just update the status
+      const [updated] = await db
+        .update(opportunities)
+        .set({ status })
+        .where(eq(opportunities.id, id))
+        .returning();
+      return updated;
+    }
   }
 
   async updateOpportunity(id: number, data: Partial<Opportunity>): Promise<Opportunity | undefined> {

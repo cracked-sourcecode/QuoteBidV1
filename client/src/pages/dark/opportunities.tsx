@@ -23,6 +23,33 @@ import { INDUSTRY_OPTIONS } from '@/lib/constants';
 
 const OPPORTUNITIES_PER_BATCH = 9; // 3 rows of 3 opportunities each
 
+// Function to determine actual opportunity status based on manual closure and deadline
+const getOpportunityStatus = (opportunity: any) => {
+  // If manually closed, always return closed
+  if (opportunity.status === 'closed') {
+    return 'closed';
+  }
+  
+  // If no deadline, use the stored status (default to open)
+  if (!opportunity.deadline) {
+    return opportunity.status || 'open';
+  }
+  
+  const now = new Date();
+  const deadlineDate = new Date(opportunity.deadline);
+  
+  // Set deadline to end of day (23:59:59.999) to allow full day access
+  deadlineDate.setHours(23, 59, 59, 999);
+  
+  // If current time is after end of deadline day, it's closed
+  if (now > deadlineDate) {
+    return 'closed';
+  }
+  
+  // If deadline is in the future, it should be open
+  return 'open';
+};
+
 export default function OpportunitiesPage() {
   const [, setLocation] = useLocation();
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
@@ -85,7 +112,7 @@ export default function OpportunitiesPage() {
             outlet: pub.name || opp.outlet || '',
             outletLogo: pub.logo || opp.outletLogo || '',
             tier: opp.tier ? (typeof opp.tier === 'string' && opp.tier.startsWith('Tier ') ? parseInt(opp.tier.split('Tier ')[1]) : Number(opp.tier)) : 1,
-            status: opp.status || 'open',
+            status: getOpportunityStatus(opp),
             summary: opp.description || opp.summary || '',
             topicTags: Array.isArray(opp.tags) ? opp.tags : 
                      (opp.topicTags || []).map((tag: any) => 
@@ -173,9 +200,9 @@ export default function OpportunitiesPage() {
       filtered = filtered.filter(opp => opp.tier === parseInt(tierFilter));
     }
     
-    // Apply status filter
+    // Apply status filter - use computed status that considers manual closure and deadline
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(opp => opp.status === statusFilter);
+      filtered = filtered.filter(opp => getOpportunityStatus(opp) === statusFilter);
     }
     
     // Apply industry filter

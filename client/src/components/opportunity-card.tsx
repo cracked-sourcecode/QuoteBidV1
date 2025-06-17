@@ -25,6 +25,33 @@ const tierLabels: Record<OutletTier, string> = {
   3: 'Tier 3'
 };
 
+// Function to determine actual opportunity status based on deadline and manual closure
+const getOpportunityStatus = (opportunity: any) => {
+  // If manually closed, always return closed
+  if (opportunity.status === 'closed') {
+    return 'closed';
+  }
+  
+  // If no deadline, use the stored status (default to open)
+  if (!opportunity.deadline) {
+    return opportunity.status || 'open';
+  }
+  
+  const now = new Date();
+  const deadlineDate = new Date(opportunity.deadline);
+  
+  // Set deadline to end of day (23:59:59.999) to allow full day access
+  deadlineDate.setHours(23, 59, 59, 999);
+  
+  // If current time is after end of deadline day, it's closed
+  if (now > deadlineDate) {
+    return 'closed';
+  }
+  
+  // If deadline is in the future, it should be open
+  return 'open';
+};
+
 export default function OpportunityCard({ opportunity, isPriority = false }: OpportunityCardProps) {
   // EFFICIENT LOGO LOADING STRATEGY FOR LIVE FEED:
   // - Smart preloading for first 6 opportunities (above-the-fold) to prevent initial sign-in lag
@@ -207,13 +234,16 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
     ? Math.round(((currentPriceState - basePrice) / basePrice) * 100)
     : 0;
 
-  // Format deadline
+  // Format deadline - USE SAME LOGIC AS getOpportunityStatus function
   let deadlineDate: Date;
   try {
     deadlineDate = new Date(deadline);
     if (isNaN(deadlineDate.getTime())) {
       deadlineDate = new Date();
       deadlineDate.setDate(deadlineDate.getDate() + 7);
+    } else {
+      // Set deadline to end of day (23:59:59.999) to allow full day access - CONSISTENT WITH getOpportunityStatus
+      deadlineDate.setHours(23, 59, 59, 999);
     }
   } catch (e) {
     deadlineDate = new Date();
@@ -630,7 +660,7 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
               theme === 'dark' ? "text-slate-400" : "text-gray-500"
             )} />
             <span className="font-semibold">
-              {hoursRemaining <= 0 ? 'Closed' :
+              {getOpportunityStatus(opportunity) === 'closed' ? 'Closed' :
                hoursRemaining <= 6 ? `${hoursRemaining}h left` :
                hoursRemaining <= 24 ? 'Closes today' : 
                daysRemaining === 1 ? 'Closes tomorrow' :

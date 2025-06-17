@@ -6,7 +6,7 @@
 export type OutletTier = 1 | 2 | 3;
 
 // Opportunity status
-export type OpportunityStatus = 'open' | 'closed';
+export type OpportunityStatus = 'open' | 'closed' | 'expired';
 
 // Base Opportunity interface
 export interface Opportunity {

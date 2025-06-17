@@ -1784,6 +1784,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           title: opportunities.title,
           description: opportunities.description,
           status: opportunities.status,
+          closedAt: opportunities.closedAt,
+          lastPrice: opportunities.lastPrice,
           tier: opportunities.tier,
           industry: opportunities.industry,
           tags: opportunities.tags,
@@ -1804,9 +1806,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           eq(pitches.opportunityId, opportunities.id),
           eq(pitches.isDraft, false)
         ))
-        .where(eq(opportunities.status, "open"))
+        .where(or(
+          eq(opportunities.status, "open"),
+          eq(opportunities.status, "closed")
+        ))
         .groupBy(opportunities.id, publications.id)
-        .orderBy(sql`${opportunities.createdAt} DESC`);
+        .orderBy(
+          sql`CASE WHEN ${opportunities.status} = 'open' THEN 0 ELSE 1 END`,
+          sql`${opportunities.createdAt} DESC`
+        );
 
       // Calculate deltas from price history for each opportunity
       const enhancedOpps = await Promise.all(oppsWithData.map(async (opp) => {
@@ -1851,7 +1859,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           slotsTotal: 5, // Default value
           slotsRemaining: Math.max(0, 5 - Number(opp.pitchCount)), // Calculate based on pitches
           basePrice: Number(opp.minimumBid) || 100,
-          currentPrice,
+          currentPrice: opp.status === 'closed' && opp.lastPrice 
+            ? Number(opp.lastPrice) 
+            : currentPrice,
+          lastPrice: opp.lastPrice ? Number(opp.lastPrice) : null,
+          closedAt: opp.closedAt,
           deltaPastHour,
           percentChange: Math.round(percentChange),
           trend: deltaPastHour > 0 ? 'up' : deltaPastHour < 0 ? 'down' : 'stable',
@@ -1928,6 +1940,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cutoffPrice: currentPrice + 500, // Dynamic based on current price
         deadline: oppWithPub.deadline || new Date().toISOString(),
         postedAt: oppWithPub.createdAt || new Date().toISOString(),
+        lastPrice: oppWithPub.lastPrice ? Number(oppWithPub.lastPrice) : null,
+        closedAt: oppWithPub.closedAt,
         createdAt: oppWithPub.createdAt || new Date().toISOString(),
         updatedAt: oppWithPub.createdAt || new Date().toISOString(),
         publicationId: oppWithPub.publicationId,
@@ -2065,6 +2079,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch price history" });
     }
   });
+
+  // Close opportunity (admin only)
+  app.post("/api/admin/opportunities/:id/close", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const opportunityId = parseInt(req.params.id);
+      if (isNaN(opportunityId)) {
+        return res.status(400).json({ message: "Invalid opportunity ID" });
+      }
+
+      // Get current opportunity to validate it exists and is open
+      const opportunity = await storage.getOpportunity(opportunityId);
+      if (!opportunity) {
+        return res.status(404).json({ message: "Opportunity not found" });
+      }
+
+      if (opportunity.status === 'closed') {
+        return res.status(400).json({ message: "Opportunity is already closed" });
+      }
+
+      // Freeze the price at current price
+      const lastPrice = opportunity.current_price || opportunity.minimumBid || 100;
+      const closedAt = new Date();
+      
+      console.log(`Closing opportunity ${opportunityId} at price ${lastPrice}`);
+
+      // Update opportunity status to closed
+      await getDb()
+        .update(opportunities)
+        .set({
+          status: 'closed',
+          closedAt,
+          lastPrice
+        })
+        .where(eq(opportunities.id, opportunityId));
+
+      // Return updated opportunity
+      const updatedOpportunity = await storage.getOpportunity(opportunityId);
+      res.json({
+        ...updatedOpportunity,
+        closedAt,
+        lastPrice: Number(lastPrice)
+      });
+    } catch (error: any) {
+      console.error("Error closing opportunity:", error);
+      res.status(500).json({ message: "Failed to close opportunity" });
+    }
+  });
   
   // Search opportunities
   app.get("/api/opportunities/search/:query", async (req: Request, res: Response) => {
@@ -2081,6 +2142,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(opportunities);
     } catch (error: any) {
       res.status(500).json({ message: "Failed to search opportunities" });
+    }
+  });
+  
+  // Close opportunity (admin only)
+  app.post("/api/admin/opportunities/:id/close", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const opportunityId = parseInt(req.params.id);
+      if (isNaN(opportunityId)) {
+        return res.status(400).json({ message: "Invalid opportunity ID" });
+      }
+
+      // Get current opportunity to validate it exists and is open
+      const opportunity = await storage.getOpportunity(opportunityId);
+      if (!opportunity) {
+        return res.status(404).json({ message: "Opportunity not found" });
+      }
+
+      if (opportunity.status === 'closed') {
+        return res.status(400).json({ message: "Opportunity is already closed" });
+      }
+
+      // Freeze the price at current price
+      const lastPrice = opportunity.current_price || opportunity.minimumBid || 100;
+      const closedAt = new Date();
+      
+      console.log(`Closing opportunity ${opportunityId} at price ${lastPrice}`);
+
+      // Update opportunity status to closed
+      await getDb()
+        .update(opportunities)
+        .set({
+          status: 'closed',
+          closedAt,
+          lastPrice
+        })
+        .where(eq(opportunities.id, opportunityId));
+
+      // Return updated opportunity
+      const updatedOpportunity = await storage.getOpportunity(opportunityId);
+      res.json({
+        ...updatedOpportunity,
+        closedAt,
+        lastPrice: Number(lastPrice)
+      });
+    } catch (error: any) {
+      console.error("Error closing opportunity:", error);
+      res.status(500).json({ message: "Failed to close opportunity" });
     }
   });
   
@@ -5190,12 +5298,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         opportunityData.tags = [opportunityData.tags];
       }
       
-      // Ensure deadline is a valid date
+      // CRITICAL TIMEZONE FIX: Ensure deadline is properly handled with timezone awareness
       if (opportunityData.deadline && typeof opportunityData.deadline === 'string') {
         try {
-          opportunityData.deadline = new Date(opportunityData.deadline);
+          // If it's already an ISO string (new format), use it directly
+          if (opportunityData.deadline.includes('T')) {
+            opportunityData.deadline = new Date(opportunityData.deadline);
+            console.log("💫 Using ISO deadline:", opportunityData.deadline.toISOString());
+          } else {
+            // Legacy format (YYYY-MM-DD) - convert to end of day in local timezone
+            const legacyDate = new Date(opportunityData.deadline);
+            legacyDate.setHours(23, 59, 59, 999); // Set to end of selected day
+            opportunityData.deadline = legacyDate;
+            console.log("🔄 Converted legacy deadline to end-of-day:", opportunityData.deadline.toISOString());
+          }
         } catch (e) {
           console.error("Failed to parse deadline:", e);
+          // Fallback: use current date + 1 day
+          const fallbackDate = new Date();
+          fallbackDate.setDate(fallbackDate.getDate() + 1);
+          fallbackDate.setHours(23, 59, 59, 999);
+          opportunityData.deadline = fallbackDate;
+          console.log("⚠️ Using fallback deadline:", opportunityData.deadline.toISOString());
         }
       }
       
@@ -8367,17 +8491,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Check if the opportunity matches the industry
         const oppIndustry = opp.industry || '';
-        const oppTags = Array.isArray(opp.tags) ? opp.tags : [];
         
-        // Match by industry field or tags (case insensitive)
-        const industryMatch = oppIndustry.toLowerCase().includes(industry.toLowerCase()) ||
-                            oppTags.some(tag => tag.toLowerCase().includes(industry.toLowerCase()));
+        // Match ONLY by primary industry field (not tags) for accurate related recommendations
+        const industryMatch = oppIndustry.toLowerCase() === industry.toLowerCase();
         
         const statusMatch = opp.status === 'open';
         
-        console.log(`🔎 [RELATED] Opp ${opp.id}: Industry match: ${industryMatch} (searching for "${industry}" in "${oppIndustry}" or tags [${oppTags.join(', ')}]) | Status match: ${statusMatch} (${opp.status})`);
+        console.log(`🔎 [RELATED] Opp ${opp.id}: Industry match: ${industryMatch} (searching for "${industry}" in primary industry "${oppIndustry}") | Status match: ${statusMatch} (${opp.status})`);
         
-        // Only show open opportunities
+        // Only show open opportunities that match the exact primary industry
         return industryMatch && statusMatch;
       });
       

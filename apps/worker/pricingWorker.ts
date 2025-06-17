@@ -162,19 +162,6 @@ async function reloadWeightsAndConfig(): Promise<boolean> {
  * Build pricing configuration object
  */
 function buildPricingConfig(weights: Record<string, number>, config: any): PricingConfig {
-  // 🐛 DEBUG: Log raw cached values being processed
-  console.log("🔧 BUILDING PRICING CONFIG:");
-  console.log(`   🗂️  Raw Cached Config:`, JSON.stringify(config, null, 2));
-  console.log(`   ⚖️  Raw Cached Weights:`, weights);
-  
-  // 🐛 DEBUG: Check priceStep specifically
-  console.log(`   🔍 DEBUGGING PRICE STEP:`);
-  console.log(`      config.priceStep =`, config.priceStep);
-  console.log(`      typeof config.priceStep =`, typeof config.priceStep);
-  console.log(`      config.priceStep || 5 =`, config.priceStep || 5);
-  console.log(`      Number(config.priceStep) =`, Number(config.priceStep));
-  console.log(`      Number(config.priceStep) || 5 =`, Number(config.priceStep) || 5);
-  
   const pricingConfig = {
     weights: {
       pitches: weights.pitches || 1.0,
@@ -192,8 +179,6 @@ function buildPricingConfig(weights: Record<string, number>, config: any): Prici
     ceil: 10000, // Maximum safety ceiling  
   };
   
-  console.log(`   ✅ Final Pricing Config:`, JSON.stringify(pricingConfig, null, 2));
-  
   return pricingConfig;
 }
 
@@ -206,25 +191,47 @@ async function fetchLiveOpportunities(): Promise<Array<Opportunity & {
   saveCount: number;
   draftCount: number;
 }>> {
-  console.log("🔍 Fetching live opportunities...");
+  // Get current time and create end-of-today threshold
+  const now = new Date();
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999); // End of today
   
-  // For now, let's use a simpler query and calculate metrics separately
-  // This can be optimized later with proper JOINs
   const liveOpps = await db
     .select()
     .from(opportunities)
     .where(
       and(
         eq(opportunities.status, "open"),
-        gt(opportunities.deadline, new Date())
+        // Use end-of-day comparison: opportunity is live if deadline is today or later
+        // We need to check if the opportunity deadline (stored as beginning of day) 
+        // should still be considered active (until end of that day)
+        sql`DATE(${opportunities.deadline}) >= DATE(${now})`
       )
     );
   
-  console.log(`📋 Found ${liveOpps.length} live opportunities`);
+  console.log(`🔍 Found ${liveOpps.length} potentially active opportunities`);
+  
+  // Filter opportunities that are actually still active (haven't passed end of deadline day)
+  const activeOpps = liveOpps.filter(opp => {
+    if (!opp.deadline) return false;
+    
+    const deadlineDate = new Date(opp.deadline);
+    deadlineDate.setHours(23, 59, 59, 999); // Set to end of deadline day
+    
+    const isActive = now <= deadlineDate;
+    
+    if (!isActive) {
+      console.log(`⏰ OPP ${opp.id} excluded - deadline ${deadlineDate.toISOString()} has passed`);
+    }
+    
+    return isActive;
+  });
+  
+  console.log(`✅ ${activeOpps.length} opportunities are actually active after end-of-day filtering`);
   
   // Get metrics for each opportunity
   const oppsWithMetrics = await Promise.all(
-    liveOpps.map(async (opp) => {
+    activeOpps.map(async (opp) => {
       // Count submitted pitches for this opportunity (excludes drafts)
       const pitchCountResult = await db
         .select({ count: sql<number>`count(*)` })
@@ -376,34 +383,23 @@ async function processPricingTick(): Promise<void> {
     const liveOpps = await fetchLiveOpportunities();
     const pricingConfig = buildPricingConfig(cachedWeights, cachedConfig);
     
-    // 🐛 DEBUG: Log current configuration being used
-    console.log("🔧 PRICING CONFIG DEBUG:");
-    console.log(`   💰 Price Step: $${pricingConfig.priceStep}`);
-    console.log(`   ⏰ Tick Interval: ${cachedConfig.tickIntervalMs || 300000}ms`);
-    console.log(`   ⚖️  Variable Weights:`, Object.entries(pricingConfig.weights).map(([key, value]) => `${key}=${value}`).join(', '));
-    console.log(`   🏢 Price Range: $${pricingConfig.floor} - $${pricingConfig.ceil}`);
-    console.log(`   📈 Elasticity: ${pricingConfig.elasticity}`);
-    console.log(`   📊 Last Config Update: ${cachedConfigTime.toISOString()}`);
-    console.log(`   📊 Last Weights Update: ${cachedWeightsTime.toISOString()}`);
-    
     let updatedCount = 0;
     let skippedCount = 0;
     const gptBatch: PricingSnapshot[] = [];
     
     for (const opp of liveOpps) {
+      // CRITICAL: Skip any opportunity that is not "open" - this prevents pricing updates on closed opportunities
+      if (opp.status !== "open") {
+        console.log(`⏭️  Skipping OPP ${opp.id} - Status: "${opp.status}" (not open)`);
+        continue;
+      }
+      
       const snapshot = await buildPricingSnapshot(opp);
       const newPrice = computePrice(snapshot, pricingConfig);
       const currentPrice = snapshot.current_price;
       const priceDelta = newPrice - currentPrice;
       
       if (newPrice !== currentPrice) {
-        // 🐛 DEBUG: Log pricing decision details
-        console.log(`🧮 PRICING CALC OPP ${opp.id}:`);
-        console.log(`   📊 Metrics: ${snapshot.pitches} submitted pitches, ${snapshot.drafts} drafts, ${snapshot.clicks} clicks, ${snapshot.saves} saves, ${snapshot.emailClicks1h} email clicks`);
-        console.log(`   📊 Total Activity: ${snapshot.pitches + snapshot.drafts} total pitch activity (${snapshot.pitches} submitted + ${snapshot.drafts} drafts)`);
-        console.log(`   ⏱️  Time: ${snapshot.hoursRemaining.toFixed(1)} hours remaining`);
-        console.log(`   💰 Price: $${currentPrice} → $${newPrice} (Δ${priceDelta > 0 ? '+' : ''}$${priceDelta})`);
-        
         // Check gatekeeper rule
         if (shouldSkipGPT(priceDelta, snapshot.hoursRemaining, pricingConfig.priceStep)) {
           // Apply price change directly
@@ -479,15 +475,6 @@ function startTickLoop(): void {
         const configNeedsReload = latestConfig && new Date(latestConfig) > cachedConfigTime;
         const weightsNeedReload = latestWeights && new Date(latestWeights) > cachedWeightsTime;
         
-        // 🐛 DEBUG: Always log sync check status
-        console.log("🔍 ADMIN SYNC CHECK:");
-        console.log(`   📊 Config Last Updated: ${latestConfig ? new Date(latestConfig).toISOString() : 'Never'}`);
-        console.log(`   📊 Weights Last Updated: ${latestWeights ? new Date(latestWeights).toISOString() : 'Never'}`);
-        console.log(`   💾 Cached Config Time: ${cachedConfigTime.toISOString()}`);
-        console.log(`   💾 Cached Weights Time: ${cachedWeightsTime.toISOString()}`);
-        console.log(`   🔄 Config Needs Reload: ${configNeedsReload ? '✅ YES' : '❌ No'}`);
-        console.log(`   🔄 Weights Need Reload: ${weightsNeedReload ? '✅ YES' : '❌ No'}`);
-        
         if (configNeedsReload || weightsNeedReload) {
           console.log(`🔄 Admin changes detected - reloading pricing configuration...`);
           const needsIntervalRestart = await reloadWeightsAndConfig();
@@ -500,7 +487,6 @@ function startTickLoop(): void {
           }
         } else {
           lastReload = Date.now(); // Update check time even if no reload needed
-          console.log(`⏹️  No admin changes detected - pricing engine up to date`);
         }
       }
       
