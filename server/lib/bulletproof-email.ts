@@ -153,25 +153,10 @@ export async function sendWelcomeEmail(data: {
       return { success: false, error: 'Email service not configured' };
     }
     
-    // Fetch a live opportunity to showcase
-    const liveOpportunity = await fetchLiveOpportunity(data.userIndustry);
-    
     const htmlContent = loadTemplate('welcome', {
       userFirstName: data.userFirstName,
       username: data.username,
-      frontendUrl: data.frontendUrl,
-      // Opportunity data
-      'opp.id': liveOpportunity.id,
-      'opp.title': liveOpportunity.title,
-      'opp.description': liveOpportunity.description,
-      'opp.industry': liveOpportunity.industry,
-      'opp.tier': liveOpportunity.tier,
-      'opp.requestType': liveOpportunity.requestType,
-      'opp.currentPrice': liveOpportunity.currentPrice,
-      'opp.deadline': liveOpportunity.deadline,
-      'opp.publicationName': liveOpportunity.publicationName,
-      'opp.publicationLogo': liveOpportunity.publicationLogo,
-      'opp.trend': liveOpportunity.trend
+      frontendUrl: data.frontendUrl
     });
 
     const result = await resend.emails.send({
@@ -370,6 +355,53 @@ export async function sendNotificationEmail(data: {
     return { success: true, id: result.data?.id };
   } catch (error) {
     console.error('❌ Failed to send notification email:', error);
+    throw error;
+  }
+}
+
+export async function sendBillingPaymentEmail(data: {
+  userFirstName: string;
+  userEmail: string;
+  publicationName: string;
+  articleTitle: string;
+  articleUrl: string;
+  billingAmount: string;
+  paymentMethod: string;
+  stripeReceiptUrl: string;
+  frontendUrl: string;
+}) {
+  try {
+    console.log('📧 Preparing billing payment email for:', data.userEmail);
+    
+    const resend = getResendInstance();
+    if (!resend) {
+      console.log('📧 Email sending disabled - no API key configured');
+      return { success: false, error: 'Email service not configured' };
+    }
+    
+    const htmlContent = loadTemplate('billing-payment', {
+      userFirstName: data.userFirstName,
+      userEmail: data.userEmail,
+      publicationName: data.publicationName,
+      articleTitle: data.articleTitle,
+      articleUrl: data.articleUrl,
+      billingAmount: data.billingAmount,
+      paymentMethod: data.paymentMethod,
+      stripeReceiptUrl: data.stripeReceiptUrl,
+      frontendUrl: data.frontendUrl
+    });
+
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'QuoteBid <noreply@quotebid.co>',
+      to: [data.userEmail],
+      subject: `Payment Processed - Published in ${data.publicationName}`,
+      html: htmlContent,
+    });
+
+    console.log('✅ Billing payment email sent successfully:', result.data?.id);
+    return { success: true, id: result.data?.id };
+  } catch (error) {
+    console.error('❌ Failed to send billing payment email:', error);
     throw error;
   }
 } 

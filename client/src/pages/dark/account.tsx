@@ -134,7 +134,15 @@ export default function AccountPage() {
   const [cancellingSubscription, setCancellingSubscription] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [activeSection, setActiveSection] = useState("profile"); // Default to profile section
-  const [activeTab, setActiveTab] = useState("info"); // Default to info tab
+  
+  // Read the hash from URL and set initial tab
+  const getInitialTab = () => {
+    const hash = window.location.hash.substring(1); // Remove the # symbol
+    return hash === 'billing' || hash === 'email-preferences' ? hash : 'info';
+  };
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab());
+  
   const [sidebarOpen, setSidebarOpen] = useState(true); // Control sidebar visibility
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -1038,6 +1046,30 @@ export default function AccountPage() {
     setSelectedPitchTitle('');
   };
 
+  // Handle hash changes and update URL when tab changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.substring(1);
+      if (hash === 'billing' || hash === 'email-preferences' || hash === 'info' || hash === '') {
+        setActiveTab(hash || 'info');
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Update URL hash when tab changes
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (tab === 'info') {
+      // Remove hash for default tab
+      window.history.replaceState(null, '', window.location.pathname);
+    } else {
+      window.location.hash = tab;
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-900 relative overflow-hidden">
       {/* Desktop Sidebar (unchanged) */}
@@ -1161,7 +1193,7 @@ export default function AccountPage() {
             <div className="space-y-1">
               <button 
                 onClick={() => {
-                  setActiveTab('billing');
+                  handleTabChange('billing');
                   // Scroll to top on mobile
                   if (window.innerWidth < 1024) {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1919,7 +1951,7 @@ export default function AccountPage() {
                 <div className="space-y-3">
                   <button 
                     onClick={() => {
-                      setActiveTab('billing');
+                      handleTabChange('billing');
                       // Scroll to top on mobile
                       if (window.innerWidth < 1024) {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1938,7 +1970,7 @@ export default function AccountPage() {
 
                   <button 
                     onClick={() => {
-                      setActiveTab('email-preferences');
+                      handleTabChange('email-preferences');
                       // Scroll to top on mobile
                       if (window.innerWidth < 1024) {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2031,7 +2063,7 @@ export default function AccountPage() {
               {/* Back Button */}
               <div className="flex items-center mb-4">
                 <button 
-                  onClick={() => setActiveTab('info')}
+                  onClick={() => handleTabChange('info')}
                   className="flex items-center text-slate-300 hover:text-slate-100"
                 >
                   <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2056,7 +2088,7 @@ export default function AccountPage() {
               {/* Back Button */}
               <div className="flex items-center mb-4">
                 <button 
-                  onClick={() => setActiveTab('info')}
+                  onClick={() => handleTabChange('info')}
                   className="flex items-center text-slate-300 hover:text-slate-100"
                 >
                   <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2573,7 +2605,7 @@ export default function AccountPage() {
               </div>
 
               {/* Desktop Tabs */}
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-800 border border-slate-700 h-auto">
                   <TabsTrigger value="info" className="flex items-center gap-2 text-slate-400 data-[state=active]:bg-slate-700 data-[state=active]:text-slate-100 py-3 text-sm">
                     <User className="h-4 w-4" />

@@ -1493,179 +1493,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Signup stage router is already registered above; duplicate registration removed
   // to avoid redundant handlers after auth setup.
 
-  // Password reset endpoints
-  app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
-    try {
-      const { email } = req.body;
-      
-      if (!email) {
-        return res.status(400).json({ message: 'Email is required' });
-      }
-      
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({ message: 'Please enter a valid email address' });
-      }
-      
-      // Check if user exists with this email
-      const user = await storage.getUserByEmail(email);
-      
-      // Always return success response for security (don't reveal if email exists)
-      // But only send email if user actually exists
-      if (user) {
-        // Generate a JWT reset token with 1 hour expiration
-        const resetToken = jwt.sign(
-          { 
-            userId: user.id, 
-            type: 'password-reset',
-            email: user.email 
-          },
-          process.env.JWT_SECRET || 'default-secret',
-          { expiresIn: '1h' }
-        );
-        
-        // Send the password reset email using bulletproof template
-        try {
-          const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5050'}/reset-password?token=${resetToken}`;
-          const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
-          const userFirstName = user.fullName?.split(' ')[0] || user.username;
-          
-          const result = await sendPasswordResetEmail({
-            userFirstName,
-            userEmail: user.email,
-            resetUrl,
-            frontendUrl
-          });
-          
-          if (!result.success) {
-            console.error('❌ Failed to send password reset email to:', user.email);
-          } else {
-            console.log('✅ Password reset email sent to:', user.email);
-          }
-        } catch (emailError) {
-          console.error('❌ Error sending password reset email:', emailError);
-        }
-      } else {
-        console.log(`🔍 Password reset requested for non-existent email: ${email}`);
-      }
-      
-      // Always return success to prevent email enumeration attacks
-      res.setHeader('Content-Type', 'application/json');
-      res.json({ 
-        success: true, 
-        message: 'If an account with that email exists, we\'ve sent a password reset link.' 
-      });
-    } catch (error: any) {
-      console.error('Error processing forgot password request:', error);
-      res.setHeader('Content-Type', 'application/json');
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  app.post('/api/auth/validate-reset-token', async (req: Request, res: Response) => {
-    try {
-      const { token } = req.body;
-      
-      if (!token) {
-        return res.status(400).json({ message: 'Token is required' });
-      }
-      
-      // Verify the JWT token
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as any;
-        
-        // Check if token is for password reset and not expired
-        if (decoded.type !== 'password-reset') {
-          return res.status(400).json({ message: 'Invalid token type' });
-        }
-        
-        // Check if user still exists
-        const user = await storage.getUser(decoded.userId);
-        if (!user) {
-          return res.status(400).json({ message: 'User not found' });
-        }
-        
-        res.json({ valid: true });
-      } catch (jwtError) {
-        return res.status(400).json({ message: 'Invalid or expired reset token' });
-      }
-    } catch (error: any) {
-      console.error('Error validating reset token:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  app.post('/api/auth/reset-password', async (req: Request, res: Response) => {
-    try {
-      const { token, newPassword } = req.body;
-      
-      if (!token || !newPassword) {
-        return res.status(400).json({ message: 'Token and new password are required' });
-      }
-      
-      // Comprehensive password validation
-      const passwordValidation = {
-        minLength: newPassword.length >= 8,
-        uppercase: /[A-Z]/.test(newPassword),
-        lowercase: /[a-z]/.test(newPassword),
-        number: /\d/.test(newPassword),
-        special: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword),
-      };
-
-      const isValidPassword = Object.values(passwordValidation).every(Boolean);
-      
-      if (!isValidPassword) {
-        const missing = [];
-        if (!passwordValidation.minLength) missing.push('at least 8 characters');
-        if (!passwordValidation.uppercase) missing.push('one uppercase letter');
-        if (!passwordValidation.lowercase) missing.push('one lowercase letter');
-        if (!passwordValidation.number) missing.push('one number');
-        if (!passwordValidation.special) missing.push('one special character');
-        
-        return res.status(400).json({ 
-          message: `Password must contain ${missing.join(', ')}`
-        });
-      }
-      
-      // Verify the JWT token
-      let decoded: any;
-      try {
-        decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as any;
-        
-        // Check if token is for password reset
-        if (decoded.type !== 'password-reset') {
-          return res.status(400).json({ message: 'Invalid token type' });
-        }
-      } catch (jwtError) {
-        return res.status(400).json({ message: 'Invalid or expired reset token' });
-      }
-      
-      // Get the user
-      const user = await storage.getUser(decoded.userId);
-      if (!user) {
-        return res.status(400).json({ message: 'User not found' });
-      }
-      
-      // Hash the new password
-      const { hashPassword } = await import('./utils/passwordUtils');
-      const hashedPassword = await hashPassword(newPassword);
-      
-      // Update user's password
-      await getDb()
-        .update(users)
-        .set({
-          password: hashedPassword,
-        })
-        .where(eq(users.id, user.id));
-      
-      res.json({ success: true, message: 'Password reset successfully' });
-    } catch (error: any) {
-      console.error('Error resetting password:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
   // Set up admin authentication
   setupAdminAuth(app);
   
@@ -3468,6 +3295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         audioUrl: audioUrl || null,
         transcript: transcript || null,
         status: status || 'pending',
+        isDraft: false, // Ensure submitted pitches are not marked as drafts
         paymentIntentId,
         bidAmount: bidAmount || null
       };
@@ -4294,13 +4122,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             try {
               // Try to find user's industry from the database
-              let userIndustry = undefined;
-              try {
-                const [testUser] = await getDb()
-                  .select({ industry: users.industry })
-                  .from(users)
-                  .where(eq(users.email, email))
-                  .limit(1);
+            let userIndustry = undefined;
+            try {
+              const [testUser] = await getDb()
+                .select({ industry: users.industry })
+                .from(users)
+                .where(eq(users.email, email))
+                .limit(1);
                 
                 if (testUser && testUser.industry) {
                   userIndustry = testUser.industry;
@@ -4445,6 +4273,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
             } else {
               throw new Error('Failed to send notification email');
+            }
+
+          case 'BILLING':
+            // Test billing payment email
+            try {
+              const { sendBillingPaymentEmail } = await import('./lib/bulletproof-email');
+              
+              await sendBillingPaymentEmail({
+                userFirstName: req.body.firstName || fullName?.split(' ')[0] || username || 'User',
+                userEmail: email,
+                publicationName: 'TechCrunch',
+                articleTitle: 'Breaking: AI Startup Raises $50M Series A with Revolutionary Technology',
+                articleUrl: 'https://techcrunch.com/sample-article-link',
+                billingAmount: '450',
+                paymentMethod: 'Visa •••• 4242',
+                stripeReceiptUrl: 'https://pay.stripe.com/receipts/payment_intent_1NVWfx2eZvKYlo2CYvJmQ1vJ#loq5v1bb',
+                frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5050'
+              });
+              
+              return res.json({ 
+                success: true, 
+                message: 'Billing payment email sent successfully!' 
+              });
+            } catch (error) {
+              throw new Error(`Failed to send billing email: ${error}`);
             }
 
           case 'OPPORTUNITY':
@@ -8418,6 +8271,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update the status to paid
         const paidPlacement = await storage.updatePlacementStatus(id, 'paid');
         
+        // Get the charge from the payment intent to access receipt URL
+        let receiptUrl = null;
+        let paymentMethodDescription = 'Payment Method on File';
+        try {
+          if (paymentIntent.charges && paymentIntent.charges.data && paymentIntent.charges.data.length > 0) {
+            const charge = paymentIntent.charges.data[0];
+            receiptUrl = charge.receipt_url;
+            console.log(`💳 Found receipt URL for placement payment: ${receiptUrl}`);
+            
+            // Get payment method details for email
+            if (charge.payment_method_details && charge.payment_method_details.card) {
+              const card = charge.payment_method_details.card;
+              paymentMethodDescription = `${card.brand.charAt(0).toUpperCase() + card.brand.slice(1)} •••• ${card.last4}`;
+            }
+          }
+        } catch (receiptError) {
+          console.error('⚠️ Could not retrieve receipt URL:', receiptError);
+        }
+        
+        // Send billing payment email
+        try {
+          const { sendBillingPaymentEmail } = await import('./lib/bulletproof-email');
+          
+          await sendBillingPaymentEmail({
+            userFirstName: placement.user.fullName?.split(' ')[0] || placement.user.username || 'User',
+            userEmail: placement.user.email,
+            publicationName: placement.publication.name,
+            articleTitle: placement.articleTitle || placement.opportunity.title || 'Your Article Coverage',
+            articleUrl: placement.articleUrl || '',
+            billingAmount: placement.amount.toString(),
+            paymentMethod: paymentMethodDescription,
+            stripeReceiptUrl: receiptUrl || '',
+            frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5050'
+          });
+          
+          console.log(`📧 Billing payment email sent to ${placement.user.email} for placement ${id}`);
+        } catch (emailError) {
+          console.error('⚠️ Failed to send billing payment email:', emailError);
+          // Don't fail the payment if email fails
+        }
+        
         res.json({
           success: true,
           placement: paidPlacement,
@@ -11654,6 +11548,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const paidInvoice = await stripe.invoices.pay(finalizedInvoice.id, {
         payment_method: paymentMethodId,
       });
+      
+      console.log(`✅ Invoice ${paidInvoice.id} paid successfully for user ${userId} - Amount: $${amount}`);
+      
+      // Get the charge from the payment intent to access receipt URL
+      let receiptUrl = null;
+      let paymentMethodDescription = 'Payment Method on File';
+      try {
+        if (paidInvoice.payment_intent && typeof paidInvoice.payment_intent === 'string') {
+          const paymentIntent = await stripe.paymentIntents.retrieve(paidInvoice.payment_intent);
+          if (paymentIntent.charges && paymentIntent.charges.data && paymentIntent.charges.data.length > 0) {
+            const charge = paymentIntent.charges.data[0];
+            receiptUrl = charge.receipt_url;
+            console.log(`💳 Found receipt URL for payment: ${receiptUrl}`);
+            
+            // Get payment method details for email
+            if (charge.payment_method_details && charge.payment_method_details.card) {
+              const card = charge.payment_method_details.card;
+              paymentMethodDescription = `${card.brand.charAt(0).toUpperCase() + card.brand.slice(1)} •••• ${card.last4}`;
+            }
+          }
+        }
+      } catch (receiptError) {
+        console.error('⚠️ Could not retrieve receipt URL:', receiptError);
+      }
+      
+      // Helper function to extract publication name from description
+      function extractPublicationName(desc: string): string | null {
+        const match = desc.match(/QuoteBid - (.*?) - /);
+        return match ? match[1] : null;
+      }
+      
+      // Send billing payment email with real receipt URL
+      try {
+        const { sendBillingPaymentEmail } = await import('./lib/bulletproof-email');
+        
+        // Extract publication info from description or invoice data
+        const publicationName = extractPublicationName(description) || 'Media Outlet';
+        const articleTitle = description.replace(/^QuoteBid - .*? - /, '') || 'Your Article Coverage';
+        
+        await sendBillingPaymentEmail({
+          userFirstName: user.fullName?.split(' ')[0] || user.username || 'User',
+          userEmail: user.email,
+          publicationName: publicationName,
+          articleTitle: articleTitle,
+          articleUrl: invoiceData?.publicationLink || '',
+          billingAmount: amount.toString(),
+          paymentMethod: paymentMethodDescription,
+          stripeReceiptUrl: receiptUrl || '',
+          frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5050'
+        });
+        
+        console.log(`📧 Billing payment email sent to ${user.email} with receipt URL: ${receiptUrl || 'none'}`);
+      } catch (emailError) {
+        console.error('⚠️ Failed to send billing payment email:', emailError);
+        // Don't fail the payment if email fails
+      }
       
       // CRITICAL: Update pitch to mark as billed so it moves from AR to Successful
       if (placementId) {

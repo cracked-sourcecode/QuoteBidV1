@@ -663,24 +663,24 @@ export default function RegisterPage() {
           </div>
         </header>
 
-        <div className="relative z-20 pt-16 lg:pt-28 xl:pt-32 pb-8">
+        <div className="relative z-20 pt-20 lg:pt-28 xl:pt-32 pb-8">
           <div className="max-w-8xl mx-auto">
-            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row">
+            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-start">
           {/* Mobile Header - Show on small screens */}
-          <div className="lg:hidden px-4 pt-4 pb-4 text-center relative z-10">
+          <div className="lg:hidden px-4 pt-6 pb-2 text-center relative z-10">
             <h1 className="text-4xl sm:text-5xl font-black leading-tight mb-4 text-white">
               World's First <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">PR</span> Pricing Engine
             </h1>
             <p className="text-lg sm:text-xl text-white max-w-sm mx-auto mb-2" style={{lineHeight: '1.3'}}>
               The World's First Live Marketplace for Earned Media
             </p>
-            <p className="text-lg sm:text-xl text-gray-300 max-w-sm mx-auto mb-4" style={{lineHeight: '1.3'}}>
+            <p className="text-lg sm:text-xl text-gray-300 max-w-sm mx-auto mb-2" style={{lineHeight: '1.3'}}>
               Built for experts — not PR agencies.
             </p>
           </div>
 
           {/* Left: Hero Panel - Desktop only */}
-          <div className="hidden lg:flex flex-col justify-start items-start w-1/2 pl-12 pr-6 xl:pl-16 xl:pr-8 relative z-10" style={{ paddingTop: '2vh' }}>
+          <div className="hidden lg:flex flex-col justify-start items-start w-1/2 pl-12 pr-6 xl:pl-16 xl:pr-8 relative z-10 pt-8">
             <div className="max-w-2xl w-full">
               <h1 className="text-5xl xl:text-6xl font-black leading-tight mb-4 text-white" style={{letterSpacing: '-0.01em'}}>
                 World's First <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">PR</span> Pricing Engine
@@ -733,7 +733,7 @@ export default function RegisterPage() {
           </div>
           
           {/* Right: Signup Card */}
-          <div className="flex flex-col justify-center items-center w-full lg:w-1/2 px-3 py-4 lg:px-8 lg:py-4 relative z-10">
+          <div className="flex flex-col justify-start items-center w-full lg:w-1/2 px-3 py-4 lg:px-8 lg:py-4 relative z-10">
             <div className="w-full max-w-[420px] sm:max-w-[480px] lg:max-w-[620px] bg-slate-800/95 backdrop-blur-2xl border border-slate-600/50 rounded-2xl sm:rounded-3xl shadow-2xl pt-3 px-4 pb-8 sm:pt-4 sm:px-6 sm:pb-10 lg:pt-5 lg:px-8 lg:pb-12">
               <div className="text-center mb-3 sm:mb-1">
                 <div className="flex items-center justify-center gap-2 sm:gap-4 mb-2">
@@ -887,7 +887,7 @@ export default function RegisterPage() {
                   </Field>
                 </div>
                 
-                {/* Password strength indicator */}
+                {/* Password strength indicator - shown below both password fields */}
                 {form.password && (
                   <div className="mt-2 sm:mt-3 space-y-1 sm:space-y-2">
                     <div className="bg-slate-700/50 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-2 border border-slate-600/30">

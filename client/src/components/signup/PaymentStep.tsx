@@ -177,18 +177,18 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                     <label className="block text-sm font-medium text-gray-200 mb-3">
                       Credit Card Information
                     </label>
-                    <div className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-600 px-4 py-3 sm:px-5 sm:py-3 w-full">
+                    <div className="rounded-lg sm:rounded-xl border border-black bg-white px-4 py-3 sm:px-5 sm:py-3 w-full">
                       <CardNumberElement 
                         options={{
                           style: {
                             base: {
                               fontSize: '14px',
-                              color: '#ffffff',
+                              color: '#000000',
                               fontWeight: '400',
                               fontFamily: 'Inter, sans-serif',
                               backgroundColor: 'transparent',
                               '::placeholder': {
-                                color: '#9CA3AF'
+                                color: '#6B7280'
                               }
                             }
                           }
@@ -202,18 +202,18 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                       <label className="block text-sm font-medium text-gray-200 mb-3">
                         Expiration
                       </label>
-                      <div className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-600 px-4 py-3 sm:px-5 sm:py-3 w-full">
+                      <div className="rounded-lg sm:rounded-xl border border-black bg-white px-4 py-3 sm:px-5 sm:py-3 w-full">
                         <CardExpiryElement 
                           options={{
                             style: {
                               base: {
                                 fontSize: '14px',
-                                color: '#ffffff',
+                                color: '#000000',
                                 fontWeight: '400',
                                 fontFamily: 'Inter, sans-serif',
                                 backgroundColor: 'transparent',
                                 '::placeholder': {
-                                  color: '#9CA3AF'
+                                  color: '#6B7280'
                                 }
                               }
                             }
@@ -225,18 +225,18 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                       <label className="block text-sm font-medium text-gray-200 mb-3">
                         CVC
                       </label>
-                      <div className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-600 px-4 py-3 sm:px-5 sm:py-3 w-full">
+                      <div className="rounded-lg sm:rounded-xl border border-black bg-white px-4 py-3 sm:px-5 sm:py-3 w-full">
                         <CardCvcElement 
                           options={{
                             style: {
                               base: {
                                 fontSize: '14px',
-                                color: '#ffffff',
+                                color: '#000000',
                                 fontWeight: '400',
                                 fontFamily: 'Inter, sans-serif',
                                 backgroundColor: 'transparent',
                                 '::placeholder': {
-                                  color: '#9CA3AF'
+                                  color: '#6B7280'
                                 }
                               }
                             }
@@ -371,18 +371,18 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                     <label className="block text-sm font-medium text-gray-200 mb-3">
                       Credit Card Information
                     </label>
-                    <div className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-600 px-4 py-3 sm:px-5 sm:py-3 w-full">
+                    <div className="rounded-lg sm:rounded-xl border border-black bg-white px-4 py-3 sm:px-5 sm:py-3 w-full">
                       <CardNumberElement 
                         options={{
                           style: {
                             base: {
                               fontSize: '14px',
-                              color: '#ffffff',
+                              color: '#000000',
                               fontWeight: '400',
                               fontFamily: 'Inter, sans-serif',
                               backgroundColor: 'transparent',
                               '::placeholder': {
-                                color: '#9CA3AF'
+                                color: '#6B7280'
                               }
                             }
                           }
@@ -396,18 +396,18 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                       <label className="block text-sm font-medium text-gray-200 mb-3">
                         Expiration
                       </label>
-                      <div className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-600 px-4 py-3 sm:px-5 sm:py-3 w-full">
+                      <div className="rounded-lg sm:rounded-xl border border-black bg-white px-4 py-3 sm:px-5 sm:py-3 w-full">
                         <CardExpiryElement 
                           options={{
                             style: {
                               base: {
                                 fontSize: '14px',
-                                color: '#ffffff',
+                                color: '#000000',
                                 fontWeight: '400',
                                 fontFamily: 'Inter, sans-serif',
                                 backgroundColor: 'transparent',
                                 '::placeholder': {
-                                  color: '#9CA3AF'
+                                  color: '#6B7280'
                                 }
                               }
                             }
@@ -419,18 +419,18 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                       <label className="block text-sm font-medium text-gray-200 mb-3">
                         CVC
                       </label>
-                      <div className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-600 px-4 py-3 sm:px-5 sm:py-3 w-full">
+                      <div className="rounded-lg sm:rounded-xl border border-black bg-white px-4 py-3 sm:px-5 sm:py-3 w-full">
                         <CardCvcElement 
                           options={{
                             style: {
                               base: {
                                 fontSize: '14px',
-                                color: '#ffffff',
+                                color: '#000000',
                                 fontWeight: '400',
                                 fontFamily: 'Inter, sans-serif',
                                 backgroundColor: 'transparent',
                                 '::placeholder': {
-                                  color: '#9CA3AF'
+                                  color: '#6B7280'
                                 }
                               }
                             }
@@ -564,18 +564,18 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                   <label className="block text-sm font-medium text-gray-200 mb-3">
                     Credit Card Information
                   </label>
-                  <div className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-600 px-4 py-3 sm:px-5 sm:py-3 w-full">
+                  <div className="rounded-lg sm:rounded-xl border border-black bg-white px-4 py-3 sm:px-5 sm:py-3 w-full">
                     <CardNumberElement 
                       options={{
                         style: {
                           base: {
                             fontSize: '14px',
-                            color: '#ffffff',
+                            color: '#000000',
                             fontWeight: '400',
                             fontFamily: 'Inter, sans-serif',
                             backgroundColor: 'transparent',
                             '::placeholder': {
-                              color: '#9CA3AF'
+                              color: '#6B7280'
                             }
                           }
                         }
@@ -589,18 +589,18 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                     <label className="block text-sm font-medium text-gray-200 mb-3">
                       Expiration
                     </label>
-                    <div className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-600 px-4 py-3 sm:px-5 sm:py-3 w-full">
+                    <div className="rounded-lg sm:rounded-xl border border-black bg-white px-4 py-3 sm:px-5 sm:py-3 w-full">
                       <CardExpiryElement 
                         options={{
                           style: {
                             base: {
                               fontSize: '14px',
-                              color: '#ffffff',
+                              color: '#000000',
                               fontWeight: '400',
                               fontFamily: 'Inter, sans-serif',
                               backgroundColor: 'transparent',
                               '::placeholder': {
-                                color: '#9CA3AF'
+                                color: '#6B7280'
                               }
                             }
                           }
@@ -612,18 +612,18 @@ function CheckoutForm({ onComplete }: PaymentStepProps) {
                     <label className="block text-sm font-medium text-gray-200 mb-3">
                       CVC
                     </label>
-                    <div className="rounded-lg sm:rounded-xl border border-slate-600/30 bg-slate-600 px-4 py-3 sm:px-5 sm:py-3 w-full">
+                    <div className="rounded-lg sm:rounded-xl border border-black bg-white px-4 py-3 sm:px-5 sm:py-3 w-full">
                       <CardCvcElement 
                         options={{
                           style: {
                             base: {
                               fontSize: '14px',
-                              color: '#ffffff',
+                              color: '#000000',
                               fontWeight: '400',
                               fontFamily: 'Inter, sans-serif',
                               backgroundColor: 'transparent',
                               '::placeholder': {
-                                color: '#9CA3AF'
+                                color: '#6B7280'
                               }
                             }
                           }
