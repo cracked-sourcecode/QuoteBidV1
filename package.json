@@ -160,7 +160,7 @@
     "@types/testing-library__react": "^10.0.1",
     "@types/validator": "^13.15.0",
     "@types/ws": "^8.5.13",
-    "@vitejs/plugin-react": "^4.3.2",
+    "@vitejs/plugin-react": "^4.3.9",
     "autoprefixer": "^10.4.21",
     "babel-jest": "^29.7.0",
     "concurrently": "^9.1.2",
