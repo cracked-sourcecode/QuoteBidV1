@@ -68,7 +68,7 @@ export default function Home() {
 
       {/* ——— PREMIUM NAVBAR ——— */}
       <header className="absolute top-0 w-full z-30 py-3 px-4 md:py-6 md:px-8">
-          <div className="max-w-7xl mx-auto flex items-center justify-end md:justify-between">
+          <div className="max-w-10xl mx-auto flex items-center justify-end md:justify-between">
           <Link href="/" className="flex items-center group mr-auto md:mr-0 scale-102 md:scale-100">
             <span className="text-white font-black text-xl sm:text-2xl md:text-3xl tracking-tight">
               <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Quote</span>
@@ -98,20 +98,21 @@ export default function Home() {
         </header>
       
       {/* ——— HERO ——— */}
-      <section className="relative z-20 pt-16 md:pt-24 pb-24 px-6 overflow-hidden">
+      <section className="relative z-20 pt-20 md:pt-24 pb-24 px-6 overflow-hidden">
 
         
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16 relative z-10">
+        <div className="max-w-10xl mx-auto relative z-10">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16">
           {/* Copy */}
           <div className="md:w-1/2">
-            <div className="mb-6">
+            <div className="mb-6 hidden md:block">
               <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-full text-blue-300 text-sm font-semibold uppercase tracking-wide backdrop-blur-sm">
                 <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
                 World's First PR Pricing Engine
               </div>
           </div>
           
-            <h1 className="text-6xl md:text-7xl font-black text-white leading-[0.9] tracking-tight">
+            <h1 className="text-5xl md:text-7xl font-black text-white leading-[0.9] tracking-tight">
               <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
                 The First Live
               </span>
@@ -124,6 +125,13 @@ export default function Home() {
                 for Earned Media
               </span>
                 </h1>
+                
+            <div className="mt-6 mb-6 md:hidden">
+              <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-full text-blue-300 text-sm font-semibold uppercase tracking-wide backdrop-blur-sm">
+                <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
+                World's First PR Pricing Engine
+              </div>
+            </div>
             
             <p className="mt-8 text-blue-300 text-xl font-bold tracking-wide">
               Built For Experts, Not PR Agencies.
@@ -342,12 +350,13 @@ export default function Home() {
               </div>
             </div>
           </div>
+          </div>
         </div>
       </section>
 
       {/* ——— HOW THIS WORKS NOW ——— */}
       <section id="benefits" className="relative z-20 bg-gradient-to-b from-slate-900 to-purple-900 py-12 md:py-16">
-        <div className="max-w-7xl mx-auto px-6 text-center">
+        <div className="max-w-10xl mx-auto px-6 text-center">
           <div className="mb-8">
             <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-full text-blue-300 text-sm font-semibold uppercase tracking-wide backdrop-blur-sm mb-6">
               <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
@@ -404,7 +413,7 @@ export default function Home() {
           <div className="absolute bottom-10 right-10 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob animation-delay-2000"></div>
         </div>
         
-        <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
+        <div className="max-w-10xl mx-auto px-4 md:px-6 relative z-10">
           <div className="text-center mb-12 md:mb-20">
             <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-full text-blue-300 text-sm font-semibold uppercase tracking-wide backdrop-blur-sm mb-6 md:mb-8">
               <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
@@ -418,7 +427,8 @@ export default function Home() {
             </p>
           </div>
 
-          <ol className="space-y-16 md:space-y-24">
+          <div className="max-w-7xl mx-auto">
+            <ol className="space-y-16 md:space-y-24">
             {[
               {
                 step: "1",
@@ -813,6 +823,7 @@ export default function Home() {
               </li>
             ))}
           </ol>
+          </div>
                   </div>
       </section>
 
@@ -826,7 +837,7 @@ export default function Home() {
           }}></div>
                 </div>
         
-        <div className="max-w-7xl mx-auto px-6 relative">
+        <div className="max-w-10xl mx-auto px-6 relative">
           <div className="text-center">
             
             <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-500/20 to-blue-500/20 border border-green-400/30 rounded-full text-green-300 text-sm font-semibold uppercase tracking-wide backdrop-blur-sm mb-8">
@@ -922,8 +933,8 @@ export default function Home() {
           <div className="absolute bottom-1/4 left-1/4 w-32 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
                             </div>
         
-        <div className="max-w-7xl mx-auto px-6 relative">
-          <div className="flex flex-col lg:flex-row-reverse items-center gap-12 md:gap-24">
+        <div className="max-w-10xl mx-auto px-6 relative">
+          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row-reverse items-center gap-12 md:gap-24">
             
             {/* Left side - Content */}
             <div className="lg:w-1/2 text-center lg:text-left">
@@ -1068,7 +1079,7 @@ export default function Home() {
           <div className="absolute bottom-20 left-20 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
         </div>
         
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="max-w-10xl mx-auto px-6 relative z-10">
             <div className="text-center mb-16">
             <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-full text-blue-300 text-sm font-semibold uppercase tracking-wide backdrop-blur-sm mb-8">
               <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
@@ -1082,7 +1093,7 @@ export default function Home() {
               </p>
             </div>
             
-          <div className="flex flex-col lg:flex-row gap-12 items-stretch max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-12 items-stretch">
               {/* Left side: Benefits */}
             <div className="lg:w-1/2 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-10 lg:p-12">
               <h3 className="text-3xl font-bold mb-8 text-white">Reclaim Control of How You Get Covered</h3>
@@ -1148,7 +1159,7 @@ export default function Home() {
                     </div>
                     <div className="text-right">
                       <div className="flex items-baseline">
-                      <span className="text-5xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-purple-500 bg-clip-text text-transparent animate-pulse">
+                      <span className="text-3xl md:text-5xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-purple-500 bg-clip-text text-transparent">
                         $99.99
                       </span>
                       <span className="ml-2 text-lg text-gray-300">/month</span>
@@ -1233,7 +1244,7 @@ export default function Home() {
           <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob animation-delay-2000"></div>
         </div>
         
-        <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
+        <div className="max-w-10xl mx-auto px-6 text-center relative z-10">
           <div className="mb-8">
             <Link href="/" className="inline-flex items-center group">
               <span className="text-white font-black text-4xl tracking-tight">

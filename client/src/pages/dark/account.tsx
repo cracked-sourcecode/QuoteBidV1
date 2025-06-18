@@ -2075,7 +2075,7 @@ export default function AccountPage() {
       {/* Desktop Main Content */}
       <div className="hidden lg:block lg:ml-72 flex-1 bg-slate-900 min-h-screen">
         <div className="pt-0 px-8 py-8">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-10xl mx-auto">
             {/* Desktop Header - Aligned with sidebar profile */}
             <div className="mb-2">
               <div className="flex items-center h-32">

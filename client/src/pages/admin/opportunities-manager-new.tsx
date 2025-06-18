@@ -1051,7 +1051,7 @@ export default function OpportunitiesManager() {
             }
           }}
         >
-          <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col bg-slate-900 border border-white/20 text-white shadow-2xl">
+          <DialogContent className="max-w-7xl max-h-[85vh] overflow-hidden flex flex-col bg-slate-900 border border-white/20 text-white shadow-2xl">
             <DialogHeader className="pb-4 border-b border-white/10">
               <DialogTitle className="flex items-center text-xl font-bold text-white">
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
@@ -1318,7 +1318,7 @@ export default function OpportunitiesManager() {
       
       {/* Create Opportunity Dialog - Dark Theme */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0 bg-slate-900 border border-white/20 text-white shadow-2xl">
+        <DialogContent className="max-w-8xl max-h-[90vh] overflow-y-auto p-0 bg-slate-900 border border-white/20 text-white shadow-2xl">
           {/* Header */}
           <div className="sticky top-0 bg-gradient-to-r from-slate-800/90 via-slate-900/90 to-slate-800/90 backdrop-blur-sm border-b border-white/10 p-8 z-10">
             <DialogTitle className="text-3xl font-bold text-white flex items-center">

@@ -663,7 +663,9 @@ export default function RegisterPage() {
           </div>
         </header>
 
-        <div className="relative z-20 flex flex-col lg:flex-row min-h-screen pt-4">
+        <div className="relative z-20 pt-20 pb-8">
+          <div className="max-w-8xl mx-auto">
+            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row">
           {/* Mobile Header - Show on small screens */}
           <div className="lg:hidden px-4 pt-16 pb-4 text-center relative z-10">
             <h1 className="text-4xl sm:text-5xl font-black leading-tight mb-4 text-white">
@@ -678,7 +680,7 @@ export default function RegisterPage() {
           </div>
 
           {/* Left: Hero Panel - Desktop only */}
-          <div className="hidden lg:flex flex-col justify-center items-start w-1/2 pl-24 pr-6 xl:pl-28 xl:pr-8 relative z-10">
+          <div className="hidden lg:flex flex-col justify-center items-start w-1/2 pl-12 pr-6 xl:pl-16 xl:pr-8 relative z-10">
             <div className="max-w-2xl w-full">
               <h1 className="text-5xl xl:text-6xl font-black leading-tight mb-4 text-white" style={{letterSpacing: '-0.01em'}}>
                 World's First <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">PR</span> Pricing Engine
@@ -970,10 +972,12 @@ export default function RegisterPage() {
               </form>
             </div>
           </div>
+          </div>
+          </div>
         </div>
         
         {/* ——— FOOTER ——— */}
-        <footer className="relative z-20 bg-gradient-to-b from-transparent to-slate-900 py-16">
+        <footer className="relative z-20 bg-gradient-to-b from-transparent to-slate-900 py-12">
           {/* Background effects */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob"></div>

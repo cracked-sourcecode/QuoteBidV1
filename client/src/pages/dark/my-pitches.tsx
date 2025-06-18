@@ -323,7 +323,7 @@ export default function MyPitches() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-purple-900">
-      <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+              <div className="max-w-10xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {/* Header Section */}
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-700/50 p-3 sm:p-6 mb-4 sm:mb-6">
           <div className="flex flex-col gap-3 mb-3">
@@ -666,7 +666,7 @@ export default function MyPitches() {
           <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-2xl animate-blob animation-delay-2000"></div>
         </div>
         
-        <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
+        <div className="max-w-10xl mx-auto px-6 text-center relative z-10">
           <div className="mb-8">
             <div className="inline-flex items-center group">
               <span className="text-white font-black text-4xl tracking-tight">
