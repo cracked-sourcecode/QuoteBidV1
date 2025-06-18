@@ -14,7 +14,8 @@ import { createSampleNotifications } from "./data/sample-notifications";
 import Stripe from "stripe";
 import { setupAuth } from "./auth";
 import { Resend } from 'resend';
-import { sendOpportunityNotification, sendPasswordResetEmail, sendUsernameReminderEmail, sendPricingNotificationEmail, sendNotificationEmail, sendUserNotificationEmail } from './lib/email';
+import { sendOpportunityNotification, sendUsernameReminderEmail, sendPricingNotificationEmail, sendNotificationEmail, sendUserNotificationEmail } from './lib/email';
+import { sendPasswordResetEmail } from './lib/bulletproof-email';
 import { render } from '@react-email/render';
 import WelcomeEmail from '../emails/templates/WelcomeEmail';
 import PriceDropAlert from '../emails/templates/PriceDropAlert';
@@ -763,15 +764,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           { expiresIn: '1h' }
         );
         
-        // Send the password reset email
+        // Send the password reset email using bulletproof template
         try {
-          const success = await sendPasswordResetEmail(
-            user.email,
-            resetToken,
-            user.username
-          );
+          const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5050'}/reset-password?token=${resetToken}`;
+          const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
+          const userFirstName = user.fullName?.split(' ')[0] || user.username;
           
-          if (!success) {
+          const result = await sendPasswordResetEmail({
+            userFirstName,
+            userEmail: user.email,
+            resetUrl,
+            frontendUrl
+          });
+          
+          if (!result.success) {
             console.error('❌ Failed to send password reset email to:', user.email);
           } else {
             console.log('✅ Password reset email sent to:', user.email);
@@ -1519,15 +1525,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           { expiresIn: '1h' }
         );
         
-        // Send the password reset email
+        // Send the password reset email using bulletproof template
         try {
-          const success = await sendPasswordResetEmail(
-            user.email,
-            resetToken,
-            user.username
-          );
+          const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5050'}/reset-password?token=${resetToken}`;
+          const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
+          const userFirstName = user.fullName?.split(' ')[0] || user.username;
           
-          if (!success) {
+          const result = await sendPasswordResetEmail({
+            userFirstName,
+            userEmail: user.email,
+            resetUrl,
+            frontendUrl
+          });
+          
+          if (!result.success) {
             console.error('❌ Failed to send password reset email to:', user.email);
           } else {
             console.log('✅ Password reset email sent to:', user.email);
@@ -7028,22 +7039,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store the reset token in the database (you'll need to add a resetToken field to your users table)
       // For this implementation, we'll just send the email without storing the token
       
-      // Send the password reset email using the proper designed template
-      let emailSent = false;
-      
+      // Send the password reset email using the bulletproof template
       try {
-        emailSent = await sendPasswordResetEmail(
-          email,
-          resetToken,
-          user.username,
-          user.fullName
-        );
+        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5050'}/reset-password?token=${resetToken}`;
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
+        const userFirstName = user.fullName?.split(' ')[0] || user.username;
+        
+        const emailResult = await sendPasswordResetEmail({
+          userFirstName,
+          userEmail: user.email,
+          resetUrl,
+          frontendUrl
+        });
+
+        if (!emailResult || !emailResult.success) {
+          console.error('❌ Email service returned failure:', emailResult);
+          return res.status(500).json({ message: "Failed to send password reset email" });
+        }
       } catch (emailError: any) {
         console.error('❌ Email error:', emailError);
-        return res.status(500).json({ message: "Failed to send password reset email" });
-      }
-      
-      if (!emailSent) {
         return res.status(500).json({ message: "Failed to send password reset email" });
       }
       
@@ -7079,7 +7093,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         message = `${type} pricing notification sent`;
       } else if (type === 'PASSWORD_RESET') {
-        success = await sendPasswordResetEmail(email, 'test-token-123', 'Ben');
+        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5050'}/reset-password?token=test-token-123`;
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
+        
+        const result = await sendPasswordResetEmail({
+          userFirstName: 'Ben',
+          userEmail: email,
+          resetUrl,
+          frontendUrl
+        });
+        success = result.success;
         message = 'Password reset email sent';
       } else if (type === 'USERNAME_REMINDER') {
         success = await sendUsernameReminderEmail(email, 'bendeveran');

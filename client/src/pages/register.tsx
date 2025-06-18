@@ -663,7 +663,7 @@ export default function RegisterPage() {
           </div>
         </header>
 
-        <div className="relative z-20 pt-20 pb-8">
+        <div className="relative z-20 pt-20 lg:pt-28 xl:pt-32 pb-8">
           <div className="max-w-8xl mx-auto">
             <div className="max-w-7xl mx-auto flex flex-col lg:flex-row">
           {/* Mobile Header - Show on small screens */}

@@ -182,9 +182,9 @@ export default function ResetPassword() {
           <div className="absolute -bottom-8 left-20 w-72 h-72 bg-violet-400 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{animationDelay: '4s'}}></div>
         </div>
 
-        <div className="relative z-10 w-full max-w-md mx-auto px-6">
-          <div className="bg-gradient-to-br from-blue-900/50 via-purple-900/50 to-violet-900/50 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-8">
-            <div className="flex items-center justify-center py-8">
+        <div className="relative z-10 w-full max-w-md lg:max-w-lg mx-auto px-4 sm:px-6">
+          <div className="bg-gradient-to-br from-blue-900/50 via-purple-900/50 to-violet-900/50 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-5 sm:p-7 lg:p-8">
+            <div className="flex items-center justify-center py-4">
             <div className="flex items-center space-x-2">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
                 <span className="text-gray-300">Validating reset link...</span>
@@ -206,27 +206,27 @@ export default function ResetPassword() {
           <div className="absolute -bottom-8 left-20 w-72 h-72 bg-violet-400 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{animationDelay: '4s'}}></div>
         </div>
 
-        <div className="relative z-10 w-full max-w-md mx-auto px-6">
-          <div className="bg-gradient-to-br from-blue-900/50 via-purple-900/50 to-violet-900/50 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-8 lg:p-12">
+        <div className="relative z-10 w-full max-w-md lg:max-w-lg mx-auto px-4 sm:px-6">
+          <div className="bg-gradient-to-br from-blue-900/50 via-purple-900/50 to-violet-900/50 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-5 sm:p-7 lg:p-8">
             
             {/* Header */}
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-black text-white mb-2">
+            <div className="text-center mb-5">
+              <h2 className="text-2xl sm:text-3xl font-black text-white mb-1.5">
                 <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Quote</span>
                 <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Bid</span>
               </h2>
-              <div className="mx-auto w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+              <div className="mx-auto w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mb-3">
                 <AlertCircle className="h-6 w-6 text-red-400" />
               </div>
-              <h3 className="text-xl font-semibold text-blue-100 mb-2">Invalid Reset Link</h3>
-              <p className="text-gray-300 text-sm">
+              <h3 className="text-lg lg:text-xl font-semibold text-blue-100 mb-1.5">Invalid Reset Link</h3>
+              <p className="text-gray-300 text-sm max-w-sm mx-auto">
                 The password reset link has expired or is invalid. Please request a new password reset.
               </p>
             </div>
 
             <Button 
               onClick={() => navigate("/login")} 
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-blue-700 text-white py-4 rounded-xl text-lg font-bold shadow-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-blue-700 text-white py-3 lg:py-4 rounded-xl text-base lg:text-lg font-bold shadow-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
             >
               Back to Login
             </Button>
@@ -245,27 +245,27 @@ export default function ResetPassword() {
         <div className="absolute -bottom-8 left-20 w-72 h-72 bg-violet-400 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{animationDelay: '4s'}}></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-md mx-auto px-6">
-        <div className="bg-gradient-to-br from-blue-900/50 via-purple-900/50 to-violet-900/50 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-8 lg:p-12">
+      <div className="relative z-10 w-full max-w-md lg:max-w-lg mx-auto px-4 sm:px-6">
+        <div className="bg-gradient-to-br from-blue-900/50 via-purple-900/50 to-violet-900/50 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl p-5 sm:p-7 lg:p-8">
           
           {/* Header */}
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-black text-white mb-2">
+          <div className="text-center mb-5 lg:mb-6">
+            <h2 className="text-2xl sm:text-3xl font-black text-white mb-1.5">
               <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Quote</span>
               <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Bid</span>
             </h2>
-            <div className="mx-auto w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mb-4">
-              <Lock className="h-6 w-6 text-blue-400" />
+            <div className="mx-auto w-12 h-12 lg:w-14 lg:h-14 bg-blue-500/20 rounded-full flex items-center justify-center mb-3">
+              <Lock className="h-6 w-6 lg:h-7 lg:w-7 text-blue-400" />
             </div>
-            <h3 className="text-xl font-semibold text-blue-100 mb-2">Reset Your Password</h3>
-            <p className="text-gray-300 text-sm">
+            <h3 className="text-lg lg:text-xl font-semibold text-blue-100 mb-1.5">Reset Your Password</h3>
+            <p className="text-gray-300 text-sm lg:text-base max-w-sm mx-auto">
               Enter your new password below. Make sure it's strong and secure.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-5">
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-white mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-white mb-1.5">
                 New Password
               </label>
               <div className="relative">
@@ -275,7 +275,7 @@ export default function ResetPassword() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your new password"
-                  className="w-full px-4 py-3 text-base rounded-xl bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl pr-12"
+                  className="w-full px-4 py-3 lg:px-5 lg:py-3.5 text-base rounded-xl bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl pr-12"
                   disabled={isLoading}
                 />
                 <button
@@ -289,7 +289,7 @@ export default function ResetPassword() {
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-white mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-white mb-1.5">
                 Confirm New Password
               </label>
               <div className="relative">
@@ -299,7 +299,7 @@ export default function ResetPassword() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm your new password"
-                  className="w-full px-4 py-3 text-base rounded-xl bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl pr-12"
+                  className="w-full px-4 py-3 lg:px-5 lg:py-3.5 text-base rounded-xl bg-white text-black placeholder-gray-500 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all shadow-lg hover:shadow-xl pr-12"
                   disabled={isLoading}
                 />
                 <button
@@ -314,22 +314,22 @@ export default function ResetPassword() {
 
             {/* Password requirements and strength */}
             {password && (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {/* Password strength indicator */}
-                <div className="bg-white/10 rounded-xl p-4 border border-white/20">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-white">Password Strength</span>
+                <div className="bg-white/10 rounded-lg p-2.5 lg:p-3 border border-white/20">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs lg:text-sm font-medium text-white">Password Strength</span>
                     {passwordValidation.strengthText && (
-                      <span className={`text-sm font-bold ${passwordValidation.strengthColor}`}>
+                      <span className={`text-xs lg:text-sm font-bold ${passwordValidation.strengthColor}`}>
                         {passwordValidation.strengthText}
                       </span>
                     )}
                   </div>
                   
                   {/* Strength bar */}
-                  <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
+                  <div className="w-full bg-gray-700 rounded-full h-1.5 mb-2">
                     <div 
-                      className={`h-2 rounded-full transition-all duration-300 ${
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
                         passwordValidation.strength === 0 ? 'w-0' :
                         passwordValidation.strength <= 2 ? 'w-2/5 bg-red-400' :
                         passwordValidation.strength <= 3 ? 'w-3/5 bg-yellow-400' :
@@ -340,31 +340,31 @@ export default function ResetPassword() {
                   </div>
 
                   {/* Requirements checklist */}
-                  <div className="space-y-2 text-sm">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 text-xs lg:text-sm">
                     <div className={`flex items-center space-x-2 ${passwordValidation.requirements.minLength ? 'text-green-400' : 'text-gray-400'}`}>
-                      {passwordValidation.requirements.minLength ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                  <span>At least 8 characters</span>
+                      {passwordValidation.requirements.minLength ? <CheckCircle className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                  <span>8+ characters</span>
                 </div>
                     <div className={`flex items-center space-x-2 ${passwordValidation.requirements.uppercase ? 'text-green-400' : 'text-gray-400'}`}>
-                      {passwordValidation.requirements.uppercase ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                      <span>At least one uppercase letter</span>
+                      {passwordValidation.requirements.uppercase ? <CheckCircle className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                      <span>Uppercase</span>
                     </div>
                     <div className={`flex items-center space-x-2 ${passwordValidation.requirements.lowercase ? 'text-green-400' : 'text-gray-400'}`}>
-                      {passwordValidation.requirements.lowercase ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                      <span>At least one lowercase letter</span>
+                      {passwordValidation.requirements.lowercase ? <CheckCircle className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                      <span>Lowercase</span>
                     </div>
                     <div className={`flex items-center space-x-2 ${passwordValidation.requirements.number ? 'text-green-400' : 'text-gray-400'}`}>
-                      {passwordValidation.requirements.number ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                      <span>At least one number</span>
+                      {passwordValidation.requirements.number ? <CheckCircle className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                      <span>Number</span>
                     </div>
                     <div className={`flex items-center space-x-2 ${passwordValidation.requirements.special ? 'text-green-400' : 'text-gray-400'}`}>
-                      {passwordValidation.requirements.special ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                      <span>At least one special character (!@#$%^&*)</span>
+                      {passwordValidation.requirements.special ? <CheckCircle className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                      <span>Special char</span>
                     </div>
                     {confirmPassword && (
                       <div className={`flex items-center space-x-2 ${passwordsMatch ? 'text-green-400' : 'text-red-400'}`}>
-                        {passwordsMatch ? <CheckCircle className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                  <span>Passwords match</span>
+                        {passwordsMatch ? <CheckCircle className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                  <span>Match</span>
                       </div>
                     )}
                   </div>
@@ -374,7 +374,7 @@ export default function ResetPassword() {
 
             <Button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-blue-700 text-white py-4 rounded-xl text-lg font-bold shadow-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-blue-700 text-white py-3 lg:py-4 rounded-xl text-base lg:text-lg font-bold shadow-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
               disabled={isLoading || !password || !confirmPassword || !passwordValidation.isValid || !passwordsMatch}
             >
               {isLoading ? (
@@ -388,7 +388,7 @@ export default function ResetPassword() {
             </Button>
 
             {/* Back to login link */}
-            <div className="text-center mt-8">
+            <div className="text-center mt-4 lg:mt-6">
               <button 
                 type="button"
                 onClick={() => navigate("/login")}

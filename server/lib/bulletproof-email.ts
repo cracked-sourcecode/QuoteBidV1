@@ -5,7 +5,14 @@ import { getDb } from '../db';
 import { opportunities, publications } from '@shared/schema';
 import { eq, desc, and, isNull } from 'drizzle-orm';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend only if API key is available
+function getResendInstance() {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY not configured - email sending will be disabled');
+    return null;
+  }
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 // Template loader that replaces placeholders with actual data
 function loadTemplate(templateName: string, variables: Record<string, any>): string {
@@ -140,6 +147,12 @@ export async function sendWelcomeEmail(data: {
   try {
     console.log('📧 Preparing welcome email for:', data.email);
     
+    const resend = getResendInstance();
+    if (!resend) {
+      console.log('📧 Email sending disabled - no API key configured');
+      return { success: false, error: 'Email service not configured' };
+    }
+    
     // Fetch a live opportunity to showcase
     const liveOpportunity = await fetchLiveOpportunity(data.userIndustry);
     
@@ -192,6 +205,12 @@ export async function sendOpportunityAlertEmail(data: {
   };
 }) {
   try {
+    const resend = getResendInstance();
+    if (!resend) {
+      console.log('📧 Email sending disabled - no API key configured');
+      return { success: false, error: 'Email service not configured' };
+    }
+    
     const htmlContent = loadTemplate('opportunity-alert', {
       userFirstName: data.userFirstName,
       frontendUrl: data.frontendUrl,
@@ -227,6 +246,12 @@ export async function sendPasswordResetEmail(data: {
   frontendUrl: string;
 }) {
   try {
+    const resend = getResendInstance();
+    if (!resend) {
+      console.log('📧 Email sending disabled - no API key configured');
+      return { success: false, error: 'Email service not configured' };
+    }
+    
     const htmlContent = loadTemplate('password-reset', {
       userFirstName: data.userFirstName,
       userEmail: data.userEmail,
@@ -260,6 +285,12 @@ export async function sendNotificationEmail(data: {
   frontendUrl: string;
 }) {
   try {
+    const resend = getResendInstance();
+    if (!resend) {
+      console.log('📧 Email sending disabled - no API key configured');
+      return { success: false, error: 'Email service not configured' };
+    }
+    
     // Create a simple notification template based on welcome structure
     const htmlContent = `
     <!-- QuoteBid Notification Email - Bulletproof Table Layout -->
