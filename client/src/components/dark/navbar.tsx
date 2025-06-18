@@ -147,7 +147,7 @@ export default function DarkNavbar() {
                             variant="ghost"
                             size="sm"
                             onClick={clearAllNotifications}
-                            className="text-xs text-white/60 hover:text-white/80 hover:bg-white/10"
+                            className="text-xs text-white/60 hover:text-white/80 hover:bg-slate-700/50"
                           >
                             Clear all
                           </Button>
@@ -164,7 +164,7 @@ export default function DarkNavbar() {
                         notifications.slice(0, 10).map((notification) => (
                           <DropdownMenuItem
                             key={notification.id}
-                            className={`px-4 py-3 cursor-pointer hover:bg-white/10 ${!notification.isRead ? 'bg-blue-600/20' : ''}`}
+                            className={`px-4 py-3 cursor-pointer hover:bg-slate-800/40 focus:bg-slate-800/40 data-[highlighted]:bg-slate-800/40 ${!notification.isRead ? 'bg-blue-600/20' : ''}`}
                             onClick={() => {
                               markAsRead(notification.id);
                               if (notification.linkUrl) {
@@ -236,7 +236,7 @@ export default function DarkNavbar() {
                             variant="ghost"
                             size="sm"
                             onClick={clearAllNotifications}
-                            className="text-xs text-white/60 hover:text-white/80 hover:bg-white/10"
+                            className="text-xs text-white/60 hover:text-white/80 hover:bg-slate-700/50"
                           >
                             Clear all
                           </Button>
@@ -253,7 +253,7 @@ export default function DarkNavbar() {
                         notifications.slice(0, 10).map((notification) => (
                           <DropdownMenuItem
                             key={notification.id}
-                            className={`px-4 py-3 cursor-pointer hover:bg-white/10 ${!notification.isRead ? 'bg-blue-600/20' : ''}`}
+                            className={`px-4 py-3 cursor-pointer hover:bg-slate-800/40 focus:bg-slate-800/40 data-[highlighted]:bg-slate-800/40 ${!notification.isRead ? 'bg-blue-600/20' : ''}`}
                             onClick={() => {
                               markAsRead(notification.id);
                               if (notification.linkUrl) {
