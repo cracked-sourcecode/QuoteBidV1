@@ -128,6 +128,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear the token from localStorage
       localStorage.removeItem("token");
       
+      // Clear all signup wizard related localStorage items to prevent redirect bugs
+      localStorage.removeItem("in_signup_wizard");
+      localStorage.removeItem("signup_email");
+      localStorage.removeItem("signup_highest_step");
+      localStorage.removeItem("signup_data");
+      
       // Clear the user from query cache immediately
       queryClient.setQueryData(["/api/user"], null);
       
@@ -150,6 +156,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onError: (error: Error) => {
       // Even on error, clear the local state
       localStorage.removeItem("token");
+      
+      // Clear all signup wizard related localStorage items to prevent redirect bugs
+      localStorage.removeItem("in_signup_wizard");
+      localStorage.removeItem("signup_email");
+      localStorage.removeItem("signup_highest_step");
+      localStorage.removeItem("signup_data");
+      
       queryClient.setQueryData(["/api/user"], null);
       queryClient.cancelQueries({ queryKey: ["/api/user"] });
       queryClient.removeQueries({ queryKey: ["/api/user"] });
