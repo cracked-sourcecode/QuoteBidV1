@@ -50,6 +50,7 @@ import {
   TrendingDown,
   Eye,
   Calculator,
+  MousePointer2,
 } from "lucide-react";
 import { format, subDays, parseISO } from "date-fns";
 
@@ -234,7 +235,26 @@ export default function AdminAnalytics() {
     },
   });
 
-  const isLoading = userActivityLoading || usersLoading || opportunitiesLoading || pitchesLoading || publicationsLoading;
+  // Fetch detailed user events for activity tracking - ALL HISTORICAL DATA
+  const { data: userEvents, isLoading: userEventsLoading, error: userEventsError } = useQuery({
+    queryKey: ['/api/admin/user-events-all'],
+    queryFn: async () => {
+      console.log('🔍 Fetching user events from API...');
+      const res = await apiFetch('/api/admin/user-events?limit=500&timeRange=all');
+      console.log('📡 API Response status:', res.status);
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('❌ API Error:', res.status, errorText);
+        throw new Error(`Failed to fetch user events: ${res.status} - ${errorText}`);
+      }
+      const data = await res.json();
+      console.log('✅ User events data received:', data);
+      return data;
+    },
+    refetchInterval: 30000, // Refresh every 30 seconds for real-time data
+  });
+
+  const isLoading = userActivityLoading || usersLoading || opportunitiesLoading || pitchesLoading || publicationsLoading || userEventsLoading;
 
   // Process and calculate analytics data
   const analytics = useMemo(() => {
@@ -590,7 +610,7 @@ export default function AdminAnalytics() {
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="bg-slate-800/30 backdrop-blur-lg rounded-2xl border border-white/20 mb-8">
-            <TabsList className="bg-transparent border-b border-white/10 grid w-full grid-cols-5 rounded-none h-16 p-1">
+            <TabsList className="bg-transparent border-b border-white/10 grid w-full grid-cols-6 rounded-none h-16 p-1">
               <TabsTrigger 
                 value="overview" 
                 className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white text-slate-300 hover:text-slate-100 transition-all duration-200 rounded-lg mx-1"
@@ -611,6 +631,13 @@ export default function AdminAnalytics() {
               >
             <Users className="h-4 w-4" />
             Users
+          </TabsTrigger>
+              <TabsTrigger 
+                value="activity" 
+                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white text-slate-300 hover:text-slate-100 transition-all duration-200 rounded-lg mx-1"
+              >
+            <MousePointer2 className="h-4 w-4" />
+            User Activity
           </TabsTrigger>
               <TabsTrigger 
                 value="opportunities" 
@@ -1406,6 +1433,166 @@ export default function AdminAnalytics() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="activity" className="space-y-6">
+          {/* User Activity Header */}
+          <div className="bg-gradient-to-r from-purple-500/20 to-blue-600/20 backdrop-blur-lg rounded-2xl border border-purple-500/30 p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-600 rounded-xl flex items-center justify-center">
+                <MousePointer2 className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">User Activity Tracking</h2>
+                <p className="text-purple-200 text-sm">Real-time monitoring of user clicks and interactions</p>
+              </div>
+            </div>
+            
+            {/* Activity Summary */}
+            {userEvents && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-slate-700/30 rounded-lg p-4">
+                  <p className="text-xs text-purple-300 font-medium mb-1">Total Events</p>
+                  <p className="text-2xl font-bold text-white">{userEvents.summary?.totalEvents || 0}</p>
+                </div>
+                <div className="bg-slate-700/30 rounded-lg p-4">
+                  <p className="text-xs text-purple-300 font-medium mb-1">Unique Users</p>
+                  <p className="text-2xl font-bold text-white">{userEvents.summary?.uniqueUsers || 0}</p>
+                </div>
+                <div className="bg-slate-700/30 rounded-lg p-4">
+                  <p className="text-xs text-purple-300 font-medium mb-1">Opportunities Clicked</p>
+                  <p className="text-2xl font-bold text-white">{userEvents.summary?.uniqueOpportunities || 0}</p>
+                </div>
+                <div className="bg-slate-700/30 rounded-lg p-4">
+                  <p className="text-xs text-purple-300 font-medium mb-1">Time Range</p>
+                  <p className="text-2xl font-bold text-white">{userEvents.summary?.timeRange === 'all' ? 'All Time' : (userEvents.summary?.timeRange || 'All Time')}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Event Types Breakdown */}
+          {userEvents?.summary?.eventTypes && (
+            <Card className="bg-slate-800/30 backdrop-blur-lg border border-white/20">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <Activity className="h-5 w-5 mr-2 text-green-400" />
+                  Event Types Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {Object.entries(userEvents.summary.eventTypes).map(([type, count]) => (
+                    <div key={type} className="bg-slate-700/30 rounded-lg p-4 border border-white/10">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-300 capitalize">{type.replace('_', ' ')}</span>
+                        <span className="text-white font-bold">{count as number}</span>
+                      </div>
+                      <div className="w-full bg-slate-600 rounded-full h-2 mt-2">
+                        <div 
+                          className="bg-gradient-to-r from-purple-500 to-blue-600 h-2 rounded-full" 
+                          style={{ 
+                            width: `${Math.min(100, ((count as number) / (userEvents.summary?.totalEvents || 1)) * 100)}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Detailed User Activity Log */}
+          <Card className="bg-slate-800/30 backdrop-blur-lg border border-white/20">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center">
+                <Users className="h-5 w-5 mr-2 text-blue-400" />
+                Recent User Activity
+              </CardTitle>
+              <CardDescription className="text-slate-400">
+                Complete historical tracking of all user clicks and interactions (showing last 500 events)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {userEventsError ? (
+                <div className="text-center py-8">
+                  <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-4 mb-4">
+                    <p className="text-red-300 font-medium">Error loading user events:</p>
+                    <p className="text-red-200 text-sm mt-2">{userEventsError.message}</p>
+                  </div>
+                  <p className="text-slate-400 text-sm">Check browser console for more details</p>
+                </div>
+              ) : userEvents?.events && userEvents.events.length > 0 ? (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {userEvents.events.map((event: any) => (
+                    <div key={event.id} className="bg-slate-700/30 rounded-lg p-4 border border-white/10 hover:border-purple-500/30 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                              <span className="text-white font-medium">
+                                {event.user.name}
+                              </span>
+                              {event.user.email && (
+                                <span className="text-slate-400 text-sm">({event.user.email})</span>
+                              )}
+                            </div>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              event.type === 'opp_click' ? 'bg-blue-500/20 text-blue-300' :
+                              event.type === 'email_click' ? 'bg-green-500/20 text-green-300' :
+                              'bg-purple-500/20 text-purple-300'
+                            }`}>
+                              {event.type.replace('_', ' ')}
+                            </span>
+                          </div>
+                          
+                          <div className="text-slate-300 mb-2">
+                            <span className="font-medium">{event.opportunity.outlet}</span>
+                            <span className="text-slate-500 mx-2">•</span>
+                            <span className="text-slate-400">{event.opportunity.title}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-4 text-xs text-slate-500">
+                            <span>Tier: {event.opportunity.tier}</span>
+                            {event.opportunity.currentPrice && (
+                              <span>Price: ${event.opportunity.currentPrice}</span>
+                            )}
+                            {event.user.company && (
+                              <span>Company: {event.user.company}</span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="text-right text-xs text-slate-500">
+                          <div>{new Date(event.timestamp).toLocaleDateString()}</div>
+                          <div>{new Date(event.timestamp).toLocaleTimeString()}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                              ) : userEventsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className="text-slate-400">Loading user activity data...</p>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <MousePointer2 className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+                  <p className="text-slate-400">No user activity data available</p>
+                  <p className="text-slate-500 text-sm mt-2">Activity will appear here as users interact with opportunities</p>
+                  {/* Debug info */}
+                  <div className="mt-4 text-xs text-slate-600 bg-slate-800/50 rounded p-2">
+                    <p>Debug: userEvents = {JSON.stringify(userEvents, null, 2)}</p>
+                    <p>Loading: {userEventsLoading.toString()}</p>
+                                         <p>Error: {(userEventsError as any)?.message || 'none'}</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
       </div>

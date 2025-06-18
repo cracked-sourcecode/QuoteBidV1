@@ -605,10 +605,16 @@ router.post('/:email/complete', async (req: Request, res: Response) => {
       })
       .where(eq(users.id, user.id));
     
-    // Send welcome email to new user
+        // Send welcome email to new user
     try {
-      const { sendWelcomeEmail } = await import('../lib/email');
-              await sendWelcomeEmail(user.email, user.username, user.fullName || user.username, user.industry || undefined);
+      const { sendWelcomeEmail } = await import('../lib/bulletproof-email');
+      await sendWelcomeEmail({
+        userFirstName: user.fullName?.split(' ')[0] || user.username || 'User',
+        username: user.username,
+        email: user.email,
+        frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5050',
+        userIndustry: user.industry || undefined
+      });
       console.log('✅ Welcome email sent to new user:', user.email, 'for industry:', user.industry);
     } catch (emailError) {
       console.error('❌ Failed to send welcome email to:', user.email, emailError);

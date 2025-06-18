@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { processVoiceRecording } from "./lib/voice";
 import { increaseBidAmount } from "./lib/bidding";
 import { z } from "zod";
+import { subHours, subDays } from 'date-fns';
 import { insertBidSchema, insertOpportunitySchema, insertPitchSchema, insertPublicationSchema, insertSavedOpportunitySchema, User, PlacementWithRelations, users, pitches, opportunities, publications, notifications, placements, price_snapshots, variable_registry, pricing_config, mediaCoverage, emailClicks } from "@shared/schema";
 import { getDb } from "./db";
 import { eq, sql, desc, and, ne, asc, isNull, isNotNull, gte, lte, or, inArray, gt } from "drizzle-orm";
@@ -13,7 +14,7 @@ import { createSampleNotifications } from "./data/sample-notifications";
 import Stripe from "stripe";
 import { setupAuth } from "./auth";
 import { Resend } from 'resend';
-import { sendOpportunityNotification, sendPasswordResetEmail, sendUsernameReminderEmail, sendPricingNotificationEmail, sendNotificationEmail, sendWelcomeEmail, sendUserNotificationEmail } from './lib/email';
+import { sendOpportunityNotification, sendPasswordResetEmail, sendUsernameReminderEmail, sendPricingNotificationEmail, sendNotificationEmail, sendUserNotificationEmail } from './lib/email';
 import { render } from '@react-email/render';
 import WelcomeEmail from '../emails/templates/WelcomeEmail';
 import PriceDropAlert from '../emails/templates/PriceDropAlert';
@@ -4125,6 +4126,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to record event' });
     }
   });
+
+  // Get detailed user click events with user information (admin only)
+  app.get("/api/admin/user-events", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      console.log("Admin requesting detailed user events data");
+      
+      const { limit = 100, type = null, timeRange = '7d' } = req.query;
+      
+      // Calculate time range - support ALL historical data
+      let startDate = new Date();
+      switch (timeRange) {
+        case '1h':
+          startDate = subHours(new Date(), 1);
+          break;
+        case '24h':
+          startDate = subHours(new Date(), 24);
+          break;
+        case '7d':
+          startDate = subDays(new Date(), 7);
+          break;
+        case '30d':
+          startDate = subDays(new Date(), 30);
+          break;
+        case 'all':
+          // Fetch ALL historical data - set to very old date
+          startDate = new Date('2020-01-01');
+          break;
+        default:
+          startDate = subDays(new Date(), 7);
+      }
+      
+      // Import required tables
+      const { events, opportunities, users } = await import("@shared/schema");
+      
+      // Build query with filters
+      let whereConditions = and(
+        gte(events.createdAt, startDate)
+      );
+      
+      if (type && type !== 'all') {
+        whereConditions = and(
+          whereConditions,
+          eq(events.type, type as string)
+        );
+      }
+      
+      // Get detailed events with user and opportunity information
+      const detailedEvents = await getDb()
+        .select({
+          id: events.id,
+          opportunityId: events.opportunityId,
+          type: events.type,
+          userId: events.userId,
+          sessionId: events.sessionId,
+          metadata: events.metadata,
+          createdAt: events.createdAt,
+          // User data
+          userName: users.fullName,
+          userEmail: users.email,
+          userCompany: users.company_name,
+          // Opportunity data
+          opportunityTitle: opportunities.title,
+          opportunityOutlet: opportunities.outlet,
+          opportunityTier: opportunities.tier,
+          currentPrice: opportunities.current_price,
+        })
+        .from(events)
+        .leftJoin(users, eq(events.userId, users.id))
+        .leftJoin(opportunities, eq(events.opportunityId, opportunities.id))
+        .where(whereConditions)
+        .orderBy(desc(events.createdAt))
+        .limit(parseInt(limit as string));
+      
+      // Format the response
+      const formattedEvents = detailedEvents.map(event => ({
+        id: event.id,
+        timestamp: event.createdAt,
+        type: event.type,
+        user: event.userId ? {
+          id: event.userId,
+          name: event.userName || 'Unknown User',
+          email: event.userEmail,
+          company: event.userCompany,
+        } : {
+          id: null,
+          name: 'Anonymous',
+          email: null,
+          company: null,
+        },
+        opportunity: {
+          id: event.opportunityId,
+          title: event.opportunityTitle || 'Unknown Opportunity',
+          outlet: event.opportunityOutlet || 'Unknown Outlet',
+          tier: event.opportunityTier || 'Unknown',
+          currentPrice: event.currentPrice,
+        },
+        sessionId: event.sessionId,
+        metadata: event.metadata || {},
+      }));
+      
+      // Get summary stats
+      const totalEvents = detailedEvents.length;
+      const uniqueUsers = new Set(detailedEvents.filter(e => e.userId).map(e => e.userId)).size;
+      const uniqueOpportunities = new Set(detailedEvents.map(e => e.opportunityId)).size;
+      
+      const eventTypes = detailedEvents.reduce((acc, event) => {
+        acc[event.type] = (acc[event.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      console.log(`Retrieved ${totalEvents} detailed events for time range: ${timeRange === 'all' ? 'ALL HISTORICAL DATA' : timeRange}`);
+      
+      res.json({
+        events: formattedEvents,
+        summary: {
+          totalEvents,
+          uniqueUsers,
+          uniqueOpportunities,
+          timeRange,
+          eventTypes,
+        }
+      });
+      
+    } catch (error: any) {
+      console.error("Error fetching detailed user events:", error);
+      res.status(500).json({ message: "Failed to fetch user events" });
+    }
+  });
   
   // Email endpoints removed
 
@@ -4149,33 +4278,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (type) {
         switch (type.toUpperCase()) {
           case 'WELCOME':
-            // Use new MJML email service
-            const { sendWelcomeEmail: mjmlSendWelcomeEmail } = await import('./lib/mjml-email');
+            // Use new bulletproof email service
+            const { sendWelcomeEmail } = await import('./lib/bulletproof-email');
             
             try {
-              await mjmlSendWelcomeEmail({
-                userFirstName: fullName?.split(' ')[0] || username || 'User',
+              // Try to find user's industry from the database
+              let userIndustry = undefined;
+              try {
+                const [testUser] = await getDb()
+                  .select({ industry: users.industry })
+                  .from(users)
+                  .where(eq(users.email, email))
+                  .limit(1);
+                
+                if (testUser && testUser.industry) {
+                  userIndustry = testUser.industry;
+                  console.log('🎯 Found user industry for test email:', userIndustry);
+                } else {
+                  // Use a default industry for testing if user not found
+                  userIndustry = 'Technology';
+                  console.log('📋 Using default industry for test email:', userIndustry);
+                }
+              } catch (dbError) {
+                console.warn('⚠️ Could not fetch user industry, using default:', dbError);
+                userIndustry = 'Technology';
+              }
+              
+              await sendWelcomeEmail({
+                userFirstName: req.body.firstName || fullName?.split(' ')[0] || username || 'User',
                 username: username || 'testuser',
                 email: email,
-                frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5050'
+                frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5050',
+                userIndustry: userIndustry
               });
               
               return res.json({ 
                 success: true, 
-                message: 'Welcome email sent successfully with MJML!' 
+                message: `Welcome email sent successfully with dynamic ${userIndustry} opportunity!`
               });
             } catch (error) {
               throw new Error(`Failed to send welcome email: ${error}`);
             }
 
           case 'PASSWORD_RESET':
-            // Use new MJML email service
-            const { sendPasswordResetEmail: mjmlSendPasswordResetEmail } = await import('./lib/mjml-email');
+            // Use new bulletproof email service
+            const { sendPasswordResetEmail } = await import('./lib/bulletproof-email');
             
             try {
               const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5050'}/reset-password?token=test-token-12345`;
               
-              await mjmlSendPasswordResetEmail({
+              await sendPasswordResetEmail({
                 userFirstName: fullName?.split(' ')[0] || username || 'User',
                 userEmail: email,
                 resetUrl: resetUrl,
@@ -4184,18 +4336,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               return res.json({ 
                 success: true, 
-                message: 'Password reset email sent successfully with MJML!' 
+                message: 'Password reset email sent successfully with bulletproof tables!' 
               });
             } catch (error) {
               throw new Error(`Failed to send password reset email: ${error}`);
             }
 
           case 'OPPORTUNITY_ALERT':
-            // Use new MJML email service for opportunity alerts
-            const { sendOpportunityAlertEmail: mjmlSendOpportunityAlertEmail } = await import('./lib/mjml-email');
+            // Use new bulletproof email service for opportunity alerts
+            const { sendOpportunityAlertEmail } = await import('./lib/bulletproof-email');
             
             try {
-              await mjmlSendOpportunityAlertEmail({
+              await sendOpportunityAlertEmail({
                 userFirstName: fullName?.split(' ')[0] || username || 'User',
                 userEmail: email,
                 frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5050',
@@ -4213,7 +4365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               return res.json({ 
                 success: true, 
-                message: 'Opportunity alert email sent successfully with MJML!' 
+                message: 'Opportunity alert email sent successfully with bulletproof tables!' 
               });
             } catch (error) {
               throw new Error(`Failed to send opportunity alert email: ${error}`);
