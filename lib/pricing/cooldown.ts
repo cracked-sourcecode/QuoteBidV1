@@ -1,6 +1,5 @@
-export const COOLDOWN_MS = 15 * 60 * 1000; // 15 min
-
-export function canUpdate(lastUpdate: Date | null): boolean {
+export function canUpdate(lastUpdate: Date | null, cooldownMinutes: number = 5): boolean {
   if (!lastUpdate) return true;
-  return Date.now() - lastUpdate.getTime() > COOLDOWN_MS;
+  const cooldownMs = cooldownMinutes * 60 * 1000;
+  return Date.now() - lastUpdate.getTime() > cooldownMs;
 } 

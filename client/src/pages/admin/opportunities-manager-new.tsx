@@ -166,6 +166,32 @@ export default function OpportunitiesManager() {
   
   // Helper function to get live price for an opportunity
   const getLivePrice = (opportunity: any) => {
+    // CRITICAL FIX: For closed opportunities, use the final closing price, not live socket price
+    const opportunityStatus = getOpportunityStatus(opportunity);
+    if (opportunityStatus === 'closed') {
+      // Try multiple field names for the final price
+      const finalPrice = opportunity.lastPrice || opportunity.last_price || opportunity.finalPrice;
+      
+      console.log(`🏁 Closed opportunity ${opportunity.id} data:`, {
+        lastPrice: opportunity.lastPrice,
+        last_price: opportunity.last_price,
+        finalPrice: opportunity.finalPrice,
+        currentPrice: opportunity.currentPrice,
+        current_price: opportunity.current_price,
+        status: opportunity.status
+      });
+      
+      if (finalPrice) {
+        console.log(`🏁 Using final price for closed OPP ${opportunity.id}: $${finalPrice}`);
+        return finalPrice;
+      } else {
+        // If no final price is set, this is a data integrity issue
+        console.warn(`⚠️ No final price found for closed opportunity ${opportunity.id}, using fallback`);
+        return opportunity.currentPrice || opportunity.current_price || opportunity.minimumBid || 225;
+      }
+    }
+    
+    // For open opportunities, get live socket price
     const livePrice = getPrice(opportunity.id);
     if (livePrice && livePrice.currentPrice) {
       // Log price updates for debugging
@@ -409,14 +435,22 @@ export default function OpportunitiesManager() {
   });
   
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      console.log("Updating opportunity status:", { id, status });
+    mutationFn: async ({ id, status, currentPrice }: { id: number; status: string; currentPrice?: number }) => {
+      console.log("Updating opportunity status:", { id, status, currentPrice });
       setUpdatingStatus(prev => ({ ...prev, [id]: true }));
+      
+      const payload: any = { status };
+      
+      // CRITICAL FIX: Include current live price when closing opportunities
+      if (status === 'closed' && currentPrice) {
+        payload.currentPrice = currentPrice;
+        console.log(`🏁 Closing opportunity ${id} with live price: $${currentPrice}`);
+      }
       
       const res = await apiRequest(
         "PUT",
         `/api/admin/opportunities/${id}`,
-        { status }
+        payload
       );
       if (!res.ok) {
         const errorData = await res.text();
@@ -428,10 +462,20 @@ export default function OpportunitiesManager() {
       setUpdatingStatus(prev => ({ ...prev, [variables.id]: false }));
       queryClient.invalidateQueries({queryKey: ["/api/admin/opportunities-with-pitches"]});
       queryClient.invalidateQueries({queryKey: ["/api/admin/opportunities"]});
-      toast({
-        title: "Status updated",
-        description: "The opportunity status has been updated successfully.",
-      });
+      
+      // If we just closed an opportunity, switch to the "Closed" tab so user can see it
+      if (variables.status === 'closed') {
+        setActiveTab('closed');
+        toast({
+          title: "Opportunity closed",
+          description: "The opportunity has been closed and moved to the 'Closed' tab.",
+        });
+      } else {
+        toast({
+          title: "Status updated",
+          description: "The opportunity status has been updated successfully.",
+        });
+      }
     },
     onError: (error: Error, variables) => {
       setUpdatingStatus(prev => ({ ...prev, [variables.id]: false }));
@@ -837,177 +881,95 @@ export default function OpportunitiesManager() {
           </CardContent>
         </Card>
       ) : filteredOpportunities?.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+        <div className="space-y-4">
           {filteredOpportunities.map((opportunity: any) => (
-            <Card key={opportunity.id} className="group relative bg-slate-900/80 backdrop-blur-sm border-2 border-white/20 hover:border-amber-400/50 transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 flex flex-col overflow-hidden hover:scale-[1.02]">
-              {/* Status indicator */}
-              <div className={`absolute top-4 right-4 w-3 h-3 rounded-full ${
-                getOpportunityStatus(opportunity) === 'open' 
-                  ? 'bg-green-400 shadow-green-400/50 shadow-lg' 
-                  : 'bg-gray-400 shadow-gray-400/50 shadow-lg'
-              }`}>
-              </div>
-              
-              {/* Closed Badge */}
-              {getOpportunityStatus(opportunity) === 'closed' && (
-                <div className="absolute top-4 left-4 px-3 py-1 bg-gradient-to-r from-gray-500/20 to-gray-600/20 text-gray-300 text-sm font-bold rounded-lg border border-gray-400/30 backdrop-blur-sm">
-                  Closed
-                </div>
-              )}
-              
-              <CardHeader className="pb-6 pt-6">
-                {/* Publication Header */}
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-amber-500/20 to-orange-600/20 rounded-xl border border-amber-400/30 flex items-center justify-center">
-                    <Building2 className="h-6 w-6 text-amber-400" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-white">
-                      {opportunity.publication.name}
-                    </h4>
-                    <p className="text-sm text-amber-400 font-medium">
-                      {opportunity.tier || 'Tier 1'}
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Title */}
-                <h3 className="text-xl font-bold text-white leading-tight line-clamp-2 group-hover:text-amber-400 transition-colors duration-300">
-                  {opportunity.title}
-                </h3>
-              </CardHeader>
-              
-              <CardContent className="flex-1 flex flex-col px-6 pb-6">
-                {/* Key Metrics */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  {/* Price */}
-                  <div className={`bg-gradient-to-br rounded-xl p-4 border transition-all duration-300 ${
-                    getPriceTrend(opportunity) === 'up' 
-                      ? 'from-green-500/20 to-emerald-600/20 border-green-400/40 shadow-green-500/20 shadow-lg'
-                      : getPriceTrend(opportunity) === 'down'
-                      ? 'from-red-500/20 to-red-600/20 border-red-400/40 shadow-red-500/20 shadow-lg'
-                      : 'from-green-500/10 to-emerald-600/10 border-green-400/20'
-                  }`}>
-                    <div className="flex items-start justify-between mb-2">
-                      <span className={`text-2xl font-bold transition-colors duration-300 ${
-                        getPriceTrend(opportunity) === 'up' ? 'text-green-300' :
-                        getPriceTrend(opportunity) === 'down' ? 'text-red-300' :
-                        'text-white'
+            <Card key={opportunity.id} className="border border-slate-600/30 bg-slate-800/40 hover:bg-slate-800/60 transition-colors duration-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  {/* Left: Main Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-4 mb-2">
+                      {/* Status */}
+                      <div className={`flex items-center gap-2 px-2 py-1 rounded text-xs font-medium ${
+                        getOpportunityStatus(opportunity) === 'open' 
+                          ? 'bg-green-900/30 text-green-300' 
+                          : 'bg-gray-900/30 text-gray-400'
                       }`}>
-                        ${getLivePrice(opportunity)}
-                      </span>
-                      {getPriceTrend(opportunity) !== 'stable' && (
-                        <div className={`flex items-center ${
-                          getPriceTrend(opportunity) === 'up' ? 'text-green-200' : 'text-red-200'
-                        }`}>
-                          {getPriceTrend(opportunity) === 'up' ? (
-                            <TrendingUp className="h-4 w-4" />
-                          ) : (
-                            <TrendingDown className="h-4 w-4" />
-                          )}
-                        </div>
-                      )}
+                        <div className={`w-2 h-2 rounded-full ${
+                          getOpportunityStatus(opportunity) === 'open' ? 'bg-green-400' : 'bg-gray-400'
+                        }`} />
+                        {getOpportunityStatus(opportunity) === 'open' ? 'Active' : 'Closed'}
+                      </div>
+                      
+                      {/* Publication & Tier */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-medium">{opportunity.publication.name}</span>
+                        <span className="text-amber-400 text-sm">• {opportunity.tier || 'Tier 1'}</span>
+                      </div>
                     </div>
-                    <p className={`text-sm font-medium ${
-                      getPriceTrend(opportunity) === 'up' ? 'text-green-200' :
-                      getPriceTrend(opportunity) === 'down' ? 'text-red-200' :
-                      'text-green-300'
-                    }`}>
-                      Current Price
-                    </p>
-                  </div>
-                  
-                  {/* Deadline */}
-                  <div className={`rounded-xl p-4 border ${
-                    new Date(opportunity.deadline) < new Date() 
-                      ? 'bg-gradient-to-br from-red-500/10 to-red-600/10 border-red-400/30' 
-                      : 'bg-gradient-to-br from-slate-500/10 to-slate-600/10 border-slate-400/20'
-                  }`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <Calendar className={`h-5 w-5 ${
-                        new Date(opportunity.deadline) < new Date() 
-                          ? 'text-red-400' 
-                          : 'text-slate-300'
-                      }`} />
-                      <span className={`text-2xl font-bold ${
-                        new Date(opportunity.deadline) < new Date() 
-                          ? 'text-red-400' 
-                          : 'text-white'
-                      }`}>
+                    
+                    {/* Title */}
+                    <h3 className="text-white font-semibold text-base mb-1 line-clamp-1">
+                      {opportunity.title}
+                    </h3>
+                    
+                    {/* Metadata */}
+                    <div className="flex items-center gap-4 text-sm text-slate-300">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
                         {new Date(opportunity.deadline).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric' 
+                          month: 'short', day: 'numeric' 
                         })}
                       </span>
+                      <span className="flex items-center gap-1">
+                        <MessageSquare className="h-3 w-3" />
+                        {opportunity.pitchCount || 0} pitches
+                      </span>
                     </div>
-                    <p className={`text-sm font-medium ${
-                      new Date(opportunity.deadline) < new Date() 
-                        ? 'text-red-300' 
-                        : 'text-slate-300'
-                    }`}>
-                      {new Date(opportunity.deadline) < new Date() ? 'EXPIRED' : 'Deadline'}
-                    </p>
                   </div>
-                </div>
-                
-                {/* Pitch Count */}
-                <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-xl p-4 border border-blue-400/20 mb-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
-                        <MessageSquare className="h-5 w-5 text-blue-400" />
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-white">
-                          {opportunity.pitchCount || 0}
-                        </p>
-                        <p className="text-sm text-blue-300 font-medium">Pitches Received</p>
-                      </div>
+                  
+                  {/* Center: Price */}
+                  <div className="text-center px-6">
+                    <div className="text-sm text-slate-400 mb-1">
+                      {getOpportunityStatus(opportunity) === 'closed' ? 'Final Price' : 'Current Price'}
+                    </div>
+                    <div className="text-xl font-bold text-white">
+                      ${getLivePrice(opportunity)}
                     </div>
                     {opportunity.highestBid > 0 && (
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-white">
-                          ${opportunity.highestBid}
-                        </p>
-                        <p className="text-sm text-slate-300">
-                          Highest
-                        </p>
+                      <div className="text-xs text-green-400">
+                        High: ${opportunity.highestBid}
                       </div>
                     )}
                   </div>
-                </div>
-                
-                {/* Spacer */}
-                <div className="flex-1"></div>
-                
-                {/* Action Buttons */}
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  
+                  {/* Right: Actions */}
+                  <div className="flex items-center gap-2">
                     <Button
-                      variant="default"
                       size="sm"
+                      variant="outline"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         setShowPitches(opportunity.id);
                       }}
-                      className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold shadow-lg"
+                      className="bg-slate-700/50 border-slate-600 text-slate-200 hover:bg-slate-600 hover:text-white hover:border-slate-500 h-8 px-3 font-medium transition-all duration-200"
                     >
-                      <Eye className="h-4 w-4 mr-2" />
+                      <Eye className="h-3 w-3 mr-1" />
                       View
                     </Button>
                     <Button
-                      variant="outline"
                       size="sm"
+                      variant="outline"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         setManagingOpportunity(opportunity);
                         setIsManageModalOpen(true);
                       }}
-                      className="bg-slate-800/80 border-2 border-white/20 hover:border-amber-400/50 hover:bg-amber-500/10 text-white hover:text-amber-400 font-semibold transition-all duration-200"
+                      className="bg-slate-700/50 border-slate-600 text-slate-200 hover:bg-amber-600 hover:text-white hover:border-amber-500 h-8 px-3 font-medium transition-all duration-200"
                     >
-                      <MoreHorizontal className="h-4 w-4 mr-2" />
+                      <MoreHorizontal className="h-3 w-3 mr-1" />
                       Manage
                     </Button>
                   </div>
@@ -2431,9 +2393,14 @@ export default function OpportunitiesManager() {
             <Button
               onClick={() => {
                 if (showCloseConfirmation) {
+                  // CRITICAL FIX: Get the live price before closing
+                  const opportunity = finalOpportunities?.find((o: any) => o.id === showCloseConfirmation);
+                  const currentLivePrice = opportunity ? getLivePrice(opportunity) : undefined;
+                  
                   updateStatusMutation.mutate({
                     id: showCloseConfirmation,
-                    status: 'closed'
+                    status: 'closed',
+                    currentPrice: currentLivePrice
                   });
                   setShowCloseConfirmation(null);
                 }

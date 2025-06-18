@@ -128,6 +128,13 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
 
   // Real-time price updates synced with admin tick interval
   useEffect(() => {
+    // CRITICAL FIX: Don't do live price updates for closed opportunities
+    const opportunityStatus = getOpportunityStatus(opportunity);
+    if (opportunityStatus === 'closed') {
+      console.log(`⏹️ Opportunity ${id} is closed, skipping live price updates`);
+      return;
+    }
+
     const fetchLatestPrice = async () => {
       try {
         const response = await apiFetch(`/api/opportunities/${id}`, {
@@ -151,12 +158,47 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
     const priceInterval = setInterval(fetchLatestPrice, tickInterval);
     
     return () => clearInterval(priceInterval);
-  }, [id, currentPriceState, tickInterval]);
+  }, [id, currentPriceState, tickInterval, opportunity]);
 
   // Update local price state when opportunity prop changes
   useEffect(() => {
     setCurrentPriceState(opportunity.currentPrice);
   }, [opportunity.currentPrice]);
+
+  // CRITICAL FIX: Determine the correct price to display based on opportunity status
+  const getDisplayPrice = () => {
+    const opportunityStatus = getOpportunityStatus(opportunity);
+    
+    if (opportunityStatus === 'closed') {
+      // For closed opportunities, try multiple field names for the final price
+      const opp = opportunity as any; // Cast to handle different field name variations
+      const finalPrice = opp.lastPrice || opp.last_price || opp.finalPrice;
+      
+      console.log(`🏁 Frontend card closed opportunity ${id} price data:`, {
+        lastPrice: opp.lastPrice,
+        last_price: opp.last_price,
+        finalPrice: opp.finalPrice,
+        currentPrice: opp.currentPrice,
+        currentPriceState: currentPriceState,
+        status: opp.status
+      });
+      
+      if (finalPrice) {
+        console.log(`💰 Frontend card closed opportunity ${id}: using final price $${finalPrice}`);
+        return finalPrice;
+      } else {
+        // If no final price is found, this is a data integrity issue
+        console.warn(`⚠️ Frontend card: No final price found for closed opportunity ${id}, using fallback`);
+        // Use the current price state which might be more recent than opportunity.currentPrice
+        return currentPriceState || opportunity.currentPrice;
+      }
+    } else {
+      // For open opportunities, use the live price state
+      return currentPriceState;
+    }
+  };
+
+  const displayPrice = getDisplayPrice();
 
   // Logo loading handler
   const handleLogoLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -230,8 +272,8 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
   }, []);
 
   // Calculate price changes and trends using bulk data from opportunities API
-  const priceIncrease = currentPriceState > basePrice
-    ? Math.round(((currentPriceState - basePrice) / basePrice) * 100)
+  const priceIncrease = displayPrice > basePrice
+    ? Math.round(((displayPrice - basePrice) / basePrice) * 100)
     : 0;
 
   // Format deadline - USE SAME LOGIC AS getOpportunityStatus function
@@ -279,7 +321,7 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
             metadata: {
               outlet,
               tier,
-              currentPrice: currentPriceState,
+              currentPrice: displayPrice,
               hasSubscription: hasActiveSubscription
             }
           })
@@ -567,11 +609,11 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
                 <span className={cn(
                   "text-xs sm:text-xs md:text-sm lg:text-sm xl:text-sm font-semibold mb-1",
                   theme === 'dark' ? "text-blue-200" : "text-gray-700"
-                )}>Current Price</span>
+                )}>{getOpportunityStatus(opportunity) === 'closed' ? 'Final Price' : 'Current Price'}</span>
                 <div className={cn(
                   "text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-3xl font-black transition-all duration-500",
                   theme === 'dark' ? "bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent" : "text-gray-900"
-                )}>${currentPriceState % 1 === 0 ? Math.floor(currentPriceState) : currentPriceState}</div>
+                )}>${displayPrice % 1 === 0 ? Math.floor(displayPrice) : displayPrice}</div>
               </div>
               <div className={cn(
                 "flex items-center text-xs sm:text-xs md:text-xs lg:text-sm xl:text-sm font-bold px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full border shadow-sm transition-all duration-200 hover:scale-105",

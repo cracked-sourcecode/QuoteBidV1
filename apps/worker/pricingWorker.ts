@@ -156,6 +156,12 @@ async function reloadWeightsAndConfig(): Promise<boolean> {
       }
     }
     
+    if (oldConfig['ambient.cooldownMins'] !== cachedConfig['ambient.cooldownMins']) {
+      const oldCooldown = Number(oldConfig['ambient.cooldownMins']) || 5;
+      const newCooldown = Number(cachedConfig['ambient.cooldownMins']) || 5;
+      console.log(`⏳ Pricing cooldown updated: ${oldCooldown} min → ${newCooldown} min`);
+    }
+    
     console.log("✅ Pricing engine successfully synced with admin configuration");
     return needsIntervalRestart;
   } catch (error) {
@@ -394,14 +400,77 @@ async function updateOpportunityPrice(
 }
 
 /**
+ * Close expired opportunities and record their final prices
+ */
+async function closeExpiredOpportunities(): Promise<void> {
+  try {
+    console.log("🕐 Checking for expired opportunities to close...");
+    
+    // Get all opportunities that are still 'open' but past their deadline
+    const expiredOpps = await db
+      .select()
+      .from(opportunities)
+      .where(
+        and(
+          eq(opportunities.status, 'open'),
+          sql`${opportunities.deadline} < NOW()`
+        )
+      );
+    
+    if (expiredOpps.length === 0) {
+      console.log("✅ No expired opportunities found");
+      return;
+    }
+    
+    console.log(`🔄 Found ${expiredOpps.length} expired opportunities to close`);
+    
+    for (const opp of expiredOpps) {
+      try {
+        // Get the current market price for this opportunity
+        const currentPrice = opp.current_price || opp.minimumBid || 225;
+        const closedAt = new Date();
+        
+        console.log(`⏰ Auto-closing expired opportunity ${opp.id}: "${opp.title}" at final price $${currentPrice}`);
+        
+        // Update the opportunity status and record final price
+        await db
+          .update(opportunities)
+          .set({
+            status: 'closed',
+            closedAt,
+            lastPrice: String(currentPrice)
+          })
+          .where(eq(opportunities.id, opp.id));
+          
+        console.log(`✅ Successfully auto-closed opportunity ${opp.id} with final price $${currentPrice}`);
+        
+      } catch (error) {
+        console.error(`❌ Failed to auto-close opportunity ${opp.id}:`, error);
+      }
+    }
+    
+    console.log(`🎉 Completed auto-closure of ${expiredOpps.length} expired opportunities`);
+    
+  } catch (error) {
+    console.error("❌ Error in closeExpiredOpportunities:", error);
+  }
+}
+
+/**
  * Process a single pricing tick
  */
 async function processPricingTick(): Promise<void> {
   console.log("\n🔄 Starting pricing tick...");
   
   try {
+    // CRITICAL: First check for and close any expired opportunities
+    await closeExpiredOpportunities();
+    
     const liveOpps = await fetchLiveOpportunities();
     const pricingConfig = buildPricingConfig(cachedWeights, cachedConfig);
+    
+    // Get cooldown setting from database config (default to 5 minutes if not set)
+    const cooldownMinutes = Number(cachedConfig['ambient.cooldownMins']) || 5;
     
     let updatedCount = 0;
     let skippedCount = 0;
@@ -414,8 +483,8 @@ async function processPricingTick(): Promise<void> {
         continue;
       }
       
-      if (!canUpdate(opp.last_price_update)) {
-        console.log(`⏳  OPP ${opp.id} skipped – in cool-down`);
+      if (!canUpdate(opp.last_price_update, cooldownMinutes)) {
+        console.log(`⏳  OPP ${opp.id} skipped – in cool-down (${cooldownMinutes} min)`);
         continue;
       }
       

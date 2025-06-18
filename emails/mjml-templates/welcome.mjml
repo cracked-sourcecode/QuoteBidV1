@@ -1,0 +1,183 @@
+<mjml>
+  <mj-head>
+    <mj-title>Welcome to QuoteBid - The PR Pricing Engine</mj-title>
+    <mj-preview>Welcome to the world's first live marketplace for earned media</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Arial, sans-serif" />
+      <mj-text font-size="16px" color="#333333" line-height="1.6" />
+      <mj-button background-color="#3b82f6" color="#ffffff" border-radius="8px" font-size="16px" font-weight="600" />
+    </mj-attributes>
+  </mj-head>
+  
+  <mj-body background-color="#f8fafc">
+    
+    <!-- Header Section -->
+    <mj-section background-color="#1e293b" padding="20px 0">
+      <mj-column>
+        <mj-text align="center" color="#ffffff" font-size="24px" font-weight="bold">
+          QuoteBid <span style="background-color: #3b82f6; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">BETA</span>
+        </mj-text>
+        <mj-text align="center" color="#94a3b8" font-size="14px" padding-top="5px">
+          The World's First PR Pricing Engine
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Welcome Message -->
+    <mj-section background-color="#ffffff" padding="40px 20px">
+      <mj-column>
+        <mj-text align="center" font-size="28px" font-weight="bold" color="#1e293b" padding-bottom="20px">
+          Welcome to QuoteBid, {{userFirstName}}!
+        </mj-text>
+        <mj-text align="center" font-size="18px" color="#64748b" padding-bottom="30px">
+          You've joined the world's first live marketplace for earned media. No retainers, no static fees - only pay if you're published.
+        </mj-text>
+        
+        <mj-button href="{{frontendUrl}}/opportunities" align="center" padding="20px 0">
+          Explore Opportunities →
+        </mj-button>
+      </mj-column>
+    </mj-section>
+
+    <!-- Featured Opportunities Section -->
+    <mj-section background-color="#f1f5f9" padding="40px 20px">
+      <mj-column>
+        <mj-text align="center" font-size="24px" font-weight="bold" color="#1e293b" padding-bottom="30px">
+          Live Opportunities in Your Industry
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Opportunity Cards -->
+    <mj-section background-color="#f1f5f9" padding="0 20px 20px">
+      <mj-column width="48%" padding="10px">
+        <mj-table>
+          <tr>
+            <td style="background-color: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                <div style="width: 32px; height: 32px; background-color: #3b82f6; border-radius: 6px; margin-right: 12px;"></div>
+                <div>
+                  <div style="font-weight: 600; color: #1e293b; font-size: 14px;">TechCrunch</div>
+                  <div style="color: #64748b; font-size: 12px;">Technology</div>
+                </div>
+              </div>
+              <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; color: #1e293b;">
+                AI Startup Funding Trends
+              </h3>
+              <p style="margin: 0 0 16px 0; color: #64748b; font-size: 14px; line-height: 1.5;">
+                Looking for insights on AI startup funding patterns in 2024...
+              </p>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #059669; font-weight: 600; font-size: 18px;">$299</span>
+                <span style="color: #dc2626; font-size: 12px; font-weight: 500;">⏰ 2 days left</span>
+              </div>
+            </td>
+          </tr>
+        </mj-table>
+      </mj-column>
+      
+      <mj-column width="48%" padding="10px">
+        <mj-table>
+          <tr>
+            <td style="background-color: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                <div style="width: 32px; height: 32px; background-color: #8b5cf6; border-radius: 6px; margin-right: 12px;"></div>
+                <div>
+                  <div style="font-weight: 600; color: #1e293b; font-size: 14px;">Forbes</div>
+                  <div style="color: #64748b; font-size: 12px;">Business</div>
+                </div>
+              </div>
+              <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; color: #1e293b;">
+                SaaS Growth Strategies
+              </h3>
+              <p style="margin: 0 0 16px 0; color: #64748b; font-size: 14px; line-height: 1.5;">
+                Seeking expert commentary on SaaS scaling challenges...
+              </p>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #059669; font-weight: 600; font-size: 18px;">$450</span>
+                <span style="color: #dc2626; font-size: 12px; font-weight: 500;">⏰ 1 day left</span>
+              </div>
+            </td>
+          </tr>
+        </mj-table>
+      </mj-column>
+    </mj-section>
+
+    <!-- How It Works Section -->
+    <mj-section background-color="#ffffff" padding="50px 20px">
+      <mj-column>
+        <mj-text align="center" font-size="24px" font-weight="bold" color="#1e293b" padding-bottom="40px">
+          How QuoteBid Works
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section background-color="#ffffff" padding="0 20px 50px">
+      <mj-column width="33.33%">
+        <mj-text align="center" font-size="32px" color="#3b82f6" font-weight="bold" padding-bottom="15px">
+          1
+        </mj-text>
+        <mj-text align="center" font-size="18px" font-weight="600" color="#1e293b" padding-bottom="10px">
+          Browse Opportunities
+        </mj-text>
+        <mj-text align="center" color="#64748b" font-size="14px">
+          Discover live opportunities from top-tier publications seeking expert commentary
+        </mj-text>
+      </mj-column>
+      
+      <mj-column width="33.33%">
+        <mj-text align="center" font-size="32px" color="#3b82f6" font-weight="bold" padding-bottom="15px">
+          2
+        </mj-text>
+        <mj-text align="center" font-size="18px" font-weight="600" color="#1e293b" padding-bottom="10px">
+          Submit Your Pitch
+        </mj-text>
+        <mj-text align="center" color="#64748b" font-size="14px">
+          Submit your expert insights and commentary directly to journalists and editors
+        </mj-text>
+      </mj-column>
+      
+      <mj-column width="33.33%">
+        <mj-text align="center" font-size="32px" color="#3b82f6" font-weight="bold" padding-bottom="15px">
+          3
+        </mj-text>
+        <mj-text align="center" font-size="18px" font-weight="600" color="#1e293b" padding-bottom="10px">
+          Get Published
+        </mj-text>
+        <mj-text align="center" color="#64748b" font-size="14px">
+          Only pay when your commentary gets published - no upfront fees or retainers
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- CTA Section -->
+    <mj-section background-color="#f8fafc" padding="40px 20px">
+      <mj-column>
+        <mj-text align="center" font-size="20px" font-weight="600" color="#1e293b" padding-bottom="20px">
+          Ready to start earning media coverage?
+        </mj-text>
+        <mj-button href="{{frontendUrl}}/opportunities" align="center" padding="20px 0">
+          View Live Opportunities
+        </mj-button>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer -->
+    <mj-section background-color="#1e293b" padding="30px 20px">
+      <mj-column>
+        <mj-text align="center" color="#94a3b8" font-size="14px" padding-bottom="15px">
+          QuoteBid - The World's First PR Pricing Engine
+        </mj-text>
+        <mj-text align="center" color="#64748b" font-size="12px" padding-bottom="15px">
+          This email was sent to {{email}}. If you no longer want to receive these emails, you can unsubscribe.
+        </mj-text>
+        <mj-text align="center">
+          <a href="{{frontendUrl}}/account/email-preferences" style="color: #3b82f6; text-decoration: none; font-size: 12px;">
+            Manage Email Preferences
+          </a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+  </mj-body>
+</mjml> 

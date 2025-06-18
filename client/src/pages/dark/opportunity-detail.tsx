@@ -852,8 +852,20 @@ export default function OpportunityDetail() {
     );
   }
 
-  // Use exact same price logic as OpportunityCard for consistency
-  const currentPrice = priceData?.currentPrice || opportunity?.currentPrice || opportunity?.basePrice || 100;
+  // CRITICAL FIX: For closed opportunities, use static final price - NO FETCHING!
+  const currentPrice = (() => {
+    const opportunityStatus = getOpportunityStatus(opportunity);
+    
+    if (opportunityStatus === 'closed') {
+      // For closed opportunities, use the stored final price, no live fetching
+      const finalPrice = opportunity?.lastPrice || opportunity?.last_price || opportunity?.finalPrice;
+      console.log(`🏁 Closed opportunity ${opportunityId} using final price: $${finalPrice || opportunity?.currentPrice}`);
+      return finalPrice || opportunity?.currentPrice || opportunity?.basePrice || 100;
+    } else {
+      // For open opportunities, use live price data
+      return priceData?.currentPrice || opportunity?.currentPrice || opportunity?.basePrice || 100;
+    }
+  })();
   const priceTrend = priceData?.trend || 'stable';
   const priceIncrease = currentPrice - (opportunity?.basePrice || 100);
   
@@ -1571,7 +1583,15 @@ export default function OpportunityDetail() {
                   <p className="text-red-100 leading-relaxed text-sm sm:text-base md:text-lg">
                     This placement is no longer live. The last recorded market rate was{' '}
                     <span className="font-bold text-red-200 bg-red-800/60 px-2 py-1 sm:px-3 sm:py-1 rounded-md">
-                      ${opportunity.lastPrice || opportunity.currentPrice || opportunity.basePrice}
+                      ${(() => {
+                        // CRITICAL FIX: Use proper final price logic for closed opportunities
+                        const finalPrice = opportunity.lastPrice || opportunity.last_price;
+                        if (finalPrice) {
+                          return finalPrice;
+                        }
+                        // Fallback to currentPrice if no final price is recorded
+                        return opportunity.currentPrice || opportunity.basePrice;
+                      })()}
                     </span>{' '}
                     before the opportunity was closed. You may still pitch at that fixed price.
                   </p>

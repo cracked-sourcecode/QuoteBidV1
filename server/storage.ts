@@ -51,7 +51,7 @@ export interface IStorage {
   getOpportunitiesWithPublications(): Promise<OpportunityWithPublication[]>;
   getOpportunitiesWithPitches(): Promise<OpportunityWithPublicationAndPitches[]>;
   createOpportunity(opportunity: InsertOpportunity): Promise<Opportunity>;
-  updateOpportunityStatus(id: number, status: string): Promise<Opportunity | undefined>;
+  updateOpportunityStatus(id: number, status: string, currentPrice?: number): Promise<Opportunity | undefined>;
   updateOpportunity(id: number, data: Partial<Opportunity>): Promise<Opportunity | undefined>;
   searchOpportunities(query: string): Promise<OpportunityWithPublication[]>;
   
@@ -429,12 +429,12 @@ export class DatabaseStorage implements IStorage {
     return opportunity;
   }
 
-  async updateOpportunityStatus(id: number, status: string): Promise<Opportunity | undefined> {
+  async updateOpportunityStatus(id: number, status: string, currentPrice?: number): Promise<Opportunity | undefined> {
     const db = getDb();
     
     // If closing the opportunity, also set closedAt and lastPrice
     if (status === 'closed') {
-      // First get the current opportunity to get the current price
+      // First get the current opportunity to get fallback data
       const [currentOpp] = await db
         .select()
         .from(opportunities)
@@ -445,10 +445,12 @@ export class DatabaseStorage implements IStorage {
         return undefined;
       }
       
-      const lastPrice = currentOpp.currentPrice || currentOpp.minimumBid || 100;
+      // CRITICAL FIX: Use the provided currentPrice (actual live price) if available,
+      // otherwise fall back to database price
+      const lastPrice = String(currentPrice || currentOpp.current_price || currentOpp.minimumBid || 100);
       const closedAt = new Date();
       
-      console.log(`Closing opportunity ${id}: setting status=closed, closedAt=${closedAt.toISOString()}, lastPrice=${lastPrice}`);
+      console.log(`Closing opportunity ${id}: setting status=closed, closedAt=${closedAt.toISOString()}, lastPrice=${lastPrice} (${currentPrice ? 'using live price' : 'using fallback price'})`);
       
       const [updated] = await db
         .update(opportunities)

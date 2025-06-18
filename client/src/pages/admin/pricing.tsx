@@ -314,6 +314,15 @@ export default function AdminPricing() {
       max: 1,
       step: 0.01,
       default: 0.05
+    },
+    {
+      key: 'ambient.cooldownMins',
+      label: 'Pricing cooldown',
+      description: 'Minutes between price updates for same opportunity',
+      min: 1,
+      max: 30,
+      step: 1,
+      default: 5
     }
   ];
 

@@ -214,7 +214,7 @@ export default function OpportunityCard({
         {/* Price Section - Using bulk pricing data from opportunities API */}
         <div className="bg-white rounded-lg p-3 mb-3 border border-gray-200">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-medium text-gray-600">Current Price</span>
+            <span className="text-xs font-medium text-gray-600">{opportunity.status === 'closed' ? 'Final Price' : 'Current Price'}</span>
             <div className="flex items-center space-x-1">
               {/* Dynamic pricing indicator */}
               <Badge variant="outline" className="text-xs px-1.5 py-0.5 text-blue-600 border-blue-200">

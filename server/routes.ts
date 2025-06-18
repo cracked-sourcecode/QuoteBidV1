@@ -4149,49 +4149,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (type) {
         switch (type.toUpperCase()) {
           case 'WELCOME':
-            // For test emails, try to get the user's industry from the database
-            let userIndustry = undefined;
+            // Use new MJML email service
+            const { sendWelcomeEmail: mjmlSendWelcomeEmail } = await import('./lib/mjml-email');
+            
             try {
-              const [testUser] = await getDb()
-                .select({ industry: users.industry })
-                .from(users)
-                .where(eq(users.email, email))
-                .limit(1);
-              userIndustry = testUser?.industry || undefined;
-            } catch (error) {
-              console.log('Could not fetch user industry for test email, using default');
-            }
-            
-            const success = await sendWelcomeEmail(
-              email, 
-              username || 'TestUser', 
-              fullName,
-              userIndustry
-            );
-            
-            if (success) {
+              await mjmlSendWelcomeEmail({
+                userFirstName: fullName?.split(' ')[0] || username || 'User',
+                username: username || 'testuser',
+                email: email,
+                frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5050'
+              });
+              
               return res.json({ 
                 success: true, 
-                message: 'Welcome email sent successfully!' 
+                message: 'Welcome email sent successfully with MJML!' 
               });
-            } else {
-              throw new Error('Failed to send welcome email');
+            } catch (error) {
+              throw new Error(`Failed to send welcome email: ${error}`);
             }
 
           case 'PASSWORD_RESET':
-            const resetSuccess = await sendPasswordResetEmail(
-              email,
-              'test-token-12345',
-              username || 'TestUser'
-            );
+            // Use new MJML email service
+            const { sendPasswordResetEmail: mjmlSendPasswordResetEmail } = await import('./lib/mjml-email');
             
-            if (resetSuccess) {
+            try {
+              const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5050'}/reset-password?token=test-token-12345`;
+              
+              await mjmlSendPasswordResetEmail({
+                userFirstName: fullName?.split(' ')[0] || username || 'User',
+                userEmail: email,
+                resetUrl: resetUrl,
+                frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5050'
+              });
+              
               return res.json({ 
                 success: true, 
-                message: 'Password reset email sent successfully!' 
+                message: 'Password reset email sent successfully with MJML!' 
               });
-            } else {
-              throw new Error('Failed to send password reset email');
+            } catch (error) {
+              throw new Error(`Failed to send password reset email: ${error}`);
+            }
+
+          case 'OPPORTUNITY_ALERT':
+            // Use new MJML email service for opportunity alerts
+            const { sendOpportunityAlertEmail: mjmlSendOpportunityAlertEmail } = await import('./lib/mjml-email');
+            
+            try {
+              await mjmlSendOpportunityAlertEmail({
+                userFirstName: fullName?.split(' ')[0] || username || 'User',
+                userEmail: email,
+                frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5050',
+                opportunity: {
+                  id: 123,
+                  title: 'AI Startup Funding Trends Expert Needed',
+                  description: 'TechCrunch is seeking expert commentary on AI startup funding patterns and market trends for Q1 2024. Looking for insights on valuation metrics, investor sentiment, and emerging opportunities in the AI space.',
+                  publicationName: 'TechCrunch',
+                  industry: 'Technology',
+                  deadline: '2 days left',
+                  currentPrice: '$299',
+                  trend: '📈 Price increasing - 3 experts interested'
+                }
+              });
+              
+              return res.json({ 
+                success: true, 
+                message: 'Opportunity alert email sent successfully with MJML!' 
+              });
+            } catch (error) {
+              throw new Error(`Failed to send opportunity alert email: ${error}`);
             }
 
           case 'USERNAME_REMINDER':
@@ -7264,7 +7289,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { status } = validationResult.data;
       
-      const updatedOpportunity = await storage.updateOpportunityStatus(id, status);
+      // CRITICAL FIX: When closing opportunities, pass the actual live price
+      let currentPrice: number | undefined;
+      
+      if (status === 'closed') {
+        // Get the opportunity to fetch its current live price
+        const opportunity = await storage.getOpportunity(id);
+        if (opportunity) {
+          // Use the live current_price, not the stale minimumBid or tier price
+          currentPrice = Number(opportunity.current_price) || 225;
+          console.log(`🏁 Admin closing opportunity ${id}: using live price $${currentPrice} as final price`);
+        }
+      }
+      
+      const updatedOpportunity = await storage.updateOpportunityStatus(id, status, currentPrice);
       if (!updatedOpportunity) {
         return res.status(404).json({ message: "Opportunity not found" });
       }
@@ -10679,11 +10717,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid opportunity ID" });
       }
       
-      const { status, ...updateData } = req.body;
+      const { status, currentPrice, ...updateData } = req.body;
       
-      // If only status is being updated, use the specific method
-      if (Object.keys(req.body).length === 1 && status !== undefined) {
-        const updatedOpportunity = await storage.updateOpportunityStatus(id, status);
+      // If only status (and optionally currentPrice) is being updated, use the specific method
+      const statusUpdateFields = ['status', 'currentPrice'];
+      const providedFields = Object.keys(req.body);
+      const isStatusOnlyUpdate = providedFields.every(field => statusUpdateFields.includes(field)) && status !== undefined;
+      
+      if (isStatusOnlyUpdate) {
+        const updatedOpportunity = await storage.updateOpportunityStatus(id, status, currentPrice);
         if (!updatedOpportunity) {
           return res.status(404).json({ message: "Opportunity not found" });
         }
@@ -12275,6 +12317,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (numValue === null || numValue < 0 || numValue > 1) {
           console.log(`   ❌ Validation failed for emailClickBoost: ${value} (type: ${typeof value}) parsed: ${numValue}`);
           return res.status(400).json({ message: "emailClickBoost must be between 0 and 1" });
+        }
+        validatedValue = numValue;
+      } else if (key === 'ambient.cooldownMins') {
+        const numValue = parseNumericValue(value);
+        if (numValue === null || numValue < 1 || numValue > 30) {
+          console.log(`   ❌ Validation failed for ambient.cooldownMins: ${value} (type: ${typeof value}) parsed: ${numValue}`);
+          return res.status(400).json({ message: "ambient.cooldownMins must be between 1 and 30" });
         }
         validatedValue = numValue;
       } else {

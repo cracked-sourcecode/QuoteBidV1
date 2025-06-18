@@ -32,6 +32,7 @@ export interface Opportunity {
   publicationId: number;
   trend?: 'up' | 'down' | 'neutral';
   lastPriceUpdate?: number;
+  lastPrice?: number; // Final closing price when opportunity is closed
 }
 
 // Price tick for price history chart

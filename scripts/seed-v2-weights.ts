@@ -29,7 +29,7 @@ async function seedV2Weights() {
       { key: 'pitchVelocityBoost',     value: '0.2'  },
       { key: 'outletLoadPenalty',      value: '-0.2' },
       { key: 'ambient.triggerMins',    value: '7'    },
-      { key: 'ambient.cooldownMins',   value: '10'   },
+      { key: 'ambient.cooldownMins',   value: '5'   },
     ]).onConflictDoNothing();
 
     console.log("✅ Successfully seeded v2 weight keys:");
@@ -37,7 +37,7 @@ async function seedV2Weights() {
     console.log("   • pitchVelocityBoost: 0.2");
     console.log("   • outletLoadPenalty: -0.2");
     console.log("   • ambient.triggerMins: 7");
-    console.log("   • ambient.cooldownMins: 10");
+    console.log("   • ambient.cooldownMins: 5");
     
     console.log("\n🔍 Next steps:");
     console.log("   1. Verify keys appear in Admin → Pricing Variables");
