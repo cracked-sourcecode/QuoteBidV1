@@ -37,9 +37,7 @@ function startService(service) {
   const proc = spawn(service.command, service.args, {
     stdio: 'pipe',
     env: { 
-      ...process.env,
-      // Set PORT=5050 for API service to avoid port 5000 conflicts with macOS Control Center
-      ...(service.name === 'API' ? { PORT: '5050' } : {})
+      ...process.env
     }
   });
   
