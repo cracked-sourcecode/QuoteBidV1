@@ -13,8 +13,8 @@ import OpenAI from "openai";
 import type { PricingSnapshot } from "../../lib/pricing/pricingEngine";
 import { FEATURE_FLAGS } from "../../config/featureFlags";
 import { sendNotification } from "./sendNotification.js";
-// Import safe WebSocket utilities that don't start a server
-import { priceUpdates } from "../wsUtils";
+// Import real WebSocket server functions instead of stubs
+import { priceUpdates } from "../wsServer";
 
 // ES Module compatibility
 const __filename = fileURLToPath(import.meta.url);

@@ -40,8 +40,8 @@ import {
 import { canUpdate } from "../../lib/pricing/cooldown";
 import { shouldSkipGPT } from "./gatekeeper";
 import { queueForGPT } from "./gptPricingAgent";
-// Import safe WebSocket utilities that don't start a server
-import { priceUpdates, systemEvents } from "../wsUtils";
+// Import real WebSocket server functions instead of stubs
+import { priceUpdates, systemEvents } from "../wsServer";
 // Import database initialization for web push notifications
 import { initializeDatabase } from "../../server/db";
 
