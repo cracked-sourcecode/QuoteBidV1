@@ -24,11 +24,17 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const GPT_BATCH_SIZE = parseInt(process.env.GPT_BATCH_SIZE || "50");
 const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:5050";
 
-// Load pricing agent specification for GPT context
-const AGENT_SPEC = fs.readFileSync(
-  path.resolve(__dirname, "../../docs/pricing-agent.md"),
-  "utf-8"
-);
+// Load pricing agent specification for GPT context (optional)
+let AGENT_SPEC = "QuoteBid Pricing Agent - Intelligent pricing decisions for media opportunities.";
+try {
+  AGENT_SPEC = fs.readFileSync(
+    path.resolve(__dirname, "../../docs/pricing-agent.md"),
+    "utf-8"
+  );
+  console.log("📋 Loaded pricing agent specification from docs/pricing-agent.md");
+} catch (error) {
+  console.log("📋 Using default pricing agent specification (docs/pricing-agent.md not found)");
+}
 
 // Initialize OpenAI client (optional for testing)
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
