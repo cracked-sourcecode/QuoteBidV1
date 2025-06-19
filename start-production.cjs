@@ -34,13 +34,21 @@ const processes = [];
 function startService(service) {
   console.log(`${service.color}[${service.name}]${reset} Starting...`);
   
+  const isProduction = process.env.RENDER || process.env.NODE_ENV === 'production';
+  const apiPort = isProduction ? (process.env.PORT || 5000) : 5050;
+  
   const proc = spawn(service.command, service.args, {
     stdio: 'pipe',
     env: { 
       ...process.env,
       // Use port 5050 locally to avoid macOS Control Center conflicts on port 5000
       // In production (Render), this will be overridden by Render's PORT environment variable
-      ...(service.name === 'API' && !process.env.RENDER ? { PORT: '5050' } : {})
+      ...(service.name === 'API' && !isProduction ? { PORT: '5050' } : {}),
+      // Set API_BASE_URL for worker to connect to the correct API port
+      ...(service.name === 'Worker' ? { 
+        API_BASE_URL: `http://localhost:${apiPort}`,
+        PRICING_WORKER: 'true'
+      } : {})
     }
   });
   

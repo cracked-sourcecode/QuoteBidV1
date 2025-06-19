@@ -273,97 +273,204 @@ export async function sendPricingNotificationEmail(
     return true; // Return true since this isn't an error
   }
 
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
+
   const emailConfig = {
     PRICE_DROP: {
       subject: "🔥 Price dropped on an opportunity you're interested in",
       html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <title>Price Drop Alert - QuoteBid</title>
-            <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
-              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-              .price-alert { background: #059669; color: white; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0; }
-              .button { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; }
-              .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1>💰 Price Drop Alert!</h1>
-                <p>QuoteBid Pricing Engine</p>
-              </div>
-              <div class="content">
-                <p>Great news! The price has dropped on an opportunity you've shown interest in:</p>
-                <div class="price-alert">
-                  <h3 style="margin: 0 0 10px 0;">${opportunityTitle}</h3>
-                  <p style="margin: 0; font-size: 18px;">
-                    <strong>New Price: $${currentPrice}</strong>
-                  </p>
-                </div>
-                <p>This could be a great opportunity to submit your pitch at a better price point.</p>
-                <p style="text-align: center; margin: 30px 0;">
-                  <a href="${process.env.FRONTEND_URL || 'http://localhost:5050'}" class="button">View Opportunity</a>
-                </p>
-                <div class="footer">
-                  <p>You're receiving this because you've previously shown interest in this opportunity.</p>
-                  <p>© 2024 QuoteBid. All rights reserved.</p>
-                </div>
-              </div>
-            </div>
-          </body>
-        </html>
+        <!-- QuoteBid Price Drop Alert - Bulletproof Table Layout -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td align="center" bgcolor="#F9FAFB">
+              <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
+                     style="width:600px;background:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#374151;">
+                
+                <!-- HEADER -->
+                <tr>
+                  <td align="left" style="padding:32px 32px 0 32px;">
+                    <img src="https://quotebid.co/logo-light.png" width="140" alt="QuoteBid" style="display:block;border:0;">
+                  </td>
+                </tr>
+                <tr><td style="line-height:0;height:24px;">&nbsp;</td></tr>
+
+                <!-- PRICE DROP BADGE -->
+                <tr>
+                  <td style="padding:0 32px 16px 32px;">
+                    <span style="background:#10B981;color:#FFFFFF;padding:8px 16px;border-radius:16px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
+                      💰 Price Drop Alert
+                    </span>
+                  </td>
+                </tr>
+
+                <!-- HEADLINE -->
+                <tr>
+                  <td style="padding:0 32px 24px 32px;font-size:24px;line-height:32px;font-weight:700;color:#0F172A;">
+                    Great news! The price dropped
+                  </td>
+                </tr>
+
+                <!-- OPPORTUNITY INFO -->
+                <tr>
+                  <td style="padding:0 32px 0 32px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ECFDF5;border:2px solid #10B981;border-radius:12px;">
+                      <tr>
+                        <td style="padding:24px;">
+                          <div style="font-size:16px;line-height:24px;color:#065F46;margin-bottom:8px;">Opportunity</div>
+                          <div style="font-size:20px;line-height:28px;font-weight:700;color:#064E3B;margin-bottom:16px;">${opportunityTitle}</div>
+                          
+                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td style="text-align:center;vertical-align:top;">
+                                <div style="font-size:14px;line-height:20px;color:#059669;font-weight:600;margin-bottom:4px;">New Price</div>
+                                <div style="font-size:32px;line-height:36px;font-weight:800;color:#10B981;">$${currentPrice}</div>
+                                <div style="font-size:12px;line-height:16px;color:#047857;margin-top:4px;">📉 Price decreased</div>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- SECTION SPACER -->
+                <tr><td style="line-height:0;height:32px;">&nbsp;</td></tr>
+
+                <!-- MESSAGE -->
+                <tr>
+                  <td style="padding:0 32px 24px 32px;font-size:16px;line-height:24px;color:#374151;">
+                    This could be a great opportunity to submit your pitch at a better price point! Don't wait too long - prices can change quickly based on demand.
+                  </td>
+                </tr>
+
+                <!-- CTA BUTTON -->
+                <tr>
+                  <td align="center" style="padding:0 32px 32px 32px;">
+                    <a href="${frontendUrl}/opportunities"
+                       style="background:#10B981;color:#FFFFFF;text-decoration:none;padding:16px 32px;border-radius:8px;font-weight:600;font-size:16px;display:inline-block;">
+                       View Opportunity & Bid Now →
+                    </a>
+                  </td>
+                </tr>
+
+                <!-- FOOTER -->
+                <tr>
+                  <td align="center" style="padding:0 32px 32px 32px;font-size:12px;line-height:18px;color:#6B7280;">
+                    You're receiving this because you've shown interest in this opportunity.<br>
+                    © 2025 QuoteBid Inc. ·
+                    <a href="https://quotebid.co/terms" style="color:#6B7280;text-decoration:none;">Terms</a> ·
+                    <a href="https://quotebid.co/privacy" style="color:#6B7280;text-decoration:none;">Privacy</a><br>
+                    <a href="${frontendUrl}/notifications/settings" style="color:#6B7280;text-decoration:none;">Manage alerts</a>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
       `,
     },
     LAST_CALL: {
       subject: "⏰ Last call for pitches - Opportunity closing soon",
       html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <title>Last Call Alert - QuoteBid</title>
-            <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
-              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-              .urgent-alert { background: #fef2f2; padding: 20px; border-left: 4px solid #dc2626; border-radius: 8px; margin: 20px 0; }
-              .button { display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; }
-              .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1>⏰ Last Call!</h1>
-                <p>QuoteBid Deadline Alert</p>
-              </div>
-              <div class="content">
-                <p>Time is running out! An opportunity you're interested in is closing soon:</p>
-                <div class="urgent-alert">
-                  <h3 style="margin: 0 0 10px 0; color: #1f2937;">${opportunityTitle}</h3>
-                  <p style="margin: 0; color: #dc2626;">
-                    <strong>Closing Soon - Current Price: $${currentPrice}</strong>
-                  </p>
-                </div>
-                <p>Don't miss out! Submit your pitch now before this opportunity expires.</p>
-                <p style="text-align: center; margin: 30px 0;">
-                  <a href="${process.env.FRONTEND_URL || 'http://localhost:5050'}" class="button">Submit Pitch Now</a>
-                </p>
-                <div class="footer">
-                  <p style="color: #dc2626; font-weight: bold;">Act fast - this opportunity may not be available much longer!</p>
-                  <p>© 2024 QuoteBid. All rights reserved.</p>
-                </div>
-              </div>
-            </div>
-          </body>
-        </html>
+        <!-- QuoteBid Last Call Alert - Bulletproof Table Layout -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td align="center" bgcolor="#F9FAFB">
+              <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
+                     style="width:600px;background:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#374151;">
+                
+                <!-- HEADER -->
+                <tr>
+                  <td align="left" style="padding:32px 32px 0 32px;">
+                    <img src="https://quotebid.co/logo-light.png" width="140" alt="QuoteBid" style="display:block;border:0;">
+                  </td>
+                </tr>
+                <tr><td style="line-height:0;height:24px;">&nbsp;</td></tr>
+
+                <!-- URGENT BADGE -->
+                <tr>
+                  <td style="padding:0 32px 16px 32px;">
+                    <span style="background:#DC2626;color:#FFFFFF;padding:8px 16px;border-radius:16px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
+                      ⏰ Last Call Alert
+                    </span>
+                  </td>
+                </tr>
+
+                <!-- HEADLINE -->
+                <tr>
+                  <td style="padding:0 32px 24px 32px;font-size:24px;line-height:32px;font-weight:700;color:#DC2626;">
+                    Time is running out!
+                  </td>
+                </tr>
+
+                <!-- OPPORTUNITY INFO -->
+                <tr>
+                  <td style="padding:0 32px 0 32px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FEF2F2;border:2px solid #DC2626;border-radius:12px;">
+                      <tr>
+                        <td style="padding:24px;">
+                          <div style="font-size:16px;line-height:24px;color:#7F1D1D;margin-bottom:8px;">Closing Soon</div>
+                          <div style="font-size:20px;line-height:28px;font-weight:700;color:#991B1B;margin-bottom:16px;">${opportunityTitle}</div>
+                          
+                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td style="text-align:center;vertical-align:top;">
+                                <div style="font-size:14px;line-height:20px;color:#B91C1C;font-weight:600;margin-bottom:4px;">Current Price</div>
+                                <div style="font-size:32px;line-height:36px;font-weight:800;color:#DC2626;">$${currentPrice}</div>
+                                <div style="font-size:12px;line-height:16px;color:#7F1D1D;margin-top:4px;">⏰ Deadline approaching</div>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- SECTION SPACER -->
+                <tr><td style="line-height:0;height:32px;">&nbsp;</td></tr>
+
+                <!-- URGENT MESSAGE -->
+                <tr>
+                  <td style="padding:0 32px 24px 32px;font-size:16px;line-height:24px;color:#374151;">
+                    An opportunity you're interested in is closing soon! Don't miss out - submit your pitch now before this opportunity expires. Once it's gone, it may not be available again.
+                  </td>
+                </tr>
+
+                <!-- CTA BUTTON -->
+                <tr>
+                  <td align="center" style="padding:0 32px 16px 32px;">
+                    <a href="${frontendUrl}/opportunities"
+                       style="background:#DC2626;color:#FFFFFF;text-decoration:none;padding:16px 32px;border-radius:8px;font-weight:600;font-size:16px;display:inline-block;">
+                       Submit Pitch Now →
+                    </a>
+                  </td>
+                </tr>
+
+                <!-- URGENCY NOTE -->
+                <tr>
+                  <td align="center" style="padding:0 32px 32px 32px;font-size:14px;line-height:20px;color:#DC2626;font-weight:600;">
+                    ⚡ Act fast - this opportunity may not be available much longer!
+                  </td>
+                </tr>
+
+                <!-- FOOTER -->
+                <tr>
+                  <td align="center" style="padding:0 32px 32px 32px;font-size:12px;line-height:18px;color:#6B7280;">
+                    You're receiving this because you've shown interest in this opportunity.<br>
+                    © 2025 QuoteBid Inc. ·
+                    <a href="https://quotebid.co/terms" style="color:#6B7280;text-decoration:none;">Terms</a> ·
+                    <a href="https://quotebid.co/privacy" style="color:#6B7280;text-decoration:none;">Privacy</a><br>
+                    <a href="${frontendUrl}/notifications/settings" style="color:#6B7280;text-decoration:none;">Manage alerts</a>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
       `,
     },
   };
