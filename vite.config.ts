@@ -26,6 +26,22 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    // Optimize build size and speed
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split large dependencies
+          vendor: ['react', 'react-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+          charts: ['chart.js', 'recharts'],
+          stripe: ['@stripe/stripe-js', '@stripe/react-stripe-js']
+        }
+      }
+    },
+    // Reduce bundle size in production
+    minify: 'terser',
+    sourcemap: false, // Disable sourcemaps in production
+    chunkSizeWarningLimit: 1000
   },
   server: {
     proxy: {
