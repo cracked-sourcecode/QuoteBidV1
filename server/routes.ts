@@ -1751,13 +1751,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       let subscriptionStatus = {
-        isPremium: false,
+        isPremium: user.premiumStatus === 'active' || user.premiumStatus === 'premium',
         status: user.premiumStatus || 'free',
         expiresAt: user.premiumExpiry || null,
         subscriptionId: user.stripeSubscriptionId || null
       };
       
-      // If user has a subscription ID, check its status
+      // If user has a subscription ID, check its status with Stripe
       if (user.stripeSubscriptionId) {
         try {
           const subscription: any = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
@@ -1771,7 +1771,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         } catch (error: any) {
           console.error("Error fetching subscription:", error);
-          // We'll just use the data from our database
+          // Fall back to database values when Stripe fails
+          subscriptionStatus = {
+            isPremium: user.premiumStatus === 'active' || user.premiumStatus === 'premium',
+            status: user.premiumStatus || 'free',
+            expiresAt: user.premiumExpiry || null,
+            subscriptionId: null // Clear invalid subscription ID
+          };
         }
       }
       
