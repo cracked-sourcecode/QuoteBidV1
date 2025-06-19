@@ -135,12 +135,33 @@ export const healthStats = {
 const isMainModule = import.meta.url === `file://${process.argv[1]}` || 
                      import.meta.url === encodeURI(`file://${process.argv[1]}`);
 
-if (isMainModule) {
+// Also check if we're being run directly vs imported
+const isDirectRun = process.argv[1] && process.argv[1].includes('wsServer');
+
+// Don't auto-start if imported by pricing worker
+const isPricingWorker = process.env.PRICING_WORKER === 'true';
+
+if ((isMainModule || isDirectRun) && !isPricingWorker) {
   const WS_PORT = process.env.WS_PORT || 4000;
   
   httpServer.listen(WS_PORT, () => {
     console.log(`🚀 QuoteBid WebSocket Server running on port ${WS_PORT}`);
     console.log(`🔌 Ready for real-time price updates`);
+  });
+}
+
+// Export function to manually start server
+export function startWebSocketServer(port: number = 4000) {
+  return new Promise<void>((resolve, reject) => {
+    httpServer.listen(port, (err?: Error) => {
+      if (err) {
+        reject(err);
+      } else {
+        console.log(`🚀 QuoteBid WebSocket Server running on port ${port}`);
+        console.log(`🔌 Ready for real-time price updates`);
+        resolve();
+      }
+    });
   });
 }
 

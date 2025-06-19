@@ -5,15 +5,16 @@
  * for complex market scenarios beyond simple deterministic rules.
  */
 
+import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import OpenAI from "openai";
-import { z } from "zod";
 import type { PricingSnapshot } from "../../lib/pricing/pricingEngine";
 import { FEATURE_FLAGS } from "../../config/featureFlags";
 import { sendNotification } from "./sendNotification.js";
-import { priceUpdates } from "../wsServer";
+// Import safe WebSocket utilities that don't start a server
+import { priceUpdates } from "../wsUtils";
 
 // ES Module compatibility
 const __filename = fileURLToPath(import.meta.url);
@@ -25,7 +26,7 @@ const GPT_BATCH_SIZE = parseInt(process.env.GPT_BATCH_SIZE || "50");
 const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:5050";
 
 // Load pricing agent specification for GPT context (optional)
-let AGENT_SPEC = "QuoteBid Pricing Agent - Intelligent pricing decisions for media opportunities.";
+let AGENT_SPEC = "QuoteBid's intelligent pricing agent. Analyze these opportunities and make pricing decisions.";
 try {
   AGENT_SPEC = fs.readFileSync(
     path.resolve(__dirname, "../../docs/pricing-agent.md"),

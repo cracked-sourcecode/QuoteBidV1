@@ -9,6 +9,9 @@
  * 5. Update database and audit price changes
  */
 
+// Ensure we don't accidentally start a WebSocket server
+process.env.PRICING_WORKER = 'true';
+
 import { config } from "dotenv";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -37,7 +40,8 @@ import {
 import { canUpdate } from "../../lib/pricing/cooldown";
 import { shouldSkipGPT } from "./gatekeeper";
 import { queueForGPT } from "./gptPricingAgent";
-import { priceUpdates, systemEvents } from "../wsServer";
+// Import safe WebSocket utilities that don't start a server
+import { priceUpdates, systemEvents } from "../wsUtils";
 // Import database initialization for web push notifications
 import { initializeDatabase } from "../../server/db";
 
