@@ -37,7 +37,10 @@ function startService(service) {
   const proc = spawn(service.command, service.args, {
     stdio: 'pipe',
     env: { 
-      ...process.env
+      ...process.env,
+      // Use port 5050 locally to avoid macOS Control Center conflicts on port 5000
+      // In production (Render), this will be overridden by Render's PORT environment variable
+      ...(service.name === 'API' && !process.env.RENDER ? { PORT: '5050' } : {})
     }
   });
   
