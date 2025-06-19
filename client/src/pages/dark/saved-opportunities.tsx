@@ -19,6 +19,8 @@ import { sampleOpportunities } from '@/lib/fixtures/opportunities';
 import { Opportunity } from '@shared/types/opportunity';
 import { useAuth } from '@/hooks/use-auth';
 import { INDUSTRY_OPTIONS } from '@/lib/constants';
+import Navbar from '@/components/navbar';
+import { Link } from 'wouter';
 
 const OPPORTUNITIES_PER_BATCH = 9; // 3 rows of 3 opportunities each
 
@@ -545,15 +547,24 @@ export default function SavedOpportunitiesPage() {
             </div>
             
             <div className="flex flex-wrap justify-center gap-8 mb-8">
-              <span className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium cursor-default">
+              <Link 
+                href="/legal/terms" 
+                className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
+              >
                 Terms of Use
-              </span>
-              <span className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium cursor-default">
+              </Link>
+              <Link 
+                href="/legal/privacy" 
+                className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
+              >
                 Privacy
-              </span>
-              <span className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium cursor-default">
+              </Link>
+              <Link 
+                href="/legal/editorial-integrity" 
+                className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
+              >
                 Editorial Integrity
-              </span>
+              </Link>
             </div>
             
             <div className="border-t border-white/20 pt-8">

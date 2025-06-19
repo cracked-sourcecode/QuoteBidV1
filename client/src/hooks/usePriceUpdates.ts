@@ -1,27 +1,32 @@
-import { useEffect, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import React, { useEffect, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface PriceUpdate {
   opportunityId: number;
   price: number;
-  trend: 'up' | 'down' | 'neutral';
+  trend: 'up' | 'down' | 'stable';
+  timestamp: string;
 }
 
-export function usePriceUpdates() {
+export const usePriceUpdates = () => {
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
   const queryClient = useQueryClient();
-  const socketRef = useRef<Socket | null>(null);
+
+  // Connect to WebSocket server - use environment variable or fallback
+  const WS_URL = import.meta.env.VITE_WS_URL || 'wss://quotebid.co:4000';
 
   useEffect(() => {
     // Connect to WebSocket server on port 4000
-    const socket = io('http://localhost:4000', {
+    const socket = io(WS_URL, {
       autoConnect: true,
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
     });
 
-    socketRef.current = socket;
+    setSocket(socket);
 
     // Listen for price updates
     socket.on('priceUpdate', (data: PriceUpdate) => {
@@ -60,10 +65,12 @@ export function usePriceUpdates() {
     // Connection event handlers
     socket.on('connect', () => {
       console.log('🔌 Connected to QuoteBid pricing engine');
+      setIsConnected(true);
     });
 
     socket.on('disconnect', () => {
       console.log('🔌 Disconnected from pricing engine');
+      setIsConnected(false);
     });
 
     socket.on('connect_error', (error) => {
@@ -76,12 +83,12 @@ export function usePriceUpdates() {
 
     return () => {
       socket.disconnect();
-      socketRef.current = null;
+      setSocket(null);
     };
-  }, [queryClient]);
+  }, [queryClient, WS_URL]);
 
   return {
-    isConnected: socketRef.current?.connected || false,
-    socket: socketRef.current
+    isConnected,
+    socket
   };
 } 

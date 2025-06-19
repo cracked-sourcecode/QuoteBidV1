@@ -32,7 +32,8 @@ import DarkPitchReviewModal from "@/components/dark/pitch-review-modal";
 import { getStage, PitchStatus } from "@/utils/pitchStage";
 import { PitchDTO } from "@/utils/pitchInterfaces";
 import { useToast } from "@/hooks/use-toast";
-import { LoadingScreen } from '@/components/ui/loading-screen';
+import { LoadingScreen, CompactLoading } from '@/components/ui/loading-screen';
+import { INDUSTRY_OPTIONS } from '@/lib/constants';
 
 // Types for pitches
 interface Publication {
@@ -683,15 +684,24 @@ export default function MyPitches() {
           </div>
           
           <div className="flex flex-wrap justify-center gap-8 mb-8">
-            <span className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium cursor-default">
+            <Link 
+              href="/legal/terms" 
+              className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
+            >
               Terms of Use
-            </span>
-            <span className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium cursor-default">
+            </Link>
+            <Link 
+              href="/legal/privacy" 
+              className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
+            >
               Privacy
-            </span>
-            <span className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium cursor-default">
+            </Link>
+            <Link 
+              href="/legal/editorial-integrity" 
+              className="text-gray-300 hover:text-white transition-colors duration-300 text-lg font-medium"
+            >
               Editorial Integrity
-            </span>
+            </Link>
           </div>
           
           <div className="border-t border-white/20 pt-8">

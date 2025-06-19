@@ -47,6 +47,7 @@ import PublicationsManager from "@/pages/admin/publications-manager";
 import LoginPage from "@/pages/login-page";
 import ForgotPassword from "@/pages/forgot-password";
 import TermsOfService from "@/pages/TermsOfService";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import ResetPassword from "@/pages/reset-password";
 import AdminLogin from "@/pages/admin/login";
 import CreateAdmin from "@/pages/admin/create-admin";
@@ -141,7 +142,9 @@ function Router() {
         <Route path="/admin/create-admin" component={CreateAdmin} />
         <Route path="/signup-wizard" component={SignupWizard} />
         <Route path="/terms" component={TermsOfService} />
+        <Route path="/privacy" component={PrivacyPolicy} />
         <Route path="/legal/terms" component={TermsOfService} />
+        <Route path="/legal/privacy" component={PrivacyPolicy} />
         <Route path="/reset-password" component={ResetPassword} />
         <Route path="/home-test" component={Home} />
         <Route path="/engine" component={PricingEngine} />

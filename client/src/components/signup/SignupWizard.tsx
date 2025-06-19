@@ -181,15 +181,24 @@ export function SignupWizard({ children }: SignupWizardProps) {
               </div>
               
               <div className="flex flex-wrap justify-center gap-4 md:gap-8 mb-6 md:mb-8">
-                <span className="text-gray-300 text-sm md:text-lg font-medium cursor-default">
+                <Link 
+                  href="/legal/terms" 
+                  className="text-gray-300 hover:text-white transition-colors duration-300 text-sm md:text-lg font-medium"
+                >
                   Terms of Use
-                </span>
-                <span className="text-gray-300 text-sm md:text-lg font-medium cursor-default">
+                </Link>
+                <Link 
+                  href="/legal/privacy" 
+                  className="text-gray-300 hover:text-white transition-colors duration-300 text-sm md:text-lg font-medium"
+                >
                   Privacy
-                </span>
-                <span className="text-gray-300 text-sm md:text-lg font-medium cursor-default">
+                </Link>
+                <Link 
+                  href="/legal/editorial-integrity" 
+                  className="text-gray-300 hover:text-white transition-colors duration-300 text-sm md:text-lg font-medium"
+                >
                   Editorial Integrity
-                </span>
+                </Link>
               </div>
               
               <div className={`pt-6 md:pt-8 ${shouldShowBorder ? 'border-t border-white/20' : ''}`}>
@@ -199,11 +208,11 @@ export function SignupWizard({ children }: SignupWizardProps) {
                 <p className="text-gray-500 text-xs md:text-sm mt-2">
                   Built For Experts, Not PR Agencies.
                 </p>
+              </div>
             </div>
-          </div>
-        </footer>
+          </footer>
         )}
-    </div>
+      </div>
     </>
   );
 }
