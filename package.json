@@ -22,7 +22,7 @@
     "full-stack": "concurrently \"FRONTEND_URL=http://localhost:5050 EMAIL_FROM='QuoteBid <no-reply@quotebid.co>' npm run dev\" \"npm run ws\" \"npm run worker:dev\"",
     "full-stack:mobile": "concurrently \"FRONTEND_URL=http://192.168.1.121:5051 EMAIL_FROM='QuoteBid <no-reply@quotebid.co>' npm run dev:mobile\" \"npm run ws\" \"npm run worker:dev\"",
     "full-stack:production": "concurrently \"npm start\" \"node dist/wsServer.js\" \"node dist/pricingWorker.js\"",
-    "full-stack:simple": "node start-production.js",
+    "full-stack:simple": "node start-production.cjs",
     "check-services": "npx tsx check-services.ts"
   },
   "dependencies": {
