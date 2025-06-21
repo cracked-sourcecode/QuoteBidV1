@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /
+
+# Block all search engines from indexing
+# Remove this file when ready to allow indexing 
