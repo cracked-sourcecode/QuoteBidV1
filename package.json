@@ -131,7 +131,8 @@
     "ws": "^8.18.0",
     "zod": "^3.25.51",
     "zod-validation-error": "^3.4.0",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.3",
+    "terser": "^5.43.0"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.27.2",
@@ -166,7 +167,6 @@
     "node-fetch": "^3.3.2",
     "rollup": "^4.24.4",
     "supertest": "^7.1.1",
-    "terser": "^5.43.0",
     "ts-jest": "^29.3.4",
     "tsx": "^4.19.4",
     "typescript": "^5.6.3",
