@@ -51,6 +51,7 @@ app.use(cors({
     const allowedOrigins = [
       'https://quotebid.onrender.com', // Production staging domain
       'https://quotebid.co', // Production custom domain
+      'https://www.quotebid.co', // Production custom domain with www
       'http://localhost:5050', // Default API port
       'http://localhost:5051', // Mobile API port
       'http://192.168.1.121:5050', // Network IP default port
