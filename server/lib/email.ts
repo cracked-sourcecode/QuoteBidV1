@@ -40,9 +40,41 @@ async function checkUserEmailPreference(
       billing: true
     };
 
-    const preferences = user[0].emailPreferences ? 
-      { ...defaultPreferences, ...user[0].emailPreferences } : 
-      defaultPreferences;
+    const rawPrefs = user[0].emailPreferences;
+    if (!rawPrefs || typeof rawPrefs !== 'object') {
+      return defaultPreferences[preferenceType] !== false;
+    }
+
+    // Handle both old and new formats
+    let preferences = { ...defaultPreferences };
+    
+    // Check if it's the new simplified format
+    if ('alerts' in rawPrefs || 'notifications' in rawPrefs || 'billing' in rawPrefs) {
+      // New format - use directly
+      preferences = { 
+        ...defaultPreferences, 
+        ...(rawPrefs as { alerts?: boolean; notifications?: boolean; billing?: boolean; })
+      };
+    } else {
+      // Old format - convert on the fly
+      const oldToNewMapping: Record<string, keyof typeof defaultPreferences> = {
+        'priceAlerts': 'alerts',
+        'opportunityNotifications': 'alerts',
+        'pitchStatusUpdates': 'notifications',
+        'mediaCoverageUpdates': 'notifications',
+        'placementSuccess': 'notifications',
+        'paymentConfirmations': 'billing'
+      };
+
+      const oldPrefs = rawPrefs as Record<string, any>;
+      for (const [oldKey, newKey] of Object.entries(oldToNewMapping)) {
+        if (oldPrefs[oldKey] === false) {
+          preferences[newKey] = false;
+        }
+      }
+      
+      console.log(`🔄 User ${email}: Using old format preferences (consider running migration)`);
+    }
 
     const allowed = preferences[preferenceType] !== false;
     console.log(`📧 Email preference check for ${email}: ${preferenceType} = ${allowed}`);
