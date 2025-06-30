@@ -1,10 +1,6 @@
 console.log('🚀 EMAIL MODULE STARTING TO LOAD...');
 
 import { Resend } from 'resend';
-import { render } from '@react-email/render';
-import WelcomeEmail from '../../emails/templates/WelcomeEmail';
-import PriceDropAlert from '../../emails/templates/PriceDropAlert';
-import NotificationEmail from '../../emails/templates/NotificationEmail';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
@@ -134,16 +130,14 @@ export async function sendPasswordResetEmail(
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
     const userFirstName = fullName?.split(' ')[0] || username;
     
-    // Render React Email template to HTML
-    const { render } = await import('@react-email/render');
-    const { default: PasswordResetEmail } = await import('../../emails/templates/PasswordResetEmail');
+    // Use HTML template
+    const fs = await import('fs');
+    const path = await import('path');
     
-    const emailHtml = await render(PasswordResetEmail({
-      userFirstName,
-      username,
-      resetUrl,
-      frontendUrl,
-    }));
+    const emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/password-reset.html'), 'utf8')
+      .replace(/{{userFirstName}}/g, userFirstName || 'there')
+      .replace(/{{resetUrl}}/g, resetUrl)
+      .replace(/{{frontendUrl}}/g, frontendUrl);
 
     console.log('📧 Sending password reset email to:', email);
     
@@ -620,17 +614,41 @@ export async function sendUserNotificationEmail(
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
     const fullLinkUrl = linkUrl ? (linkUrl.startsWith('http') ? linkUrl : `${frontendUrl}${linkUrl}`) : undefined;
     
-    console.log(`🎨 About to render NotificationEmail template...`);
+    console.log(`🎨 Building simple HTML notification email...`);
     
-    // Render React Email template to HTML
-    const emailHtml = await render(NotificationEmail({
-      type: notificationType,
-      title,
-      message,
-      userName,
-      linkUrl: fullLinkUrl,
-      linkText,
-    }));
+    // Create simple HTML email
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+            .cta-button { background: #4299e1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>📢 ${title}</h1>
+            </div>
+            <div class="content">
+              <p>Hi ${userName},</p>
+              <p>${message}</p>
+              ${fullLinkUrl && linkText ? `<p><a href="${fullLinkUrl}" class="cta-button">${linkText}</a></p>` : ''}
+              <div class="footer">
+                <p>© 2024 QuoteBid. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
 
     console.log(`✅ React Email template rendered successfully! HTML length: ${emailHtml.length}`);
 
@@ -713,14 +731,13 @@ export async function sendWelcomeEmail(
       liveOpportunity = getStaticFallbackOpportunity(industry);
     }
     
-    // Render React Email template to HTML
-    const emailHtml = await render(WelcomeEmail({
-      userFirstName,
-      username,
-      frontendUrl,
-      industry,
-      liveOpportunity,
-    }));
+    // Use HTML template
+    const fs = await import('fs');
+    const path = await import('path');
+    
+    const emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/welcome.html'), 'utf8')
+      .replace(/{{userFirstName}}/g, userFirstName || 'there')
+      .replace(/{{frontendUrl}}/g, frontendUrl);
 
     console.log('📧 Sending welcome email to:', email);
     

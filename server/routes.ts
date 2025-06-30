@@ -16,10 +16,7 @@ import { setupAuth } from "./auth";
 import { Resend } from 'resend';
 import { sendOpportunityNotification, sendUsernameReminderEmail, sendPricingNotificationEmail, sendNotificationEmail, sendUserNotificationEmail } from './lib/email';
 import { sendPasswordResetEmail } from './lib/bulletproof-email';
-import { render } from '@react-email/render';
-import WelcomeEmail from '../emails/templates/WelcomeEmail';
-import PriceDropAlert from '../emails/templates/PriceDropAlert';
-import NotificationEmail from '../emails/templates/NotificationEmail';
+// All React Email templates have been removed - using HTML templates only
 
 // Initialize Resend if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -4526,7 +4523,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log('🎨 RENDERING EMAIL WITH PROPS:', JSON.stringify(renderProps, null, 2));
           
-          emailHtml = await render(FreshWelcomeComponent(renderProps));
+          // Using HTML template instead of React render
+          emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/welcome.html'), 'utf8');
           
           console.log(`🎨 EMAIL RENDERED! Length: ${emailHtml.length} chars`);
           console.log(`🎨 HTML Preview: ${emailHtml.substring(0, 200)}...`);
@@ -4890,6 +4888,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break;
           
         case 'new-opportunity-alert':
+          emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/new-opportunity-alert.html'), 'utf8')
+            .replace(/{{userFirstName}}/g, 'John')
+            .replace(/{{userIndustry}}/g, 'Technology')
+            .replace(/{{opportunityTitle}}/g, 'AI Startup Experts Needed for Series A Funding Story')
+            .replace(/{{opportunityDescription}}/g, 'Looking for AI startup founders and VCs to comment on the current Series A market dynamics and emerging AI technologies in 2025.')
+            .replace(/{{currentPrice}}/g, '$342')
+            .replace(/{{priceTrend}}/g, '+$45 up')
+            .replace(/{{pitchCount}}/g, '8')
+            .replace(/{{opportunityId}}/g, '123')
+            .replace(/{{frontendUrl}}/g, frontendUrl);
+          break;
+          
+        case 'saved-opportunity-alert':
+          emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/saved-opportunity-alert.html'), 'utf8')
+            .replace(/{{opportunityTitle}}/g, 'Banking Experts for FOMC Meeting Analysis')
+            .replace(/{{opportunityDescription}}/g, 'Banking experts needed to analyze the latest FOMC meeting decisions and their impact on commercial lending and market rates.')
+            .replace(/{{currentPrice}}/g, '$285')
+            .replace(/{{priceTrend}}/g, '-$15 down')
+            .replace(/{{priceTrendClass}}/g, 'price-trend-down')
+            .replace(/{{opportunityId}}/g, '456')
+            .replace(/{{frontendUrl}}/g, frontendUrl);
+          break;
+          
+        case 'draft-reminder':
+          emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/draft-reminder.html'), 'utf8')
+            .replace(/{{opportunityTitle}}/g, 'Cryptocurrency Market Analysis Story')
+            .replace(/{{opportunityDescription}}/g, 'Crypto experts needed to discuss institutional adoption trends and regulatory landscape developments in 2025.')
+            .replace(/{{opportunityId}}/g, '789')
+            .replace(/{{frontendUrl}}/g, frontendUrl);
+          break;
+          
+        case 'pitch-sent':
+          emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/pitch-sent.html'), 'utf8')
+            .replace(/{{opportunityTitle}}/g, 'Real Estate Market Trends Analysis')
+            .replace(/{{opportunityDescription}}/g, 'Real estate experts needed for commercial market trends analysis covering office space, retail, and industrial sectors.')
+            .replace(/{{securedPrice}}/g, '$256')
+            .replace(/{{pitchId}}/g, '101')
+            .replace(/{{frontendUrl}}/g, frontendUrl);
+          break;
+          
+        case 'pitch-submitted':
+          emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/pitch-submitted.html'), 'utf8')
+            .replace(/{{opportunityTitle}}/g, 'Energy Sector Investment Analysis')
+            .replace(/{{opportunityDescription}}/g, 'Energy sector analysts needed to discuss renewable energy investment trends and policy impacts on market dynamics.')
+            .replace(/{{reporterName}}/g, 'Sarah Johnson')
+            .replace(/{{frontendUrl}}/g, frontendUrl);
+          break;
+          
+        case 'pitch-interested':
+          emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/pitch-interested.html'), 'utf8')
+            .replace(/{{opportunityTitle}}/g, 'Healthcare Innovation Story')
+            .replace(/{{opportunityDescription}}/g, 'Healthcare professionals needed to discuss FDA drug approval trends and biotech pipeline developments for Q1 2025 outlook.')
+            .replace(/{{reporterName}}/g, 'Michael Chen')
+            .replace(/{{frontendUrl}}/g, frontendUrl);
+          break;
+          
+        case 'pitch-rejected':
+          emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/pitch-rejected.html'), 'utf8')
+            .replace(/{{opportunityTitle}}/g, 'Climate Change Policy Analysis')
+            .replace(/{{opportunityDescription}}/g, 'Environmental policy experts needed to analyze new climate legislation and its impact on various industries.')
+            .replace(/{{userIndustry}}/g, 'Finance')
+            .replace(/{{frontendUrl}}/g, frontendUrl);
+          break;
+          
+        case 'article-published':
+          emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/article-published.html'), 'utf8')
+            .replace(/{{opportunityTitle}}/g, 'AI Transformation in Financial Services')
+            .replace(/{{opportunityDescription}}/g, 'Your expert commentary on AI adoption in banking and fintech has been published.')
+            .replace(/{{publicationName}}/g, 'Bloomberg')
+            .replace(/{{publishDate}}/g, new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))
+            .replace(/{{articleUrl}}/g, 'https://bloomberg.com/news/articles/ai-transformation-financial-services')
+            .replace(/{{frontendUrl}}/g, frontendUrl);
+          break;
+          
+        case 'billing-confirmation':
+          emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/billing-confirmation.html'), 'utf8')
+            .replace(/{{receiptNumber}}/g, 'QB-' + Date.now())
+            .replace(/{{articleTitle}}/g, 'Tech Innovation Drives Market Growth')
+            .replace(/{{publicationName}}/g, 'TechCrunch')
+            .replace(/{{publishDate}}/g, new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))
+            .replace(/{{billingDate}}/g, new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))
+            .replace(/{{placementFee}}/g, '285.00')
+            .replace(/{{platformFee}}/g, '42.75')
+            .replace(/{{totalAmount}}/g, '327.75')
+            .replace(/{{cardBrand}}/g, 'Visa')
+            .replace(/{{cardLast4}}/g, '4242')
+            .replace(/{{frontendUrl}}/g, frontendUrl);
+          break;
+          
+        case 'subscription-renewal-failed':
+          emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/subscription-renewal-failed.html'), 'utf8')
+            .replace(/{{userFirstName}}/g, 'Ben')
+            .replace(/{{subscriptionPlan}}/g, 'QuoteBid Premium')
+            .replace(/{{monthlyAmount}}/g, '99.99')
+            .replace(/{{nextAttemptDate}}/g, new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))
+            .replace(/{{cardLast4}}/g, '4242')
+            .replace(/{{frontendUrl}}/g, frontendUrl);
+          break;
+          
+        case 'opportunity-alert':
+          emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/opportunity-alert.html'), 'utf8')
+            .replace(/{{userFirstName}}/g, 'John')
+            .replace(/{{bidDeadline}}/g, '3 days')
+            .replace(/{{publicationType}}/g, 'Reuters')
+            .replace(/{{opportunityTitle}}/g, 'Stocks expert needed for insights on Israeli stocks')
+            .replace(/{{industryMatch}}/g, 'Finance & Capital Markets')
+            .replace(/{{opportunityUrl}}/g, `${frontendUrl}/opportunities/123?utm_source=email&utm_medium=opportunity_alert&utm_campaign=alerts&track_click=pricing_engine`);
+          break;
           // Check if this is a real opportunity alert (has query param with opportunity ID)
           const realOpportunityId = req.query.opportunityId ? parseInt(req.query.opportunityId as string) : null;
           let opportunityData = null;
@@ -5532,321 +5638,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `;
           break;
           
-        case 'draft-reminder':
-          emailHtml = `
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <meta charset="utf-8">
-                <title>Draft Reminder - QuoteBid</title>
-                <style>
-                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #e2e8f0; background: #1a202c; margin: 0; padding: 0; }
-                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
-                  .content { background: #2d3748; padding: 30px; border-radius: 0 0 8px 8px; }
-                  .reminder-box { background: #744210; color: #fed7aa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f6ad55; }
-                  .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
-                  .footer { text-align: center; margin-top: 20px; color: #a0aec0; font-size: 14px; }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  <div class="header">
-                    <h1>📝 Draft Reminder</h1>
-                    <p>QuoteBid Pitch Manager</p>
-                  </div>
-                  <div class="content">
-                    <p>Hello John,</p>
-                    <p>You started a pitch draft but haven't finished it yet. Don't let this opportunity slip away!</p>
-                    <div class="reminder-box">
-                      <h3 style="margin: 0 0 10px 0;">Yahoo Finance - Crypto Analysis</h3>
-                      <p style="margin: 0;">Draft started 2 hours ago</p>
-                    </div>
-                    <p>Complete your draft now and get your voice heard in this story.</p>
-                    <p style="text-align: center;">
-                      <a href="${frontendUrl}/opportunities/123" class="button">Continue Draft</a>
-                    </p>
-                    <div class="footer">
-                      <p>© 2024 QuoteBid. All rights reserved.</p>
-                    </div>
-                  </div>
-                </div>
-              </body>
-            </html>
-          `;
-          break;
-          
-        case 'pitch-received':
-          emailHtml = `
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <meta charset="utf-8">
-                <title>Pitch Received - QuoteBid</title>
-                <style>
-                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #e2e8f0; background: #1a202c; margin: 0; padding: 0; }
-                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { background: linear-gradient(135deg, #38b2ac 0%, #319795 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
-                  .content { background: #2d3748; padding: 30px; border-radius: 0 0 8px 8px; }
-                  .status-box { background: #065f46; color: #a7f3d0; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }
-                  .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 10px 5px; }
-                  .footer { text-align: center; margin-top: 20px; color: #a0aec0; font-size: 14px; }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  <div class="header">
-                    <h1>✅ Pitch Received!</h1>
-                    <p>QuoteBid Pitch Manager</p>
-                  </div>
-                  <div class="content">
-                    <p>Great! Your pitch has been received and is being processed.</p>
-                    <div class="status-box">
-                      <h3 style="margin: 0 0 10px 0;">Yahoo Finance - Crypto Analysis</h3>
-                      <p style="margin: 0;">Status: Received - You can still edit until it's sent</p>
-                    </div>
-                    <p>Want to make changes? You can still edit your pitch until it's officially sent to the reporter.</p>
-                    <p style="text-align: center;">
-                      <a href="${frontendUrl}/pitch-manager" class="button">Edit Pitch</a>
-                      <a href="${frontendUrl}/pitch-manager" class="button">View Status</a>
-                    </p>
-                    <div class="footer">
-                      <p>© 2024 QuoteBid. All rights reserved.</p>
-                    </div>
-                  </div>
-                </div>
-              </body>
-            </html>
-          `;
-          break;
-          
-        case 'pitch-sent':
-          emailHtml = `
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <meta charset="utf-8">
-                <title>Pitch Sent - QuoteBid</title>
-                <style>
-                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #e2e8f0; background: #1a202c; margin: 0; padding: 0; }
-                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { background: linear-gradient(135deg, #805ad5 0%, #6b46c1 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
-                  .content { background: #2d3748; padding: 30px; border-radius: 0 0 8px 8px; }
-                  .status-box { background: #553c9a; color: #c4b5fd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #8b5cf6; }
-                  .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
-                  .footer { text-align: center; margin-top: 20px; color: #a0aec0; font-size: 14px; }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  <div class="header">
-                    <h1>🚀 Pitch Sent to Reporter!</h1>
-                    <p>QuoteBid Pitch Manager</p>
-                  </div>
-                  <div class="content">
-                    <p>Excellent! Your pitch has been officially sent to the journalist.</p>
-                    <div class="status-box">
-                      <h3 style="margin: 0 0 10px 0;">Yahoo Finance - Crypto Analysis</h3>
-                      <p style="margin: 0;">Status: Sent to Reporter Sarah Johnson</p>
-                    </div>
-                    <p>Now we wait for the reporter to review your pitch. You'll be notified of any updates.</p>
-                    <p style="text-align: center;">
-                      <a href="${frontendUrl}/pitch-manager" class="button">Track Progress</a>
-                    </p>
-                    <div class="footer">
-                      <p>© 2024 QuoteBid. All rights reserved.</p>
-                    </div>
-                  </div>
-                </div>
-              </body>
-            </html>
-          `;
-          break;
 
-        case 'pitch-interest':
-          emailHtml = `
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <meta charset="utf-8">
-                <title>Pitch Interest - QuoteBid</title>
-                <style>
-                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #e2e8f0; background: #1a202c; margin: 0; padding: 0; }
-                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
-                  .content { background: #2d3748; padding: 30px; border-radius: 0 0 8px 8px; }
-                  .interest-box { background: #744210; color: #fed7aa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f6ad55; }
-                  .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
-                  .footer { text-align: center; margin-top: 20px; color: #a0aec0; font-size: 14px; }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  <div class="header">
-                    <h1>👀 Reporter Interest!</h1>
-                    <p>QuoteBid Pitch Manager</p>
-                  </div>
-                  <div class="content">
-                    <p>Exciting news! A reporter has shown interest in your pitch.</p>
-                    <div class="interest-box">
-                      <h3 style="margin: 0 0 10px 0;">Yahoo Finance - Crypto Analysis</h3>
-                      <p style="margin: 0;">Reporter Sarah Johnson opened and marked interest</p>
-                    </div>
-                    <p>This is a great sign! The reporter is considering your pitch for their story. Stay tuned for updates.</p>
-                    <p style="text-align: center;">
-                      <a href="${frontendUrl}/pitch-manager" class="button">View Details</a>
-                    </p>
-                    <div class="footer">
-                      <p>© 2024 QuoteBid. All rights reserved.</p>
-                    </div>
-                  </div>
-                </div>
-              </body>
-            </html>
-          `;
-          break;
-
-        case 'pitch-declined':
-          emailHtml = `
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <meta charset="utf-8">
-                <title>Pitch Declined - QuoteBid</title>
-                <style>
-                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #e2e8f0; background: #1a202c; margin: 0; padding: 0; }
-                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
-                  .content { background: #2d3748; padding: 30px; border-radius: 0 0 8px 8px; }
-                  .declined-box { background: #742a2a; color: #fbb6ce; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f56565; }
-                  .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
-                  .footer { text-align: center; margin-top: 20px; color: #a0aec0; font-size: 14px; }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  <div class="header">
-                    <h1>📝 Pitch Update</h1>
-                    <p>QuoteBid Pitch Manager</p>
-                  </div>
-                  <div class="content">
-                    <p>Your pitch wasn't selected this time, but don't give up!</p>
-                    <div class="declined-box">
-                      <h3 style="margin: 0 0 10px 0;">Yahoo Finance - Crypto Analysis</h3>
-                      <p style="margin: 0;">Status: Not selected for this story</p>
-                    </div>
-                    <p>Every pitch is a learning opportunity. There are always new stories being posted - keep pitching!</p>
-                    <p style="text-align: center;">
-                      <a href="${frontendUrl}/opportunities" class="button">Find New Opportunities</a>
-                    </p>
-                    <div class="footer">
-                      <p>© 2024 QuoteBid. All rights reserved.</p>
-                    </div>
-                  </div>
-                </div>
-              </body>
-            </html>
-          `;
-          break;
           
-        case 'pitch-success':
-          emailHtml = `
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <meta charset="utf-8">
-                <title>Pitch Success - QuoteBid</title>
-                <style>
-                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #e2e8f0; background: #1a202c; margin: 0; padding: 0; }
-                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
-                  .content { background: #2d3748; padding: 30px; border-radius: 0 0 8px 8px; }
-                  .success-box { background: #065f46; color: #a7f3d0; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }
-                  .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
-                  .footer { text-align: center; margin-top: 20px; color: #a0aec0; font-size: 14px; }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  <div class="header">
-                    <h1>🎉 Success! Your Pitch Was Published!</h1>
-                    <p>QuoteBid Placement Success</p>
-              </div>
-                  <div class="content">
-                    <p>Congratulations! Your pitch has resulted in a successful placement.</p>
-                    <div class="success-box">
-                      <h3 style="margin: 0 0 10px 0;">Yahoo Finance - Crypto Analysis</h3>
-                      <p style="margin: 0;">Status: Published & Live!</p>
-                    </div>
-                    <p>Your expert commentary is now live and reaching thousands of readers. Well done!</p>
-                    <p style="text-align: center;">
-                      <a href="${frontendUrl}/pitch-manager" class="button">View Publication</a>
-                    </p>
-                    <div class="footer">
-                      <p>© 2024 QuoteBid. All rights reserved.</p>
-                    </div>
-                  </div>
-                </div>
-              </body>
-            </html>
-          `;
-          break;
 
-        case 'placement-billing':
-          emailHtml = `
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <meta charset="utf-8">
-                <title>Placement Billing - QuoteBid</title>
-                <style>
-                  body { font-family: Arial, sans-serif; line-height: 1.6; color: #e2e8f0; background: #1a202c; margin: 0; padding: 0; }
-                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
-                  .content { background: #2d3748; padding: 30px; border-radius: 0 0 8px 8px; }
-                  .billing-box { background: #065f46; color: #a7f3d0; padding: 25px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }
-                  .invoice-section { background: #374151; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #4b5563; }
-                  .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 10px 5px; }
-                  .amount { font-size: 24px; font-weight: bold; color: #10b981; }
-                  .footer { text-align: center; margin-top: 20px; color: #a0aec0; font-size: 14px; }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  <div class="header">
-                    <h1>💳 You've Been Billed for Your Placement</h1>
-                    <p>QuoteBid Billing Department</p>
-                  </div>
-                  <div class="content">
-                    <p>Congratulations! Your successful placement has been billed.</p>
-                    <div class="billing-box">
-                      <h3 style="margin: 0 0 15px 0;">Yahoo Finance - Crypto Market Analysis</h3>
-                      <p style="margin: 0 0 10px 0;">Published: December 15, 2024</p>
-                      <p style="margin: 0;">Amount Charged: <span class="amount">$275.00</span></p>
-                    </div>
-                    
-                    <div class="invoice-section">
-                      <h4 style="margin: 0 0 15px 0; color: #e2e8f0;">📄 Invoice Details</h4>
-                      <p style="margin: 5px 0;"><strong>Invoice #:</strong> QB-2024-001234</p>
-                      <p style="margin: 5px 0;"><strong>Payment Method:</strong> **** 1234</p>
-                      <p style="margin: 5px 0;"><strong>Transaction ID:</strong> txn_abc123def456</p>
-                    </div>
-                    
-                    <p>View your published article and download your invoice using the links below:</p>
-                    <p style="text-align: center;">
-                      <a href="https://finance.yahoo.com/sample-article" class="button">📰 View Article</a>
-                      <a href="${frontendUrl}/billing/invoice/QB-2024-001234" class="button">📄 Download Invoice</a>
-                    </p>
-                    <div class="footer">
-                      <p>Thank you for using QuoteBid!</p>
-                      <p>© 2024 QuoteBid. All rights reserved.</p>
-                </div>
-              </div>
-            </div>
-              </body>
-            </html>
-          `;
-          break;
+
+
           
         default:
           return res.status(404).json({ error: 'Template not found' });
@@ -5881,40 +5677,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           icon: '🔧',
           color: 'from-blue-600 to-purple-600',
           templates: [
-      { name: 'Welcome Email', path: 'welcome', description: 'Sent to new users after signup', type: 'react' },
-            { name: 'Password Reset', path: 'password-reset', description: 'Password reset email', type: 'inline' }
+            { name: 'Welcome Email', path: 'welcome', description: 'Beautiful HTML welcome email sent to new users after signup', type: 'html' },
+            { name: 'Password Reset', path: 'password-reset', description: 'Password reset email for account recovery', type: 'html' }
           ]
         },
         {
           name: 'Alerts',
-          description: 'Time-sensitive alerts and urgent notifications',
+          description: 'Time-sensitive alerts with pricing engine tracking',
           icon: '🚨',
           color: 'from-red-600 to-pink-600',
           templates: [
-            { name: 'New Opportunity Email', path: 'new-opportunity-alert', description: 'Alert when new opportunity matches user industry', type: 'react' }
+            { name: 'New Opportunity Alert', path: 'new-opportunity-alert', description: 'Alert when new opportunity matches user industry (click tracked)', type: 'html' },
+            { name: 'Saved Opportunity Alert', path: 'saved-opportunity-alert', description: 'Price update for saved opportunities (click tracked)', type: 'html' }
           ]
         },
         {
           name: 'Notifications',
-          description: 'General platform notifications and updates',
+          description: 'Pitch journey status notifications',
           icon: '📢',
           color: 'from-orange-600 to-yellow-600',
           templates: [
-            { name: 'Draft Reminder', path: 'draft-reminder', description: 'Reminder to complete pitch draft', type: 'react' },
-            { name: 'Pitch Received Confirmation', path: 'pitch-received', description: 'Confirmation that pitch was received', type: 'react' },
-            { name: 'Pitch Sent to Reporter', path: 'pitch-sent', description: 'Notification that pitch was sent to journalist', type: 'react' },
-            { name: 'Pitch Interest Shown', path: 'pitch-interest', description: 'Reporter showed interest in pitch', type: 'react' },
-            { name: 'Pitch Declined', path: 'pitch-declined', description: 'Pitch was declined by reporter', type: 'react' },
-            { name: 'Pitch Accepted / Success', path: 'pitch-success', description: 'Pitch resulted in successful placement', type: 'react' }
+            { name: 'Draft Reminder', path: 'draft-reminder', description: 'Reminder to complete pitch draft', type: 'html' },
+            { name: 'Pitch Sent', path: 'pitch-sent', description: 'Pitch sent and price secured - can still edit', type: 'html' },
+            { name: 'Pitch Submitted', path: 'pitch-submitted', description: 'Pitch submitted to reporter - no more edits', type: 'html' },
+            { name: 'Pitch Interested', path: 'pitch-interested', description: 'Reporter showed interest in pitch', type: 'html' },
+            { name: 'Pitch Rejected', path: 'pitch-rejected', description: 'Pitch was not selected for article', type: 'html' },
+            { name: 'Article Published', path: 'article-published', description: 'Success - pitch published in live article', type: 'html' }
           ]
         },
         {
           name: 'Billing',
-          description: 'Payment confirmations, receipts, and billing emails',
-          icon: '💰',
+          description: 'Payment and billing confirmations',
+          icon: '💳',
           color: 'from-green-600 to-emerald-600',
           templates: [
-            { name: 'Placement Billing', path: 'placement-billing', description: 'Billing notification for successful placement', type: 'react' }
+            { name: 'Billing Confirmation', path: 'billing-confirmation', description: 'Receipt for successful placement billing', type: 'html' },
+            { name: 'Subscription Renewal Failed', path: 'subscription-renewal-failed', description: 'Payment failure notification for subscription renewal', type: 'html' }
           ]
         }
     ];

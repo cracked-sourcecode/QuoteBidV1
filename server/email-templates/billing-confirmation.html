@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Confirmation - QuoteBid</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+</head>
+<body style="margin:0;padding:0;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+
+  <!-- Main Container -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        
+        <!-- Email Container -->
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.1);overflow:hidden;">
+          
+          <!-- Header Section -->
+          <tr>
+            <td style="background: #f8fafc; padding: 40px 40px 32px 40px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+              
+              <!-- Logo -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto 20px auto;">
+                <tr>
+                  <td style="text-align: center;">
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 24px; font-weight: 700; color: #1f2937; line-height: 1;">
+                      <span style="color: #1f2937;">Quote</span><span style="color: #6366f1;">Bid</span>
+                    </div>
+                  </td>
+                  <td style="vertical-align: top; padding-left: 8px; padding-top: 2px;">
+                    <div style="background: #6366f1; color: #ffffff; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 12px; text-align: center;">
+                      BETA
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Badge -->
+              <div style="background: #10b981; color: #ffffff; font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 20px; text-align: center; display: inline-block; margin-bottom: 16px;">
+                💳 PAYMENT CONFIRMED
+              </div>
+              
+              <!-- Title -->
+              <h1 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 18px; font-weight: 600; color: #374151; margin: 0; line-height: 1.3;">
+                Payment Successful
+              </h1>
+              
+              <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #6b7280; margin: 8px 0 0 0; line-height: 1.4;">
+                Your placement has been billed successfully
+              </p>
+              
+            </td>
+          </tr>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 40px 40px;">
+              
+              <!-- Personal Greeting -->
+              <div style="margin-bottom: 24px;">
+                <h2 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; color: #1f2937; margin: 0 0 12px 0;">
+                  Hi {{userFirstName}},
+                </h2>
+                <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #4b5563; margin: 0;">
+                  Thank you! Your payment has been processed successfully. Your placement has been completed and billed to your card on file.
+                </p>
+              </div>
+              
+              <!-- Receipt Card -->
+              <div style="background: #f8fafc; border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 1px solid #e5e7eb;">
+                
+                <!-- Receipt Header -->
+                <div style="margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
+                  <h3 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; color: #1f2937; margin: 0 0 8px 0;">
+                    Payment Receipt
+                  </h3>
+                  <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 12px; color: #6b7280; margin: 0;">
+                    Receipt #{{receiptNumber}}
+                  </p>
+                </div>
+                
+                <!-- Article Details -->
+                <div style="margin-bottom: 20px;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #6b7280; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                        Article:
+                      </td>
+                      <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #1f2937; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f3f4f6; text-align: right;">
+                        <a href="{{articleUrl}}" style="color: #3b82f6; text-decoration: none; font-weight: 600;">{{articleTitle}} →</a>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #6b7280; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                        Publication:
+                      </td>
+                      <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #1f2937; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f3f4f6; text-align: right;">
+                        {{publicationName}}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #6b7280; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                        Published:
+                      </td>
+                      <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #1f2937; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f3f4f6; text-align: right;">
+                        {{publishDate}}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #6b7280; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                        Billing Date:
+                      </td>
+                      <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #1f2937; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #f3f4f6; text-align: right;">
+                        {{billingDate}}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+                
+                <!-- Total Amount -->
+                <div style="background: #ffffff; border-radius: 8px; padding: 20px; border: 2px solid #10b981;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #1f2937; font-weight: 600;">
+                        Total Charged:
+                      </td>
+                      <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 18px; color: #10b981; font-weight: 800; text-align: right;">
+                        ${{totalAmount}}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+                
+                <!-- Payment Method -->
+                <div style="background: #eff6ff; border-radius: 8px; padding: 16px; margin-top: 20px; border: 1px solid #bfdbfe; text-align: center;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto; display: inline-table;">
+                    <tr>
+                      <td style="width: 50px; vertical-align: top; padding-right: 12px;">
+                        <div style="background: #3b82f6; color: white; width: 40px; height: 40px; border-radius: 8px; text-align: center; line-height: 40px; font-size: 14px;">
+                          💳
+                        </div>
+                      </td>
+                      <td style="vertical-align: top;">
+                        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; color: #1f2937; font-weight: 600; margin-bottom: 4px; font-size: 14px;">
+                          {{cardBrand}} •••• {{cardLast4}}
+                        </div>
+                        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; color: #6b7280; font-size: 12px;">
+                          Charged on {{billingDate}}
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+                
+                <!-- View Billing Button -->
+                <div style="text-align: center; margin-top: 24px;">
+                  <a href="{{frontendUrl}}/account?tab=billing&utm_source=email&utm_medium=billing_confirmation&utm_campaign=billing" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 50px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);">
+                    📊 View All Billing →
+                  </a>
+                </div>
+              </div>
+              
+              <!-- Support Info -->
+              <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 12px; padding: 20px; margin-bottom: 24px; border: 1px solid #3b82f6;">
+                <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #1e40af; margin: 0; text-align: center;">
+                  💬 <strong>Questions about this charge?</strong> Contact our support team or view your complete billing history in your account.
+                </p>
+              </div>
+              
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background: #f8fafc; padding: 32px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 12px; color: #6b7280; margin: 0 0 8px 0;">
+                © 2025 QuoteBid Inc. · 
+                <a href="{{frontendUrl}}/terms" style="color: #6b7280; text-decoration: none;">Terms</a> · 
+                <a href="{{frontendUrl}}/privacy" style="color: #6b7280; text-decoration: none;">Privacy</a>
+              </p>
+              <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 12px; color: #9ca3af; margin: 0;">
+                <a href="{{frontendUrl}}/account?tab=notifications" style="color: #9ca3af; text-decoration: none;">Email Preferences</a>
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+        
+      </td>
+    </tr>
+  </table>
+  
+</body>
+
+<!-- Mobile-Optimized CSS for Email Clients -->
+<style type="text/css">
+  /* Mobile responsive - email-safe optimizations */
+  @media only screen and (max-width: 600px) {
+    /* Container adjustments */
+    table[role="presentation"] {
+      width: 100% !important;
+      min-width: 320px !important;
+    }
+    
+    /* Header optimizations */
+    td[style*="padding: 40px 40px 32px 40px"] {
+      padding: 24px 20px 20px 20px !important;
+    }
+    
+    /* Logo and title scaling */
+    div[style*="font-size: 24px"] {
+      font-size: 18px !important;
+    }
+    
+    h1[style*="font-size: 18px"] {
+      font-size: 14px !important;
+    }
+    
+    h2[style*="font-size: 14px"] {
+      font-size: 14px !important;
+    }
+    
+    /* Content padding */
+    td[style*="padding: 40px 40px"] {
+      padding: 24px 20px !important;
+    }
+    
+    /* Button optimization for touch */
+    a[style*="padding: 16px 32px"] {
+      padding: 14px 24px !important;
+      font-size: 15px !important;
+    }
+    
+    /* Footer adjustments */
+    td[style*="padding: 32px 40px"] {
+      padding: 24px 20px !important;
+    }
+    
+    /* Card padding adjustments */
+    div[style*="padding: 24px"] {
+      padding: 16px !important;
+    }
+    
+    div[style*="padding: 20px"] {
+      padding: 16px !important;
+    }
+  }
+</style>
+
+</html>

@@ -1,174 +1,242 @@
-<!-- QuoteBid Opportunity Alert Email - Bulletproof Table Layout -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-  <tr>
-    <td align="center" bgcolor="#F9FAFB">
-
-      <!-- Fixed-width container (600px) -->
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
-             style="width:600px;background:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#374151;">
-
-        <!-- HEADER -->
-        <tr>
-          <td align="left" style="padding:32px 32px 0 32px;">
-            <img src="https://quotebid.co/logo-light.png" width="140" alt="QuoteBid" style="display:block;border:0;">
-          </td>
-        </tr>
-        <tr><td style="line-height:0;height:24px;">&nbsp;</td></tr>
-
-        <!-- URGENT BADGE -->
-        <tr>
-          <td style="padding:0 32px 16px 32px;">
-            <span style="background:#FF7000;color:#FFFFFF;padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
-              🚨 New Opportunity Alert
-            </span>
-          </td>
-        </tr>
-
-        <!-- HEADLINE -->
-        <tr>
-          <td style="padding:0 32px 24px 32px;font-size:24px;line-height:32px;font-weight:700;color:#0F172A;">
-            {{opportunity.title}}
-          </td>
-        </tr>
-
-        <!-- PUBLICATION INFO -->
-        <tr>
-          <td style="padding:0 32px 0 32px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8FAFC;border-radius:8px;">
-              <tr>
-                <td style="padding:20px 24px;">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-                      <td width="60%" style="width:60%;vertical-align:top;">
-                        <div style="font-size:14px;line-height:20px;color:#6B7280;margin-bottom:4px;">Publication</div>
-                        <div style="font-size:18px;line-height:24px;font-weight:600;color:#0F172A;">{{opportunity.publicationName}}</div>
-                      </td>
-                      <td width="40%" style="width:40%;vertical-align:top;text-align:right;">
-                        <div style="font-size:14px;line-height:20px;color:#6B7280;margin-bottom:4px;">Industry</div>
-                        <div style="font-size:16px;line-height:22px;font-weight:500;color:#374151;">{{opportunity.industry}}</div>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-
-        <!-- SECTION SPACER -->
-        <tr><td style="line-height:0;height:24px;">&nbsp;</td></tr>
-
-        <!-- DESCRIPTION -->
-        <tr>
-          <td style="padding:0 32px 16px 32px;font-size:16px;line-height:24px;color:#374151;">
-            {{opportunity.description}}
-          </td>
-        </tr>
-
-        <!-- PRICING & DEADLINE INFO -->
-        <tr>
-          <td style="padding:0 32px 0 32px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td width="50%" style="width:50%;vertical-align:top;padding-right:12px;">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FEF3E8;border:2px solid #FF7000;border-radius:8px;">
-                    <tr>
-                      <td align="center" style="padding:16px 12px;">
-                        <div style="font-size:12px;line-height:16px;color:#FF7000;font-weight:600;text-transform:uppercase;margin-bottom:4px;">Current Price</div>
-                        <div style="font-size:24px;line-height:28px;font-weight:700;color:#FF7000;">{{opportunity.currentPrice}}</div>
-                        <div style="font-size:12px;line-height:16px;color:#B45309;margin-top:2px;">{{opportunity.trend}}</div>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-                <td width="50%" style="width:50%;vertical-align:top;padding-left:12px;">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F3F4F6;border-radius:8px;">
-                    <tr>
-                      <td align="center" style="padding:16px 12px;">
-                        <div style="font-size:12px;line-height:16px;color:#6B7280;font-weight:600;text-transform:uppercase;margin-bottom:4px;">Deadline</div>
-                        <div style="font-size:18px;line-height:22px;font-weight:600;color:#374151;">{{opportunity.deadline}}</div>
-                        <div style="font-size:12px;line-height:16px;color:#9CA3AF;margin-top:2px;">⏰ Don't wait</div>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-
-        <!-- SECTION SPACER -->
-        <tr><td style="line-height:0;height:32px;">&nbsp;</td></tr>
-
-        <!-- WHY THIS MATCHES -->
-        <tr>
-          <td style="padding:0 32px 16px 32px;font-size:18px;line-height:24px;font-weight:600;color:#0F172A;">
-            Why this matches your expertise:
-          </td>
-        </tr>
-
-        <tr>
-          <td style="padding:0 32px 0 32px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td width="24" style="width:24px;vertical-align:top;padding-top:2px;">
-                  <span style="display:inline-block;width:16px;height:16px;background:#10B981;border-radius:8px;"></span>
-                </td>
-                <td style="font-size:16px;line-height:24px;color:#374151;padding-bottom:8px;padding-left:12px;">
-                  Matches your industry focus and expertise area
-                </td>
-              </tr>
-              <tr>
-                <td width="24" style="width:24px;vertical-align:top;padding-top:2px;">
-                  <span style="display:inline-block;width:16px;height:16px;background:#10B981;border-radius:8px;"></span>
-                </td>
-                <td style="font-size:16px;line-height:24px;color:#374151;padding-bottom:8px;padding-left:12px;">
-                  High-value opportunity with premium publication
-                </td>
-              </tr>
-              <tr>
-                <td width="24" style="width:24px;vertical-align:top;padding-top:2px;">
-                  <span style="display:inline-block;width:16px;height:16px;background:#10B981;border-radius:8px;"></span>
-                </td>
-                <td style="font-size:16px;line-height:24px;color:#374151;padding-bottom:16px;padding-left:12px;">
-                  Perfect timing based on your availability
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-
-        <!-- CTA BUTTON -->
-        <tr>
-          <td align="center" style="padding:0 32px 32px 32px;">
-            <a href="{{frontendUrl}}/opportunities/{{opportunity.id}}"
-               style="background:#FF7000;color:#FFFFFF;text-decoration:none;padding:16px 32px;border-radius:8px;font-weight:600;font-size:16px;display:inline-block;">
-               View Opportunity & Submit Pitch →
-            </a>
-          </td>
-        </tr>
-
-        <!-- URGENCY NOTE -->
-        <tr>
-          <td align="center" style="padding:0 32px 16px 32px;font-size:14px;line-height:20px;color:#DC2626;">
-            <strong>⚡ Act fast!</strong> Opportunities like this fill quickly on QuoteBid.
-          </td>
-        </tr>
-
-        <!-- FOOTER SPACER -->
-        <tr><td style="line-height:0;height:32px;">&nbsp;</td></tr>
-
-        <!-- FOOTER -->
-        <tr>
-          <td align="center" style="padding:0 32px 32px 32px;font-size:12px;line-height:18px;color:#6B7280;">
-            © 2025 QuoteBid Inc. ·
-            <a href="https://quotebid.co/terms" style="color:#6B7280;text-decoration:none;">Terms</a> ·
-            <a href="https://quotebid.co/privacy" style="color:#6B7280;text-decoration:none;">Privacy</a><br>
-            <a href="{{frontendUrl}}/notifications/settings" style="color:#6B7280;text-decoration:none;">Manage alerts</a>
-          </td>
-        </tr>
-
-      </table><!-- end 600px container -->
-    </td>
-  </tr>
-</table> 
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Opportunity Alert - QuoteBid</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e40af;
+            text-decoration: none;
+        }
+        
+        .content {
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 30px;
+        }
+        
+        .greeting {
+            margin-bottom: 20px;
+        }
+        
+        .opportunity-link {
+            color: #1e40af;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .opportunity-link:hover {
+            text-decoration: underline;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 20px 0;
+        }
+        
+        .signature {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .signature-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+        
+        .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .signature-text {
+            flex: 1;
+        }
+        
+        .signature-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+        
+        .signature-title {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+        
+        .signature-email {
+            color: #1e40af;
+            text-decoration: none;
+            font-size: 13px;
+        }
+        
+        .signature-website {
+            color: #1e40af;
+            text-decoration: none;
+            font-size: 13px;
+            margin-left: 4px;
+        }
+        
+        .social-links {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .social-link {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-block;
+            text-align: center;
+            line-height: 24px;
+            color: white;
+            text-decoration: none;
+            font-size: 12px;
+        }
+        
+        .social-linkedin { background-color: #0077b5; }
+        .social-twitter { background-color: #1da1f2; }
+        .social-facebook { background-color: #1877f2; }
+        .social-instagram { background-color: #e4405f; }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        
+        .footer-links {
+            margin-bottom: 15px;
+        }
+        
+        .footer-links a {
+            color: #64748b;
+            text-decoration: none;
+            font-size: 12px;
+            margin: 0 10px;
+        }
+        
+        .footer-links a:hover {
+            color: #1e40af;
+        }
+        
+        .footer-text {
+            color: #94a3b8;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .signature-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .avatar {
+                align-self: center;
+            }
+            
+            .social-links {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="https://quotebid.co" class="logo">QuoteBid</a>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">Hi {{userFirstName}},</div>
+            
+            <p>Good morning! I wanted to share a new opportunity with you in case you have a chance to look at it before the deadline in {{bidDeadline}}.</p>
+            
+            <p>A {{publicationType}} journalist has just posted a request titled "<strong>{{opportunityTitle}}</strong>"</p>
+            
+                         <p>Considering your expertise in {{industryMatch}}, you might have some valuable insights to share. If you have the time to contribute, here's <a href="{{opportunityUrl}}?utm_source=email&utm_medium=opportunity_alert&utm_campaign=alerts&track_click=pricing_engine" class="opportunity-link">the direct link to the opportunity</a> to help you connect with the journalist.</p>
+            
+            <p>I'd be happy to know how it goes and if you need any additional information, please do not hesitate to let me know.</p>
+            
+            <p>Enjoy the rest of your day!</p>
+        </div>
+        
+        <div class="signature">
+            <div class="signature-content">
+                <img src="https://quotebid.co/team-avatar.jpg" alt="QuoteBid Team" class="avatar">
+                <div class="signature-text">
+                    <div class="signature-name">QuoteBid Team</div>
+                    <div class="signature-title">Customer Success, <span style="background-color: #fbbf24; color: #92400e; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;">QuoteBid</span></div>
+                    <div>
+                        <a href="mailto:support@quotebid.co" class="signature-email">support@quotebid.co</a> |
+                        <a href="https://quotebid.co" class="signature-website">quotebid.co</a>
+                    </div>
+                    <div class="social-links">
+                        <a href="https://linkedin.com/company/quotebid" class="social-link social-linkedin">in</a>
+                        <a href="https://twitter.com/quotebid" class="social-link social-twitter">𝕏</a>
+                        <a href="https://facebook.com/quotebid" class="social-link social-facebook">f</a>
+                        <a href="https://instagram.com/quotebid" class="social-link social-instagram">ig</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-links">
+                <a href="https://quotebid.co/terms">Terms</a>
+                <a href="https://quotebid.co/privacy">Privacy</a>
+                <a href="https://quotebid.co/account?tab=notifications">Email Preferences</a>
+            </div>
+            <div class="footer-text">
+                © 2025 QuoteBid. All rights reserved.<br>
+                You're receiving this because you have opportunity alerts enabled.
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
