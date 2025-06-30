@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
+import { useTheme } from '@/hooks/use-theme';
 import { apiRequest } from '@/lib/queryClient';
 import { loadStripe } from '@stripe/stripe-js';
 import {
@@ -35,6 +36,7 @@ function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
   const elements = useElements();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { theme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
@@ -147,8 +149,12 @@ function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Setting up secure payment...</p>
+          <Loader2 className={`h-8 w-8 animate-spin mx-auto mb-4 ${
+            theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+          }`} />
+          <p className={theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}>
+            Setting up secure payment...
+          </p>
         </div>
       </div>
     );
@@ -159,15 +165,34 @@ function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
       <div className="flex items-center justify-center py-12">
         <div className="text-center max-w-md">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-red-700 mb-2">Payment Setup Error</h3>
-          <p className="text-gray-600 mb-6">{errorMessage}</p>
+          <h3 className={`text-lg font-semibold mb-2 ${
+            theme === 'dark' ? 'text-red-400' : 'text-red-700'
+          }`}>
+            Payment Setup Error
+          </h3>
+          <p className={`mb-6 ${
+            theme === 'dark' ? 'text-slate-400' : 'text-gray-600'
+          }`}>
+            {errorMessage}
+          </p>
           <div className="flex gap-3">
-            <Button variant="outline" onClick={onClose}>
+            <Button 
+              variant="outline" 
+              onClick={onClose}
+              className={theme === 'dark' 
+                ? 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100' 
+                : ''
+              }
+            >
               Cancel
             </Button>
             <Button 
               onClick={() => window.location.reload()}
-              className="bg-blue-600 hover:bg-blue-700"
+              className={`${
+                theme === 'dark'
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
             >
               Try Again
             </Button>
@@ -180,13 +205,23 @@ function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
   return (
     <div className="py-6">
       <div className="text-center mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Update Your Subscription</h3>
-        <p className="text-gray-600">Enter your payment information to reactivate your QuoteBid membership</p>
+        <h3 className={`text-lg font-semibold mb-2 ${
+          theme === 'dark' ? 'text-slate-100' : 'text-gray-900'
+        }`}>
+          Update Your Subscription
+        </h3>
+        <p className={theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}>
+          Enter your payment information to reactivate your QuoteBid membership
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="flex items-center justify-between mb-4">
-          <h4 className="text-sm font-semibold text-gray-900">Payment Information</h4>
+          <h4 className={`text-sm font-semibold ${
+            theme === 'dark' ? 'text-slate-100' : 'text-gray-900'
+          }`}>
+            Payment Information
+          </h4>
           <div className="flex items-center gap-1 text-green-600">
             <Lock className="h-3.5 w-3.5" />
             <span className="text-xs font-medium">Secure</span>
@@ -195,18 +230,24 @@ function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
           
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={`block text-sm font-medium mb-2 ${
+              theme === 'dark' ? 'text-slate-300' : 'text-gray-700'
+            }`}>
               Card Number
             </label>
-            <div className="border border-gray-300 rounded-lg bg-white p-3 transition-all hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
+            <div className={`border rounded-lg p-3 transition-all ${
+              theme === 'dark' 
+                ? 'border-slate-600 bg-slate-800 hover:border-slate-500 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-500/20' 
+                : 'border-gray-300 bg-white hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20'
+            }`}>
               <CardNumberElement 
                 options={{
                   style: {
                     base: {
                       fontSize: '16px',
-                      color: '#374151',
+                      color: theme === 'dark' ? '#e2e8f0' : '#374151',
                       '::placeholder': {
-                        color: '#9CA3AF'
+                        color: theme === 'dark' ? '#64748b' : '#9CA3AF'
                       }
                     }
                   }
@@ -217,18 +258,24 @@ function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
           
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={`block text-sm font-medium mb-2 ${
+                theme === 'dark' ? 'text-slate-300' : 'text-gray-700'
+              }`}>
                 Expiration
               </label>
-              <div className="border border-gray-300 rounded-lg bg-white p-3 transition-all hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
+              <div className={`border rounded-lg p-3 transition-all ${
+                theme === 'dark' 
+                  ? 'border-slate-600 bg-slate-800 hover:border-slate-500 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-500/20' 
+                  : 'border-gray-300 bg-white hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20'
+              }`}>
                 <CardExpiryElement 
                   options={{
                     style: {
                       base: {
                         fontSize: '16px',
-                        color: '#374151',
+                        color: theme === 'dark' ? '#e2e8f0' : '#374151',
                         '::placeholder': {
-                          color: '#9CA3AF'
+                          color: theme === 'dark' ? '#64748b' : '#9CA3AF'
                         }
                       }
                     }
@@ -237,18 +284,24 @@ function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className={`block text-sm font-medium mb-2 ${
+                theme === 'dark' ? 'text-slate-300' : 'text-gray-700'
+              }`}>
                 CVC
               </label>
-              <div className="border border-gray-300 rounded-lg bg-white p-3 transition-all hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
+              <div className={`border rounded-lg p-3 transition-all ${
+                theme === 'dark' 
+                  ? 'border-slate-600 bg-slate-800 hover:border-slate-500 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-500/20' 
+                  : 'border-gray-300 bg-white hover:border-gray-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20'
+              }`}>
                 <CardCvcElement 
                   options={{
                     style: {
                       base: {
                         fontSize: '16px',
-                        color: '#374151',
+                        color: theme === 'dark' ? '#e2e8f0' : '#374151',
                         '::placeholder': {
-                          color: '#9CA3AF'
+                          color: theme === 'dark' ? '#64748b' : '#9CA3AF'
                         }
                       }
                     }
@@ -258,24 +311,42 @@ function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
             </div>
           </div>
           
-          <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2.5 rounded-lg">
+          <div className={`flex items-center gap-2 text-green-600 px-3 py-2.5 rounded-lg ${
+            theme === 'dark' ? 'bg-green-900/20' : 'bg-green-50'
+          }`}>
             <Lock className="h-3.5 w-3.5" />
             <p className="text-xs font-medium">Your card information is encrypted and secure</p>
           </div>
         </div>
 
         {errorMessage && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2.5 rounded-lg">
+          <div className={`border px-3 py-2.5 rounded-lg ${
+            theme === 'dark' 
+              ? 'bg-red-900/20 border-red-800 text-red-400' 
+              : 'bg-red-50 border-red-200 text-red-700'
+          }`}>
             <p className="text-sm">{errorMessage}</p>
           </div>
         )}
 
-        <div className="border-t border-gray-200 pt-4">
+        <div className={`pt-4 ${
+          theme === 'dark' ? 'border-t border-slate-700' : 'border-t border-gray-200'
+        }`}>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-gray-900">QuoteBid Membership</span>
-            <span className="text-lg font-bold text-gray-900">$99.99/month</span>
+            <span className={`text-sm font-medium ${
+              theme === 'dark' ? 'text-slate-300' : 'text-gray-900'
+            }`}>
+              QuoteBid Membership
+            </span>
+            <span className={`text-lg font-bold ${
+              theme === 'dark' ? 'text-slate-100' : 'text-gray-900'
+            }`}>
+              $99.99/month
+            </span>
           </div>
-          <p className="text-xs text-gray-500 mb-4">
+          <p className={`text-xs mb-4 ${
+            theme === 'dark' ? 'text-slate-500' : 'text-gray-500'
+          }`}>
             By completing payment, you agree to our Terms of Service and Privacy Policy. Cancel anytime.
           </p>
           
@@ -284,7 +355,11 @@ function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
               type="button"
               variant="outline"
               onClick={onClose}
-              className="flex-1"
+              className={`flex-1 ${
+                theme === 'dark' 
+                  ? 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100' 
+                  : ''
+              }`}
               disabled={isLoading}
             >
               Cancel
@@ -292,7 +367,11 @@ function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
             <Button
               type="submit"
               disabled={!stripe || isLoading}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              className={`flex-1 text-white ${
+                theme === 'dark'
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
             >
               {isLoading ? (
                 <>
@@ -314,15 +393,27 @@ function PaymentForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: (
 }
 
 export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModalProps) {
+  const { theme } = useTheme();
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className={`sm:max-w-lg ${
+        theme === 'dark' 
+          ? 'bg-slate-900 border-slate-700' 
+          : 'bg-white border-gray-200'
+      }`}>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-blue-600" />
+          <DialogTitle className={`flex items-center gap-2 ${
+            theme === 'dark' ? 'text-slate-100' : 'text-gray-900'
+          }`}>
+            <CreditCard className={`h-5 w-5 ${
+              theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+            }`} />
             Subscription Payment
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className={
+            theme === 'dark' ? 'text-slate-400' : 'text-gray-600'
+          }>
             Complete your payment to access all QuoteBid features.
           </DialogDescription>
         </DialogHeader>
