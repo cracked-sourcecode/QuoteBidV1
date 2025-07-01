@@ -441,15 +441,30 @@ export default function SavedOpportunitiesPage() {
           </div>
           
           <div className="flex flex-wrap justify-center gap-8 mb-8">
-            <span className="text-gray-500 hover:text-gray-700 transition-colors duration-300 text-lg font-medium cursor-default">
+            <a 
+              href="https://quotebid.co/legal/terms" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-500 hover:text-gray-700 transition-colors duration-300 text-lg font-medium cursor-pointer"
+            >
               Terms of Use
-            </span>
-            <span className="text-gray-500 hover:text-gray-700 transition-colors duration-300 text-lg font-medium cursor-default">
+            </a>
+            <a 
+              href="https://quotebid.co/legal/privacy" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-500 hover:text-gray-700 transition-colors duration-300 text-lg font-medium cursor-pointer"
+            >
               Privacy
-            </span>
-            <span className="text-gray-500 hover:text-gray-700 transition-colors duration-300 text-lg font-medium cursor-default">
+            </a>
+            <a 
+              href="https://quotebid.co/legal/editorial-integrity" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-500 hover:text-gray-700 transition-colors duration-300 text-lg font-medium cursor-pointer"
+            >
               Editorial Integrity
-            </span>
+            </a>
           </div>
           
           <div className="border-t border-gray-200 pt-8">
