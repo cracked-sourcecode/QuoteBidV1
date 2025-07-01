@@ -2,8 +2,8 @@ import { getDb } from '../db';
 import { users, opportunities, publications } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { storage } from '../storage';
-import { render } from '@react-email/render';
-import OpportunityAlertEmail from '../../emails/templates/OpportunityAlertEmail';
+import fs from 'fs';
+import path from 'path';
 
 interface OpportunityEmailJob {
   opportunityId: number;
@@ -144,21 +144,19 @@ async function sendOpportunityAlertEmail(user: { id: number; email: string; full
   const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
   const deadlineDisplay = daysRemaining > 0 ? `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left` : 'Today';
   
-  // Render email using React Email template
-  const emailHtml = await render(OpportunityAlertEmail({
-    userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
-    frontendUrl,
-    opportunity: {
-      id: opportunity.id,
-      title: opportunity.title,
-      description: opportunity.description || opportunity.summary || "Seeking expert commentary and insights",
-      publicationName: opportunity.publication?.name || "Top Publication",
-      industry: opportunity.industry,
-      deadline: deadlineDisplay,
-      currentPrice: livePriceData.currentPrice,
-      trend: livePriceData.trend,
-    }
-  }));
+  // Load and render HTML email template
+  const templatePath = path.join(process.cwd(), 'server/email-templates/new-opportunity-alert.html');
+  let emailHtml = fs.readFileSync(templatePath, 'utf8');
+  
+  // Replace template variables
+  emailHtml = emailHtml
+    .replace(/\{\{userFirstName\}\}/g, user.fullName?.split(' ')[0] || user.username || 'Expert')
+    .replace(/\{\{bidDeadline\}\}/g, deadlineDisplay)
+    .replace(/\{\{publicationType\}\}/g, opportunity.publication?.name || "Top Publication")
+    .replace(/\{\{opportunityTitle\}\}/g, opportunity.title)
+    .replace(/\{\{industryMatch\}\}/g, opportunity.industry)
+    .replace(/\{\{opportunityId\}\}/g, opportunity.id.toString())
+    .replace(/\{\{frontendUrl\}\}/g, frontendUrl);
   
   // Send email using your email service
   const { Resend } = await import('resend');
