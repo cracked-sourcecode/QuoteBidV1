@@ -21,6 +21,15 @@ const scheduledJobs = new Map<number, NodeJS.Timeout>();
 export function scheduleOpportunityAlert(opportunityId: number, delayMinutes: number = 7) {
   console.log(`📅 Scheduling opportunity alert for ID ${opportunityId} with ${delayMinutes} minute delay`);
   
+  // PRODUCTION FIX: Add immediate send option for testing
+  if (process.env.NODE_ENV === 'development' || delayMinutes === 0) {
+    console.log(`🚀 IMMEDIATE SEND: Sending opportunity alert immediately for ID ${opportunityId}`);
+    sendOpportunityAlertEmails(opportunityId).catch(error => {
+      console.error(`❌ Immediate send failed for ID ${opportunityId}:`, error);
+    });
+    return;
+  }
+  
   // Clear any existing job for this opportunity
   if (scheduledJobs.has(opportunityId)) {
     clearTimeout(scheduledJobs.get(opportunityId)!);
@@ -155,6 +164,7 @@ async function sendOpportunityAlertEmail(user: { id: number; email: string; full
     .replace(/\{\{publicationType\}\}/g, opportunity.publication?.name || "Top Publication")
     .replace(/\{\{opportunityTitle\}\}/g, opportunity.title)
     .replace(/\{\{industryMatch\}\}/g, opportunity.industry)
+    .replace(/\{\{currentPrice\}\}/g, livePriceData.currentPrice.replace('$', ''))
     .replace(/\{\{opportunityId\}\}/g, opportunity.id.toString())
     .replace(/\{\{frontendUrl\}\}/g, frontendUrl);
   
@@ -165,9 +175,9 @@ async function sendOpportunityAlertEmail(user: { id: number; email: string; full
   const emailData = {
     from: 'QuoteBid <alerts@quotebid.co>',
     to: user.email,
-    subject: `🚨 New ${opportunity.industry} Opportunity: Pitch Now!`,
+    subject: `New ${opportunity.publication?.name || 'Premium'} Opportunity Just Dropped — Tier 1 ${opportunity.industry} Coverage`,
     html: emailHtml,
-    text: `New ${opportunity.industry} Opportunity: ${opportunity.title}. Visit ${frontendUrl}/opportunities/${opportunity.id} to pitch now!`,
+    text: `New ${opportunity.industry} Opportunity: ${opportunity.title}. Visit ${frontendUrl}/opportunities/${opportunity.id} to view and bid now!`,
   };
   
   const result = await resend.emails.send(emailData);

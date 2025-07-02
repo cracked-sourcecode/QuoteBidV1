@@ -4996,6 +4996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .replace(/{{industryMatch}}/g, 'Finance & Capital Markets')
             .replace(/{{opportunityUrl}}/g, `${frontendUrl}/opportunities/123?utm_source=email&utm_medium=opportunity_alert&utm_campaign=alerts&track_click=pricing_engine`);
           break;
+          
           // Check if this is a real opportunity alert (has query param with opportunity ID)
           const realOpportunityId = req.query.opportunityId ? parseInt(req.query.opportunityId as string) : null;
           let opportunityData = null;
@@ -7074,12 +7075,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await Promise.all(notificationPromises);
             console.log(`Created ${matchingUsers.length} in-app notifications for new opportunity: ${newOpportunity.title}`);
             
-            // Schedule delayed email alerts (5-10 minutes to prevent front-running)
-            const { scheduleOpportunityAlert } = await import('./jobs/opportunityEmailAlert');
-            const delayMinutes = Math.floor(Math.random() * 6) + 5; // Random delay between 5-10 minutes
-            scheduleOpportunityAlert(newOpportunity.id, delayMinutes);
+            // PRODUCTION FIX: Send emails immediately for reliability
+            console.log(`🚀 PRODUCTION: Sending immediate email alerts for opportunity ${newOpportunity.id} to ${matchingUsers.length} users`);
             
-            console.log(`📅 Scheduled delayed email alerts for opportunity ${newOpportunity.id} (${delayMinutes} minute delay) for ${matchingUsers.length} users`);
+            try {
+              const { scheduleOpportunityAlert } = await import('./jobs/opportunityEmailAlert');
+              // Use 0 delay for immediate sending in production
+              scheduleOpportunityAlert(newOpportunity.id, 0);
+              console.log(`✅ Immediate email alerts triggered for opportunity ${newOpportunity.id}`);
+            } catch (emailError) {
+              console.error(`❌ Failed to trigger immediate emails for opportunity ${newOpportunity.id}:`, emailError);
+            }
           } else {
             console.log(`📭 No users found with matching industry: ${opportunityData.industry}`);
           }
