@@ -7495,12 +7495,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let iconType = 'info';
           let iconColor = 'blue';
           
+          // Handle all admin portal status values
           if (status === 'successful' || status === 'Successful Coverage') {
             notificationTitle = '🎉 Pitch Accepted!';
             notificationMessage = `Congratulations! Your pitch for "${opportunityTitle}" has been accepted for publication.`;
             iconType = 'check-circle';
             iconColor = 'green';
-          } else if (status === 'rejected' || status === 'declined') {
+          } else if (status === 'interested') {
+            notificationTitle = '👍 Reporter Interested!';
+            notificationMessage = `Great news! The reporter is interested in your pitch for "${opportunityTitle}".`;
+            iconType = 'heart';
+            iconColor = 'green';
+          } else if (status === 'sent_to_reporter') {
+            notificationTitle = '📨 Pitch Sent to Reporter';
+            notificationMessage = `Your pitch for "${opportunityTitle}" has been forwarded to the reporter for review.`;
+            iconType = 'send';
+            iconColor = 'blue';
+          } else if (status === 'not_interested' || status === 'rejected' || status === 'declined') {
             notificationTitle = '❌ Pitch Not Selected';
             notificationMessage = `Your pitch for "${opportunityTitle}" was not selected this time. Keep trying!`;
             iconType = 'x-circle';
@@ -7508,7 +7519,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else if (status === 'under_review' || status === 'reviewing') {
             notificationTitle = '👀 Pitch Under Review';
             notificationMessage = `Your pitch for "${opportunityTitle}" is currently being reviewed.`;
-            iconType = 'info';
+            iconType = 'clock';
             iconColor = 'blue';
           } else {
             notificationTitle = '📄 Pitch Status Updated';
