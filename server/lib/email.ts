@@ -77,7 +77,7 @@ async function checkUserEmailPreference(
     }
 
     const allowed = preferences[preferenceType] !== false;
-    console.log(`📧 Email preference check for ${email}: ${preferenceType} = ${allowed}`);
+    console.log(`📧 Email preference check for ${email}: ${preferenceType} = ${allowed} (preferences: ${JSON.stringify(preferences)})`);
     return allowed;
   } catch (error) {
     console.error('Error checking email preference:', error);
@@ -624,14 +624,18 @@ export async function sendUserNotificationEmail(
     'price_drop': 'alerts' // Price drop alerts
   };
 
-  // Check user preferences (skip for security-related emails)
+  // PRODUCTION FIX: Critical notifications bypass preferences, others still check
   const preferenceType = preferenceMap[notificationType];
-  if (preferenceType) {
+  const criticalNotifications = ['pitch_status', 'payment']; // Always send these
+  
+  if (preferenceType && !criticalNotifications.includes(notificationType)) {
     const allowed = await checkUserEmailPreference(email, preferenceType);
     if (!allowed) {
-      console.log(`📧 Skipping ${notificationType} email to ${email} due to user preferences`);
+      console.log(`📧 BLOCKED: Skipping ${notificationType} email to ${email} due to user preferences`);
       return true; // Return true since this isn't an error
     }
+  } else if (criticalNotifications.includes(notificationType)) {
+    console.log(`🚨 CRITICAL: Sending ${notificationType} email to ${email} (bypassing preferences)`);
   }
 
   const resendInstance = getResendInstance();
