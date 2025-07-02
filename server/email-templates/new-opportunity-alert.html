@@ -10,7 +10,7 @@
             padding: 0;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: #f8fafc;
-            color: #334155;
+            color: #000000;
             line-height: 1.6;
         }
         
@@ -37,6 +37,23 @@
             font-size: 14px;
             line-height: 1.7;
             margin-bottom: 30px;
+            color: #000000 !important;
+        }
+        
+        .content p {
+            color: #000000 !important;
+        }
+        
+        .content strong {
+            color: #000000 !important;
+        }
+        
+        .content .opportunity-link {
+            color: #1e40af !important;
+        }
+        
+        .content .opportunity-link strong {
+            color: #1e40af !important;
         }
         
         .greeting {
@@ -60,17 +77,10 @@
         }
         
         .signature-content {
-            display: flex;
-            align-items: flex-start;
-            gap: 20px;
+            text-align: left;
         }
         
-        .avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
+
         
         .signature-text {
             flex: 1;
@@ -142,14 +152,6 @@
                 flex-direction: column;
                 text-align: center;
             }
-            
-            .avatar {
-                align-self: center;
-            }
-            
-            .social-links {
-                justify-content: center;
-            }
         }
     </style>
 </head>
@@ -162,23 +164,30 @@
         <div class="content">
             <div class="greeting">Hi {{userFirstName}},</div>
             
-            <p>I wanted to share a new opportunity with you in case you have a chance to look at it before the deadline in {{bidDeadline}}.</p>
+            <p><strong>A new opportunity in {{publicationType}} has been added to QuoteBid in your industry, and you're the perfect match.</strong></p>
             
-            <p>A {{publicationType}} journalist has just posted a request titled "<strong>{{opportunityTitle}}</strong>"</p>
+            <p><strong>THE OPPORTUNITY:</strong><br>
+            📰 <strong>Media Outlet:</strong> {{publicationType}} (Tier 1 National Coverage)<br>
+            📝 <strong>Story Topic:</strong> {{opportunityTitle}}<br>
+            🎯 <strong>What They Need:</strong> Expert insights and thought leader quotes<br>
+            ⏰ <strong>Deadline:</strong> {{bidDeadline}}</p>
             
-            <p>Considering your expertise in {{industryMatch}}, you might have some valuable insights to share. If you have the time to contribute, here's the <a href="{{frontendUrl}}/opportunities/{{opportunityId}}?utm_source=email&utm_medium=new_opportunity_alert&utm_campaign=alerts&track_click=pricing_engine" class="opportunity-link">direct link to the opportunity</a> to help you connect with the journalist.</p>
+            <p><strong>Why This Matters:</strong> {{publicationType}} reaches millions of decision-makers. One quote could position you as the go-to expert in your field.</p>
             
-            <p>I'd be happy to know how it goes and if you need any additional information, please do not hesitate to let me know.</p>
+            <p><strong>Ready to secure this {{publicationType}} placement?</strong></p>
             
-            <p>Enjoy the rest of your day!</p>
+            <p><a href="{{frontendUrl}}/opportunities/{{opportunityId}}?utm_source=email&utm_medium=new_opportunity_alert&utm_campaign=alerts&track_click=pricing_engine" class="opportunity-link"><strong>→ VIEW OPPORTUNITY & SUBMIT YOUR BID</strong></a></p>
+            
+            <p><em>Bid today to secure the rate before more experts pitch.</em></p>
+            
+            <p>Questions? Just reply to this email.</p>
         </div>
         
         <div class="signature">
             <div class="signature-content">
-                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop&q=80&auto=format" alt="QuoteBid Team" class="avatar">
                 <div class="signature-text">
-                    <div class="signature-name">QuoteBid Team</div>
-                    <div class="signature-title">Customer Success, <span style="background-color: #fbbf24; color: #92400e; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;">QuoteBid</span></div>
+                    <div class="signature-name">The QuoteBid Team</div>
+                    <div class="signature-title">Compete Smarter. Real-Time Access. No Retainers. No Agencies.</div>
                     <div>
                         <a href="mailto:support@quotebid.co" class="signature-email">support@quotebid.co</a> |
                         <a href="https://quotebid.co" class="signature-website">quotebid.co</a>
