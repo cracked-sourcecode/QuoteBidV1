@@ -9,8 +9,7 @@ import { subHours, subDays } from 'date-fns';
 import { insertBidSchema, insertOpportunitySchema, insertPitchSchema, insertPublicationSchema, insertSavedOpportunitySchema, User, PlacementWithRelations, users, pitches, opportunities, publications, notifications, placements, price_snapshots, variable_registry, pricing_config, mediaCoverage, emailClicks } from "@shared/schema";
 import { getDb } from "./db";
 import { eq, sql, desc, and, ne, asc, isNull, isNotNull, gte, lte, or, inArray, gt } from "drizzle-orm";
-import { notificationService } from "./services/notification-service";
-import { createSampleNotifications } from "./data/sample-notifications";
+
 import Stripe from "stripe";
 import { setupAuth } from "./auth";
 import { Resend } from 'resend';
@@ -3310,6 +3309,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Successfully created pitch with ID:", newPitch.id);
       
+      // 🚀 Cancel saved opportunity reminder since user has now pitched
+      try {
+        const { cancelSavedOpportunityReminder } = await import('./jobs/savedOpportunityReminder');
+        cancelSavedOpportunityReminder(userId, opportunityId);
+        console.log(`🚫 Cancelled saved opportunity reminder for user ${userId}, opportunity ${opportunityId} (pitch submitted)`);
+      } catch (reminderError) {
+        console.error('Failed to cancel saved opportunity reminder:', reminderError);
+        // Don't fail the pitch submission if reminder cancellation fails
+      }
+      
       // Create notification for successful pitch submission
       try {
         const opportunity = await storage.getOpportunity(opportunityId);
@@ -3849,6 +3858,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const saved = await storage.createSavedOpportunity(savedData);
       console.log(`Successfully saved opportunity ${savedData.opportunityId} for user ${savedData.userId}:`, saved);
+      
+      // 🚀 NEW: Schedule 6-hour reminder email
+      try {
+        const { scheduleSavedOpportunityReminder } = await import('./jobs/savedOpportunityReminder');
+        scheduleSavedOpportunityReminder(savedData.userId, savedData.opportunityId, saved.createdAt);
+        console.log(`⏰ Scheduled 6-hour reminder for user ${savedData.userId}, opportunity ${savedData.opportunityId}`);
+      } catch (reminderError) {
+        console.error('Failed to schedule saved opportunity reminder:', reminderError);
+        // Don't fail the save operation if reminder scheduling fails
+      }
+      
       res.status(201).json(saved);
     } catch (error: any) {
       console.error('Error saving opportunity:', error);
@@ -4278,30 +4298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               throw new Error('Failed to send notification email');
             }
 
-          case 'BILLING':
-            // Test billing payment email
-            try {
-              const { sendBillingPaymentEmail } = await import('./lib/bulletproof-email');
-              
-              await sendBillingPaymentEmail({
-                userFirstName: req.body.firstName || fullName?.split(' ')[0] || username || 'User',
-                userEmail: email,
-                publicationName: 'TechCrunch',
-                articleTitle: 'Breaking: AI Startup Raises $50M Series A with Revolutionary Technology',
-                articleUrl: 'https://techcrunch.com/sample-article-link',
-                billingAmount: '450',
-                paymentMethod: 'Visa •••• 4242',
-                stripeReceiptUrl: 'https://pay.stripe.com/receipts/payment_intent_1NVWfx2eZvKYlo2CYvJmQ1vJ#loq5v1bb',
-                frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5050'
-              });
-              
-              return res.json({ 
-                success: true, 
-                message: 'Billing payment email sent successfully!' 
-              });
-            } catch (error) {
-              throw new Error(`Failed to send billing email: ${error}`);
-            }
+
 
           case 'OPPORTUNITY':
             // For test emails, we need to find a user by email first
@@ -8111,27 +8108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('⚠️ Could not retrieve receipt URL:', receiptError);
         }
         
-        // Send billing payment email
-        try {
-          const { sendBillingPaymentEmail } = await import('./lib/bulletproof-email');
-          
-          await sendBillingPaymentEmail({
-            userFirstName: placement.user.fullName?.split(' ')[0] || placement.user.username || 'User',
-            userEmail: placement.user.email,
-            publicationName: placement.publication.name,
-            articleTitle: placement.articleTitle || placement.opportunity.title || 'Your Article Coverage',
-            articleUrl: placement.articleUrl || '',
-            billingAmount: placement.amount.toString(),
-            paymentMethod: paymentMethodDescription,
-            stripeReceiptUrl: receiptUrl || '',
-            frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5050'
-          });
-          
-          console.log(`📧 Billing payment email sent to ${placement.user.email} for placement ${id}`);
-        } catch (emailError) {
-          console.error('⚠️ Failed to send billing payment email:', emailError);
-          // Don't fail the payment if email fails
-        }
+        // Billing payment email functionality removed as requested
         
         res.json({
           success: true,
@@ -9265,6 +9242,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!resend) {
         return res.status(500).json({ message: "Resend API key not configured" });
       }
+      
+      // Placement notifications always send (critical business communication)
       
       try {
         // Send the email
@@ -11400,31 +11379,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return match ? match[1] : null;
       }
       
-      // Send billing payment email with real receipt URL
-      try {
-        const { sendBillingPaymentEmail } = await import('./lib/bulletproof-email');
-        
-        // Extract publication info from description or invoice data
-        const publicationName = extractPublicationName(description) || 'Media Outlet';
-        const articleTitle = description.replace(/^QuoteBid - .*? - /, '') || 'Your Article Coverage';
-        
-        await sendBillingPaymentEmail({
-          userFirstName: user.fullName?.split(' ')[0] || user.username || 'User',
-          userEmail: user.email,
-          publicationName: publicationName,
-          articleTitle: articleTitle,
-          articleUrl: invoiceData?.publicationLink || '',
-          billingAmount: amount.toString(),
-          paymentMethod: paymentMethodDescription,
-          stripeReceiptUrl: receiptUrl || '',
-          frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5050'
-        });
-        
-        console.log(`📧 Billing payment email sent to ${user.email} with receipt URL: ${receiptUrl || 'none'}`);
-      } catch (emailError) {
-        console.error('⚠️ Failed to send billing payment email:', emailError);
-        // Don't fail the payment if email fails
-      }
+      // Billing payment email functionality removed as requested
       
       // CRITICAL: Update pitch to mark as billed so it moves from AR to Successful
       if (placementId) {

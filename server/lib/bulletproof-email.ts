@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 import fs from 'fs';
 import path from 'path';
 import { getDb } from '../db';
-import { opportunities, publications } from '@shared/schema';
+import { opportunities, publications, users } from '@shared/schema';
 import { eq, desc, and, isNull } from 'drizzle-orm';
 
 // Initialize Resend only if API key is available
@@ -12,6 +12,72 @@ function getResendInstance() {
     return null;
   }
   return new Resend(process.env.RESEND_API_KEY);
+}
+
+// Check user email preferences
+async function checkUserEmailPreference(
+  email: string, 
+  preferenceType: 'alerts' | 'notifications' | 'billing'
+): Promise<boolean> {
+  try {
+    const db = getDb();
+    
+    const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    
+    if (user.length === 0) {
+      console.log(`⚠️ User not found for email ${email}, allowing email by default`);
+      return true; // Default to allowing if user not found
+    }
+
+    const defaultPreferences = {
+      alerts: true,
+      notifications: true,
+      billing: true
+    };
+
+    const rawPrefs = user[0].emailPreferences;
+    if (!rawPrefs || typeof rawPrefs !== 'object') {
+      return defaultPreferences[preferenceType] !== false;
+    }
+
+    // Handle both old and new formats
+    let preferences = { ...defaultPreferences };
+    
+    // Check if it's the new simplified format
+    if ('alerts' in rawPrefs || 'notifications' in rawPrefs || 'billing' in rawPrefs) {
+      // New format - use directly
+      preferences = { 
+        ...defaultPreferences, 
+        ...(rawPrefs as { alerts?: boolean; notifications?: boolean; billing?: boolean; })
+      };
+    } else {
+      // Old format - convert on the fly
+      const oldToNewMapping: Record<string, keyof typeof defaultPreferences> = {
+        'priceAlerts': 'alerts',
+        'opportunityNotifications': 'alerts',
+        'pitchStatusUpdates': 'notifications',
+        'mediaCoverageUpdates': 'notifications',
+        'placementSuccess': 'notifications',
+        'paymentConfirmations': 'billing'
+      };
+
+      const oldPrefs = rawPrefs as Record<string, any>;
+      for (const [oldKey, newKey] of Object.entries(oldToNewMapping)) {
+        if (oldPrefs[oldKey] === false) {
+          preferences[newKey] = false;
+        }
+      }
+      
+      console.log(`🔄 User ${email}: Using old format preferences (consider running migration)`);
+    }
+
+    const allowed = preferences[preferenceType] !== false;
+    console.log(`📧 Email preference check for ${email}: ${preferenceType} = ${allowed} (preferences: ${JSON.stringify(preferences)})`);
+    return allowed;
+  } catch (error) {
+    console.error('Error checking email preference:', error);
+    return true; // Default to allowing on error
+  }
 }
 
 // Template loader that replaces placeholders with actual data
@@ -196,6 +262,13 @@ export async function sendOpportunityAlertEmail(data: {
       return { success: false, error: 'Email service not configured' };
     }
     
+    // Check user preference for alert emails
+    const allowed = await checkUserEmailPreference(data.userEmail, 'alerts');
+    if (!allowed) {
+      console.log(`📧 Skipping opportunity alert email to ${data.userEmail} due to user preferences`);
+      return { success: true, skipped: true, reason: 'User preferences' };
+    }
+    
     const htmlContent = loadTemplate('opportunity-alert', {
       userFirstName: data.userFirstName,
       frontendUrl: data.frontendUrl,
@@ -274,6 +347,13 @@ export async function sendNotificationEmail(data: {
     if (!resend) {
       console.log('📧 Email sending disabled - no API key configured');
       return { success: false, error: 'Email service not configured' };
+    }
+    
+    // Check user preference for notification emails
+    const allowed = await checkUserEmailPreference(data.userEmail, 'notifications');
+    if (!allowed) {
+      console.log(`📧 Skipping notification email to ${data.userEmail} due to user preferences`);
+      return { success: true, skipped: true, reason: 'User preferences' };
     }
     
     // Create a simple notification template based on welcome structure
@@ -359,49 +439,4 @@ export async function sendNotificationEmail(data: {
   }
 }
 
-export async function sendBillingPaymentEmail(data: {
-  userFirstName: string;
-  userEmail: string;
-  publicationName: string;
-  articleTitle: string;
-  articleUrl: string;
-  billingAmount: string;
-  paymentMethod: string;
-  stripeReceiptUrl: string;
-  frontendUrl: string;
-}) {
-  try {
-    console.log('📧 Preparing billing payment email for:', data.userEmail);
-    
-    const resend = getResendInstance();
-    if (!resend) {
-      console.log('📧 Email sending disabled - no API key configured');
-      return { success: false, error: 'Email service not configured' };
-    }
-    
-    const htmlContent = loadTemplate('billing-payment', {
-      userFirstName: data.userFirstName,
-      userEmail: data.userEmail,
-      publicationName: data.publicationName,
-      articleTitle: data.articleTitle,
-      articleUrl: data.articleUrl,
-      billingAmount: data.billingAmount,
-      paymentMethod: data.paymentMethod,
-      stripeReceiptUrl: data.stripeReceiptUrl,
-      frontendUrl: data.frontendUrl
-    });
-
-    const result = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'QuoteBid <noreply@quotebid.co>',
-      to: [data.userEmail],
-      subject: `Payment Processed - Published in ${data.publicationName}`,
-      html: htmlContent,
-    });
-
-    console.log('✅ Billing payment email sent successfully:', result.data?.id);
-    return { success: true, id: result.data?.id };
-  } catch (error) {
-    console.error('❌ Failed to send billing payment email:', error);
-    throw error;
-  }
-} 
+ 

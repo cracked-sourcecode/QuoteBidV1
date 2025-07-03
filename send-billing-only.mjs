@@ -3,77 +3,80 @@
 import { Resend } from 'resend';
 import fs from 'fs';
 import path from 'path';
-import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 
-// Load environment variables
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const templateDir = path.join(process.cwd(), 'server', 'email-templates');
-
-async function sendBillingEmailOnly() {
-  console.log('💳 Sending FINAL Billing Confirmation Email to ben@rubiconprgroup.com\n');
-  
-  try {
-    // Read billing template
-    const templatePath = path.join(templateDir, 'billing-confirmation.html');
-    console.log('📥 Reading final billing template...');
-    const template = fs.readFileSync(templatePath, 'utf8');
-    console.log(`✅ Template loaded: billing-confirmation.html (${template.length} chars)`);
-    
-    // Sample billing data - using correct quotebid.co URLs
-    const emailData = {
-      userFirstName: 'Ben',
-      receiptNumber: 'QBR-2025-001234',
-      articleTitle: 'NYC Housing Crisis: Expert Analysis on Market Trends',
-      articleUrl: 'https://www.wsj.com/articles/nyc-housing-crisis-expert-analysis-market-trends-2025',
-      publicationName: 'The Wall Street Journal',
-      publishDate: 'January 15, 2025',
-      billingDate: 'January 15, 2025',
-      totalAmount: '2,640.00',
-      cardBrand: 'Visa',
-      cardLast4: '4242',
-      frontendUrl: 'https://quotebid.co'
-    };
-    
-    // Replace template variables
-    let htmlContent = template;
-    Object.keys(emailData).forEach(key => {
-      const regex = new RegExp(`{{${key}}}`, 'g');
-      htmlContent = htmlContent.replace(regex, emailData[key]);
-    });
-    
-    // Send email
-    console.log('📤 Sending final billing confirmation...');
-    const result = await resend.emails.send({
-      from: 'QuoteBid Billing <billing@quotebid.co>',
-      to: ['ben@rubiconprgroup.com'],
-      subject: `💳 Payment Confirmed - $${emailData.totalAmount} (Receipt #${emailData.receiptNumber})`,
-      html: htmlContent,
-    });
-    
-    console.log(`✅ FINAL Billing Confirmation sent successfully!`);
-    console.log(`📧 Message ID: ${result.data?.id || 'unknown'}`);
-    console.log(`📬 Sent to: ben@rubiconprgroup.com`);
-    console.log(`💰 Total Amount: $${emailData.totalAmount}`);
-    console.log(`🧾 Receipt: ${emailData.receiptNumber}`);
-    console.log(`📰 Article: ${emailData.articleTitle}`);
-    console.log(`🔗 Article URL: ${emailData.articleUrl}`);
-    console.log(`💳 Card: ${emailData.cardBrand} •••• ${emailData.cardLast4}`);
-    console.log(`🌐 URLs: All pointing to quotebid.co`);
-    
-    console.log('\n🎉 Final billing confirmation email sent successfully!');
-    console.log('✨ All features complete:');
-    console.log('  🔗 Article title is clickable (links to published article)');
-    console.log('  🎯 Credit card content properly centered');
-    console.log('  🌐 All URLs point to quotebid.co (not .com)');
-    console.log('  💳 Proper table layout for email client compatibility');
-    console.log('  💰 Simple total charged amount (no confusing fee breakdown)');
-    
-  } catch (error) {
-    console.error('❌ Error sending billing email:', error.message);
-    process.exit(1);
-  }
+// Load .env file directly
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  envContent.split('\n').forEach(line => {
+    const [key, value] = line.split('=');
+    if (key && value) {
+      process.env[key.trim()] = value.trim().replace(/^["']|["']$/g, '');
+    }
+  });
 }
 
-sendBillingEmailOnly(); 
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+async function sendBillingOnlyEmails() {
+  const frontendUrl = 'https://quotebid.co';
+  const emailTo = 'ben@rubiconprgroup.com';
+  
+  console.log('📧 SENDING ONLY THE 2 BILLING EMAILS TO:', emailTo);
+  
+  // 1. Billing Confirmation (BILLING CATEGORY)
+  try {
+    let billingConfirmationHtml = fs.readFileSync(path.join(__dirname, 'server/email-templates/billing-confirmation.html'), 'utf8')
+      .replace(/{{receiptNumber}}/g, 'QB-' + Date.now())
+      .replace(/{{articleTitle}}/g, 'AI Revolution in Financial Services')
+      .replace(/{{publicationName}}/g, 'Bloomberg')
+      .replace(/{{publishDate}}/g, new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))
+      .replace(/{{billingDate}}/g, new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))
+      .replace(/{{placementFee}}/g, '285.00')
+      .replace(/{{platformFee}}/g, '42.75')
+      .replace(/{{totalAmount}}/g, '327.75')
+      .replace(/{{cardBrand}}/g, 'Visa')
+      .replace(/{{cardLast4}}/g, '4242')
+      .replace(/{{frontendUrl}}/g, frontendUrl);
+      
+    await resend.emails.send({
+      from: 'QuoteBid <noreply@quotebid.co>',
+      to: [emailTo],
+      subject: 'Receipt: Your QuoteBid Placement - Bloomberg - BILLING CATEGORY',
+      html: billingConfirmationHtml,
+    });
+    console.log('✅ 1. Billing Confirmation sent (BILLING CATEGORY)');
+  } catch (error) {
+    console.error('❌ Error sending Billing Confirmation:', error);
+  }
+
+  // 2. Subscription Renewal Failed (BILLING CATEGORY)
+  try {
+    let subscriptionFailedHtml = fs.readFileSync(path.join(__dirname, 'server/email-templates/subscription-renewal-failed.html'), 'utf8')
+      .replace(/{{userFirstName}}/g, 'Ben')
+      .replace(/{{subscriptionPlan}}/g, 'QuoteBid Premium')
+      .replace(/{{monthlyAmount}}/g, '99.99')
+      .replace(/{{nextAttemptDate}}/g, new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))
+      .replace(/{{cardLast4}}/g, '4242')
+      .replace(/{{frontendUrl}}/g, frontendUrl);
+      
+    await resend.emails.send({
+      from: 'QuoteBid <noreply@quotebid.co>',
+      to: [emailTo],
+      subject: 'Action Required: QuoteBid Subscription Payment Failed - BILLING CATEGORY',
+      html: subscriptionFailedHtml,
+    });
+    console.log('✅ 2. Subscription Renewal Failed sent (BILLING CATEGORY)');
+  } catch (error) {
+    console.error('❌ Error sending Subscription Renewal Failed:', error);
+  }
+  
+  console.log('\n🎉 ONLY THE 2 BILLING CATEGORY EMAILS SENT TO', emailTo);
+  console.log('📝 Note: Payment Processed and Placement Notification are now ALWAYS SEND emails');
+}
+
+sendBillingOnlyEmails().catch(console.error); 

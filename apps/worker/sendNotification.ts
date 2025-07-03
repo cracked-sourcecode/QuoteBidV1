@@ -11,7 +11,7 @@ import { config } from "dotenv";
 import { opportunities } from "../../shared/schema";
 import { FEATURE_FLAGS } from "../../config/featureFlags";
 
-import { sendPricingNotificationEmail } from "../../server/lib/email";
+import { sendOpportunityNotificationEmail } from "../../server/lib/email";
 // Import database initialization for web push notifications
 import { initializeDatabase } from "../../server/db";
 
@@ -186,21 +186,26 @@ export async function sendNotification(
   // Send email notifications only if enabled
   if (FEATURE_FLAGS.ENABLE_PRICE_EMAILS) {
     try {
-      const success = await sendPricingNotificationEmail(
-        emails,
-        template,
-        opportunityTitle,
-        currentPrice
-      );
+      // Only send LAST_CALL emails (price drops removed)
+      if (template === 'LAST_CALL') {
+        const success = await sendOpportunityNotificationEmail(
+          emails,
+          template,
+          opportunityTitle,
+          currentPrice
+        );
 
-      if (success) {
-        console.log(`✅ Sent ${template} email notification to ${emails.length} users for opportunity ${opportunityId}`);
-        
-        // Record successful email send time for throttling
-        lastEmailSentMap.set(opportunityId, now);
-        console.log(`📧 Email throttle timer set for opportunity ${opportunityId}. Next email allowed in ${EMAIL_THROTTLE_MINUTES} minutes.`);
+        if (success) {
+          console.log(`✅ Sent ${template} email notification to ${emails.length} users for opportunity ${opportunityId}`);
+          
+          // Record successful email send time for throttling
+          lastEmailSentMap.set(opportunityId, now);
+          console.log(`📧 Email throttle timer set for opportunity ${opportunityId}. Next email allowed in ${EMAIL_THROTTLE_MINUTES} minutes.`);
+        } else {
+          console.error(`❌ Failed to send ${template} email notification for opportunity ${opportunityId}`);
+        }
       } else {
-        console.error(`❌ Failed to send ${template} email notification for opportunity ${opportunityId}`);
+        console.log(`🚫 Price drop emails are disabled. Skipping ${template} template.`);
       }
 
     } catch (error) {

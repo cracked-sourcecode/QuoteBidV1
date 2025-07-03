@@ -3,133 +3,90 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Subscription Renewal Failed - QuoteBid</title>
+  <title>Subscription Payment Failed - QuoteBid</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f8fafc; line-height: 1.6;">
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
 
   <!-- Main Container -->
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr>
-      <td align="center" bgcolor="#f8fafc">
+      <td align="center" style="padding: 20px;">
         
         <!-- Email Container -->
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width: 600px; background: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; color: #374151;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
           
           <!-- Header -->
           <tr>
-            <td style="padding: 40px 40px 32px 40px; text-align: center; background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); border-radius: 8px 8px 0 0;">
-              <h1 style="font-size: 18px; font-weight: 700; color: #ffffff; margin: 0 0 8px 0; line-height: 1.3;">
-                ⚠️ Subscription Renewal Failed
+            <td style="background: #dc2626; padding: 32px; text-align: center;">
+              <h1 style="color: #ffffff; font-size: 24px; font-weight: bold; margin: 0; line-height: 1.2;">
+                Payment Issue
               </h1>
-              <p style="font-size: 14px; color: rgba(255, 255, 255, 0.9); margin: 0;">
-                Action required to continue your QuoteBid subscription
+              <p style="color: rgba(255,255,255,0.9); font-size: 16px; margin: 8px 0 0 0;">
+                Your subscription renewal failed
               </p>
             </td>
           </tr>
           
           <!-- Content -->
           <tr>
-            <td style="padding: 40px;">
+            <td style="padding: 24px 16px;">
               
-              <!-- Alert Icon -->
-              <div style="text-align: center; margin-bottom: 24px;">
-                <div style="width: 60px; height: 60px; background: #fef2f2; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto;">
-                  ⚠️
-                </div>
-              </div>
-              
-              <!-- Main Message -->
-              <h2 style="font-size: 16px; font-weight: 700; color: #111827; margin: 0 0 16px 0; text-align: center;">
-                We couldn't process your subscription renewal
-              </h2>
-              
-              <p style="font-size: 14px; color: #6b7280; margin: 0 0 24px 0;">
+              <p style="font-size: 18px; color: #333333; margin: 0 0 16px 0;">
                 Hi {{userFirstName}},
               </p>
               
-              <p style="font-size: 14px; color: #6b7280; margin: 0 0 24px 0;">
-                We attempted to renew your QuoteBid subscription but were unable to process the payment using your current payment method. Your subscription will expire soon if not renewed.
+              <p style="font-size: 16px; color: #333333; margin: 0 0 24px 0; line-height: 1.5;">
+                We couldn't process your <strong>{{subscriptionPlan}}</strong> subscription payment of <strong>${{monthlyAmount}}</strong> using your card ending in {{cardLast4}}.
               </p>
 
-              <!-- Subscription Details -->
-              <div style="background: #f8fafc; border-radius: 8px; padding: 24px; margin: 24px 0; border: 1px solid #e5e7eb;">
-                <h4 style="font-size: 14px; font-weight: 600; color: #111827; margin: 0 0 16px 0;">
-                  Subscription Details
-                </h4>
-                
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                  <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-                      <span style="font-size: 14px; color: #6b7280;">Plan:</span>
-                    </td>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">
-                      <span style="font-size: 14px; color: #111827; font-weight: 500;">{{subscriptionPlan}}</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-                      <span style="font-size: 14px; color: #6b7280;">Monthly Fee:</span>
-                    </td>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">
-                      <span style="font-size: 14px; color: #111827; font-weight: 600;">${{monthlyAmount}}</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-                      <span style="font-size: 14px; color: #6b7280;">Next Attempt:</span>
-                    </td>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">
-                      <span style="font-size: 14px; color: #111827; font-weight: 500;">{{nextAttemptDate}}</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0;">
-                      <span style="font-size: 14px; color: #6b7280;">Card Ending:</span>
-                    </td>
-                    <td style="padding: 8px 0; text-align: right;">
-                      <span style="font-size: 14px; color: #111827; font-weight: 500;">•••• {{cardLast4}}</span>
-                    </td>
-                  </tr>
-                </table>
-              </div>
+              <!-- Alert Box -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #fef2f2; border-left: 4px solid #dc2626; border-radius: 4px; margin: 24px 0;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="font-size: 16px; color: #991b1b; margin: 0; font-weight: bold;">
+                      ⚠️ Action needed by {{nextAttemptDate}}
+                    </p>
+                    <p style="font-size: 14px; color: #7f1d1d; margin: 8px 0 0 0;">
+                      Update your payment method to continue accessing premium opportunities
+                    </p>
+                  </td>
+                </tr>
+              </table>
 
-              <!-- Action Required -->
-              <div style="background: #fef2f2; border-radius: 8px; padding: 24px; margin: 24px 0; border-left: 4px solid #dc2626;">
-                <h3 style="font-size: 15px; font-weight: 600; color: #111827; margin: 0 0 12px 0;">
-                  🔧 Action Required
-                </h3>
-                <p style="font-size: 14px; color: #6b7280; margin: 0 0 20px 0;">
-                  To continue your subscription and maintain access to QuoteBid's premium features, please update your payment method or try a different card.
-                </p>
-                
-                <!-- CTA Buttons -->
-                <div style="text-align: center;">
-                  <a href="{{frontendUrl}}/account?tab=billing&action=update-payment" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 600; margin: 4px 8px 4px 0;">
-                    Update Payment Method
-                  </a>
-                  
-                  <a href="{{frontendUrl}}/account?tab=billing" style="display: inline-block; background: #ffffff; color: #374151; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 600; border: 2px solid #d1d5db; margin: 4px 0 4px 8px;">
-                    View Billing Details
-                  </a>
-                </div>
-              </div>
+              <!-- CTA Button -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 32px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="{{frontendUrl}}/account#billing" style="display: inline-block; background: #dc2626; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: bold; text-align: center;">
+                      Update Payment Method
+                    </a>
+                  </td>
+                </tr>
+              </table>
 
-              <!-- What Happens Next -->
-              <div style="background: #fef3c7; border-radius: 8px; padding: 20px; margin: 24px 0; border-left: 4px solid #f59e0b;">
-                <h3 style="font-size: 15px; font-weight: 600; color: #92400e; margin: 0 0 12px 0;">
-                  📅 What happens next?
-                </h3>
-                <p style="font-size: 14px; color: #92400e; margin: 0;">
-                  We'll try to process your payment again in a few days. If the payment continues to fail, your subscription will be cancelled and you'll lose access to premium opportunities and features.
-                </p>
-              </div>
+              <!-- What's at Risk -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #fff7ed; border-radius: 6px; margin: 24px 0;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <h3 style="font-size: 16px; color: #c2410c; margin: 0 0 12px 0; font-weight: bold;">
+                      What you'll lose access to:
+                    </h3>
+                    <ul style="font-size: 14px; color: #9a3412; margin: 0; padding-left: 20px;">
+                      <li style="margin-bottom: 8px;">Premium opportunities from top publications</li>
+                      <li style="margin-bottom: 8px;">Advanced pitch analytics and insights</li>
+                      <li style="margin-bottom: 8px;">Priority placement in journalist searches</li>
+                      <li>Dedicated account support</li>
+                    </ul>
+                  </td>
+                </tr>
+              </table>
 
-              <p style="font-size: 14px; color: #6b7280; margin: 24px 0 16px 0;">
-                <strong>Need help?</strong> Our support team is available to assist with any billing questions or technical issues.
+              <p style="font-size: 14px; color: #666666; margin: 24px 0 0 0; line-height: 1.5;">
+                Have questions? Reply to this email or contact our support team at <a href="mailto:support@quotebid.co" style="color: #dc2626;">support@quotebid.co</a>
               </p>
 
-              <p style="font-size: 14px; color: #6b7280; margin: 0;">
-                Thanks for being a valued QuoteBid member,<br>
+              <p style="font-size: 14px; color: #666666; margin: 16px 0 0 0;">
+                Best regards,<br>
                 <strong>The QuoteBid Team</strong>
               </p>
               
@@ -138,14 +95,12 @@
 
           <!-- Footer -->
           <tr>
-            <td style="background: #f8fafc; padding: 32px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
-              <p style="font-size: 12px; color: #6b7280; margin: 0 0 8px 0;">
+            <td style="background: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="font-size: 12px; color: #999999; margin: 0;">
                 © 2025 QuoteBid Inc. · 
-                <a href="{{frontendUrl}}/terms" style="color: #6b7280; text-decoration: none;">Terms</a> · 
-                <a href="{{frontendUrl}}/privacy" style="color: #6b7280; text-decoration: none;">Privacy</a>
-              </p>
-              <p style="font-size: 12px; color: #9ca3af; margin: 0;">
-                <a href="{{frontendUrl}}/account?tab=notifications" style="color: #9ca3af; text-decoration: none;">Email Preferences</a>
+                <a href="{{frontendUrl}}/terms" style="color: #999999;">Terms</a> · 
+                <a href="{{frontendUrl}}/privacy" style="color: #999999;">Privacy</a> · 
+                <a href="{{frontendUrl}}/account#email-preferences" style="color: #999999;">Email Preferences</a>
               </p>
             </td>
           </tr>

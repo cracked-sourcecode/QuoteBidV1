@@ -18,7 +18,7 @@
             max-width: 600px;
             margin: 0 auto;
             background-color: #ffffff;
-            padding: 40px;
+            padding: 24px 16px;
         }
         
         .header {
@@ -142,17 +142,7 @@
             line-height: 1.4;
         }
         
-        /* Mobile responsiveness */
-        @media (max-width: 600px) {
-            .container {
-                padding: 20px;
-            }
-            
-            .signature-content {
-                flex-direction: column;
-                text-align: center;
-            }
-        }
+
     </style>
 </head>
 <body>
@@ -164,12 +154,12 @@
         <div class="content">
             <div class="greeting">Hi {{userFirstName}},</div>
             
-            <p><strong>A new opportunity in {{publicationType}} has been added to QuoteBid in your industry, and you're the perfect match.</strong></p>
+            <p><strong>A new opportunity in {{publicationType}} has been added to QuoteBid in your industry.</strong></p>
             
             <p><strong>THE OPPORTUNITY:</strong><br>
-            📰 <strong>Media Outlet:</strong> {{publicationType}} (Tier 1 National Coverage)<br>
-            📝 <strong>Story Topic:</strong> {{opportunityTitle}}<br>
-            🎯 <strong>What They Need:</strong> Expert insights and thought leader quotes<br>
+            📰 <strong>Media Outlet:</strong> {{publicationType}}<br>
+            📝 <strong>Story Topic:</strong> {{title}}<br>
+            🎯 <strong>What They Need:</strong> {{requestType}}<br>
             ⏰ <strong>Deadline:</strong> {{bidDeadline}}</p>
             
             <p><strong>Why This Matters:</strong> {{publicationType}} reaches millions of decision-makers. One quote could position you as the go-to expert in your field.</p>

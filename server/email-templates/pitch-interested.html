@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reporter Interested - QuoteBid</title>
+  <title>Pitch Status Update - QuoteBid</title>
   <!--[if mso]>
   <noscript>
     <xml>
@@ -19,14 +19,14 @@
   <!-- Main Container -->
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
     <tr>
-      <td align="center" style="padding: 40px 20px;">
+      <td align="center" style="padding: 20px 8px;">
         
         <!-- Email Container -->
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.1);overflow:hidden;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.1);overflow:hidden;margin:0 auto;">
           
           <!-- Header Section -->
           <tr>
-            <td style="background: #f8fafc; padding: 40px 40px 32px 40px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+            <td style="background: #f8fafc; padding: 24px 16px 20px 16px; text-align: center; border-bottom: 1px solid #e5e7eb;">
               
               <!-- Logo -->
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto 20px auto;">
@@ -45,17 +45,17 @@
               </table>
               
               <!-- Badge -->
-              <div style="background: #dc2626; color: #ffffff; font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 20px; text-align: center; display: inline-block; margin-bottom: 16px;">
-                🎉 REPORTER INTERESTED
+              <div style="background: #3b82f6; color: #ffffff; font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 20px; text-align: center; display: inline-block; margin-bottom: 16px;">
+                👍 PITCH INTERESTED
               </div>
               
               <!-- Title -->
               <h1 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 18px; font-weight: 600; color: #374151; margin: 0; line-height: 1.3;">
-                Great News! Reporter is Interested
+                Great News! Your Pitch is Gaining Traction
               </h1>
               
               <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #6b7280; margin: 8px 0 0 0; line-height: 1.4;">
-                Your pitch caught their attention
+                Your pitch has been marked as "interested" by the editorial team
               </p>
               
             </td>
@@ -63,7 +63,7 @@
           
           <!-- Main Content -->
           <tr>
-            <td style="padding: 40px 40px;">
+            <td style="padding: 24px 16px;">
               
               <!-- Personal Greeting -->
               <div style="margin-bottom: 24px;">
@@ -71,7 +71,7 @@
                   Hi {{userFirstName}},
                 </h2>
                 <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #4b5563; margin: 0;">
-                  Fantastic! The reporter is interested in your pitch and wants to move forward.
+                  Excellent progress! Your pitch has caught the attention of the editorial team and been marked as "interested" - a significant step forward in the review process.
                 </p>
               </div>
               
@@ -82,20 +82,28 @@
                   {{opportunityTitle}}
                 </h3>
                 <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #6b7280; margin: 0 0 16px 0;">
-                  Publication: <strong>{{publicationName}}</strong> • Reporter: <strong>{{reporterName}}</strong>
+                  Publication: <strong>{{publicationName}}</strong> • Status: <strong style="color: #3b82f6;">Interested</strong>
                 </p>
                 
                 <div style="text-align: center; margin-top: 20px;">
-                  <a href="{{frontendUrl}}/my-pitches/{{pitchId}}?utm_source=email&utm_medium=pitch_interested&utm_campaign=notifications" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 50px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; box-shadow: 0 8px 20px rgba(220, 38, 38, 0.3);">
-                    View Details →
+                  <a href="{{frontendUrl}}/my-pitches?utm_source=email&utm_medium=pitch_interested&utm_campaign=notifications" style="display: block; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3); margin-bottom: 12px; max-width: 320px; margin-left: auto; margin-right: auto;">
+                    View Status
                   </a>
+                  <a href="{{frontendUrl}}/opportunities?utm_source=email&utm_medium=pitch_interested&utm_campaign=notifications" style="display: block; background: #f8fafc; color: #374151; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; font-weight: 600; border: 1px solid #d1d5db; max-width: 320px; margin-left: auto; margin-right: auto;">
+                    Find More Opportunities
+                  </a>
+                  
+                  <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 12px; color: #6b7280; margin: 16px 0 0 0; line-height: 1.4; text-align: center;">
+                    While this significantly increases your chances, final selection depends on the editorial process. We'll keep you updated on any changes.
+                  </p>
                 </div>
               </div>
               
               <!-- Next Steps -->
-              <div style="background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); border-radius: 12px; padding: 20px; margin-bottom: 24px; border: 1px solid #dc2626;">
-                <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #b91c1c; margin: 0; text-align: center;">
-                  📞 <strong>Next Step:</strong> The reporter will contact you directly to discuss the story. Check your email and phone.
+              <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 12px; padding: 20px; margin-bottom: 24px; border: 1px solid #3b82f6;">
+                <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #1e40af; margin: 0; text-align: center;">
+                  🚀 <strong>What's Next:</strong> Your pitch continues through the editorial review process.<br>
+                  We'll notify you of any status changes. Keep pitching on other opportunities to maximize your success!
                 </p>
               </div>
               
@@ -104,14 +112,14 @@
           
           <!-- Footer -->
           <tr>
-            <td style="background: #f8fafc; padding: 32px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
+            <td style="background: #f8fafc; padding: 24px 16px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 12px; color: #6b7280; margin: 0 0 8px 0;">
                 © 2025 QuoteBid Inc. · 
                 <a href="{{frontendUrl}}/terms" style="color: #6b7280; text-decoration: none;">Terms</a> · 
                 <a href="{{frontendUrl}}/privacy" style="color: #6b7280; text-decoration: none;">Privacy</a>
               </p>
               <p style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 12px; color: #9ca3af; margin: 0;">
-                <a href="{{frontendUrl}}/account?tab=notifications" style="color: #9ca3af; text-decoration: none;">Email Preferences</a>
+                <a href="{{frontendUrl}}/account#email-preferences" style="color: #9ca3af; text-decoration: none;">Email Preferences</a>
               </p>
             </td>
           </tr>
@@ -135,7 +143,7 @@
     }
     
     /* Header optimizations */
-    td[style*="padding: 40px 40px 32px 40px"] {
+    td[style*="padding: 24px 16px 20px 16px"] {
       padding: 24px 20px 20px 20px !important;
     }
     
@@ -153,7 +161,7 @@
     }
     
     /* Content padding */
-    td[style*="padding: 40px 40px"] {
+    td[style*="padding: 24px 16px"] {
       padding: 24px 20px !important;
     }
     
@@ -165,7 +173,7 @@
     }
     
     /* Footer adjustments */
-    td[style*="padding: 32px 40px"] {
+    td[style*="padding: 24px 16px"] {
       padding: 24px 20px !important;
     }
     

@@ -19,7 +19,7 @@ function getResendInstance(): Resend | null {
 /**
  * Helper function to check if user wants to receive a specific type of email
  */
-async function checkUserEmailPreference(
+export async function checkUserEmailPreference(
   email: string, 
   preferenceType: 'alerts' | 'notifications' | 'billing'
 ): Promise<boolean> {
@@ -158,8 +158,8 @@ export async function sendPasswordResetEmail(
   }
 
   try {
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5050'}/reset-password?token=${resetToken}`;
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
+    const resetUrl = `${process.env.FRONTEND_URL || 'https://quotebid.co'}/reset-password?token=${resetToken}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
     const userFirstName = fullName?.split(' ')[0] || username;
     
     // Use HTML template
@@ -233,7 +233,7 @@ export async function sendUsernameReminderEmail(
               <p>Hello,</p>
               <p>You requested a reminder of your QuoteBid username. Here it is:</p>
               <div class="username">${username}</div>
-              <p>You can use this username to log in to your QuoteBid account at <a href="${process.env.FRONTEND_URL || 'http://localhost:5050'}">quotebid.co</a></p>
+              <p>You can use this username to log in to your QuoteBid account at <a href="${process.env.FRONTEND_URL || 'https://quotebid.co'}">quotebid.co</a></p>
               <p>If you didn't request this reminder, please ignore this email.</p>
               <div class="footer">
                 <p>Need help? Contact our support team at support@quotebid.co</p>
@@ -268,18 +268,18 @@ export async function sendUsernameReminderEmail(
 }
 
 /**
- * Send pricing notification emails (price drops, last call)
+ * Send opportunity notification emails (last call only - no price drops)
  */
-export async function sendPricingNotificationEmail(
+export async function sendOpportunityNotificationEmail(
   emails: string[],
-  template: "PRICE_DROP" | "LAST_CALL",
+  template: "LAST_CALL",
   opportunityTitle: string,
   currentPrice: string
 ): Promise<boolean> {
   const resendInstance = getResendInstance();
   
   if (!resendInstance) {
-    console.error('❌ Resend not initialized for pricing notification');
+    console.error('❌ Resend not initialized for opportunity notification');
     return false;
   }
 
@@ -299,104 +299,9 @@ export async function sendPricingNotificationEmail(
     return true; // Return true since this isn't an error
   }
 
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
+  const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
 
   const emailConfig = {
-    PRICE_DROP: {
-      subject: "🔥 Price dropped on an opportunity you're interested in",
-      html: `
-        <!-- QuoteBid Price Drop Alert - Bulletproof Table Layout -->
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-          <tr>
-            <td align="center" bgcolor="#F9FAFB">
-              <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
-                     style="width:600px;background:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#374151;">
-                
-                <!-- HEADER -->
-                <tr>
-                  <td align="left" style="padding:32px 32px 0 32px;">
-                    <img src="https://quotebid.co/logo-light.png" width="140" alt="QuoteBid" style="display:block;border:0;">
-                  </td>
-                </tr>
-                <tr><td style="line-height:0;height:24px;">&nbsp;</td></tr>
-
-                <!-- PRICE DROP BADGE -->
-                <tr>
-                  <td style="padding:0 32px 16px 32px;">
-                    <span style="background:#10B981;color:#FFFFFF;padding:8px 16px;border-radius:16px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
-                      💰 Price Drop Alert
-                    </span>
-                  </td>
-                </tr>
-
-                <!-- HEADLINE -->
-                <tr>
-                  <td style="padding:0 32px 24px 32px;font-size:24px;line-height:32px;font-weight:700;color:#0F172A;">
-                    Great news! The price dropped
-                  </td>
-                </tr>
-
-                <!-- OPPORTUNITY INFO -->
-                <tr>
-                  <td style="padding:0 32px 0 32px;">
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ECFDF5;border:2px solid #10B981;border-radius:12px;">
-                      <tr>
-                        <td style="padding:24px;">
-                          <div style="font-size:16px;line-height:24px;color:#065F46;margin-bottom:8px;">Opportunity</div>
-                          <div style="font-size:20px;line-height:28px;font-weight:700;color:#064E3B;margin-bottom:16px;">${opportunityTitle}</div>
-                          
-                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                            <tr>
-                              <td style="text-align:center;vertical-align:top;">
-                                <div style="font-size:14px;line-height:20px;color:#059669;font-weight:600;margin-bottom:4px;">New Price</div>
-                                <div style="font-size:32px;line-height:36px;font-weight:800;color:#10B981;">$${currentPrice}</div>
-                                <div style="font-size:12px;line-height:16px;color:#047857;margin-top:4px;">📉 Price decreased</div>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-
-                <!-- SECTION SPACER -->
-                <tr><td style="line-height:0;height:32px;">&nbsp;</td></tr>
-
-                <!-- MESSAGE -->
-                <tr>
-                  <td style="padding:0 32px 24px 32px;font-size:16px;line-height:24px;color:#374151;">
-                    This could be a great opportunity to submit your pitch at a better price point! Don't wait too long - prices can change quickly based on demand.
-                  </td>
-                </tr>
-
-                <!-- CTA BUTTON -->
-                <tr>
-                  <td align="center" style="padding:0 32px 32px 32px;">
-                    <a href="${frontendUrl}/opportunities"
-                       style="background:#10B981;color:#FFFFFF;text-decoration:none;padding:16px 32px;border-radius:8px;font-weight:600;font-size:16px;display:inline-block;">
-                       View Opportunity & Bid Now →
-                    </a>
-                  </td>
-                </tr>
-
-                <!-- FOOTER -->
-                <tr>
-                  <td align="center" style="padding:0 32px 32px 32px;font-size:12px;line-height:18px;color:#6B7280;">
-                    You're receiving this because you've shown interest in this opportunity.<br>
-                    © 2025 QuoteBid Inc. ·
-                    <a href="https://quotebid.co/terms" style="color:#6B7280;text-decoration:none;">Terms</a> ·
-                    <a href="https://quotebid.co/privacy" style="color:#6B7280;text-decoration:none;">Privacy</a><br>
-                    <a href="${frontendUrl}/notifications/settings" style="color:#6B7280;text-decoration:none;">Manage alerts</a>
-                  </td>
-                </tr>
-
-              </table>
-            </td>
-          </tr>
-        </table>
-      `,
-    },
     LAST_CALL: {
       subject: "⏰ Last call for pitches - Opportunity closing soon",
       html: `
@@ -504,7 +409,7 @@ export async function sendPricingNotificationEmail(
   try {
     const { subject, html } = emailConfig[template];
     
-    console.log(`📧 Sending ${template} pricing notification to ${allowedEmails.length} users (${emails.length - allowedEmails.length} opted out)`);
+    console.log(`📧 Sending ${template} opportunity notification to ${allowedEmails.length} users (${emails.length - allowedEmails.length} opted out)`);
     
     const { data, error } = await resendInstance.emails.send({
       from: process.env.EMAIL_FROM || 'QuoteBid <ben@rubiconprgroup.com>',
@@ -514,14 +419,14 @@ export async function sendPricingNotificationEmail(
     });
 
     if (error) {
-      console.error('❌ Pricing notification error:', error);
+      console.error('❌ Opportunity notification error:', error);
       return false;
     }
 
-    console.log('✅ Pricing notification sent successfully:', data);
+    console.log('✅ Opportunity notification sent successfully:', data);
     return true;
   } catch (error) {
-    console.error('❌ Error sending pricing notification:', error);
+    console.error('❌ Error sending opportunity notification:', error);
     return false;
   }
 }
@@ -539,6 +444,13 @@ export async function sendNotificationEmail(
   if (!resendInstance) {
     console.error('❌ Resend not initialized for notification');
     return false;
+  }
+
+  // Check user preference for notifications
+  const allowed = await checkUserEmailPreference(email, 'notifications');
+  if (!allowed) {
+    console.log(`📧 Skipping notification email to ${email} due to user preferences`);
+    return true; // Return true since this isn't an error
   }
 
   try {
@@ -593,136 +505,60 @@ export async function sendNotificationEmail(
 }
 
 /**
- * Send notification email using React Email template
+ * Send media coverage notification email
  */
-export async function sendUserNotificationEmail(
+export async function sendMediaCoverageEmail(
   email: string,
   userName: string,
-  notificationType: 'system' | 'opportunity' | 'pitch_status' | 'payment' | 'media_coverage',
-  title: string,
-  message: string,
-  linkUrl?: string,
-  linkText?: string
+  articleTitle: string,
+  articleUrl: string,
+  publicationName: string
 ): Promise<boolean> {
-  console.log(`🔍 sendUserNotificationEmail called with:`, {
-    email,
-    userName,
-    notificationType,
-    title,
-    message: message.substring(0, 100) + '...',
-    linkUrl,
-    linkText
-  });
-
-  // Map notification types to preference keys
-  const preferenceMap: Record<string, 'alerts' | 'notifications' | 'billing'> = {
-    'opportunity': 'notifications',
-    'pitch_status': 'notifications',
-    'payment': 'billing',
-    'media_coverage': 'notifications',
-    'system': 'notifications', // Default for system notifications
-    'price_drop': 'alerts' // Price drop alerts
-  };
-
-  // PRODUCTION FIX: Critical notifications bypass preferences, others still check
-  const preferenceType = preferenceMap[notificationType];
-  const criticalNotifications = ['pitch_status', 'payment']; // Always send these
-  
-  if (preferenceType && !criticalNotifications.includes(notificationType)) {
-    const allowed = await checkUserEmailPreference(email, preferenceType);
-    if (!allowed) {
-      console.log(`📧 BLOCKED: Skipping ${notificationType} email to ${email} due to user preferences`);
-      return true; // Return true since this isn't an error
-    }
-  } else if (criticalNotifications.includes(notificationType)) {
-    console.log(`🚨 CRITICAL: Sending ${notificationType} email to ${email} (bypassing preferences)`);
-  }
-
   const resendInstance = getResendInstance();
   
   if (!resendInstance) {
-    console.error('❌ Resend not initialized for notification email');
+    console.error('❌ Resend not initialized for media coverage email');
     return false;
   }
 
+  // Check user preference for notifications (media coverage is a notification)
+  const allowed = await checkUserEmailPreference(email, 'notifications');
+  if (!allowed) {
+    console.log(`📧 Skipping media coverage email to ${email} due to user preferences`);
+    return true; // Return true since this isn't an error
+  }
+
   try {
-    console.log(`🔧 Building email for ${notificationType} notification...`);
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
-    const fullLinkUrl = linkUrl ? (linkUrl.startsWith('http') ? linkUrl : `${frontendUrl}${linkUrl}`) : undefined;
+    const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
     
-    console.log(`🎨 Building simple HTML notification email...`);
+    // Use HTML template
+    const fs = await import('fs');
+    const path = await import('path');
     
-    // Create simple HTML email
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>${title}</title>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 30px; border-radius: 8px 8px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-            .cta-button { background: #4299e1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>📢 ${title}</h1>
-            </div>
-            <div class="content">
-              <p>Hi ${userName},</p>
-              <p>${message}</p>
-              ${fullLinkUrl && linkText ? `<p><a href="${fullLinkUrl}" class="cta-button">${linkText}</a></p>` : ''}
-              <div class="footer">
-                <p>© 2024 QuoteBid. All rights reserved.</p>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+    const emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/media-coverage-added.html'), 'utf8')
+      .replace(/{{publicationName}}/g, publicationName)
+      .replace(/{{articleTitle}}/g, articleTitle)
+      .replace(/{{articleUrl}}/g, articleUrl)
+      .replace(/{{frontendUrl}}/g, frontendUrl);
 
-    console.log(`✅ React Email template rendered successfully! HTML length: ${emailHtml.length}`);
-
-    // Generate appropriate subject based on notification type
-    const getSubject = () => {
-      switch (notificationType) {
-        case 'opportunity':
-          return '🚀 New Opportunity Available - QuoteBid';
-        case 'pitch_status':
-          return `📄 Pitch Update - ${title}`;
-        case 'payment':
-          return '💰 Payment Update - QuoteBid';
-        case 'media_coverage':
-          return '📰 New Media Coverage - QuoteBid';
-        case 'system':
-        default:
-          return `📢 ${title} - QuoteBid`;
-      }
-    };
-
-    console.log(`📧 Sending ${notificationType} notification email to:`, email);
+    console.log('📧 Sending media coverage email to:', email);
     
     const { data, error } = await resendInstance.emails.send({
-      from: process.env.EMAIL_FROM || 'QuoteBid <ben@rubiconprgroup.com>',
+      from: process.env.EMAIL_FROM || 'QuoteBid <no-reply@quotebid.co>',
       to: [email],
-      subject: getSubject(),
+      subject: '🎉 Your Article is Now Live! - QuoteBid',
       html: emailHtml,
     });
 
     if (error) {
-      console.error('❌ Notification email error:', error);
+      console.error('❌ Media coverage email error:', error);
       return false;
     }
 
-    console.log('✅ Notification email sent successfully:', data);
+    console.log('✅ Media coverage email sent successfully:', data);
     return true;
   } catch (error) {
-    console.error('❌ Error sending notification email:', error);
+    console.error('❌ Error sending media coverage email:', error);
     return false;
   }
 }
@@ -745,7 +581,7 @@ export async function sendWelcomeEmail(
 
   try {
     const userFirstName = fullName?.split(' ')[0] || username;
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
     
     // Try to fetch a real live opportunity for this user's industry
     let liveOpportunity = null;
