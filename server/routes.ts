@@ -15,6 +15,7 @@ import { setupAuth } from "./auth";
 import { Resend } from 'resend';
 import { sendOpportunityNotification, sendUsernameReminderEmail, sendOpportunityNotificationEmail, sendNotificationEmail } from './lib/email';
 import { sendPasswordResetEmail } from './lib/bulletproof-email';
+import { notificationService } from './lib/notificationService';
 // All React Email templates have been removed - using HTML templates only
 
 // Initialize Resend if API key is available
@@ -4927,9 +4928,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
         case 'pitch-submitted':
           emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/pitch-submitted.html'), 'utf8')
-            .replace(/{{opportunityTitle}}/g, 'Energy Sector Investment Analysis')
-            .replace(/{{opportunityDescription}}/g, 'Energy sector analysts needed to discuss renewable energy investment trends and policy impacts on market dynamics.')
-            .replace(/{{reporterName}}/g, 'Sarah Johnson')
+            .replace(/{{opportunityTitle}}/g, 'Energy Sector Investment Analysis Expert Needed')
+            .replace(/{{publicationName}}/g, 'Reuters')
+            .replace(/{{securedPrice}}/g, '$342')
+            .replace(/{{userFirstName}}/g, 'Ben')
             .replace(/{{frontendUrl}}/g, frontendUrl);
           break;
           

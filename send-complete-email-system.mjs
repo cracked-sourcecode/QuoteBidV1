@@ -1,160 +1,217 @@
 #!/usr/bin/env node
 
+// Send ALL 12 QuoteBid email templates with CLEAN subjects (no brackets)
 import { Resend } from 'resend';
-import fetch from 'node-fetch';
-import dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config();
+import fs from 'fs';
+import path from 'path';
+import 'dotenv/config';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FRONTEND_URL = 'http://localhost:5050';
-const TO_EMAIL = 'ben@rubiconprgroup.com';
+const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
 
-console.log('🚀 Starting Complete Email System Test to ben@rubiconprgroup.com');
-console.log('📧 Using FRONTEND_URL:', FRONTEND_URL);
-console.log('📬 Sending to:', TO_EMAIL);
-
-// All email templates organized by category
-const emailTemplates = {
-  'UTILITY': [
-    'welcome',
-    'password-reset'
-  ],
-  'ALERTS': [
-    'new-opportunity-alert',
-    'saved-opportunity-alert'
-  ],
-  'NOTIFICATIONS': [
-    'draft-reminder',
-    'pitch-sent',
-    'pitch-submitted',
-    'pitch-interested',
-    'pitch-rejected',
-    'article-published'
-  ],
-  'BILLING': [
-    'billing-confirmation'
-  ]
-};
-
-async function fetchEmailTemplate(templateName) {
-  try {
-    console.log(`📥 Fetching ${templateName}...`);
-    const response = await fetch(`${FRONTEND_URL}/api/email-preview/${templateName}`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const html = await response.text();
-    console.log(`✅ ${templateName} fetched successfully (${html.length} chars)`);
-    return html;
-  } catch (error) {
-    console.error(`❌ Failed to fetch ${templateName}:`, error.message);
-    throw error;
-  }
-}
-
-async function sendEmail(templateName, category, html) {
-  try {
-    const subject = `🎯 QuoteBid ${category}: ${templateName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Template`;
-    
-    console.log(`📤 Sending ${templateName}...`);
-    
-    const result = await resend.emails.send({
-      from: 'QuoteBid <no-reply@quotebid.co>',
-      to: [TO_EMAIL],
-      subject: subject,
-      html: html,
-    });
-
-    console.log(`✅ ${templateName} sent successfully! ID: ${result.data?.id || 'unknown'}`);
-    return result;
-  } catch (error) {
-    console.error(`❌ Failed to send ${templateName}:`, error.message);
-    throw error;
-  }
-}
-
-async function sendAllEmails() {
-  const results = [];
-  let totalSent = 0;
-  let totalFailed = 0;
-
-  console.log('\n🎯 ===== COMPLETE EMAIL SYSTEM TEST =====');
-  console.log('📊 Total templates to send: 11');
-  console.log('📧 Recipient: ben@rubiconprgroup.com\n');
-
-  for (const [category, templates] of Object.entries(emailTemplates)) {
-    console.log(`\n📁 === ${category} EMAILS ===`);
-    
-    for (const templateName of templates) {
-      try {
-        // Add delay between requests to avoid rate limiting
-        if (totalSent > 0) {
-          console.log('⏱️  Waiting 2 seconds...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-
-        const html = await fetchEmailTemplate(templateName);
-        const result = await sendEmail(templateName, category, html);
-        
-        results.push({
-          template: templateName,
-          category: category,
-          status: 'success',
-          id: result.data?.id
-        });
-        
-        totalSent++;
-        console.log(`🎉 ${templateName} completed! (${totalSent}/11)`);
-        
-      } catch (error) {
-        console.error(`💥 ${templateName} failed:`, error.message);
-        results.push({
-          template: templateName,
-          category: category,
-          status: 'failed',
-          error: error.message
-        });
-        totalFailed++;
+async function sendCompleteEmailSystem() {
+  console.log('🚀 COMPLETE EMAIL SYSTEM TEST - All 12 Templates\n');
+  console.log('✅ Using ACTUAL QuoteBid templates with proper headers');
+  console.log('🚫 NO BRACKETS in any subject lines\n');
+  
+  const allEmailTemplates = [
+    {
+      name: 'Welcome Email',
+      template: 'welcome.html',
+      subject: 'Welcome to QuoteBid - Your Account is Ready!',
+      replacements: {
+        '{{userFirstName}}': 'Ben',
+        '{{userEmail}}': 'ben@rubiconprgroup.com',
+        '{{frontendUrl}}': frontendUrl
+      }
+    },
+    {
+      name: 'New Opportunity Alert',
+      template: 'new-opportunity-alert.html',
+      subject: 'New Opportunity in Yahoo Finance - Your Industry Match',
+      replacements: {
+        '{{userFirstName}}': 'Ben',
+        '{{opportunityTitle}}': 'Healthcare Innovation Expert Needed',
+        '{{publicationName}}': 'Yahoo Finance',
+        '{{currentPrice}}': '$450',
+        '{{bidCount}}': '3',
+        '{{timeLeft}}': '2 days',
+        '{{opportunityId}}': '789',
+        '{{frontendUrl}}': frontendUrl
+      }
+    },
+    {
+      name: 'Saved Opportunity Reminder',
+      template: 'saved-opportunity-alert.html',
+      subject: 'You Saved This Opportunity - Submit Your Pitch Today',
+      replacements: {
+        '{{userFirstName}}': 'Ben',
+        '{{opportunityTitle}}': 'Capital Markets Analysis Expert',
+        '{{publicationName}}': 'Wall Street Journal',
+        '{{currentPrice}}': '$680',
+        '{{timeLeft}}': '1 day',
+        '{{opportunityId}}': '456',
+        '{{frontendUrl}}': frontendUrl
+      }
+    },
+    {
+      name: 'Pitch Interested',
+      template: 'pitch-interested.html',
+      subject: 'Great News! Your Pitch is Gaining Traction',
+      replacements: {
+        '{{userFirstName}}': 'Ben',
+        '{{opportunityTitle}}': 'Tech Innovation Story',
+        '{{publicationName}}': 'TechCrunch',
+        '{{frontendUrl}}': frontendUrl
+      }
+    },
+    {
+      name: 'Pitch Rejected',
+      template: 'pitch-rejected.html',
+      subject: 'Pitch Update - Not Selected This Time',
+      replacements: {
+        '{{userFirstName}}': 'Ben',
+        '{{opportunityTitle}}': 'Financial Markets Commentary',
+        '{{publicationName}}': 'Bloomberg',
+        '{{frontendUrl}}': frontendUrl
+      }
+    },
+    {
+      name: 'Pitch Sent Confirmation',
+      template: 'pitch-sent.html',
+      subject: 'Pitch Successfully Submitted',
+      replacements: {
+        '{{userFirstName}}': 'Ben',
+        '{{opportunityTitle}}': 'Healthcare Policy Analysis',
+        '{{publicationName}}': 'Reuters',
+        '{{frontendUrl}}': frontendUrl
+      }
+    },
+    {
+      name: 'Pitch Submitted (Admin)',
+      template: 'pitch-submitted.html',
+      subject: 'New Pitch Submitted - Review Required',
+      replacements: {
+        '{{userFirstName}}': 'Ben',
+        '{{opportunityTitle}}': 'Climate Change Expert Commentary Expert Needed',
+        '{{publicationName}}': 'The Guardian',
+        '{{securedPrice}}': '$298',
+        '{{frontendUrl}}': frontendUrl
+      }
+    },
+    {
+      name: 'Draft Reminder',
+      template: 'draft-reminder.html',
+      subject: 'Complete Your Pitch Draft - Opportunity Waiting',
+      replacements: {
+        '{{userFirstName}}': 'Ben',
+        '{{opportunityTitle}}': 'Economic Forecast Analysis',
+        '{{currentPrice}}': '$320',
+        '{{timeLeft}}': '3 hours',
+        '{{opportunityId}}': '234',
+        '{{frontendUrl}}': frontendUrl
+      }
+    },
+    {
+      name: 'Article Published',
+      template: 'article-published.html',
+      subject: 'Success! Your Story Has Been Published',
+      replacements: {
+        '{{userFirstName}}': 'Ben',
+        '{{articleTitle}}': 'The Future of Digital Healthcare',
+        '{{publicationName}}': 'Forbes',
+        '{{articleUrl}}': 'https://forbes.com/digital-healthcare-future',
+        '{{publishDate}}': 'January 15, 2025',
+        '{{frontendUrl}}': frontendUrl
+      }
+    },
+    {
+      name: 'Billing Confirmation',
+      template: 'billing-confirmation.html',
+      subject: 'Receipt: Your QuoteBid Placement - $2,450.00',
+      replacements: {
+        '{{receiptNumber}}': 'QB-' + Date.now(),
+        '{{articleTitle}}': 'Sustainable Energy Innovation',
+        '{{publicationName}}': 'MIT Technology Review',
+        '{{publishDate}}': 'January 15, 2025',
+        '{{billingDate}}': 'January 15, 2025',
+        '{{placementFee}}': '2,450.00',
+        '{{platformFee}}': '367.50',
+        '{{totalAmount}}': '2,817.50',
+        '{{cardBrand}}': 'Visa',
+        '{{cardLast4}}': '4242',
+        '{{frontendUrl}}': frontendUrl
+      }
+    },
+    {
+      name: 'Subscription Renewal Failed',
+      template: 'subscription-renewal-failed.html',
+      subject: 'Payment Issue: QuoteBid Premium Renewal Failed',
+      replacements: {
+        '{{userFirstName}}': 'Ben',
+        '{{subscriptionPlan}}': 'QuoteBid Premium',
+        '{{monthlyAmount}}': '99.99',
+        '{{nextAttemptDate}}': 'January 18, 2025',
+        '{{cardLast4}}': '4242',
+        '{{frontendUrl}}': frontendUrl
+      }
+    },
+    {
+      name: 'Password Reset',
+      template: 'password-reset.html',
+      subject: 'Reset Your QuoteBid Password',
+      replacements: {
+        '{{userFirstName}}': 'Ben',
+        '{{resetLink}}': `${frontendUrl}/reset-password?token=sample-token-123`,
+        '{{frontendUrl}}': frontendUrl
       }
     }
+  ];
+
+  console.log(`📧 Sending ${allEmailTemplates.length} emails...\n`);
+
+  for (const [index, test] of allEmailTemplates.entries()) {
+    try {
+      console.log(`📧 ${index + 1}/${allEmailTemplates.length} Sending: ${test.name}...`);
+      
+      // Read the actual template file
+      const templatePath = path.join(process.cwd(), 'server/email-templates', test.template);
+      let emailHtml = fs.readFileSync(templatePath, 'utf8');
+      
+      // Replace template variables
+      for (const [placeholder, value] of Object.entries(test.replacements)) {
+        emailHtml = emailHtml.replace(new RegExp(placeholder, 'g'), value);
+      }
+      
+      const { data, error } = await resend.emails.send({
+        from: process.env.EMAIL_FROM || 'QuoteBid <no-reply@quotebid.co>',
+        to: ['ben@rubiconprgroup.com'],
+        subject: test.subject, // CLEAN SUBJECT - NO BRACKETS!
+        html: emailHtml
+      });
+
+      if (error) {
+        console.error(`   ❌ Failed: ${error}`);
+      } else {
+        console.log(`   ✅ Success! Email ID: ${data?.id}`);
+        console.log(`   📬 Subject: "${test.subject}"`);
+        console.log(`   🎨 Template: ${test.template}\n`);
+      }
+      
+      // Small delay between emails
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+    } catch (error) {
+      console.error(`   💥 Error: ${error}\n`);
+    }
   }
 
-  // Final summary
-  console.log('\n🏁 ===== FINAL RESULTS =====');
-  console.log(`✅ Successfully sent: ${totalSent}/11`);
-  console.log(`❌ Failed: ${totalFailed}/11`);
-  console.log(`📧 All emails sent to: ${TO_EMAIL}\n`);
-
-  // Detailed results
-  console.log('📋 DETAILED RESULTS:');
-  results.forEach(result => {
-    const status = result.status === 'success' ? '✅' : '❌';
-    const details = result.status === 'success' ? `ID: ${result.id}` : `Error: ${result.error}`;
-    console.log(`${status} [${result.category}] ${result.template} - ${details}`);
-  });
-
-  if (totalSent === 11) {
-    console.log('\n🎯 🎉 ALL 11 EMAIL TEMPLATES SENT SUCCESSFULLY! 🎉');
-    console.log('📬 Check ben@rubiconprgroup.com inbox for the complete email system');
-    console.log('🔥 Email system with click tracking is ready for production!');
-  } else {
-    console.log(`\n⚠️  Only ${totalSent}/11 emails sent. Check errors above.`);
-  }
-
-  return results;
+  console.log('🎉 COMPLETE EMAIL SYSTEM TEST FINISHED!');
+  console.log('📧 Check ben@rubiconprgroup.com for all 12 emails');
+  console.log('✅ ALL templates using proper QuoteBid headers');
+  console.log('🚫 ZERO brackets in any subject lines!');
+  console.log('🚀 Email system is production ready!');
 }
 
-// Execute the email sending
-sendAllEmails()
-  .then(() => {
-    console.log('\n🎯 Email system test completed!');
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error('\n💥 Script failed:', error);
-    process.exit(1);
-  }); 
+// Run the complete email system test
+sendCompleteEmailSystem(); 

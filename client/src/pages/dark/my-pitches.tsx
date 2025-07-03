@@ -231,6 +231,42 @@ export default function MyPitches() {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
 
+  // Check for edit URL parameter and auto-open edit modal
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const editParam = urlParams.get('edit');
+    
+    if (editParam && allPitches && allPitches.length > 0) {
+      const pitchId = parseInt(editParam, 10);
+      console.log('🔍 Checking for pitch ID:', pitchId);
+      console.log('📋 Available pitches:', allPitches.map(p => ({ id: p.id, title: p.opportunity?.title })));
+      
+      if (!isNaN(pitchId)) {
+        // Find the pitch to edit
+        const pitchToEdit = allPitches.find(p => p.id === pitchId);
+        if (pitchToEdit) {
+          console.log('✅ Found pitch to edit:', pitchToEdit);
+          setSelectedPitch(pitchToEdit);
+          setIsEditModalOpen(true);
+        } else {
+          console.log('❌ Pitch ID not found, available IDs:', allPitches.map(p => p.id));
+          // If exact ID not found, try to open the first pending pitch as fallback
+          const firstPendingPitch = allPitches.find(p => p.status === 'pending');
+          if (firstPendingPitch) {
+            console.log('🔄 Opening first pending pitch as fallback:', firstPendingPitch);
+            setSelectedPitch(firstPendingPitch);
+            setIsEditModalOpen(true);
+          }
+        }
+        
+        // Clean up the URL parameter by removing it
+        urlParams.delete('edit');
+        const newUrl = `${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`;
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+  }, [allPitches]);
+
   // Scroll to top helper function
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
