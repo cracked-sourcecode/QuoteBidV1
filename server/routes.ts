@@ -13,7 +13,7 @@ import { eq, sql, desc, and, ne, asc, isNull, isNotNull, gte, lte, or, inArray, 
 import Stripe from "stripe";
 import { setupAuth } from "./auth";
 import { Resend } from 'resend';
-import { sendOpportunityNotification, sendUsernameReminderEmail, sendPricingNotificationEmail, sendNotificationEmail, sendUserNotificationEmail } from './lib/email';
+import { sendOpportunityNotification, sendUsernameReminderEmail, sendOpportunityNotificationEmail, sendNotificationEmail } from './lib/email';
 import { sendPasswordResetEmail } from './lib/bulletproof-email';
 // All React Email templates have been removed - using HTML templates only
 
@@ -4249,9 +4249,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
           case 'PRICE_DROP':
-            const priceDropSuccess = await sendPricingNotificationEmail(
+            const priceDropSuccess = await sendOpportunityNotificationEmail(
               [email],
-              'PRICE_DROP',
+              'LAST_CALL',
               'Test PR Opportunity - Capital Markets Expert Needed',
               '195'
             );
@@ -4266,7 +4266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
           case 'LAST_CALL':
-            const lastCallSuccess = await sendPricingNotificationEmail(
+            const lastCallSuccess = await sendOpportunityNotificationEmail(
               [email],
               'LAST_CALL',
               'Test PR Opportunity - Closing Soon!',
@@ -4312,7 +4312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const user = testUser[0];
               const userName = user.fullName || user.username;
               
-              const opportunitySuccess = await sendUserNotificationEmail(
+              const opportunitySuccess = await sendNotificationEmail(
                 email,
                 userName,
                 'opportunity',
@@ -4395,7 +4395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const user = testUserForDefault[0];
         const userName = user.fullName || user.username;
         
-        const success = await sendUserNotificationEmail(
+        const success = await sendNotificationEmail(
           email,
           userName,
           'system',
@@ -6739,10 +6739,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let success = false;
       let message = '';
       
-      if (type === 'PRICE_DROP' || type === 'LAST_CALL') {
-        success = await sendPricingNotificationEmail(
+      if (type === 'LAST_CALL') {
+        success = await sendOpportunityNotificationEmail(
           [email],
-          type as "PRICE_DROP" | "LAST_CALL",
+          'LAST_CALL',
           "🔥 Test Opportunity - GPT-4o Real-time Pricing Story",
           "195"
         );
@@ -6790,13 +6790,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test pricing notification endpoint (admin only)
   app.post('/api/admin/test-pricing-notification', requireAdminAuth, async (req: Request, res: Response) => {
     try {
-      const { type = 'PRICE_DROP', emails = ['ben@rubiconprgroup.com'] } = req.body;
+      const { type = 'LAST_CALL', emails = ['ben@rubiconprgroup.com'] } = req.body;
       
       console.log(`🧪 Testing ${type} notification to:`, emails);
       
-      const success = await sendPricingNotificationEmail(
+      const success = await sendOpportunityNotificationEmail(
         emails,
-        type as "PRICE_DROP" | "LAST_CALL",
+        'LAST_CALL',
         "Test Opportunity - GPT-4o Integration Story",
         "195"
       );
