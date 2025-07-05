@@ -7630,6 +7630,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           templateVars = {
             userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
             opportunityTitle: opportunity.title,
+            publicationName: opportunity.publication?.name || 'Publication',
             securedPrice: `$${updatedPitch.bidAmount || opportunity.minimumBid || 250}`,
             pitchId: updatedPitch.id,
             frontendUrl
