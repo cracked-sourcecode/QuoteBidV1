@@ -196,15 +196,16 @@ export default function AccountPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const notificationType = urlParams.get('notification');
     const refresh = urlParams.get('refresh');
+    const hash = window.location.hash;
     
-    // If coming from a media coverage notification, switch to profile tab and scroll to media coverage
+    // If coming from a media coverage notification, switch to info tab and scroll to media coverage
     if (notificationType === 'media_coverage' || refresh === 'media') {
-      setActiveTab('profile');
+      setActiveTab('info');
       // Force refresh the media coverage data
       queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/media-coverage`] });
       
-      // Clean up URL parameters
-      const newUrl = window.location.pathname;
+      // Clean up URL parameters but preserve hash
+      const newUrl = window.location.pathname + (hash || '#media-coverage');
       window.history.replaceState({}, '', newUrl);
       
       // Scroll to media coverage section after a short delay to ensure tab switch completes
@@ -213,7 +214,7 @@ export default function AccountPage() {
         if (mediaCoverageElement) {
           mediaCoverageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-      }, 100);
+      }, 500);
     }
   }, [user?.id, queryClient, toast]);
   

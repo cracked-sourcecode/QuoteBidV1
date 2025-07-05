@@ -135,13 +135,8 @@ export default function AccountPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [activeSection, setActiveSection] = useState("profile"); // Default to profile section
   
-  // Read the hash from URL and set initial tab
-  const getInitialTab = () => {
-    const hash = window.location.hash.substring(1); // Remove the # symbol
-    return hash === 'billing' || hash === 'email-preferences' ? hash : 'info';
-  };
-  
-  const [activeTab, setActiveTab] = useState(getInitialTab());
+  // Force default tab to be 'info' (Profile) to ensure proper loading
+  const [activeTab, setActiveTab] = useState('info');
   
   const [sidebarOpen, setSidebarOpen] = useState(true); // Control sidebar visibility
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -199,31 +194,7 @@ export default function AccountPage() {
     }
   }, [user?.id]);
 
-  // Handle URL parameters for notification clicks
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const notificationType = urlParams.get('notification');
-    const refresh = urlParams.get('refresh');
-    
-    // If coming from a media coverage notification, switch to profile tab and scroll to media coverage
-    if (notificationType === 'media_coverage' || refresh === 'media') {
-      setActiveTab('profile');
-      // Force refresh the media coverage data
-      queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/media-coverage`] });
-      
-      // Clean up URL parameters
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
-      
-      // Scroll to media coverage section after a short delay to ensure tab switch completes
-      setTimeout(() => {
-        const mediaCoverageElement = document.getElementById('media-coverage');
-        if (mediaCoverageElement) {
-          mediaCoverageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
-    }
-  }, [user?.id, queryClient, toast]);
+
   
   // Media coverage form schema - publication is optional, no date required
   const mediaCoverageSchema = z.object({
@@ -1045,6 +1016,14 @@ export default function AccountPage() {
     setSelectedPitchId(null);
     setSelectedPitchTitle('');
   };
+
+  // Set initial tab based on URL hash after component mounts
+  useEffect(() => {
+    const hash = window.location.hash.substring(1);
+    if (hash === 'billing' || hash === 'email-preferences') {
+      setActiveTab(hash);
+    }
+  }, []);
 
   // Handle hash changes and update URL when tab changes
   useEffect(() => {
