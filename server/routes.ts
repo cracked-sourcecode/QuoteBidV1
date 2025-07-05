@@ -14,7 +14,7 @@ import Stripe from "stripe";
 import { setupAuth } from "./auth";
 import { Resend } from 'resend';
 import { sendOpportunityNotification, sendUsernameReminderEmail, sendOpportunityNotificationEmail, sendNotificationEmail } from './lib/email';
-import { sendPasswordResetEmail } from './lib/bulletproof-email';
+import { sendPasswordResetEmail } from './lib/email-production';
 import { notificationService } from './lib/notificationService';
 import { scheduleSavedOpportunityReminder, cancelSavedOpportunityReminder } from './jobs/savedOpportunityReminder';
 import { scheduleDraftReminder, cancelDraftReminder } from './jobs/draftReminder';
@@ -772,8 +772,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const result = await sendPasswordResetEmail({
             userFirstName,
             userEmail: user.email,
-            resetUrl,
-            frontendUrl
+            email: user.email,
+            resetUrl
           });
           
           if (!result.success) {
