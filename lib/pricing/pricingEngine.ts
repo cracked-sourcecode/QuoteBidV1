@@ -31,6 +31,7 @@ export interface PricingConfig {
     outlet_avg_price: number;
     successRateOutlet: number;
     hoursRemaining: number;
+    baselineDecay: number; // Constant downward pressure preventing flat periods
   };
   priceStep: number; // Default $5
   elasticity: number; // Category-specific multiplier, default 1.0
@@ -94,7 +95,8 @@ export function calculatePrice(input: PricingSnapshot, cfg: PricingConfig): Pric
     elasticity * demandScore + 
     yieldPull - 
     supplyPressure - 
-    riskAdjustment;
+    riskAdjustment -
+    weights.baselineDecay; // Always pulls price down to prevent flat periods
 
   // Step 6: Calculate price move
   const move = Math.sign(delta) * priceStep;
@@ -158,7 +160,8 @@ export function computePrice(input: PricingSnapshot, cfg: PricingConfig): number
     elasticity * demandScore + 
     yieldPull - 
     supplyPressure - 
-    riskAdjustment;
+    riskAdjustment -
+    weights.baselineDecay; // Always pulls price down to prevent flat periods
 
   // Step 6: Calculate price move
   const move = Math.sign(delta) * priceStep;   // (scaled tick comes in Patch #4)
@@ -245,11 +248,12 @@ export function getDefaultPricingConfig(): PricingConfig {
       outlet_avg_price: -1.0,
       successRateOutlet: -0.5,
       hoursRemaining: -1.2,
+      baselineDecay: 0.05, // Default 5% constant downward pressure
     },
     priceStep: 5,
     elasticity: 1.0,
-    floor: 10,     // Minimum safety floor
-    ceil: 10000,   // Maximum safety ceiling
+    floor: 50,     // Minimum safety floor (aligned with tests and MD spec)
+    ceil: 500,     // Maximum safety ceiling (aligned with tests and MD spec)
   };
 }
 

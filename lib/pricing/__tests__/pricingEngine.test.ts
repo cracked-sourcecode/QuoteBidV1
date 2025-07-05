@@ -291,6 +291,59 @@ describe('pricingEngine', () => {
     });
   });
 
+  describe('Baseline Decay', () => {
+    it('should apply constant downward pressure to prevent flat periods', () => {
+      const config = getDefaultPricingConfig();
+      config.weights.baselineDecay = 0.1; // 10% decay
+      
+      const snapshot: PricingSnapshot = {
+        opportunityId: '1',
+        tier: 1,
+        current_price: 250,
+        pitches: 0,
+        clicks: 0,
+        saves: 0,
+        drafts: 0,
+        emailClicks1h: 0,
+        hoursRemaining: 48, // No time pressure
+        outlet_avg_price: undefined,
+        successRateOutlet: undefined,
+        inventory_level: 1,
+      };
+
+      const result = computePrice(snapshot, config);
+      
+      // With no activity but baseline decay, price should decrease
+      expect(result).toBeLessThan(250);
+    });
+
+    it('should prevent flat periods during no activity', () => {
+      const config = getDefaultPricingConfig();
+      config.weights.baselineDecay = 0.05; // 5% decay
+      
+      const snapshot: PricingSnapshot = {
+        opportunityId: '1',
+        tier: 1,
+        current_price: 300,
+        pitches: 0,
+        clicks: 0,
+        saves: 0,
+        drafts: 0,
+        emailClicks1h: 0,
+        hoursRemaining: 72, // No time pressure
+        outlet_avg_price: undefined,
+        successRateOutlet: undefined,
+        inventory_level: 1,
+      };
+
+      const result = computePrice(snapshot, config);
+      
+      // Price should move down due to baseline decay
+      expect(result).toBeLessThan(300);
+      expect(result).toBeGreaterThan(250); // But not drop too much
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle zero price step gracefully', () => {
       const config: PricingConfig = {

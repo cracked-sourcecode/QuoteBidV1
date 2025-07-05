@@ -235,11 +235,12 @@ export async function updatePrices(): Promise<void> {
           outlet_avg_price: -1.0,
           successRateOutlet: -0.5,
           hoursRemaining: -1.2,
+          baselineDecay: 0.05, // Default 5% constant downward pressure
         },
         priceStep: 5,
         elasticity: 1.0,
-        floor: 10, // Minimum safety floor
-        ceil: 10000, // Maximum safety ceiling
+            floor: 50, // Minimum safety floor (aligned with tests and MD spec)
+    ceil: 500, // Maximum safety ceiling (aligned with tests and MD spec)
       });
       
       // Only update if price changed

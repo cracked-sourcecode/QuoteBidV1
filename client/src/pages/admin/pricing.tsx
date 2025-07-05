@@ -316,6 +316,15 @@ export default function AdminPricing() {
       default: 0.05
     },
     {
+      key: 'baselineDecay',
+      label: 'Baseline decay',
+      description: 'Constant downward pressure preventing flat periods',
+      min: 0,
+      max: 0.5,
+      step: 0.01,
+      default: 0.05
+    },
+    {
       key: 'ambient.cooldownMins',
       label: 'Pricing cooldown',
       description: 'Minutes between price updates for same opportunity',
