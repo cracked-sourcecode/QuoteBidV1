@@ -3382,9 +3382,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
             email: user.email,
             opportunityTitle: opportunity.title,
+            publicationName: opportunity.publication?.name || 'Publication',
             securedPrice: `$${bidAmount || opportunity.current_price || opportunity.minimumBid || 250}`,
             pitchId: newPitch.id
           });
+          
+          console.log(`📧 Pitch sent email sent to ${user.email} for pitch ${newPitch.id} with publication ${opportunity.publication?.name}`);
+          console.log(`📧 Email will have edit URL: /my-pitches?edit=${newPitch.id}`);
+        
 
           console.log(`📧 Pitch sent email sent to ${user.email} for pitch ${newPitch.id}`);
         }

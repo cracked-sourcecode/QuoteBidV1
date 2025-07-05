@@ -265,6 +265,7 @@ export async function sendPitchSentEmail(data: {
   userFirstName: string;
   email: string;
   opportunityTitle: string;
+  publicationName: string;
   securedPrice: string;
   pitchId: number;
 }) {
