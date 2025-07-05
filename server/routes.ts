@@ -12383,9 +12383,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { name } = req.params;
       
-      // Validate request body
+      // Validate request body with different ranges for different variable types
+      const isDollarAmount = ['floor', 'ceil'].includes(name);
+      const isPercentage = ['baselineDecay'].includes(name);
+      
       const updateSchema = z.object({
-        weight: z.number().min(-10).max(10).optional(),
+        weight: isDollarAmount 
+          ? z.number().min(1).max(10000).optional() // Dollar amounts: $1 to $10,000
+          : isPercentage 
+          ? z.number().min(0).max(1).optional() // Percentages: 0 to 1
+          : z.number().min(-10).max(10).optional(), // Regular weights: -10 to 10
         nonlinear_fn: z.string().optional()
       });
       
