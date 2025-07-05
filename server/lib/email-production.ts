@@ -254,7 +254,7 @@ export async function sendPitchRejectedEmail(data: {
 }) {
   return sendEmail({
     to: data.email,
-    subject: 'Pitch Update - Keep Going!',
+    subject: 'Pitch Update - Not Selected',
     template: 'pitch-rejected',
     variables: data,
     preferenceType: 'notifications'

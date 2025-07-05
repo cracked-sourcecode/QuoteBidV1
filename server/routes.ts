@@ -7611,7 +7611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
         } else if (status === 'not_interested' || status === 'rejected' || status === 'declined') {
           emailTemplate = 'pitch-rejected';
-          emailSubject = 'Pitch Update - Keep Going!';
+          emailSubject = 'Pitch Update - Not Selected';
           templateVars = {
             userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
             opportunityTitle: opportunity.title,
