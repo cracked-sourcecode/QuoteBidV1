@@ -252,8 +252,8 @@ export function getDefaultPricingConfig(): PricingConfig {
     },
     priceStep: 5,
     elasticity: 1.0,
-    floor: 50,     // Minimum safety floor (aligned with tests and MD spec)
-    ceil: 500,     // Maximum safety ceiling (aligned with tests and MD spec)
+    floor: 50,     // Default minimum price floor (now configurable via variables)
+    ceil: 500,     // Default maximum price ceiling (now configurable via variables)
   };
 }
 

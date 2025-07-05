@@ -192,8 +192,8 @@ function buildPricingConfig(weights: Record<string, number>, config: any): Prici
     },
     priceStep: Number(config.priceStep) || 5,
     elasticity: 1.0, // Default for now, can be made configurable
-    floor: 50, // Minimum safety floor (aligned with tests and MD spec)
-    ceil: 500, // Maximum safety ceiling (aligned with tests and MD spec)  
+    floor: Number(weights.floor) || 50, // Configurable minimum price floor
+    ceil: Number(weights.ceil) || 500, // Configurable maximum price ceiling  
   };
   
   return pricingConfig;
