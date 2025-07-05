@@ -68,23 +68,25 @@
               
               <!-- Value Proposition -->
               <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; padding: 24px; margin-bottom: 32px; border: 1px solid #0ea5e9;">
-                <h3 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 18px; font-weight: 600; color: #0c4a6e; margin: 0 0 12px 0; text-align: center;">
+                <h3 style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 18px; font-weight: 600; color: #0c4a6e; margin: 0 0 16px 0; text-align: center;">
                   🚀 What Makes QuoteBid Different?
                 </h3>
-                <ul style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #0c4a6e; margin: 0; padding: 0; list-style: none;">
-                  <li style="padding: 8px 0; padding-left: 20px; position: relative;">
-                    <span style="position: absolute; left: 0; top: 12px; width: 6px; height: 6px; background: #0ea5e9; border-radius: 50%;"></span>
-                    <strong>Live Pricing:</strong> Transparent, real-time market rates
-                  </li>
-                  <li style="padding: 8px 0; padding-left: 20px; position: relative;">
-                    <span style="position: absolute; left: 0; top: 12px; width: 6px; height: 6px; background: #0ea5e9; border-radius: 50%;"></span>
-                    <strong>Direct Access:</strong> No PR agencies, just you and top media outlets
-                  </li>
-                  <li style="padding: 8px 0; padding-left: 20px; position: relative;">
-                    <span style="position: absolute; left: 0; top: 12px; width: 6px; height: 6px; background: #0ea5e9; border-radius: 50%;"></span>
-                    <strong>Editorial Independence:</strong> Journalists maintain full control
-                  </li>
-                </ul>
+                <div style="max-width: 480px; margin: 0 auto;">
+                  <ul style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 14px; color: #0c4a6e; margin: 0; padding: 0; list-style: none;">
+                    <li style="padding: 8px 0; padding-left: 20px; position: relative; line-height: 1.5;">
+                      <span style="position: absolute; left: 0; top: 12px; width: 6px; height: 6px; background: #0ea5e9; border-radius: 50%;"></span>
+                      <strong>Live Pricing:</strong> Transparent, real-time market rates
+                    </li>
+                    <li style="padding: 8px 0; padding-left: 20px; position: relative; line-height: 1.5;">
+                      <span style="position: absolute; left: 0; top: 12px; width: 6px; height: 6px; background: #0ea5e9; border-radius: 50%;"></span>
+                      <strong>Direct Access:</strong> No PR agencies, just you and top media outlets
+                    </li>
+                    <li style="padding: 8px 0; padding-left: 20px; position: relative; line-height: 1.5;">
+                      <span style="position: absolute; left: 0; top: 12px; width: 6px; height: 6px; background: #0ea5e9; border-radius: 50%;"></span>
+                      <strong>Editorial Independence:</strong> Journalists maintain full control
+                    </li>
+                  </ul>
+                </div>
               </div>
               
               <!-- Getting Started Steps -->
@@ -275,6 +277,12 @@
     /* List optimizations */
     li[style*="padding-left: 20px"] {
       padding-left: 16px !important;
+    }
+    
+    /* Value proposition text container - maintain good width on mobile */
+    div[style*="max-width: 480px"] {
+      max-width: 100% !important;
+      padding: 0 8px !important;
     }
     
     /* Step number optimization - clean numbers without circles */

@@ -16,6 +16,8 @@ import { Resend } from 'resend';
 import { sendOpportunityNotification, sendUsernameReminderEmail, sendOpportunityNotificationEmail, sendNotificationEmail } from './lib/email';
 import { sendPasswordResetEmail } from './lib/bulletproof-email';
 import { notificationService } from './lib/notificationService';
+import { scheduleSavedOpportunityReminder, cancelSavedOpportunityReminder } from './jobs/savedOpportunityReminder';
+import { scheduleDraftReminder, cancelDraftReminder } from './jobs/draftReminder';
 // All React Email templates have been removed - using HTML templates only
 
 // Initialize Resend if API key is available
@@ -3319,6 +3321,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Failed to cancel saved opportunity reminder:', reminderError);
         // Don't fail the pitch submission if reminder cancellation fails
       }
+
+      // 🚫 Cancel draft reminder since user has now submitted their pitch
+      try {
+        // Find any existing draft for this user/opportunity to cancel its reminder
+        const existingDrafts = await getDb().select()
+          .from(pitches)
+          .where(
+            and(
+              eq(pitches.userId, userId),
+              eq(pitches.opportunityId, opportunityId),
+              eq(pitches.status, 'draft'),
+              eq(pitches.isDraft, true)
+            )
+          );
+        
+        existingDrafts.forEach(draft => {
+          try {
+            cancelDraftReminder(userId, draft.id);
+            console.log(`🚫 Cancelled draft reminder for user ${userId}, draft ${draft.id} (pitch submitted)`);
+          } catch (reminderError) {
+            console.error(`Failed to cancel draft reminder for draft ${draft.id}:`, reminderError);
+          }
+        });
+      } catch (draftLookupError) {
+        console.error('Failed to lookup existing drafts for reminder cancellation:', draftLookupError);
+        // Don't fail the pitch submission if draft lookup fails
+      }
       
       // Create notification for successful pitch submission
       try {
@@ -3341,6 +3370,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (notificationError) {
         console.error('Error creating pitch submission notification:', notificationError);
         // Don't fail the request if notification creation fails
+      }
+
+      // 📧 Send pitch submitted email
+      try {
+        const opportunity = await storage.getOpportunityWithPublication(opportunityId);
+        if (opportunity && user) {
+          const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
+          
+          // Load and populate the pitch-submitted template
+          const fs = await import('fs');
+          const path = await import('path');
+          let emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/pitch-submitted.html'), 'utf8');
+          
+          emailHtml = emailHtml
+            .replace(/\{\{userFirstName\}\}/g, user.fullName?.split(' ')[0] || user.username || 'Expert')
+            .replace(/\{\{opportunityTitle\}\}/g, opportunity.title)
+            .replace(/\{\{publicationName\}\}/g, opportunity.publication?.name || 'Publication')
+            .replace(/\{\{securedPrice\}\}/g, `$${bidAmount || opportunity.current_price || opportunity.minimumBid || 250}`)
+            .replace(/\{\{frontendUrl\}\}/g, frontendUrl);
+
+          // Send the pitch submitted email
+          const { Resend } = await import('resend');
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          
+          await resend.emails.send({
+            from: process.env.EMAIL_FROM || 'QuoteBid <noreply@quotebid.co>',
+            to: [user.email],
+            subject: 'Pitch Submitted Successfully! 📤',
+            html: emailHtml,
+          });
+
+          console.log(`📧 Pitch submitted email sent to ${user.email} for pitch ${newPitch.id}`);
+        }
+      } catch (emailError) {
+        console.error('Error sending pitch submitted email:', emailError);
+        // Don't fail the pitch submission if email fails
       }
       
       // If no payment intent ID was provided and bid amount exists, create one now
@@ -3549,6 +3614,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await storage.createPitch(pitchData);
       console.log("Draft pitch created:", result);
       
+      // 📅 Schedule draft reminder email - 30 minutes after creation
+      if (result) {
+        try {
+          scheduleDraftReminder(userId, result.id, opportunityId, new Date());
+          console.log(`✅ Scheduled draft reminder for user ${userId}, draft ${result.id}, opportunity ${opportunityId}`);
+        } catch (reminderError) {
+          console.error('Failed to schedule draft reminder:', reminderError);
+          // Don't fail the draft creation if reminder scheduling fails
+        }
+      }
+      
       // Create notification for draft creation if user has content
       if (result && content && content.trim().length > 0) {
         try {
@@ -3632,6 +3708,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...updateData
       });
       console.log("Draft pitch updated:", result);
+      
+      // 📅 Reschedule draft reminder email when draft is updated
+      if (result && existingPitch) {
+        try {
+          scheduleDraftReminder(existingPitch.userId, result.id, existingPitch.opportunityId, new Date());
+          console.log(`✅ Rescheduled draft reminder for user ${existingPitch.userId}, draft ${result.id}, opportunity ${existingPitch.opportunityId}`);
+        } catch (reminderError) {
+          console.error('Failed to reschedule draft reminder:', reminderError);
+          // Don't fail the draft update if reminder scheduling fails
+        }
+      }
       
       // Create notification for significant draft progress (e.g., first substantial content)
       // Only notify if this is the first time the user adds any content (1+ characters)
@@ -4911,8 +4998,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
         case 'draft-reminder':
           emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/draft-reminder.html'), 'utf8')
+            .replace(/{{userFirstName}}/g, 'Ben')
             .replace(/{{opportunityTitle}}/g, 'Cryptocurrency Market Analysis Story')
             .replace(/{{opportunityDescription}}/g, 'Crypto experts needed to discuss institutional adoption trends and regulatory landscape developments in 2025.')
+            .replace(/{{publicationName}}/g, 'CoinDesk')
+            .replace(/{{requestType}}/g, 'Expert Commentary')
+            .replace(/{{currentPrice}}/g, '$320')
+            .replace(/{{timeLeft}}/g, '6 hours')
             .replace(/{{opportunityId}}/g, '789')
             .replace(/{{frontendUrl}}/g, frontendUrl);
           break;
@@ -7078,7 +7170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`🚀 PRODUCTION: Sending immediate email alerts for opportunity ${newOpportunity.id} to ${matchingUsers.length} users`);
             
             try {
-              const { scheduleOpportunityAlert } = await import('./jobs/opportunityEmailAlert');
+            const { scheduleOpportunityAlert } = await import('./jobs/opportunityEmailAlert');
               // Use 0 delay for immediate sending in production
               scheduleOpportunityAlert(newOpportunity.id, 0);
               console.log(`✅ Immediate email alerts triggered for opportunity ${newOpportunity.id}`);
@@ -7515,6 +7607,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
             notificationMessage = `Your pitch for "${opportunityTitle}" was not selected this time. Keep trying!`;
             iconType = 'x-circle';
             iconColor = 'red';
+            
+            // 📧 Send pitch rejected email
+            try {
+              const user = await storage.getUser(pitch.userId);
+              const opportunity = await storage.getOpportunityWithPublication(pitch.opportunityId);
+              
+              if (user && opportunity) {
+                const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
+                
+                // Load and populate the pitch-rejected template
+                const fs = await import('fs');
+                const path = await import('path');
+                let emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/pitch-rejected.html'), 'utf8');
+                
+                emailHtml = emailHtml
+                  .replace(/\{\{userFirstName\}\}/g, user.fullName?.split(' ')[0] || user.username || 'Expert')
+                  .replace(/\{\{opportunityTitle\}\}/g, opportunity.title)
+                  .replace(/\{\{publicationName\}\}/g, opportunity.publication?.name || 'Publication')
+                  .replace(/\{\{rejectionReason\}\}/g, 'The reporter has decided not to move forward with this particular pitch at this time.')
+                  .replace(/\{\{frontendUrl\}\}/g, frontendUrl);
+
+                // Send the pitch rejected email
+                const { Resend } = await import('resend');
+                const resend = new Resend(process.env.RESEND_API_KEY);
+                
+                await resend.emails.send({
+                  from: process.env.EMAIL_FROM || 'QuoteBid <noreply@quotebid.co>',
+                  to: [user.email],
+                  subject: `Pitch Update - ${opportunity.publication?.name || 'Publication'}`,
+                  html: emailHtml,
+                });
+
+                console.log(`📧 Pitch rejected email sent to ${user.email} for pitch ${id}`);
+              }
+            } catch (emailError) {
+              console.error('Error sending pitch rejected email:', emailError);
+              // Don't fail the status update if email fails
+            }
           } else if (status === 'under_review' || status === 'reviewing') {
             notificationTitle = '👀 Pitch Under Review';
             notificationMessage = `Your pitch for "${opportunityTitle}" is currently being reviewed.`;
@@ -7900,6 +8030,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         articleUrl,
         articleFilePath: filePath || undefined
       });
+
+      // If article URL was added/updated, send the article published email
+      if (articleUrl && articleUrl !== placement.articleUrl && articleUrl !== '#') {
+        try {
+          // Get placement with user data for the email
+          const updatedPlacement = await storage.getPlacement(id);
+          if (updatedPlacement?.user) {
+            // Use the beautiful article-published.html template
+            const fs = await import('fs');
+            const path = await import('path');
+            const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
+            
+            // Validate article URL
+            try {
+              new URL(articleUrl);
+            } catch (urlError) {
+              console.error(`Invalid article URL: ${articleUrl}`);
+              // Don't fail the upload, just log the error
+            }
+            
+            // Read and populate the article-published template
+            let emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/article-published.html'), 'utf8');
+            
+            emailHtml = emailHtml
+              .replace(/\{\{userFirstName\}\}/g, updatedPlacement.user.fullName.split(' ')[0])
+              .replace(/\{\{articleTitle\}\}/g, updatedPlacement.articleTitle || updatedPlacement.opportunity.title)
+              .replace(/\{\{publicationName\}\}/g, updatedPlacement.publication.name)
+              .replace(/\{\{articleUrl\}\}/g, articleUrl)
+              .replace(/\{\{frontendUrl\}\}/g, frontendUrl);
+
+            // Send the article published email
+            await resend.emails.send({
+              from: process.env.EMAIL_FROM || 'QuoteBid <noreply@quotebid.co>',
+              to: [updatedPlacement.user.email],
+              subject: 'Your Story is Live! 🎉 - Article Published',
+              html: emailHtml,
+            });
+
+            console.log(`📧 Article published email sent to ${updatedPlacement.user.email} for placement ${id}`);
+          }
+        } catch (emailError) {
+          console.error('Error sending article published email:', emailError);
+          // Don't fail the upload if email fails
+        }
+      }
       
       res.json({
         success: true,
@@ -9248,7 +9423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Placement notifications always send (critical business communication)
       
       try {
-        // Send the email
+        // Send the basic notification email (this is for billing notification, not article published)
         await resend.emails.send({
           from: process.env.EMAIL_FROM || 'QuoteBid <noreply@quotebid.com>',
           to: [placement.user.email],

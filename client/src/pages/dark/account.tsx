@@ -205,9 +205,9 @@ export default function AccountPage() {
     const notificationType = urlParams.get('notification');
     const refresh = urlParams.get('refresh');
     
-    // If coming from a media coverage notification, switch to profile tab and refresh data
+    // If coming from a media coverage notification, switch to profile tab and scroll to media coverage
     if (notificationType === 'media_coverage' || refresh === 'media') {
-      setActiveTab('info');
+      setActiveTab('profile');
       // Force refresh the media coverage data
       queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/media-coverage`] });
       
@@ -215,13 +215,13 @@ export default function AccountPage() {
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
       
-      // Show a toast to confirm the update
-      if (notificationType === 'media_coverage') {
-        toast({
-          title: "Media Coverage Updated",
-          description: "Your published article has been added to your portfolio",
-        });
-      }
+      // Scroll to media coverage section after a short delay to ensure tab switch completes
+      setTimeout(() => {
+        const mediaCoverageElement = document.getElementById('media-coverage');
+        if (mediaCoverageElement) {
+          mediaCoverageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
     }
   }, [user?.id, queryClient, toast]);
   
@@ -2773,7 +2773,7 @@ export default function AccountPage() {
               </div>
               
               {/* Media Coverage Section - Dark Theme Optimized */}
-              <div className="mb-8">
+              <div id="media-coverage" className="mb-8">
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200">MEDIA COVERAGE</h2>

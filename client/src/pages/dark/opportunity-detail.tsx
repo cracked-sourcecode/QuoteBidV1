@@ -639,8 +639,11 @@ export default function OpportunityDetail() {
   // Scroll to pitch section if anchor is present - Enhanced for navigation from other pages
   useEffect(() => {
     const handleScrollToPitchSection = () => {
-      if (window.location.hash === '#pitch-section') {
-        console.log('🎯 Hash detected: #pitch-section - initiating scroll');
+      const urlParams = new URLSearchParams(window.location.search);
+      const scrollParam = urlParams.get('scroll');
+      
+      if (window.location.hash === '#pitch-section' || scrollParam === 'pitch-section') {
+        console.log('🎯 Hash detected: #pitch-section or scroll=pitch-section - initiating scroll');
         
         const scrollToPitchSection = () => {
           const element = document.getElementById('pitch-section');

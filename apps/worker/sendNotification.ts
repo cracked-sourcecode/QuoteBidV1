@@ -189,20 +189,20 @@ export async function sendNotification(
       // Only send LAST_CALL emails (price drops removed)
       if (template === 'LAST_CALL') {
         const success = await sendOpportunityNotificationEmail(
-          emails,
-          template,
-          opportunityTitle,
-          currentPrice
-        );
+        emails,
+        template,
+        opportunityTitle,
+        currentPrice
+      );
 
-        if (success) {
-          console.log(`✅ Sent ${template} email notification to ${emails.length} users for opportunity ${opportunityId}`);
-          
-          // Record successful email send time for throttling
-          lastEmailSentMap.set(opportunityId, now);
-          console.log(`📧 Email throttle timer set for opportunity ${opportunityId}. Next email allowed in ${EMAIL_THROTTLE_MINUTES} minutes.`);
-        } else {
-          console.error(`❌ Failed to send ${template} email notification for opportunity ${opportunityId}`);
+      if (success) {
+        console.log(`✅ Sent ${template} email notification to ${emails.length} users for opportunity ${opportunityId}`);
+        
+        // Record successful email send time for throttling
+        lastEmailSentMap.set(opportunityId, now);
+        console.log(`📧 Email throttle timer set for opportunity ${opportunityId}. Next email allowed in ${EMAIL_THROTTLE_MINUTES} minutes.`);
+      } else {
+        console.error(`❌ Failed to send ${template} email notification for opportunity ${opportunityId}`);
         }
       } else {
         console.log(`🚫 Price drop emails are disabled. Skipping ${template} template.`);
