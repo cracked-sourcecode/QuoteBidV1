@@ -144,8 +144,6 @@ async function getLivePricingData(opportunityId: number) {
  * Send opportunity alert email to a specific user
  */
 async function sendOpportunityAlertEmail(user: { id: number; email: string; fullName?: string; username?: string }, opportunity: any, livePriceData: any) {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5050';
-  
   // Calculate deadline display
   const deadline = opportunity.deadline ? new Date(opportunity.deadline) : new Date();
   const now = new Date();
@@ -153,35 +151,20 @@ async function sendOpportunityAlertEmail(user: { id: number; email: string; full
   const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
   const deadlineDisplay = daysRemaining > 0 ? `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left` : 'Today';
   
-  // Load and render HTML email template
-  const templatePath = path.join(process.cwd(), 'server/email-templates/new-opportunity-alert.html');
-  let emailHtml = fs.readFileSync(templatePath, 'utf8');
+  // Use the new production email system
+  const { sendNewOpportunityAlertEmail } = await import('../lib/email-production');
   
-  // Replace template variables
-  emailHtml = emailHtml
-    .replace(/\{\{userFirstName\}\}/g, user.fullName?.split(' ')[0] || user.username || 'Expert')
-    .replace(/\{\{bidDeadline\}\}/g, deadlineDisplay)
-    .replace(/\{\{publicationType\}\}/g, opportunity.publication?.name || "Top Publication")
-    .replace(/\{\{opportunityTitle\}\}/g, opportunity.title)
-    .replace(/\{\{industryMatch\}\}/g, opportunity.industry)
-    .replace(/\{\{currentPrice\}\}/g, livePriceData.currentPrice.replace('$', ''))
-    .replace(/\{\{opportunityId\}\}/g, opportunity.id.toString())
-    .replace(/\{\{frontendUrl\}\}/g, frontendUrl);
+  const result = await sendNewOpportunityAlertEmail({
+    userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+    email: user.email,
+    bidDeadline: deadlineDisplay,
+    publicationType: opportunity.publication?.name || "Top Publication",
+    title: opportunity.title,
+    requestType: opportunity.requestType || "Expert Request",
+    opportunityId: opportunity.id
+  });
   
-  // Send email using your email service
-  const { Resend } = await import('resend');
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  
-  const emailData = {
-    from: 'QuoteBid <alerts@quotebid.co>',
-    to: user.email,
-    subject: `New ${opportunity.publication?.name || 'Premium'} Opportunity Just Dropped — Tier 1 ${opportunity.industry} Coverage`,
-    html: emailHtml,
-    text: `New ${opportunity.industry} Opportunity: ${opportunity.title}. Visit ${frontendUrl}/opportunities/${opportunity.id} to view and bid now!`,
-  };
-  
-  const result = await resend.emails.send(emailData);
-  console.log(`📧 Email sent to ${user.email}:`, result);
+  console.log(`📧 New opportunity alert email sent to ${user.email}:`, result);
   
   return result;
 }

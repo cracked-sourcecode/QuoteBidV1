@@ -143,35 +143,19 @@ async function sendSavedOpportunityReminderEmail(
   opportunity: any, 
   deadlineDisplay: string
 ) {
-  const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
+  // Use the new production email system
+  const { sendSavedOpportunityAlertEmail } = await import('../lib/email-production');
   
-  // Load and render HTML email template
-  const templatePath = path.join(process.cwd(), 'server/email-templates/saved-opportunity-alert.html');
-  let emailHtml = fs.readFileSync(templatePath, 'utf8');
+  const result = await sendSavedOpportunityAlertEmail({
+    userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+    email: user.email,
+    opportunityTitle: opportunity.title,
+    publicationType: opportunity.publication?.name || "Top Publication",
+    bidDeadline: deadlineDisplay,
+    opportunityId: opportunity.id
+  });
   
-  // Replace template variables
-  emailHtml = emailHtml
-    .replace(/\{\{userFirstName\}\}/g, user.fullName?.split(' ')[0] || user.username || 'Expert')
-    .replace(/\{\{opportunityTitle\}\}/g, opportunity.title)
-    .replace(/\{\{publicationType\}\}/g, opportunity.publication?.name || "Top Publication")
-    .replace(/\{\{bidDeadline\}\}/g, deadlineDisplay)
-    .replace(/\{\{opportunityId\}\}/g, opportunity.id.toString())
-    .replace(/\{\{frontendUrl\}\}/g, frontendUrl);
-  
-  // Send email using Resend
-  const { Resend } = await import('resend');
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  
-  const emailData = {
-    from: 'QuoteBid <noreply@quotebid.co>',
-    to: user.email,
-    subject: `You saved this opportunity 6 hours ago, but haven't submitted your pitch yet`,
-    html: emailHtml,
-    text: `Hi ${user.fullName?.split(' ')[0] || user.username},\n\nYou saved "${opportunity.title}" 6 hours ago but haven't submitted your pitch yet.\n\nOther experts are already pitching. Don't miss out!\n\nSubmit your pitch: ${frontendUrl}/opportunities/${opportunity.id}\n\nQuoteBid`,
-  };
-  
-  const result = await resend.emails.send(emailData);
-  console.log(`📧 Reminder email sent to ${user.email}:`, result);
+  console.log(`📧 Saved opportunity reminder email sent to ${user.email}:`, result);
   
   return result;
 }

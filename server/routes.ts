@@ -3372,39 +3372,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the request if notification creation fails
       }
 
-      // 📧 Send pitch submitted email
+      // 📧 Send pitch sent email (when user submits pitch)
       try {
         const opportunity = await storage.getOpportunityWithPublication(opportunityId);
         if (opportunity && user) {
-          const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
+          const { sendPitchSentEmail } = await import('./lib/email-production');
           
-          // Load and populate the pitch-submitted template
-          const fs = await import('fs');
-          const path = await import('path');
-          let emailHtml = fs.readFileSync(path.join(process.cwd(), 'server/email-templates/pitch-submitted.html'), 'utf8');
-          
-          emailHtml = emailHtml
-            .replace(/\{\{userFirstName\}\}/g, user.fullName?.split(' ')[0] || user.username || 'Expert')
-            .replace(/\{\{opportunityTitle\}\}/g, opportunity.title)
-            .replace(/\{\{publicationName\}\}/g, opportunity.publication?.name || 'Publication')
-            .replace(/\{\{securedPrice\}\}/g, `$${bidAmount || opportunity.current_price || opportunity.minimumBid || 250}`)
-            .replace(/\{\{frontendUrl\}\}/g, frontendUrl);
-
-          // Send the pitch submitted email
-          const { Resend } = await import('resend');
-          const resend = new Resend(process.env.RESEND_API_KEY);
-          
-          await resend.emails.send({
-            from: process.env.EMAIL_FROM || 'QuoteBid <noreply@quotebid.co>',
-            to: [user.email],
-            subject: 'Pitch Submitted Successfully! 📤',
-            html: emailHtml,
+          await sendPitchSentEmail({
+            userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+            email: user.email,
+            opportunityTitle: opportunity.title,
+            securedPrice: `$${bidAmount || opportunity.current_price || opportunity.minimumBid || 250}`,
+            pitchId: newPitch.id
           });
 
-          console.log(`📧 Pitch submitted email sent to ${user.email} for pitch ${newPitch.id}`);
+          console.log(`📧 Pitch sent email sent to ${user.email} for pitch ${newPitch.id}`);
         }
       } catch (emailError) {
-        console.error('Error sending pitch submitted email:', emailError);
+        console.error('Error sending pitch sent email:', emailError);
         // Don't fail the pitch submission if email fails
       }
       
@@ -7573,6 +7558,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!updatedPitch) {
         return res.status(404).json({ message: "Pitch not found" });
       }
+
+      // 📧 TRIGGER APPROPRIATE EMAILS BASED ON STATUS CHANGE
+      try {
+        const user = await storage.getUser(updatedPitch.userId);
+        const opportunity = await storage.getOpportunityWithPublication(updatedPitch.opportunityId);
+        
+        if (user && opportunity) {
+          const { 
+            sendPitchSubmittedEmail, 
+            sendPitchInterestedEmail, 
+            sendPitchRejectedEmail,
+            sendPitchSentEmail,
+            sendArticlePublishedEmail
+          } = await import('./lib/email-production');
+          
+          console.log(`📧 Triggering email for pitch ${id} status change to: ${status}`);
+          
+          // Map admin statuses to appropriate emails
+          if (status === 'sent_to_reporter') {
+            await sendPitchSubmittedEmail({
+              userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+              email: user.email,
+              opportunityTitle: opportunity.title,
+              publicationName: opportunity.publication?.name || 'Publication',
+              securedPrice: `$${updatedPitch.bidAmount || opportunity.minimumBid || 250}`
+            });
+            console.log(`✅ Sent pitch submitted email to ${user.email}`);
+            
+          } else if (status === 'interested') {
+            await sendPitchInterestedEmail({
+              userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+              email: user.email,
+              opportunityTitle: opportunity.title,
+              publicationName: opportunity.publication?.name || 'Publication'
+            });
+            console.log(`✅ Sent pitch interested email to ${user.email}`);
+            
+          } else if (status === 'not_interested' || status === 'rejected' || status === 'declined') {
+            await sendPitchRejectedEmail({
+              userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+              email: user.email,
+              opportunityTitle: opportunity.title,
+              publicationName: opportunity.publication?.name || 'Publication'
+            });
+            console.log(`✅ Sent pitch rejected email to ${user.email}`);
+            
+          } else if (status === 'pending' || status === 'sent') {
+            await sendPitchSentEmail({
+              userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+              email: user.email,
+              opportunityTitle: opportunity.title,
+              securedPrice: `$${updatedPitch.bidAmount || opportunity.minimumBid || 250}`,
+              pitchId: updatedPitch.id
+            });
+            console.log(`✅ Sent pitch sent email to ${user.email}`);
+            
+          } else if ((status === 'successful' || status === 'Successful Coverage') && articleUrl) {
+            await sendArticlePublishedEmail({
+              userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+              email: user.email,
+              articleTitle: articleTitle || opportunity.title,
+              publicationName: opportunity.publication?.name || 'Publication',
+              articleUrl: articleUrl
+            });
+            console.log(`✅ Sent article published email to ${user.email}`);
+          }
+        }
+      } catch (emailError) {
+        console.error(`❌ Error sending status change email for pitch ${id}:`, emailError);
+        // Don't fail the status update if email fails
+      }
       
       // Create notification for pitch status update
       try {
@@ -9349,6 +9405,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             
             console.log(`Created payment success notification for user ${placement.user.id} for placement ${placementId}`);
+            
+            // Send billing confirmation email
+            try {
+              const { sendBillingConfirmationEmail } = await import('./lib/email-production');
+              await sendBillingConfirmationEmail({
+                userFirstName: placement.user.fullName?.split(' ')[0] || placement.user.username || 'Expert',
+                email: placement.user.email,
+                receiptNumber: `QB-${placementId}-${Date.now()}`,
+                articleTitle: placement.articleTitle || opportunityTitle,
+                articleUrl: placement.articleUrl || '#',
+                publicationName: placement.publication?.name || 'Publication',
+                publishDate: new Date().toLocaleDateString(),
+                billingDate: new Date().toLocaleDateString(),
+                totalAmount: amount.toString(),
+                cardBrand: 'Card',
+                cardLast4: '****'
+              });
+              
+              console.log(`📧 Billing confirmation email sent to ${placement.user.email} for placement ${placementId}`);
+            } catch (emailError) {
+              console.error('Error sending billing confirmation email:', emailError);
+            }
           }
         } catch (notificationError) {
           console.error('Error creating payment success notification:', notificationError);
@@ -9831,6 +9909,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 .where(eq(users.id, user.id));
                 
               console.log(`⚠️ User ${user.id} payment failed for subscription ${subscriptionId}`);
+              
+              // Send subscription renewal failed email
+              try {
+                const { sendSubscriptionRenewalFailedEmail } = await import('./lib/email-production');
+                await sendSubscriptionRenewalFailedEmail({
+                  userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+                  email: user.email,
+                  subscriptionPlan: 'Monthly Plan',
+                  failureReason: 'Payment method declined',
+                  retryDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString() // 3 days from now
+                });
+                
+                console.log(`📧 Subscription renewal failed email sent to ${user.email}`);
+              } catch (emailError) {
+                console.error('Error sending subscription renewal failed email:', emailError);
+              }
             }
           } catch (error: any) {
             console.error(`Failed to process payment failure:`, error);
