@@ -236,6 +236,7 @@ function clamp(value: number, min: number, max: number): number {
 
 /**
  * Helper to get default pricing config
+ * NOTE: These defaults should be overridden by database values in production
  */
 export function getDefaultPricingConfig(): PricingConfig {
   return {
@@ -252,8 +253,8 @@ export function getDefaultPricingConfig(): PricingConfig {
     },
     priceStep: 5,
     elasticity: 1.0,
-    floor: 50,     // Default minimum price floor (now configurable via variables)
-    ceil: 500,     // Default maximum price ceiling (now configurable via variables)
+    floor: 50,     // DEPRECATED: Should be read from variable_registry in production
+    ceil: 500,     // DEPRECATED: Should be read from variable_registry in production
   };
 }
 

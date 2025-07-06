@@ -28,7 +28,10 @@ async function seedVariables() {
       { var_name: "drafts", weight: "0.1", nonlinear_fn: null },
       { var_name: "outlet_avg_price", weight: "-1.0", nonlinear_fn: null },
       { var_name: "successRateOutlet", weight: "-0.5", nonlinear_fn: null },
-      { var_name: "hoursRemaining", weight: "-1.2", nonlinear_fn: "decay24h" }
+      { var_name: "hoursRemaining", weight: "-1.2", nonlinear_fn: "decay24h" },
+      { var_name: "baselineDecay", weight: "0.05", nonlinear_fn: null },
+      { var_name: "floor", weight: "50", nonlinear_fn: null },
+      { var_name: "ceil", weight: "500", nonlinear_fn: null }
     ];
 
     for (const variable of variables) {

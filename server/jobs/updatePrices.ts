@@ -220,6 +220,18 @@ export async function updatePrices(): Promise<void> {
   
   try {
     const liveOpps = await fetchLiveOpportunities();
+    
+    // CRITICAL FIX: Load weights and config from database instead of hard-coding
+    const weightsRows = await db.select().from(variable_registry);
+    const weights = Object.fromEntries(
+      weightsRows.map(r => [r.var_name, Number(r.weight)])
+    );
+    
+    const configRows = await db.select().from(pricing_config);
+    const config = Object.fromEntries(
+      configRows.map(r => [r.key, r.value])
+    );
+    
     let updatedCount = 0;
     
     for (const opp of liveOpps) {
@@ -227,20 +239,20 @@ export async function updatePrices(): Promise<void> {
       
       const result = calculatePrice(signals, {
         weights: {
-          pitches: 1.0,
-          clicks: 0.3,
-          saves: 0.2,
-          drafts: 0.1,
-          emailClickBoost: 0.05, // New email click boost weight
-          outlet_avg_price: -1.0,
-          successRateOutlet: -0.5,
-          hoursRemaining: -1.2,
-          baselineDecay: 0.05, // Default 5% constant downward pressure
+          pitches: weights.pitches || 1.0,
+          clicks: weights.clicks || 0.3,
+          saves: weights.saves || 0.2,
+          drafts: weights.drafts || 0.1,
+          emailClickBoost: Number(config.emailClickBoost) || 0.05,
+          outlet_avg_price: weights.outlet_avg_price || -1.0,
+          successRateOutlet: weights.successRateOutlet || -0.5,
+          hoursRemaining: weights.hoursRemaining || -1.2,
+          baselineDecay: weights.baselineDecay || 0.05, // Read from database, not hard-coded
         },
-        priceStep: 5,
+        priceStep: Number(config.priceStep) || 5,
         elasticity: 1.0,
-        floor: 50, // Default minimum price floor (now configurable via variables)
-        ceil: 500, // Default maximum price ceiling (now configurable via variables)
+        floor: Number(weights.floor) || 50, // Read from database, not hard-coded
+        ceil: Number(weights.ceil) || 500, // Read from database, not hard-coded
       });
       
       // Only update if price changed

@@ -7121,6 +7121,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log("Validated opportunity data:", JSON.stringify(opportunityData));
+      
+      // CRITICAL FIX: Set initial current_price to prevent pricing gaps
+      // When opportunities are created, they need an initial current_price to avoid 
+      // sudden jumps when the pricing worker runs for the first time
+      if (!opportunityData.current_price) {
+        let tierPrice = 225; // Default Tier 1
+        switch (opportunityData.tier) {
+          case "Tier 1":
+            tierPrice = 225;
+            break;
+          case "Tier 2":
+            tierPrice = 175;
+            break;
+          case "Tier 3":
+            tierPrice = 125;
+            break;
+          default:
+            tierPrice = 225;
+        }
+        
+        // Set current_price to match the tier-based starting price
+        opportunityData.current_price = tierPrice.toString();
+        console.log(`🎯 Set initial current_price to $${tierPrice} for ${opportunityData.tier || 'Tier 1'} opportunity`);
+      }
+      
       const newOpportunity = await storage.createOpportunity(opportunityData);
       console.log("Created opportunity:", JSON.stringify(newOpportunity));
       
