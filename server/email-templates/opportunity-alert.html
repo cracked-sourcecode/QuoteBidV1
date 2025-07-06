@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Opportunity Alert - QuoteBid</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #000000;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 24px 16px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e40af;
+            text-decoration: none;
+        }
+        
+        .content {
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 30px;
+            color: #000000 !important;
+        }
+        
+        .content p {
+            color: #000000 !important;
+        }
+        
+        .content strong {
+            color: #000000 !important;
+        }
+        
+        .content .opportunity-link {
+            color: #1e40af !important;
+        }
+        
+        .content .opportunity-link strong {
+            color: #1e40af !important;
+        }
+        
+        .greeting {
+            margin-bottom: 20px;
+        }
+        
+        .opportunity-link {
+            color: #1e40af;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .opportunity-link:hover {
+            text-decoration: underline;
+        }
+        
+        .signature {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .signature-content {
+            text-align: left;
+        }
+        
+
+        
+        .signature-text {
+            flex: 1;
+        }
+        
+        .signature-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+        
+        .signature-title {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+        
+        .signature-email {
+            color: #1e40af;
+            text-decoration: none;
+            font-size: 13px;
+        }
+        
+        .signature-website {
+            color: #1e40af;
+            text-decoration: none;
+            font-size: 13px;
+            margin-left: 4px;
+        }
+        
+        
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        
+        .footer-links {
+            margin-bottom: 15px;
+        }
+        
+        .footer-links a {
+            color: #64748b;
+            text-decoration: none;
+            font-size: 12px;
+            margin: 0 10px;
+        }
+        
+        .footer-links a:hover {
+            color: #1e40af;
+        }
+        
+        .footer-text {
+            color: #94a3b8;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header" style="text-align: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 20px; margin-bottom: 30px;">
+            <!-- Logo -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto 20px auto;">
+                <tr>
+                    <td style="text-align: center;">
+                        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 24px; font-weight: 700; color: #1f2937; line-height: 1;">
+                            <span style="color: #1f2937;">Quote</span><span style="color: #6366f1;">Bid</span>
+                        </div>
+                    </td>
+                    <td style="vertical-align: top; padding-left: 8px; padding-top: 2px;">
+                        <div style="background: #6366f1; color: #ffffff; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 12px; text-align: center;">
+                            BETA
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">Hi {{userFirstName}},</div>
+            
+            <p><strong>A new opportunity in {{publicationType}} has been added to QuoteBid in your industry.</strong></p>
+            
+            <p><strong>THE OPPORTUNITY:</strong><br>
+            📰 <strong>Media Outlet:</strong> {{publicationType}}<br>
+            📝 <strong>Story Topic:</strong> {{title}}<br>
+            🎯 <strong>What They Need:</strong> {{requestType}}<br>
+            ⏰ <strong>Deadline:</strong> {{bidDeadline}}</p>
+            
+            <p><strong>Why This Matters:</strong> {{publicationType}} reaches millions of decision-makers. One quote could position you as the go-to expert in your field.</p>
+            
+            <p><strong>Ready to secure this {{publicationType}} placement?</strong></p>
+            
+            <p><a href="{{frontendUrl}}/opportunities/{{opportunityId}}?utm_source=email&utm_medium=new_opportunity_alert&utm_campaign=alerts&track_click=pricing_engine" class="opportunity-link"><strong>→ VIEW OPPORTUNITY & SUBMIT YOUR BID</strong></a></p>
+            
+            <p><em>Bid today to secure the rate before more experts pitch.</em></p>
+            
+            <p>Questions? Just reply to this email.</p>
+        </div>
+        
+        <div class="signature">
+            <div class="signature-content">
+                <div class="signature-text">
+                    <div class="signature-name">The QuoteBid Team</div>
+                    <div class="signature-title">Compete Smarter. Real-Time Access. No Retainers. No Agencies.</div>
+                    <div>
+                        <a href="mailto:support@quotebid.co" class="signature-email">support@quotebid.co</a> |
+                        <a href="https://quotebid.co" class="signature-website">quotebid.co</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-links">
+                <a href="{{frontendUrl}}/terms">Terms</a>
+                <a href="{{frontendUrl}}/privacy">Privacy</a>
+                <a href="{{frontendUrl}}/account#email-preferences">Email Preferences</a>
+            </div>
+            <div class="footer-text">
+                © 2025 QuoteBid. All rights reserved.<br>
+                You're receiving this because you have opportunity alerts enabled.
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
