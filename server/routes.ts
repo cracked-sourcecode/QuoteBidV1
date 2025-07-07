@@ -7146,68 +7146,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🎯 Set initial current_price to $${tierPrice} for ${opportunityData.tier || 'Tier 1'} opportunity`);
       }
       
-      const newOpportunity = await storage.createOpportunity(opportunityData);
+            const newOpportunity = await storage.createOpportunity(opportunityData);
       console.log("Created opportunity:", JSON.stringify(newOpportunity));
       
-      // Schedule delayed opportunity alert emails (5-10 minutes to prevent front-running)
-      if (opportunityData.industry) {
-        try {
-          // Get users who have the matching industry for immediate notifications
-          const matchingUsers = await storage.getUsersByIndustry(opportunityData.industry);
+      // Send emails to all users with matching industry
+      try {
+        const targetIndustry = opportunityData.industry || 'Capital Markets';
+        const matchingUsers = await storage.getUsersByIndustry(targetIndustry);
+        
+        if (matchingUsers.length > 0) {
+          const { Resend } = await import('resend');
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
           
-          if (matchingUsers.length > 0) {
-            // Create in-app notifications
-            const notificationPromises = matchingUsers.map(async (user: User) => {
-              try {
-                await notificationService.createNotification({
-                  userId: user.id,
-                  type: 'opportunity',
-                  title: '🚀 New Opportunity Available!',
-                  message: `A new ${opportunityData.industry} opportunity "${newOpportunity.title}" has been posted that matches your profile.`,
-                  linkUrl: `/opportunities/${newOpportunity.id}`,
-                  relatedId: newOpportunity.id,
-                  relatedType: 'opportunity',
-                  icon: 'tag',
-                  iconColor: 'blue',
-                });
-              } catch (error: any) {
-                // Silent fail for notifications
-              }
-            });
-            
-            await Promise.all(notificationPromises);
-            
-            // Send email alerts to matching users
-            const { sendNewOpportunityAlertEmail } = await import('./lib/email-production');
-            
-            const emailPromises = matchingUsers.map(async (user) => {
-              try {
-                const deadline = opportunityData.deadline ? new Date(opportunityData.deadline) : new Date();
-                const now = new Date();
-                const timeDiff = deadline.getTime() - now.getTime();
-                const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
-                const deadlineDisplay = daysRemaining > 0 ? `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left` : 'Today';
-                
-                await sendNewOpportunityAlertEmail({
-                  userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
-                  email: user.email,
-                  publicationType: 'Publication',
-                  title: newOpportunity.title,
-                  requestType: opportunityData.requestType || 'Expert Request',
-                  bidDeadline: deadlineDisplay,
-                  opportunityId: newOpportunity.id
-                });
-              } catch (error) {
-                // Silent fail for individual emails
-              }
-            });
-            
-            await Promise.all(emailPromises);
-          }
-        } catch (notificationError) {
-          console.error("Failed to schedule notifications:", notificationError);
-          // Continue anyway, don't fail the opportunity creation
+          const emailPromises = matchingUsers.map(async (user) => {
+            try {
+              const fs = await import('fs');
+              const path = await import('path');
+              const templatePath = path.join(process.cwd(), 'server/email-templates', 'new-opportunity-alert.html');
+              let emailHtml = fs.readFileSync(templatePath, 'utf8');
+              
+              const templateVars = {
+                userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+                title: newOpportunity.title,
+                requestType: opportunityData.requestType || 'Expert Request',
+                bidDeadline: '7 days left',
+                opportunityId: newOpportunity.id,
+                frontendUrl
+              };
+              
+              Object.entries(templateVars).forEach(([key, value]) => {
+                const placeholder = new RegExp(`{{${key}}}`, 'g');
+                emailHtml = emailHtml.replace(placeholder, String(value || ''));
+              });
+              
+              await resend.emails.send({
+                from: 'QuoteBid <no-reply@quotebid.co>',
+                to: [user.email],
+                subject: 'New Opportunity Alert! 🔥',
+                html: emailHtml,
+              });
+            } catch (error) {
+              // Silent fail for individual emails
+            }
+          });
+          
+          await Promise.all(emailPromises);
         }
+      } catch (error) {
+        console.error("Failed to send emails:", error);
       }
       
       // Return the created opportunity with publication data
