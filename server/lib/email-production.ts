@@ -18,59 +18,83 @@ function getResendInstance(): Resend | null {
   return new Resend(process.env.RESEND_API_KEY);
 }
 
-// Check user email preferences with fallback handling
+/**
+ * Helper function to check if user wants to receive a specific type of email
+ */
 async function checkUserEmailPreference(
   email: string, 
   preferenceType: 'alerts' | 'notifications' | 'billing'
 ): Promise<boolean> {
   try {
-    const db = getDb();
-    const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    
-    if (user.length === 0) {
-      console.log(`⚠️ User not found for email ${email}, allowing email by default`);
-      return true;
-    }
+    // Initialize database if not already initialized
+    try {
+      const { initializeDatabase, getDb } = await import('../db');
+      
+      // Check if database is initialized, if not initialize it
+      let db;
+      try {
+        db = getDb();
+      } catch (dbError) {
+        console.log('📊 Database not initialized, initializing now...');
+        await initializeDatabase();
+        db = getDb();
+      }
+      
+      const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      
+      if (user.length === 0) {
+        console.log(`⚠️ User not found for email ${email}, allowing email by default`);
+        return true; // Default to allowing if user not found
+      }
 
-    const defaultPreferences = { alerts: true, notifications: true, billing: true };
-    const rawPrefs = user[0].emailPreferences;
-    
-    if (!rawPrefs || typeof rawPrefs !== 'object') {
-      return defaultPreferences[preferenceType] !== false;
-    }
-
-    let preferences = { ...defaultPreferences };
-    
-    if ('alerts' in rawPrefs || 'notifications' in rawPrefs || 'billing' in rawPrefs) {
-      preferences = { 
-        ...defaultPreferences, 
-        ...(rawPrefs as { alerts?: boolean; notifications?: boolean; billing?: boolean; })
-      };
-    } else {
-      // Handle legacy format
-      const oldToNewMapping: Record<string, keyof typeof defaultPreferences> = {
-        'priceAlerts': 'alerts',
-        'opportunityNotifications': 'alerts',
-        'pitchStatusUpdates': 'notifications',
-        'mediaCoverageUpdates': 'notifications',
-        'placementSuccess': 'notifications',
-        'paymentConfirmations': 'billing'
+      const defaultPreferences = {
+        alerts: true,
+        notifications: true,
+        billing: true
       };
 
-      const oldPrefs = rawPrefs as Record<string, any>;
-      for (const [oldKey, newKey] of Object.entries(oldToNewMapping)) {
-        if (oldPrefs[oldKey] === false) {
-          preferences[newKey] = false;
+      const rawPrefs = user[0].emailPreferences;
+      if (!rawPrefs || typeof rawPrefs !== 'object') {
+        return defaultPreferences[preferenceType] !== false;
+      }
+
+      // Handle both old and new formats
+      let preferences = { ...defaultPreferences };
+      
+      // Check if it's the new simplified format
+      if ('alerts' in rawPrefs || 'notifications' in rawPrefs || 'billing' in rawPrefs) {
+        preferences = { 
+          ...defaultPreferences, 
+          ...(rawPrefs as { alerts?: boolean; notifications?: boolean; billing?: boolean; })
+        };
+      } else {
+        // Old format - convert on the fly
+        const oldToNewMapping: Record<string, keyof typeof defaultPreferences> = {
+          'priceAlerts': 'alerts',
+          'opportunityNotifications': 'alerts',
+          'pitchStatusUpdates': 'notifications',
+          'mediaCoverageUpdates': 'notifications',
+          'placementSuccess': 'notifications',
+          'paymentConfirmations': 'billing'
+        };
+
+        const oldPrefs = rawPrefs as Record<string, any>;
+        for (const [oldKey, newKey] of Object.entries(oldToNewMapping)) {
+          if (oldPrefs[oldKey] === false) {
+            preferences[newKey] = false;
+          }
         }
       }
-    }
 
-    const allowed = preferences[preferenceType] !== false;
-    console.log(`📧 Email preference check for ${email}: ${preferenceType} = ${allowed}`);
-    return allowed;
+      return preferences[preferenceType] !== false;
+    } catch (dbError) {
+      const errorMessage = dbError instanceof Error ? dbError.message : String(dbError);
+      console.log(`⚠️ Database error checking preferences for ${email}, allowing by default:`, errorMessage);
+      return true; // Default to allowing if database check fails
+    }
   } catch (error) {
-    console.error('❌ Error checking email preference:', error);
-    return true; // Default to allowing on error
+    console.error(`❌ Error checking email preference for ${email}:`, error);
+    return true; // Default to allowing if anything fails
   }
 }
 
