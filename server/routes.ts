@@ -7148,18 +7148,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const newOpportunity = await storage.createOpportunity(opportunityData);
       console.log("Created opportunity:", JSON.stringify(newOpportunity));
       
-      // 📧 Fire opportunity alert using clean service
+      // 📧 Send opportunity alert emails immediately (same pattern as working pitch emails)
       try {
-        const { fireOpportunityAlert } = await import('./services/opportunityAlertService');
+        console.log(`📧 SENDING OPPORTUNITY ALERT EMAILS for opportunity ${newOpportunity.id}`);
         
-        // Call AFTER the insert so we have the real ID
-        await fireOpportunityAlert({
-          id: newOpportunity.id,
-          title: newOpportunity.title,
-          industry: opportunityData.industry,
-          requestType: opportunityData.requestType,
-          publication: publication
-        });
+        // Get users with matching industry (using the fixed function)
+        const matchingUsers = await storage.getUsersByIndustry(opportunityData.industry);
+        console.log(`🎯 Found ${matchingUsers.length} users with industry "${opportunityData.industry}"`);
+        
+        if (matchingUsers.length > 0) {
+          // Import the email function directly (same pattern as working emails)
+          const { sendNewOpportunityAlertEmail } = await import('./lib/email-production');
+          
+          // Send email to each user immediately
+          const emailPromises = matchingUsers.map(async (user) => {
+            try {
+              const result = await sendNewOpportunityAlertEmail({
+                userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+                email: user.email,
+                publicationType: publication?.name || 'Top Publication',
+                title: newOpportunity.title,
+                requestType: opportunityData.requestType || 'Expert Request',
+                bidDeadline: '7 days left',
+                opportunityId: newOpportunity.id
+              });
+              
+              if (result.success) {
+                console.log(`✅ SENT EMAIL to ${user.email}`);
+              } else {
+                console.error(`❌ FAILED to send to ${user.email}:`, result.error);
+              }
+            } catch (emailError) {
+              console.error(`❌ Error sending to ${user.email}:`, emailError);
+            }
+          });
+          
+          await Promise.all(emailPromises);
+          console.log(`🎉 EMAIL BATCH COMPLETE: ${matchingUsers.length} emails sent`);
+        } else {
+          console.log(`📭 NO USERS FOUND with industry "${opportunityData.industry}"`);
+        }
         
       } catch (error) {
         console.error("❌ Failed to send opportunity alert:", error);
