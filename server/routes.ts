@@ -3374,15 +3374,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 📧 Send pitch sent email (when user submits pitch)
       try {
-        const { sendPitchSentEmail } = await import('./lib/email-production');
+        const fs = await import('fs');
+        const path = await import('path');
+        const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
         
-        await sendPitchSentEmail({
-          userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
-          email: user.email,
-          opportunityTitle: opportunity.title,
-          publicationName: opportunity.publication?.name || 'Publication',
-          securedPrice: `$${bidAmount || opportunity.current_price || opportunity.minimumBid || 250}`,
-          pitchId: newPitch.id
+        // Load and render HTML email template manually like draft reminder
+        const templatePath = path.join(process.cwd(), 'server/email-templates/pitch-sent.html');
+        let emailHtml = fs.readFileSync(templatePath, 'utf8');
+        
+        // Replace template variables
+        emailHtml = emailHtml
+          .replace(/\{\{userFirstName\}\}/g, user.fullName?.split(' ')[0] || user.username || 'Expert')
+          .replace(/\{\{opportunityTitle\}\}/g, opportunity.title)
+          .replace(/\{\{publicationName\}\}/g, opportunity.publication?.name || 'Publication')
+          .replace(/\{\{securedPrice\}\}/g, `$${bidAmount || opportunity.current_price || opportunity.minimumBid || 250}`)
+          .replace(/\{\{pitchId\}\}/g, newPitch.id.toString())
+          .replace(/\{\{frontendUrl\}\}/g, frontendUrl);
+        
+        // Send email using Resend directly like draft reminder
+        const { Resend } = await import('resend');
+        const resendClient = new Resend(process.env.RESEND_API_KEY);
+        await resendClient.emails.send({
+          from: 'QuoteBid <noreply@quotebid.co>',
+          to: user.email,
+          subject: 'Pitch Received - Under Review! 📤',
+          html: emailHtml,
         });
       } catch (emailError) {
         console.error('Error sending pitch sent email:', emailError);
