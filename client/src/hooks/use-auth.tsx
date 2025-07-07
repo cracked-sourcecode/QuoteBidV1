@@ -8,6 +8,7 @@ import { User as SelectUser, InsertUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { conditionalToast } from "@/lib/mobile-utils";
 
 type AuthContextType = {
   user: SelectUser | null;
@@ -67,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('Failed to sync theme after login:', error);
       }
       
-      toast({
+      conditionalToast(toast, {
         title: "Login successful",
         description: "Welcome back!",
       });
