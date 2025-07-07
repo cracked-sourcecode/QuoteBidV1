@@ -201,6 +201,7 @@ export function calculateSupplyPressure(hoursRemaining: number): number {
 /**
  * Calculate yield pull - pressure to move toward outlet's historical average
  * Positive = pull price up, Negative = pull price down
+ * FIXED: Scale yield pull to respect price step configuration
  */
 function calculateYieldPull(
   outletAvgPrice: number | undefined, 
@@ -208,8 +209,15 @@ function calculateYieldPull(
 ): number {
   if (!outletAvgPrice || outletAvgPrice <= 0) return 0;
   
-  // Pull toward the outlet average
-  return (outletAvgPrice - currentPrice) / outletAvgPrice;
+  // CRITICAL FIX: Cap yield pull to prevent overwhelming price step
+  // Maximum yield pull should be equivalent to ~2 price steps worth of influence
+  const rawYieldPull = (outletAvgPrice - currentPrice) / outletAvgPrice;
+  
+  // Scale yield pull to be proportional (max influence = 0.2 instead of potentially 0.5+)
+  // This ensures yield pull influences direction but doesn't override price step
+  const scaledYieldPull = Math.sign(rawYieldPull) * Math.min(Math.abs(rawYieldPull), 0.2);
+  
+  return scaledYieldPull;
 }
 
 /**
