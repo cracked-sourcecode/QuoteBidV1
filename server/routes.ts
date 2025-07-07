@@ -7148,48 +7148,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const newOpportunity = await storage.createOpportunity(opportunityData);
       console.log("Created opportunity:", JSON.stringify(newOpportunity));
       
-      // 📧 SEND OPPORTUNITY EMAILS DIRECTLY - NO BULLSHIT SCHEDULING
+      // 📧 Fire opportunity alert using clean service
       try {
-        console.log(`📧 SENDING OPPORTUNITY EMAILS IMMEDIATELY for opportunity ${newOpportunity.id}`);
+        const { fireOpportunityAlert } = await import('./services/opportunityAlertService');
         
-        // Get users with matching industry
-        const matchingUsers = await storage.getUsersByIndustry(opportunityData.industry);
-        console.log(`🎯 Found ${matchingUsers.length} users with industry "${opportunityData.industry}"`);
-        
-        if (matchingUsers.length > 0) {
-          const { sendNewOpportunityAlertEmail } = await import('./lib/email-production');
-          
-          // Send email to each user immediately
-          const emailPromises = matchingUsers.map(async (user) => {
-            try {
-              const result = await sendNewOpportunityAlertEmail({
-                userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
-                email: user.email,
-                publicationType: publication.name,
-                title: newOpportunity.title,
-                requestType: opportunityData.requestType || 'Expert Request',
-                bidDeadline: '7 days left',
-                opportunityId: newOpportunity.id
-              });
-              
-              if (result.success) {
-                console.log(`✅ SENT EMAIL to ${user.email}`);
-              } else {
-                console.error(`❌ EMAIL FAILED to ${user.email}:`, result.error);
-              }
-            } catch (emailError) {
-              console.error(`❌ EMAIL ERROR to ${user.email}:`, emailError);
-            }
-          });
-          
-          await Promise.all(emailPromises);
-          console.log(`🎉 EMAIL BATCH COMPLETE: ${matchingUsers.length} emails sent`);
-        } else {
-          console.log(`📭 NO USERS FOUND with industry "${opportunityData.industry}"`);
-        }
+        // Call AFTER the insert so we have the real ID
+        await fireOpportunityAlert({
+          id: newOpportunity.id,
+          title: newOpportunity.title,
+          industry: opportunityData.industry,
+          requestType: opportunityData.requestType,
+          publication: publication
+        });
         
       } catch (error) {
-        console.error("❌ FAILED TO SEND OPPORTUNITY EMAILS:", error);
+        console.error("❌ Failed to send opportunity alert:", error);
         // Don't fail the opportunity creation if email sending fails
       }
       
