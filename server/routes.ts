@@ -3288,6 +3288,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('Error creating pitch update notification:', notificationError);
           // Don't fail the request if notification creation fails
         }
+
+        // 📧 Send pitch sent email (when user updates pitch)
+        try {
+          const fs = await import('fs');
+          const path = await import('path');
+          const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
+          
+          // Load and render HTML email template manually like draft reminder
+          const templatePath = path.join(process.cwd(), 'server/email-templates/pitch-sent.html');
+          let emailHtml = fs.readFileSync(templatePath, 'utf8');
+          
+          // Replace template variables
+          emailHtml = emailHtml
+            .replace(/\{\{userFirstName\}\}/g, user.fullName?.split(' ')[0] || user.username || 'Expert')
+            .replace(/\{\{opportunityTitle\}\}/g, opportunity.title)
+            .replace(/\{\{publicationName\}\}/g, opportunity.publication?.name || 'Publication')
+            .replace(/\{\{securedPrice\}\}/g, `$${bidAmount || opportunity.current_price || opportunity.minimumBid || 250}`)
+            .replace(/\{\{pitchId\}\}/g, existingPitch.id.toString())
+            .replace(/\{\{frontendUrl\}\}/g, frontendUrl);
+          
+          // Send email using Resend directly like draft reminder
+          const { Resend } = await import('resend');
+          const resendClient = new Resend(process.env.RESEND_API_KEY);
+          await resendClient.emails.send({
+            from: 'QuoteBid <noreply@quotebid.co>',
+            to: user.email,
+            subject: 'Pitch Received - Under Review! 📤',
+            html: emailHtml,
+          });
+        } catch (emailError) {
+          console.error('Error sending pitch sent email:', emailError);
+          // Don't fail the pitch submission if email fails
+        }
         
         return res.status(200).json(updatedPitch);
       }
