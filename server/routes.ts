@@ -12327,18 +12327,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ============ ADMIN PRICING CONTROL ENDPOINTS ============
   
-  // Test endpoint to manually trigger pricing update with draft counting
-  app.post("/api/test-pricing-update", async (req: Request, res: Response) => {
-    try {
-      console.log("🧪 Manual pricing update triggered...");
-      await updatePrices();
-      console.log("✅ Manual pricing update completed");
-      res.json({ ok: true, message: "Pricing update triggered successfully" });
-    } catch (error) {
-      console.error("❌ Manual pricing update failed:", error);
-      res.status(500).json({ error: "Pricing update failed", message: error instanceof Error ? error.message : "Unknown error" });
-    }
-  });
+  // DISABLED: Test endpoint that was causing dual pricing system ($2 movements)
+  // app.post("/api/test-pricing-update", async (req: Request, res: Response) => {
+  //   try {
+  //     console.log("🧪 Manual pricing update triggered...");
+  //     await updatePrices();
+  //     console.log("✅ Manual pricing update completed");
+  //     res.json({ ok: true, message: "Pricing update triggered successfully" });
+  //   } catch (error) {
+  //     console.error("❌ Manual pricing update failed:", error);
+  //     res.status(500).json({ error: "Pricing update failed", message: error instanceof Error ? error.message : "Unknown error" });
+  //   }
+  // });
 
   // Diagnostic endpoint to check draft counting
   app.get("/api/test-draft-counts", async (req: Request, res: Response) => {
