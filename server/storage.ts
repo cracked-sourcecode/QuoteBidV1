@@ -17,7 +17,7 @@ import {
   type PitchWithRelations
 } from "@shared/schema";
 import { getDb } from "./db";
-import { eq, ne, and, or, desc, sql, like, ilike, inArray } from "drizzle-orm";
+import { eq, ne, and, or, desc, sql, like, ilike, inArray, isNotNull } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -146,11 +146,29 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUsersByIndustry(industry: string): Promise<User[]> {
-    const allUsers = await getDb().select().from(users);
-    return allUsers.filter(user => 
-      user.industry && 
-      user.industry.toLowerCase().trim() === industry.toLowerCase().trim()
-    );
+    console.log(`🔍 Looking for users with industry: "${industry}"`);
+    
+    try {
+      // Use proper database query instead of fetching all users
+      const matchingUsers = await getDb()
+        .select()
+        .from(users)
+        .where(
+          and(
+            isNotNull(users.industry),
+            ne(users.industry, ''),
+            sql`LOWER(TRIM(${users.industry})) = LOWER(TRIM(${industry}))`
+          )
+        );
+      
+      console.log(`📊 Found ${matchingUsers.length} users with industry "${industry}":`, 
+        matchingUsers.map(u => `${u.email} (${u.industry})`).join(', '));
+      
+      return matchingUsers;
+    } catch (error) {
+      console.error(`❌ Error fetching users by industry "${industry}":`, error);
+      return [];
+    }
   }
   
   async getAllUsers(): Promise<User[]> {
