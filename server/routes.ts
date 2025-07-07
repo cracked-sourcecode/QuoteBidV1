@@ -6040,8 +6040,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Return the agreement PDF URL if it exists
-      if (user.agreementPdfUrl) {
-        res.json({ pdfUrl: user.agreementPdfUrl, signedAt: user.agreementSignedAt });
+      if ((user as any).agreementPdfUrl) {
+        res.json({ pdfUrl: (user as any).agreementPdfUrl, signedAt: (user as any).agreementSignedAt });
       } else {
         res.status(404).json({ message: "No signed agreement found for this user" });
       }
@@ -6787,8 +6787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const emailResult = await sendPasswordResetEmail({
           userFirstName,
           userEmail: user.email,
-          resetUrl,
-          frontendUrl
+          resetUrl
         });
 
         if (!emailResult || !emailResult.success) {
@@ -7149,57 +7148,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const newOpportunity = await storage.createOpportunity(opportunityData);
       console.log("Created opportunity:", JSON.stringify(newOpportunity));
       
-      // Send emails to all users with matching industry
+      // 📧 Schedule opportunity alert emails using the proper email service
       try {
-        const targetIndustry = opportunityData.industry || 'Capital Markets';
-        const matchingUsers = await storage.getUsersByIndustry(targetIndustry);
+        const { scheduleOpportunityAlert } = await import('./jobs/opportunityEmailAlert');
         
-        // FORCE TEST: Get sophia2 specifically to test email sending
-        const allUsers = await storage.getAllUsers();
-        const sophia2 = allUsers.find(u => u.email === 'sophia2@test.com' || u.username === 'sophia2');
-        const testUsers = sophia2 ? [sophia2] : matchingUsers;
+        // Schedule email alerts for the new opportunity
+        // Use immediate send (0 delay) in development, 7 minutes in production
+        const delayMinutes = process.env.NODE_ENV === 'development' ? 0 : 7;
         
-        if (testUsers.length > 0) {
-          const { Resend } = await import('resend');
-          const resend = new Resend(process.env.RESEND_API_KEY);
-          const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
-          
-          const emailPromises = testUsers.map(async (user) => {
-            try {
-              const fs = await import('fs');
-              const path = await import('path');
-              const templatePath = path.join(process.cwd(), 'server/email-templates', 'new-opportunity-alert.html');
-              let emailHtml = fs.readFileSync(templatePath, 'utf8');
-              
-              const templateVars = {
-                userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
-                title: newOpportunity.title,
-                requestType: opportunityData.requestType || 'Expert Request',
-                bidDeadline: '7 days left',
-                opportunityId: newOpportunity.id,
-                frontendUrl
-              };
-              
-              Object.entries(templateVars).forEach(([key, value]) => {
-                const placeholder = new RegExp(`{{${key}}}`, 'g');
-                emailHtml = emailHtml.replace(placeholder, String(value || ''));
-              });
-              
-              await resend.emails.send({
-                from: 'QuoteBid <no-reply@quotebid.co>',
-                to: [user.email],
-                subject: 'New Opportunity Alert! 🔥',
-                html: emailHtml,
-              });
-            } catch (error) {
-              // Silent fail for individual emails
-            }
-          });
-          
-          await Promise.all(emailPromises);
-        }
+        console.log(`📅 Scheduling opportunity alert emails for opportunity ${newOpportunity.id} with ${delayMinutes} minute delay`);
+        scheduleOpportunityAlert(newOpportunity.id, delayMinutes);
+        
+        console.log(`✅ Opportunity alert emails scheduled for opportunity ${newOpportunity.id}`);
       } catch (error) {
-        console.error("Failed to send emails:", error);
+        console.error("❌ Failed to schedule opportunity alert emails:", error);
+        // Don't fail the opportunity creation if email scheduling fails
       }
       
       // Return the created opportunity with publication data
