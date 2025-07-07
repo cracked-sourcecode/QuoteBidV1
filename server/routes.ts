@@ -3222,8 +3222,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Pitch data extracted successfully");
       
-      // Check if opportunity exists
-      const opportunity = await storage.getOpportunity(opportunityId);
+      // Check if opportunity exists and get it with publication
+      const opportunity = await storage.getOpportunityWithPublication(opportunityId);
       if (!opportunity) {
         console.error(`Opportunity not found with ID: ${opportunityId}`);
         return res.status(404).json({ message: "Opportunity not found" });
@@ -3374,25 +3374,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 📧 Send pitch sent email (when user submits pitch)
       try {
-        const opportunity = await storage.getOpportunityWithPublication(opportunityId);
-        if (opportunity && user) {
-          const { sendPitchSentEmail } = await import('./lib/email-production');
-          
-          await sendPitchSentEmail({
-            userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
-            email: user.email,
-            opportunityTitle: opportunity.title,
-            publicationName: opportunity.publication?.name || 'Publication',
-            securedPrice: `$${bidAmount || opportunity.current_price || opportunity.minimumBid || 250}`,
-            pitchId: newPitch.id
-          });
-          
-          console.log(`📧 Pitch sent email sent to ${user.email} for pitch ${newPitch.id} with publication ${opportunity.publication?.name}`);
-          console.log(`📧 Email will have edit URL: /my-pitches?edit=${newPitch.id}`);
+        const { sendPitchSentEmail } = await import('./lib/email-production');
         
-
-          console.log(`📧 Pitch sent email sent to ${user.email} for pitch ${newPitch.id}`);
-        }
+        await sendPitchSentEmail({
+          userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+          email: user.email,
+          opportunityTitle: opportunity.title,
+          publicationName: opportunity.publication?.name || 'Publication',
+          securedPrice: `$${bidAmount || opportunity.current_price || opportunity.minimumBid || 250}`,
+          pitchId: newPitch.id
+        });
       } catch (emailError) {
         console.error('Error sending pitch sent email:', emailError);
         // Don't fail the pitch submission if email fails
@@ -6787,6 +6778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const emailResult = await sendPasswordResetEmail({
           userFirstName,
           userEmail: user.email,
+          email: user.email,
           resetUrl
         });
 
@@ -6837,8 +6829,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const result = await sendPasswordResetEmail({
           userFirstName: 'Ben',
           userEmail: email,
-          resetUrl,
-          frontendUrl
+          email: email,
+          resetUrl
         });
         success = result.success;
         message = 'Password reset email sent';
@@ -7148,51 +7140,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const newOpportunity = await storage.createOpportunity(opportunityData);
       console.log("Created opportunity:", JSON.stringify(newOpportunity));
       
-      // 📧 PRODUCTION EMAIL SERVICE - SEND TO ALL MATCHING USERS
-      try {
-        // Get users with exact industry match
-        const matchingUsers = await getDb()
-          .select({ 
-            email: users.email, 
-            fullName: users.fullName, 
-            username: users.username 
-          })
-          .from(users)
-          .where(eq(users.industry, opportunityData.industry));
-        
-        if (!matchingUsers.length) {
-          console.warn(`Opportunity ${newOpportunity.id}: No users with industry "${opportunityData.industry}"`);
-          return;
-        }
-        
-        // Import email function
+      // 📧 EMAIL SERVICE WITH PROPER TEMPLATE AND ALL DB DATA
+      const usersToEmail = await getDb()
+        .select({ 
+          email: users.email, 
+          fullName: users.fullName, 
+          username: users.username 
+        })
+        .from(users)
+        .where(eq(users.industry, opportunityData.industry));
+      
+      if (usersToEmail.length > 0) {
         const { sendNewOpportunityAlertEmail } = await import('./lib/email-production');
         
-        // Send emails in parallel
-        await Promise.all(
-          matchingUsers.map(async (user) => {
-            try {
-              await sendNewOpportunityAlertEmail({
-                userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
-                email: user.email,
-                publicationType: publication?.name || 'Publication',
-                title: newOpportunity.title,
-                requestType: opportunityData.requestType || 'Expert Request',
-                bidDeadline: '7 days left',
-                opportunityId: newOpportunity.id
-              });
-            } catch (emailError) {
-              console.error(`Email failed for ${user.email}:`, emailError);
-              // Continue sending to other users
-            }
-          })
-        );
-        
-        console.log(`Opportunity ${newOpportunity.id}: emailed ${matchingUsers.length} users`);
-        
-      } catch (error) {
-        console.error(`🔥 Opportunity alert failed for ${newOpportunity.id}:`, error);
-        // Don't fail opportunity creation if emails fail
+        for (const user of usersToEmail) {
+          await sendNewOpportunityAlertEmail({
+            userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+            email: user.email,
+            publicationType: publication?.name || 'Publication',
+            title: newOpportunity.title,
+            requestType: opportunityData.requestType || 'Expert Request',
+            bidDeadline: '7 days left',
+            opportunityId: newOpportunity.id
+          });
+        }
       }
       
       // Return the created opportunity with publication data
