@@ -7148,50 +7148,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const newOpportunity = await storage.createOpportunity(opportunityData);
       console.log("Created opportunity:", JSON.stringify(newOpportunity));
       
-      // 📧 Send opportunity alert emails immediately (same pattern as working pitch emails)
+      // 📧 PRODUCTION EMAIL SERVICE - SEND TO ALL MATCHING USERS
       try {
-        console.log(`📧 SENDING OPPORTUNITY ALERT EMAILS for opportunity ${newOpportunity.id}`);
+        // Get users with exact industry match
+        const matchingUsers = await getDb()
+          .select({ 
+            email: users.email, 
+            fullName: users.fullName, 
+            username: users.username 
+          })
+          .from(users)
+          .where(eq(users.industry, opportunityData.industry));
         
-        // Get users with matching industry (using the fixed function)
-        const matchingUsers = await storage.getUsersByIndustry(opportunityData.industry);
-        console.log(`🎯 Found ${matchingUsers.length} users with industry "${opportunityData.industry}"`);
+        if (!matchingUsers.length) {
+          console.warn(`Opportunity ${newOpportunity.id}: No users with industry "${opportunityData.industry}"`);
+          return;
+        }
         
-        if (matchingUsers.length > 0) {
-          // Import the email function directly (same pattern as working emails)
-          const { sendNewOpportunityAlertEmail } = await import('./lib/email-production');
-          
-          // Send email to each user immediately
-          const emailPromises = matchingUsers.map(async (user) => {
+        // Import email function
+        const { sendNewOpportunityAlertEmail } = await import('./lib/email-production');
+        
+        // Send emails in parallel
+        await Promise.all(
+          matchingUsers.map(async (user) => {
             try {
-              const result = await sendNewOpportunityAlertEmail({
+              await sendNewOpportunityAlertEmail({
                 userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
                 email: user.email,
-                publicationType: publication?.name || 'Top Publication',
+                publicationType: publication?.name || 'Publication',
                 title: newOpportunity.title,
                 requestType: opportunityData.requestType || 'Expert Request',
                 bidDeadline: '7 days left',
                 opportunityId: newOpportunity.id
               });
-              
-              if (result.success) {
-                console.log(`✅ SENT EMAIL to ${user.email}`);
-              } else {
-                console.error(`❌ FAILED to send to ${user.email}:`, result.error);
-              }
             } catch (emailError) {
-              console.error(`❌ Error sending to ${user.email}:`, emailError);
+              console.error(`Email failed for ${user.email}:`, emailError);
+              // Continue sending to other users
             }
-          });
-          
-          await Promise.all(emailPromises);
-          console.log(`🎉 EMAIL BATCH COMPLETE: ${matchingUsers.length} emails sent`);
-        } else {
-          console.log(`📭 NO USERS FOUND with industry "${opportunityData.industry}"`);
-        }
+          })
+        );
+        
+        console.log(`Opportunity ${newOpportunity.id}: emailed ${matchingUsers.length} users`);
         
       } catch (error) {
-        console.error("❌ Failed to send opportunity alert:", error);
-        // Don't fail the opportunity creation if email sending fails
+        console.error(`🔥 Opportunity alert failed for ${newOpportunity.id}:`, error);
+        // Don't fail opportunity creation if emails fail
       }
       
       // Return the created opportunity with publication data

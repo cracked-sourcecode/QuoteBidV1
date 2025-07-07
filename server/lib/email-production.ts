@@ -329,7 +329,7 @@ export async function sendNewOpportunityAlertEmail(data: {
   return sendEmail({
     to: data.email,
     subject: 'New Opportunity Alert! 🔥',
-    template: 'new-opportunity-alert',
+    template: 'opportunity-alert',
     variables: {
       ...data,
       frontendUrl: process.env.FRONTEND_URL || 'https://quotebid.co'
