@@ -32,6 +32,7 @@ export interface PricingConfig {
     successRateOutlet: number;
     hoursRemaining: number;
     baselineDecay: number; // Constant downward pressure preventing flat periods
+    yieldPullCap: number; // Maximum influence of yield pull (0.05 = 5%)
   };
   priceStep: number; // Default $5
   elasticity: number; // Category-specific multiplier, default 1.0
@@ -81,7 +82,8 @@ export function calculatePrice(input: PricingSnapshot, cfg: PricingConfig): Pric
   // Step 3: Calculate yield pull (anchor toward outlet average)
   const yieldPull = calculateYieldPull(
     input.outlet_avg_price, 
-    input.current_price
+    input.current_price,
+    weights.yieldPullCap
   );
 
   // Step 4: Calculate risk adjustment  
@@ -159,7 +161,8 @@ export function computePrice(input: PricingSnapshot, cfg: PricingConfig): number
   // Step 3: Calculate yield pull (anchor toward outlet average)
   const yieldPull = calculateYieldPull(
     input.outlet_avg_price, 
-    input.current_price
+    input.current_price,
+    weights.yieldPullCap
   );
 
   // Step 4: Calculate risk adjustment  
@@ -232,7 +235,8 @@ export function calculateSupplyPressure(hoursRemaining: number): number {
  */
 function calculateYieldPull(
   outletAvgPrice: number | undefined, 
-  currentPrice: number
+  currentPrice: number,
+  yieldPullCap: number
 ): number {
   if (!outletAvgPrice || outletAvgPrice <= 0) return 0;
   
@@ -240,9 +244,9 @@ function calculateYieldPull(
   // Maximum yield pull should be equivalent to ~2 price steps worth of influence
   const rawYieldPull = (outletAvgPrice - currentPrice) / outletAvgPrice;
   
-  // Scale yield pull to be proportional (max influence = 0.2 instead of potentially 0.5+)
+  // Scale yield pull to be proportional (configurable max influence via yieldPullCap)
   // This ensures yield pull influences direction but doesn't override price step
-  const scaledYieldPull = Math.sign(rawYieldPull) * Math.min(Math.abs(rawYieldPull), 0.2);
+  const scaledYieldPull = Math.sign(rawYieldPull) * Math.min(Math.abs(rawYieldPull), yieldPullCap);
   
   return scaledYieldPull;
 }
@@ -285,6 +289,7 @@ export function getDefaultPricingConfig(): PricingConfig {
       successRateOutlet: -0.5,
       hoursRemaining: -1.2,
       baselineDecay: 0.05, // Default 5% constant downward pressure
+      yieldPullCap: 0.05, // Default 5% maximum yield pull influence
     },
     priceStep: 5,
     elasticity: 1.0,

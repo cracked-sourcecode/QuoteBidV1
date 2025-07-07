@@ -30,6 +30,7 @@ async function seedVariables() {
       { var_name: "successRateOutlet", weight: "-0.5", nonlinear_fn: null },
       { var_name: "hoursRemaining", weight: "-1.2", nonlinear_fn: "decay24h" },
       { var_name: "baselineDecay", weight: "0.05", nonlinear_fn: null },
+      { var_name: "yieldPullCap", weight: "0.05", nonlinear_fn: null },
       { var_name: "floor", weight: "50", nonlinear_fn: null },
       { var_name: "ceil", weight: "500", nonlinear_fn: null }
     ];
