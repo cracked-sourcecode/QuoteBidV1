@@ -7184,14 +7184,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // PRODUCTION FIX: Send emails immediately for reliability
             console.log(`🚀 PRODUCTION: Sending immediate email alerts for opportunity ${newOpportunity.id} to ${matchingUsers.length} users`);
             
-            try {
-            const { scheduleOpportunityAlert } = await import('./jobs/opportunityEmailAlert');
-              // Use 0 delay for immediate sending in production
-              scheduleOpportunityAlert(newOpportunity.id, 0);
-              console.log(`✅ Immediate email alerts triggered for opportunity ${newOpportunity.id}`);
-            } catch (emailError) {
-              console.error(`❌ Failed to trigger immediate emails for opportunity ${newOpportunity.id}:`, emailError);
-            }
+            // PRODUCTION FIX: Direct email sending to matching users
+            const { sendNewOpportunityAlertEmail } = await import('./lib/email-production');
+            
+            const emailPromises = matchingUsers.map(async (user) => {
+              try {
+                const deadline = opportunityData.deadline ? new Date(opportunityData.deadline) : new Date();
+                const now = new Date();
+                const timeDiff = deadline.getTime() - now.getTime();
+                const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                const deadlineDisplay = daysRemaining > 0 ? `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left` : 'Today';
+                
+                await sendNewOpportunityAlertEmail({
+                  userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+                  email: user.email,
+                  publicationType: 'Publication',
+                  title: newOpportunity.title,
+                  requestType: opportunityData.requestType || 'Expert Request',
+                  bidDeadline: deadlineDisplay,
+                  opportunityId: newOpportunity.id
+                });
+              } catch (error) {
+                console.error(`Failed to send email to ${user.email}:`, error);
+              }
+            });
+            
+            await Promise.all(emailPromises);
           } else {
             console.log(`📭 No users found with matching industry: ${opportunityData.industry}`);
           }
