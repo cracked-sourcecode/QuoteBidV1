@@ -190,6 +190,7 @@ function buildPricingConfig(weights: Record<string, number>, config: any): Prici
       hoursRemaining: weights.hoursRemaining || -0.6,
       baselineDecay: weights.baselineDecay || 0.05, // Default 5% constant downward pressure
       yieldPullCap: weights.yieldPullCap || 0.05, // Default 5% maximum yield pull influence
+      boundaryPressure: weights.boundaryPressure || 0.03, // Default 3% gradual boundary pressure
     },
     priceStep: Number(config.priceStep) || 5,
     elasticity: 1.0, // Default for now, can be made configurable

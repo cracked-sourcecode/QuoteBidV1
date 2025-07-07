@@ -33,6 +33,7 @@ export interface PricingConfig {
     hoursRemaining: number;
     baselineDecay: number; // Constant downward pressure preventing flat periods
     yieldPullCap: number; // Maximum influence of yield pull (0.05 = 5%)
+    boundaryPressure: number; // Gradual pressure away from ceiling/floor extremes (0.03 = 3%)
   };
   priceStep: number; // Default $5
   elasticity: number; // Category-specific multiplier, default 1.0
@@ -92,10 +93,19 @@ export function calculatePrice(input: PricingSnapshot, cfg: PricingConfig): Pric
     weights.successRateOutlet
   );
 
-  // Step 5: Calculate overall delta
+  // Step 5: Calculate boundary pressure (rubber band effect)
+  const boundaryPressure = calculateBoundaryPressure(
+    input.current_price,
+    floor,
+    ceil,
+    weights.boundaryPressure
+  );
+
+  // Step 6: Calculate overall delta
   const delta = 
     elasticity * demandScore + 
-    yieldPull - 
+    yieldPull + 
+    boundaryPressure - 
     supplyPressure - 
     riskAdjustment -
     weights.baselineDecay; // Always pulls price down to prevent flat periods
@@ -171,10 +181,19 @@ export function computePrice(input: PricingSnapshot, cfg: PricingConfig): number
     weights.successRateOutlet
   );
 
-  // Step 5: Calculate overall delta
+  // Step 5: Calculate boundary pressure (rubber band effect)
+  const boundaryPressure = calculateBoundaryPressure(
+    input.current_price,
+    floor,
+    ceil,
+    weights.boundaryPressure
+  );
+
+  // Step 6: Calculate overall delta
   const delta = 
     elasticity * demandScore + 
-    yieldPull - 
+    yieldPull + 
+    boundaryPressure - 
     supplyPressure - 
     riskAdjustment -
     weights.baselineDecay; // Always pulls price down to prevent flat periods
@@ -252,6 +271,47 @@ function calculateYieldPull(
 }
 
 /**
+ * Calculate boundary pressure - gradual rubber band effect away from ceiling/floor
+ * Creates gentle pressure to return prices to healthy trading ranges
+ */
+function calculateBoundaryPressure(
+  currentPrice: number,
+  floor: number,
+  ceil: number,
+  boundaryPressureStrength: number
+): number {
+  if (boundaryPressureStrength <= 0) return 0;
+  
+  const range = ceil - floor;
+  if (range <= 0) return 0;
+  
+  // Define "extreme" zones: top 20% and bottom 20% of range
+  const extremeZoneSize = range * 0.2;
+  const upperThreshold = ceil - extremeZoneSize; // 80% toward ceiling
+  const lowerThreshold = floor + extremeZoneSize; // 20% above floor
+  
+  let pressure = 0;
+  
+  // Upper boundary pressure (push down from ceiling)
+  if (currentPrice > upperThreshold) {
+    const distanceIntoZone = currentPrice - upperThreshold;
+    const pressureRatio = Math.min(distanceIntoZone / extremeZoneSize, 1);
+    // Exponential curve for stronger pressure as you approach ceiling
+    pressure = -boundaryPressureStrength * (pressureRatio ** 1.5);
+  }
+  
+  // Lower boundary pressure (push up from floor)  
+  else if (currentPrice < lowerThreshold) {
+    const distanceIntoZone = lowerThreshold - currentPrice;
+    const pressureRatio = Math.min(distanceIntoZone / extremeZoneSize, 1);
+    // Exponential curve for stronger pressure as you approach floor
+    pressure = boundaryPressureStrength * (pressureRatio ** 1.5);
+  }
+  
+  return pressure;
+}
+
+/**
  * Calculate risk adjustment based on outlet's historical success rate
  * Low success rate = higher risk = price discount
  */
@@ -290,6 +350,7 @@ export function getDefaultPricingConfig(): PricingConfig {
       hoursRemaining: -1.2,
       baselineDecay: 0.05, // Default 5% constant downward pressure
       yieldPullCap: 0.05, // Default 5% maximum yield pull influence
+      boundaryPressure: 0.03, // Default 3% gradual boundary pressure
     },
     priceStep: 5,
     elasticity: 1.0,

@@ -249,6 +249,7 @@ export async function updatePrices(): Promise<void> {
           hoursRemaining: weights.hoursRemaining || -1.2,
           baselineDecay: weights.baselineDecay || 0.05, // Read from database, not hard-coded
           yieldPullCap: weights.yieldPullCap || 0.05, // Read from database, not hard-coded
+          boundaryPressure: weights.boundaryPressure || 0.03, // Read from database, not hard-coded
         },
         priceStep: Number(config.priceStep) || 5,
         elasticity: 1.0,

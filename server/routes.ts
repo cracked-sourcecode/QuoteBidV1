@@ -12428,7 +12428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate request body with different ranges for different variable types
       const isDollarAmount = ['floor', 'ceil'].includes(name);
-      const isPercentage = ['baselineDecay', 'yieldPullCap'].includes(name);
+      const isPercentage = ['baselineDecay', 'yieldPullCap', 'boundaryPressure'].includes(name);
       
       const updateSchema = z.object({
         weight: isDollarAmount 
