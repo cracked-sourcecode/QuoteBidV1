@@ -11,6 +11,7 @@ import { eq, sql, gt, and, gte } from "drizzle-orm";
 import { subMinutes } from "date-fns";
 import { 
   opportunities, 
+  publications,
   price_snapshots, 
   variable_registry, 
   pricing_config,
@@ -56,6 +57,19 @@ async function buildSignals(opp: Opportunity & { pitchCount: number; clickCount:
   const pitches = opp.pitchCount;   // total pitches column
   const conversionRate = clicks >= 5 ? pitches / clicks : 0;
   
+  // CRITICAL FIX: Get outlet-specific average price from publications table
+  const publication = await db
+    .select({
+      outlet_avg_price: publications.outlet_avg_price,
+      success_rate_outlet: publications.success_rate_outlet
+    })
+    .from(publications)
+    .where(eq(publications.id, opp.publicationId))
+    .limit(1);
+  
+  const outletAvgPrice = publication[0]?.outlet_avg_price ? Number(publication[0].outlet_avg_price) : undefined;
+  const successRateOutlet = publication[0]?.success_rate_outlet ? Number(publication[0].success_rate_outlet) : undefined;
+  
   return {
     opportunityId: opp.id.toString(),
     tier,
@@ -71,8 +85,8 @@ async function buildSignals(opp: Opportunity & { pitchCount: number; clickCount:
     conversionRate,
     outletLoad,
     lastInteractionMins,
-    outlet_avg_price: undefined, // TODO: Add outlet metrics in future step
-    successRateOutlet: undefined, // TODO: Add outlet metrics in future step
+    outlet_avg_price: outletAvgPrice, // Now uses publication-specific average!
+    successRateOutlet: successRateOutlet, // Now uses publication-specific success rate!
     inventory_level: Number(opp.inventory_level) || 0,
     category: opp.category || undefined,
   };

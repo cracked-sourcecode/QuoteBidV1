@@ -23,6 +23,7 @@ import {
 } from "date-fns";
 import { 
   opportunities, 
+  publications,
   price_snapshots, 
   variable_registry, 
   pricing_config,
@@ -342,6 +343,19 @@ async function buildPricingSnapshot(
   // Get email clicks in the last hour
   const emailClicks1h = await emailClicksLastHour(opp.id);
   
+  // CRITICAL FIX: Get outlet-specific average price from publications table
+  const publication = await db
+    .select({
+      outlet_avg_price: publications.outlet_avg_price,
+      success_rate_outlet: publications.success_rate_outlet
+    })
+    .from(publications)
+    .where(eq(publications.id, opp.publicationId))
+    .limit(1);
+  
+  const outletAvgPrice = publication[0]?.outlet_avg_price ? Number(publication[0].outlet_avg_price) : undefined;
+  const successRateOutlet = publication[0]?.success_rate_outlet ? Number(publication[0].success_rate_outlet) : undefined;
+  
   return {
     opportunityId: opp.id.toString(),
     tier: opp.tier === "Tier 1" ? 1 : opp.tier === "Tier 2" ? 2 : 3,
@@ -352,8 +366,8 @@ async function buildPricingSnapshot(
     drafts: opp.draftCount,
     emailClicks1h,
     hoursRemaining,
-    outlet_avg_price: undefined, // TODO: Add outlet metrics
-    successRateOutlet: undefined, // TODO: Add outlet metrics
+    outlet_avg_price: outletAvgPrice, // Now uses publication-specific average!
+    successRateOutlet: successRateOutlet, // Now uses publication-specific success rate!
     inventory_level: Number(opp.inventory_level) || 0,
     category: opp.category || undefined,
   };
