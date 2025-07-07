@@ -137,6 +137,7 @@ export default function PriceTrendChart({
     filteredData.sort((a, b) => new Date(a.t).getTime() - new Date(b.t).getTime());
     
     // Transform data with enhanced real-time tracking
+    const seenDates = new Set<string>(); // Track which dates we've already shown
     const processedData = filteredData.map((point, index) => {
       const date = new Date(point.t);
       const prevPrice = index > 0 ? filteredData[index - 1].p : point.p;
@@ -144,15 +145,25 @@ export default function PriceTrendChart({
       // Determine if this is a recent/live update (last 10 points)
       const isRecentUpdate = live && index >= filteredData.length - 10;
       
+      // Smart date labeling to prevent duplicates
+      let displayTime = '';
+      if (selectedTimeframe.hours && selectedTimeframe.hours <= 24) {
+        // For 1H and 6H, show time
+        displayTime = format(date, 'h:mm a');
+      } else {
+        // For 1D, 3D, ALL - only show date if we haven't shown this date yet
+        const dateStr = format(date, 'MMM d');
+        if (index % Math.max(1, Math.floor(filteredData.length / 5)) === 0 && !seenDates.has(dateStr)) {
+          displayTime = dateStr;
+          seenDates.add(dateStr);
+        }
+      }
+      
       return {
         timestamp: date.getTime(),
         price: point.p,
         priceChange: point.p - prevPrice,
-        displayTime: selectedTimeframe.hours && selectedTimeframe.hours <= 24 
-          ? format(date, 'h:mm a') 
-          : index % Math.max(1, Math.floor(filteredData.length / 5)) === 0 
-            ? format(date, 'MMM d') 
-            : '',
+        displayTime,
         fullTime: format(date, 'MMM d, h:mm:ss a'),
         index,
         isRealTime: isRecentUpdate,
