@@ -149,7 +149,7 @@ export class DatabaseStorage implements IStorage {
     return await getDb()
       .select()
       .from(users)
-      .where(eq(users.industry, industry));
+      .where(sql`LOWER(${users.industry}) = LOWER(${industry})`);
   }
   
   async getAllUsers(): Promise<User[]> {

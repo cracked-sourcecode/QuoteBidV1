@@ -7156,9 +7156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const matchingUsers = await storage.getUsersByIndustry(opportunityData.industry);
           
           if (matchingUsers.length > 0) {
-            console.log(`🎯 Found ${matchingUsers.length} users with matching industry: ${opportunityData.industry}`);
-            
-            // Create immediate in-app notifications (but NO emails yet)
+            // Create in-app notifications
             const notificationPromises = matchingUsers.map(async (user: User) => {
               try {
                 await notificationService.createNotification({
@@ -7172,19 +7170,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   icon: 'tag',
                   iconColor: 'blue',
                 });
-                console.log(`Created opportunity notification for user ${user.id} (${user.fullName || user.username})`);
               } catch (error: any) {
-                console.error(`Failed to create notification for user ${user.id}:`, error);
+                // Silent fail for notifications
               }
             });
             
             await Promise.all(notificationPromises);
-            console.log(`Created ${matchingUsers.length} in-app notifications for new opportunity: ${newOpportunity.title}`);
             
-            // PRODUCTION FIX: Send emails immediately for reliability
-            console.log(`🚀 PRODUCTION: Sending immediate email alerts for opportunity ${newOpportunity.id} to ${matchingUsers.length} users`);
-            
-            // PRODUCTION FIX: Direct email sending to matching users
+            // Send email alerts to matching users
             const { sendNewOpportunityAlertEmail } = await import('./lib/email-production');
             
             const emailPromises = matchingUsers.map(async (user) => {
@@ -7205,13 +7198,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   opportunityId: newOpportunity.id
                 });
               } catch (error) {
-                console.error(`Failed to send email to ${user.email}:`, error);
+                // Silent fail for individual emails
               }
             });
             
             await Promise.all(emailPromises);
-          } else {
-            console.log(`📭 No users found with matching industry: ${opportunityData.industry}`);
           }
         } catch (notificationError) {
           console.error("Failed to schedule notifications:", notificationError);
