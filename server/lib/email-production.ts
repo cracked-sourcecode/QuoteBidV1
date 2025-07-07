@@ -306,7 +306,10 @@ export async function sendNewOpportunityAlertEmail(data: {
     to: data.email,
     subject: 'New Opportunity Alert! 🔥',
     template: 'new-opportunity-alert',
-    variables: data,
+    variables: {
+      ...data,
+      frontendUrl: process.env.FRONTEND_URL || 'https://quotebid.co'
+    },
     preferenceType: 'alerts'
   });
 }
