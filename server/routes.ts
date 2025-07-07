@@ -7148,21 +7148,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const newOpportunity = await storage.createOpportunity(opportunityData);
       console.log("Created opportunity:", JSON.stringify(newOpportunity));
       
-      // 📧 Schedule opportunity alert emails using the proper email service
+      // 📧 SEND OPPORTUNITY EMAILS DIRECTLY - NO BULLSHIT SCHEDULING
       try {
-        const { scheduleOpportunityAlert } = await import('./jobs/opportunityEmailAlert');
+        console.log(`📧 SENDING OPPORTUNITY EMAILS IMMEDIATELY for opportunity ${newOpportunity.id}`);
         
-        // Schedule email alerts for the new opportunity
-        // Use immediate send (0 delay) in development, 7 minutes in production
-        const delayMinutes = process.env.NODE_ENV === 'development' ? 0 : 7;
+        // Get users with matching industry
+        const matchingUsers = await storage.getUsersByIndustry(opportunityData.industry);
+        console.log(`🎯 Found ${matchingUsers.length} users with industry "${opportunityData.industry}"`);
         
-        console.log(`📅 Scheduling opportunity alert emails for opportunity ${newOpportunity.id} with ${delayMinutes} minute delay`);
-        scheduleOpportunityAlert(newOpportunity.id, delayMinutes);
+        if (matchingUsers.length > 0) {
+          const { sendNewOpportunityAlertEmail } = await import('./lib/email-production');
+          
+          // Send email to each user immediately
+          const emailPromises = matchingUsers.map(async (user) => {
+            try {
+              const result = await sendNewOpportunityAlertEmail({
+                userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+                email: user.email,
+                publicationType: publication.name,
+                title: newOpportunity.title,
+                requestType: opportunityData.requestType || 'Expert Request',
+                bidDeadline: '7 days left',
+                opportunityId: newOpportunity.id
+              });
+              
+              if (result.success) {
+                console.log(`✅ SENT EMAIL to ${user.email}`);
+              } else {
+                console.error(`❌ EMAIL FAILED to ${user.email}:`, result.error);
+              }
+            } catch (emailError) {
+              console.error(`❌ EMAIL ERROR to ${user.email}:`, emailError);
+            }
+          });
+          
+          await Promise.all(emailPromises);
+          console.log(`🎉 EMAIL BATCH COMPLETE: ${matchingUsers.length} emails sent`);
+        } else {
+          console.log(`📭 NO USERS FOUND with industry "${opportunityData.industry}"`);
+        }
         
-        console.log(`✅ Opportunity alert emails scheduled for opportunity ${newOpportunity.id}`);
       } catch (error) {
-        console.error("❌ Failed to schedule opportunity alert emails:", error);
-        // Don't fail the opportunity creation if email scheduling fails
+        console.error("❌ FAILED TO SEND OPPORTUNITY EMAILS:", error);
+        // Don't fail the opportunity creation if email sending fails
       }
       
       // Return the created opportunity with publication data
