@@ -98,8 +98,21 @@ export function calculatePrice(input: PricingSnapshot, cfg: PricingConfig): Pric
     riskAdjustment -
     weights.baselineDecay; // Always pulls price down to prevent flat periods
 
-  // Step 6: Calculate price move
-  const move = Math.sign(delta) * priceStep;
+  // Step 6: Calculate price move with ambient chatter
+  let move = Math.sign(delta) * priceStep;
+  
+  // CRITICAL FIX: Add ambient price chatter during inactive periods
+  // If delta is very small (indicating low activity), add small random movement
+  // This prevents flat periods and makes pricing look more natural
+  if (Math.abs(delta) < 0.1 && move === 0) {
+    // During inactive periods, create small ambient movement
+    // 60% chance of small downward pressure (market gravity)
+    // 40% chance of small upward pressure (natural variation)
+    const ambientDirection = Math.random() < 0.6 ? -1 : 1;
+    move = ambientDirection * priceStep;
+    
+    console.log(`🌊 Ambient chatter: OPP ${input.opportunityId} → ${ambientDirection > 0 ? '▲' : '▼'}$${priceStep} (low activity)`);
+  }
 
   // Step 7: Apply move and clamp to bounds
   const newPrice = input.current_price + move;
@@ -163,8 +176,22 @@ export function computePrice(input: PricingSnapshot, cfg: PricingConfig): number
     riskAdjustment -
     weights.baselineDecay; // Always pulls price down to prevent flat periods
 
-  // Step 6: Calculate price move
-  const move = Math.sign(delta) * priceStep;   // (scaled tick comes in Patch #4)
+  // Step 6: Calculate price move with ambient chatter
+  let move = Math.sign(delta) * priceStep;
+  
+  // CRITICAL FIX: Add ambient price chatter during inactive periods
+  // If delta is very small (indicating low activity), add small random movement
+  // This prevents flat periods and makes pricing look more natural
+  if (Math.abs(delta) < 0.1 && move === 0) {
+    // During inactive periods, create small ambient movement
+    // 60% chance of small downward pressure (market gravity)
+    // 40% chance of small upward pressure (natural variation)
+    const ambientDirection = Math.random() < 0.6 ? -1 : 1;
+    move = ambientDirection * priceStep;
+    
+    console.log(`🌊 Ambient chatter: OPP ${input.opportunityId} → ${ambientDirection > 0 ? '▲' : '▼'}$${priceStep} (low activity)`);
+  }
+  
   const raw = input.current_price + move;
 
   // --- NEW dynamic band ---------------------------------

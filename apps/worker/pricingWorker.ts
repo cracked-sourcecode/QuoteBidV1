@@ -33,7 +33,7 @@ import {
   type Opportunity
 } from "../../shared/schema";
 import { 
-  computePrice, 
+  calculatePrice,
   type PricingSnapshot, 
   type PricingConfig 
 } from "../../lib/pricing/pricingEngine";
@@ -494,14 +494,15 @@ async function processPricingTick(): Promise<void> {
       }
       
       const snapshot = await buildPricingSnapshot(opp);
-      const newPrice = computePrice(snapshot, pricingConfig);
+      const pricingResult = calculatePrice(snapshot, pricingConfig);
+      const newPrice = pricingResult.price;
       const currentPrice = snapshot.current_price;
       const priceDelta = newPrice - currentPrice;
       
       if (newPrice !== currentPrice) {
         // Check gatekeeper rule
         if (shouldSkipGPT(priceDelta, snapshot.hoursRemaining, pricingConfig.priceStep)) {
-          // Apply price change directly
+          // Apply price change directly (now with V2 metadata)
           await updateOpportunityPrice(opp.id, newPrice, snapshot, "worker");
           updatedCount++;
           
@@ -511,7 +512,7 @@ async function processPricingTick(): Promise<void> {
           const bandCeil = Math.min(pricingConfig.ceil, 2.0 * anchor);
           
           const direction = priceDelta > 0 ? "▲" : "▼";
-          console.log(`💰 OPP ${opp.id} → $${newPrice} (${direction}$${Math.abs(priceDelta)}) (band ${bandFloor}-${bandCeil}) [direct]`);
+          console.log(`💰 OPP ${opp.id} → $${newPrice} (${direction}$${Math.abs(priceDelta)}) (band ${bandFloor}-${bandCeil}) [V2 direct] score: ${pricingResult.meta.score.toFixed(2)}`);
         } else {
           // Queue for GPT decision
           gptBatch.push({
@@ -519,7 +520,7 @@ async function processPricingTick(): Promise<void> {
             current_price: newPrice, // Include the suggested new price
           });
           skippedCount++;
-          console.log(`🤖 OPP ${opp.id} → $${newPrice} (queued for GPT)`);
+          console.log(`🤖 OPP ${opp.id} → $${newPrice} (queued for GPT) score: ${pricingResult.meta.score.toFixed(2)}`);
         }
       }
     }
