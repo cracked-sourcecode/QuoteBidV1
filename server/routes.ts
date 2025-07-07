@@ -7151,17 +7151,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(users.industry, opportunityData.industry));
       
       if (usersToEmail.length > 0) {
-        const { sendNewOpportunityAlertEmail } = await import('./lib/email-production');
+        const fs = await import('fs');
+        const path = await import('path');
+        const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
         
         for (const user of usersToEmail) {
-          await sendNewOpportunityAlertEmail({
-            userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
-            email: user.email,
-            publicationType: publication?.name || 'Publication',
-            title: newOpportunity.title,
-            requestType: opportunityData.requestType || 'Expert Request',
-            bidDeadline: '7 days left',
-            opportunityId: newOpportunity.id
+          // Load and render HTML email template manually like draft reminder
+          const templatePath = path.join(process.cwd(), 'server/email-templates/new-opportunity-alert.html');
+          let emailHtml = fs.readFileSync(templatePath, 'utf8');
+          
+          // Replace template variables
+          emailHtml = emailHtml
+            .replace(/\{\{userFirstName\}\}/g, user.fullName?.split(' ')[0] || user.username || 'Expert')
+            .replace(/\{\{publicationType\}\}/g, publication?.name || 'Publication')
+            .replace(/\{\{title\}\}/g, newOpportunity.title)
+            .replace(/\{\{requestType\}\}/g, opportunityData.requestType || 'Expert Request')
+            .replace(/\{\{bidDeadline\}\}/g, '7 days left')
+            .replace(/\{\{opportunityId\}\}/g, newOpportunity.id.toString())
+            .replace(/\{\{frontendUrl\}\}/g, frontendUrl);
+          
+          // Send email using Resend directly like draft reminder
+          await resend.emails.send({
+            from: 'QuoteBid <noreply@quotebid.co>',
+            to: user.email,
+            subject: 'New Opportunity Alert! 🔥',
+            html: emailHtml,
           });
         }
       }
