@@ -7574,62 +7574,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`📧 [ADMIN] Opportunity: ${opportunity.title}`);
         
         // Use the production email system with admin override
+        const { Resend } = await import('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
         
-        // Use proper email functions based on status
-        const { 
-          sendPitchSubmittedEmail,
-          sendPitchInterestedEmail, 
-          sendPitchRejectedEmail,
-          sendPitchSentEmail,
-          sendArticlePublishedEmail
-        } = await import('./lib/email-production');
+        let emailTemplate = '';
+        let emailSubject = '';
+        let templateVars = {};
         
+        // Determine which email to send based on status
         if (status === 'sent_to_reporter') {
-          await sendPitchSubmittedEmail({
+          emailTemplate = 'pitch-submitted';
+          emailSubject = 'Pitch Submitted Successfully! ✅';
+          templateVars = {
             userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
-            email: user.email,
-            opportunityTitle: opportunity.title,
-            publicationName: opportunity.publication?.name || 'Publication',
-            securedPrice: `$${updatedPitch.bidAmount || opportunity.minimumBid || 250}`
-          });
-          
-        } else if (status === 'interested') {
-          await sendPitchInterestedEmail({
-            userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
-            email: user.email,
-            opportunityTitle: opportunity.title,
-            publicationName: opportunity.publication?.name || 'Publication'
-          });
-          
-        } else if (status === 'not_interested' || status === 'rejected' || status === 'declined') {
-          await sendPitchRejectedEmail({
-            userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
-            email: user.email,
-            opportunityTitle: opportunity.title,
-            publicationName: opportunity.publication?.name || 'Publication'
-          });
-          
-        } else if (status === 'pending' || status === 'sent') {
-          await sendPitchSentEmail({
-            userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
-            email: user.email,
             opportunityTitle: opportunity.title,
             publicationName: opportunity.publication?.name || 'Publication',
             securedPrice: `$${updatedPitch.bidAmount || opportunity.minimumBid || 250}`,
-            pitchId: updatedPitch.id
-          });
+            frontendUrl
+          };
+          
+        } else if (status === 'interested') {
+          emailTemplate = 'pitch-interested';
+          emailSubject = 'Great News! Reporter Interested! 👍';
+          templateVars = {
+            userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+            opportunityTitle: opportunity.title,
+            publicationName: opportunity.publication?.name || 'Publication',
+            frontendUrl
+          };
+          
+        } else if (status === 'not_interested' || status === 'rejected' || status === 'declined') {
+          emailTemplate = 'pitch-rejected';
+          emailSubject = 'Pitch Update - Not Selected';
+          templateVars = {
+            userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+            opportunityTitle: opportunity.title,
+            publicationName: opportunity.publication?.name || 'Publication',
+            frontendUrl
+          };
+          
+        } else if (status === 'pending' || status === 'sent') {
+          emailTemplate = 'pitch-sent';
+          emailSubject = 'Pitch Received - Under Review! 📤';
+          templateVars = {
+            userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
+            opportunityTitle: opportunity.title,
+            publicationName: opportunity.publication?.name || 'Publication',
+            securedPrice: `$${updatedPitch.bidAmount || opportunity.minimumBid || 250}`,
+            pitchId: updatedPitch.id,
+            frontendUrl
+          };
           
         } else if ((status === 'successful' || status === 'Successful Coverage') && articleUrl) {
-          await sendArticlePublishedEmail({
+          emailTemplate = 'article-published';
+          emailSubject = 'Your Story is Live! 🎉';
+          templateVars = {
             userFirstName: user.fullName?.split(' ')[0] || user.username || 'Expert',
-            email: user.email,
             articleTitle: articleTitle || opportunity.title,
             publicationName: opportunity.publication?.name || 'Publication',
-            articleUrl: articleUrl
-          });
+            articleUrl: articleUrl,
+            frontendUrl
+          };
         }
         
-        console.log(`📧 [ADMIN] Email sent for status: ${status}`);
+        // Send the email if we have a template
+        if (emailTemplate) {
+          try {
+            // Load template manually to bypass user preferences
+            const fs = await import('fs');
+            const path = await import('path');
+            
+            const templatePath = path.join(process.cwd(), 'server/email-templates', `${emailTemplate}.html`);
+            let emailHtml = fs.readFileSync(templatePath, 'utf8');
+            
+            // Replace template variables
+            Object.entries(templateVars).forEach(([key, value]) => {
+              const placeholder = new RegExp(`{{${key}}}`, 'g');
+              emailHtml = emailHtml.replace(placeholder, String(value || ''));
+            });
+            
+            console.log(`📧 [ADMIN] Sending ${emailTemplate} email to ${user.email}...`);
+            
+            const result = await resend.emails.send({
+              from: process.env.EMAIL_FROM || 'QuoteBid <noreply@quotebid.co>',
+              to: [user.email],
+              subject: emailSubject,
+              html: emailHtml,
+            });
+            
+            if (result.error) {
+              console.error(`❌ [ADMIN] Email send failed:`, result.error);
+            } else {
+              console.log(`✅ [ADMIN] Email sent successfully: ${emailTemplate} to ${user.email} (ID: ${result.data?.id})`);
+            }
+            
+          } catch (templateError) {
+            console.error(`❌ [ADMIN] Template error:`, templateError);
+          }
+        } else {
+          console.log(`📧 [ADMIN] No email template for status: ${status}`);
+        }
         
       } catch (emailError) {
         console.error(`❌ [ADMIN] Error sending status change email for pitch ${id}:`, emailError);
