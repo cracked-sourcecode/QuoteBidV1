@@ -7154,12 +7154,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const targetIndustry = opportunityData.industry || 'Capital Markets';
         const matchingUsers = await storage.getUsersByIndustry(targetIndustry);
         
-        if (matchingUsers.length > 0) {
+        // FORCE TEST: Get sophia2 specifically to test email sending
+        const allUsers = await storage.getAllUsers();
+        const sophia2 = allUsers.find(u => u.email === 'sophia2@test.com' || u.username === 'sophia2');
+        const testUsers = sophia2 ? [sophia2] : matchingUsers;
+        
+        if (testUsers.length > 0) {
           const { Resend } = await import('resend');
           const resend = new Resend(process.env.RESEND_API_KEY);
           const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
           
-          const emailPromises = matchingUsers.map(async (user) => {
+          const emailPromises = testUsers.map(async (user) => {
             try {
               const fs = await import('fs');
               const path = await import('path');

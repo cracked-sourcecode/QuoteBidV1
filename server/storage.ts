@@ -146,10 +146,11 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUsersByIndustry(industry: string): Promise<User[]> {
-    return await getDb()
-      .select()
-      .from(users)
-      .where(sql`LOWER(${users.industry}) = LOWER(${industry})`);
+    const allUsers = await getDb().select().from(users);
+    return allUsers.filter(user => 
+      user.industry && 
+      user.industry.toLowerCase().trim() === industry.toLowerCase().trim()
+    );
   }
   
   async getAllUsers(): Promise<User[]> {
