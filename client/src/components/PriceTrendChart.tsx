@@ -264,25 +264,14 @@ export default function PriceTrendChart({
         <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-4 min-w-0">
           {priceStats && (
             <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-              <div className="flex items-center gap-2">
-                <div className={`text-2xl sm:text-3xl lg:text-4xl font-black transition-all duration-500 whitespace-nowrap ${
-                  theme === 'dark'
-                    ? isAnimating && live 
-                      ? 'text-transparent bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 bg-clip-text animate-pulse' 
-                      : hoveredPrice ? 'text-cyan-400' : 'text-emerald-400'
-                    : hoveredPrice ? 'text-blue-600' : 'text-green-600'
-                }`}>
-                  ${hoveredPrice || priceStats.current}
-                </div>
-                {hoveredPrice && (
-                  <div className={`text-xs px-2 py-1 rounded-full transition-all duration-300 ${
-                    theme === 'dark' 
-                      ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-400/20' 
-                      : 'bg-blue-50 text-blue-600 border border-blue-200'
-                  }`}>
-                    Interactive
-                  </div>
-                )}
+              <div className={`text-2xl sm:text-3xl lg:text-4xl font-black transition-all duration-500 whitespace-nowrap ${
+                theme === 'dark'
+                  ? isAnimating && live 
+                    ? 'text-transparent bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 bg-clip-text animate-pulse' 
+                    : 'text-emerald-400'
+                  : 'text-green-600'
+              }`}>
+                ${hoveredPrice || priceStats.current}
               </div>
               <div className={`flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm font-bold transition-all duration-500 whitespace-nowrap px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl ${
                 theme === 'dark'
