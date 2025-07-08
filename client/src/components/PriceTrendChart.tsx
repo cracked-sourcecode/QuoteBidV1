@@ -87,6 +87,8 @@ export default function PriceTrendChart({
   const [selectedTimeframe, setSelectedTimeframe] = useState(timeframes[5]); // Default to ALL
   const [isAnimating, setIsAnimating] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [hoveredPrice, setHoveredPrice] = useState<number | null>(null);
+  const [hoveredTime, setHoveredTime] = useState<string | null>(null);
 
   // Mobile detection for responsive chart styling
   useEffect(() => {
@@ -262,14 +264,25 @@ export default function PriceTrendChart({
         <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-4 min-w-0">
           {priceStats && (
             <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-              <div className={`text-2xl sm:text-3xl lg:text-4xl font-black transition-all duration-500 whitespace-nowrap ${
-                theme === 'dark'
-                  ? isAnimating && live 
-                    ? 'text-transparent bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 bg-clip-text animate-pulse' 
-                    : 'text-emerald-400'
-                  : 'text-green-600'
-              }`}>
-                ${priceStats.current}
+              <div className="flex items-center gap-2">
+                <div className={`text-2xl sm:text-3xl lg:text-4xl font-black transition-all duration-500 whitespace-nowrap ${
+                  theme === 'dark'
+                    ? isAnimating && live 
+                      ? 'text-transparent bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 bg-clip-text animate-pulse' 
+                      : hoveredPrice ? 'text-cyan-400' : 'text-emerald-400'
+                    : hoveredPrice ? 'text-blue-600' : 'text-green-600'
+                }`}>
+                  ${hoveredPrice || priceStats.current}
+                </div>
+                {hoveredPrice && (
+                  <div className={`text-xs px-2 py-1 rounded-full transition-all duration-300 ${
+                    theme === 'dark' 
+                      ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-400/20' 
+                      : 'bg-blue-50 text-blue-600 border border-blue-200'
+                  }`}>
+                    Interactive
+                  </div>
+                )}
               </div>
               <div className={`flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm font-bold transition-all duration-500 whitespace-nowrap px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl ${
                 theme === 'dark'
@@ -323,7 +336,20 @@ export default function PriceTrendChart({
           : 'bg-white border-gray-200 shadow-gray-300/50'
       }`}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: isMobile ? 15 : 10, right: isMobile ? 5 : 5, left: isMobile ? -20 : -25, bottom: isMobile ? 0 : -5 }}>
+          <AreaChart 
+            data={chartData} 
+            margin={{ top: isMobile ? 15 : 10, right: isMobile ? 5 : 5, left: isMobile ? -20 : -25, bottom: isMobile ? 0 : -5 }}
+            onMouseMove={(e: any) => {
+              if (e && e.activePayload && e.activePayload[0]) {
+                setHoveredPrice(e.activePayload[0].payload.price);
+                setHoveredTime(e.activePayload[0].payload.fullTime);
+              }
+            }}
+            onMouseLeave={() => {
+              setHoveredPrice(null);
+              setHoveredTime(null);
+            }}
+          >
             <defs>
               {/* Gradient definitions for different price trends - themed */}
               <linearGradient id={theme === 'dark' ? "bullishGradient" : "bullishGradientLight"} x1="0" y1="0" x2="0" y2="1">
