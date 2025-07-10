@@ -4,6 +4,7 @@ export const INDUSTRY_OPTIONS = [
   { value: "Capital Markets", label: "Capital Markets" },
   { value: "Crypto", label: "Crypto" },
   { value: "Culinary", label: "Culinary" },
+  { value: "Doctor", label: "Doctor" },
   { value: "Fitness", label: "Fitness" },
   { value: "Law", label: "Law" },
   { value: "Mortgage", label: "Mortgage" },

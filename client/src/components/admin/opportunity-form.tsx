@@ -16,22 +16,7 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Publication } from "@shared/schema";
-
-// Industry options based on the screenshot
-const industryOptions = [
-  "Capital Markets",
-  "Crypto",
-  "Accounting",
-  "Mortgage",
-  "Culinary",
-  "Fitness",
-  "Politics",
-  "Real Estate",
-  "Technology",
-  "Healthcare",
-  "Education",
-  "Entertainment"
-];
+import { INDUSTRY_OPTIONS } from "@/lib/constants";
 
 // Request types based on the screenshot
 const requestTypeOptions = [
@@ -250,9 +235,9 @@ export function OpportunityForm({ onSubmit, isEdit = false, defaultValues }: Opp
                           <SelectValue placeholder="Select industry" />
                         </SelectTrigger>
                         <SelectContent>
-                          {industryOptions.map((industry) => (
-                            <SelectItem key={industry} value={industry}>
-                              {industry}
+                          {INDUSTRY_OPTIONS.map((industry) => (
+                            <SelectItem key={industry.value} value={industry.value}>
+                              {industry.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
