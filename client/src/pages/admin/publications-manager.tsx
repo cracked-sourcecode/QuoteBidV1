@@ -77,6 +77,8 @@ const publicationFormSchema = z.object({
   }),
   logo: z.string().min(1, {
     message: "Logo is required."
+  }).refine((val) => val === 'pending-upload' || val.startsWith('http'), {
+    message: "Logo must be a valid URL."
   }),
   website: z.string().url({
     message: "Website must be a valid URL."
@@ -195,7 +197,8 @@ export default function PublicationsManager() {
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
   const [currentPublication, setCurrentPublication] = useState<Publication | null>(null);
   const [selectedAnalytics, setSelectedAnalytics] = useState<PublicationAnalytics | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const createFileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -335,6 +338,7 @@ export default function PublicationsManager() {
       category: '',
       tier: '',
     },
+    mode: 'onChange',
   });
 
   // Handle logo file selection
@@ -353,8 +357,9 @@ export default function PublicationsManager() {
           variant: "destructive"
         });
         // Reset file input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+        const fileInput = isCreateDialogOpen ? createFileInputRef.current : editFileInputRef.current;
+        if (fileInput) {
+          fileInput.value = '';
         }
         return;
       }
@@ -367,8 +372,9 @@ export default function PublicationsManager() {
           variant: "destructive"
         });
         // Reset file input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+        const fileInput = isCreateDialogOpen ? createFileInputRef.current : editFileInputRef.current;
+        if (fileInput) {
+          fileInput.value = '';
         }
         return;
       }
@@ -383,8 +389,9 @@ export default function PublicationsManager() {
             variant: "destructive"
           });
           // Reset file input
-          if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+          const fileInput = isCreateDialogOpen ? createFileInputRef.current : editFileInputRef.current;
+          if (fileInput) {
+            fileInput.value = '';
           }
           return;
         }
@@ -417,8 +424,9 @@ export default function PublicationsManager() {
           variant: "destructive"
         });
         // Reset file input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+        const fileInput = isCreateDialogOpen ? createFileInputRef.current : editFileInputRef.current;
+        if (fileInput) {
+          fileInput.value = '';
         }
       };
       
@@ -1111,8 +1119,8 @@ export default function PublicationsManager() {
                             onClick={() => {
                               setLogoPreview(null);
                               setLogoFile(null);
-                              if (fileInputRef.current) {
-                                fileInputRef.current.value = '';
+                              if (createFileInputRef.current) {
+                                createFileInputRef.current.value = '';
                               }
                             }}
                           >
@@ -1130,10 +1138,10 @@ export default function PublicationsManager() {
                             type="button" 
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
                             onClick={() => {
-                              if (fileInputRef.current) {
-                                fileInputRef.current.value = '';
+                              if (createFileInputRef.current) {
+                                createFileInputRef.current.value = '';
                               }
-                              fileInputRef.current?.click();
+                              createFileInputRef.current?.click();
                             }}
                           >
                             Select File
@@ -1143,11 +1151,16 @@ export default function PublicationsManager() {
                     )}
                     
                     <Input 
-                      ref={fileInputRef}
+                      ref={createFileInputRef}
                       type="file" 
                       accept="image/png"
                       className="hidden" 
-                      onChange={handleFileChange}
+                      onChange={(e) => {
+                        // Clear any existing file selection and process the new one
+                        if (createFileInputRef.current && e.target.files?.[0]) {
+                          handleFileChange(e);
+                        }
+                      }}
                     />
                     <input type="hidden" {...createForm.register('logo')} />
                     
@@ -1324,10 +1337,10 @@ export default function PublicationsManager() {
                             type="button" 
                           className="mt-3 text-sm text-blue-400 hover:text-blue-300 font-medium"
                             onClick={() => {
-                              if (fileInputRef.current) {
-                                fileInputRef.current.value = '';
+                              if (editFileInputRef.current) {
+                                editFileInputRef.current.value = '';
                               }
-                              fileInputRef.current?.click();
+                              editFileInputRef.current?.click();
                             }}
                           >
                             Change Logo
@@ -1344,10 +1357,10 @@ export default function PublicationsManager() {
                             type="button" 
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
                             onClick={() => {
-                              if (fileInputRef.current) {
-                                fileInputRef.current.value = '';
+                              if (editFileInputRef.current) {
+                                editFileInputRef.current.value = '';
                               }
-                              fileInputRef.current?.click();
+                              editFileInputRef.current?.click();
                             }}
                           >
                             Select File
@@ -1357,7 +1370,7 @@ export default function PublicationsManager() {
                     )}
                     
                     <Input 
-                      ref={fileInputRef}
+                      ref={editFileInputRef}
                       type="file" 
                       accept="image/png"
                       className="hidden" 
