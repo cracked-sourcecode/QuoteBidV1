@@ -24,11 +24,15 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./db";
 import { checkUnique } from "./routes/public/checkUnique";
+import { startEmailScheduler } from "./jobs/emailScheduler";
 import path from 'path';
 import cors from 'cors';
 
 // Initialize database connection
 initializeDatabase();
+
+// Start email scheduler background job
+startEmailScheduler();
 
 const app = express();
 

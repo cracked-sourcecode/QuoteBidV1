@@ -123,6 +123,10 @@ export const opportunities = pgTable("opportunities", {
   meta: jsonb("meta"),
   lastDriftAt: bigint("last_drift_at", { mode: "bigint" }),
   last_price_update: timestamp("last_price_update").defaultNow(),
+  // Email scheduling columns (added to fix server restart email loss)
+  email_scheduled_at: timestamp("email_scheduled_at"),
+  email_sent_at: timestamp("email_sent_at"),
+  email_send_attempted: boolean("email_send_attempted").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

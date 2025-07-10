@@ -7196,44 +7196,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const newOpportunity = await storage.createOpportunity(opportunityData);
       console.log("Created opportunity:", JSON.stringify(newOpportunity));
       
-      // 📧 EMAIL SERVICE WITH PROPER TEMPLATE AND ALL DB DATA
-      const usersToEmail = await getDb()
-        .select({ 
-          email: users.email, 
-          fullName: users.fullName, 
-          username: users.username 
-        })
-        .from(users)
-        .where(eq(users.industry, opportunityData.industry));
-      
-      if (usersToEmail.length > 0) {
-        const fs = await import('fs');
-        const path = await import('path');
-        const frontendUrl = process.env.FRONTEND_URL || 'https://quotebid.co';
-        
-        for (const user of usersToEmail) {
-          // Load and render HTML email template manually like draft reminder
-          const templatePath = path.join(process.cwd(), 'server/email-templates/new-opportunity-alert.html');
-          let emailHtml = fs.readFileSync(templatePath, 'utf8');
-          
-          // Replace template variables
-          emailHtml = emailHtml
-            .replace(/\{\{userFirstName\}\}/g, user.fullName?.split(' ')[0] || user.username || 'Expert')
-            .replace(/\{\{publicationType\}\}/g, publication?.name || 'Publication')
-            .replace(/\{\{title\}\}/g, newOpportunity.title)
-            .replace(/\{\{requestType\}\}/g, opportunityData.requestType || 'Expert Request')
-            .replace(/\{\{bidDeadline\}\}/g, '7 days left')
-            .replace(/\{\{opportunityId\}\}/g, newOpportunity.id.toString())
-            .replace(/\{\{frontendUrl\}\}/g, frontendUrl);
-          
-          // Send email using Resend directly like draft reminder
-          await resend.emails.send({
-            from: 'QuoteBid <noreply@quotebid.co>',
-            to: user.email,
-            subject: 'New Opportunity Alert! 🔥',
-            html: emailHtml,
-          });
-        }
+      // 📧 SCHEDULE EMAIL ALERT (7-minute delay to prevent front-running)
+      try {
+        const { scheduleOpportunityEmail } = await import('./jobs/emailScheduler');
+        await scheduleOpportunityEmail(newOpportunity.id, 7);
+        console.log(`📅 Scheduled email alert for opportunity ${newOpportunity.id} with 7-minute delay`);
+      } catch (emailError) {
+        console.error('Failed to schedule opportunity email:', emailError);
+        // Don't fail the opportunity creation if email scheduling fails
       }
       
       // Return the created opportunity with publication data
