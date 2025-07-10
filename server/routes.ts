@@ -2504,8 +2504,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: oppWithPub.title,
         outlet: oppWithPub.publication.name,
         outletLogo: oppWithPub.publication.logo ? 
-          // Convert absolute URLs to relative URLs
-          oppWithPub.publication.logo.replace(/^https?:\/\/[^\/]+/, '') : null,
+          // Convert absolute URLs to relative URLs and handle various formats
+          (() => {
+            let logo = oppWithPub.publication.logo;
+            // Remove any absolute domain (localhost or production)
+            logo = logo.replace(/^https?:\/\/[^\/]+/, '');
+            // Ensure it starts with / for proper relative URL
+            if (logo && !logo.startsWith('/')) {
+              logo = '/' + logo;
+            }
+            return logo;
+          })() : null,
         tier: oppWithPub.tier ? parseInt(oppWithPub.tier.replace('Tier ', '')) as 1 | 2 | 3 : 1,
         status: oppWithPub.status as 'open' | 'closed',
         summary: oppWithPub.description || '',

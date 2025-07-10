@@ -243,7 +243,7 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
     setLogoLoaded(false);
   };
 
-    // Logo URL computation - mobile-compatible with localhost detection
+    // Logo URL computation - robust URL handling for all environments
   const logoUrl = useMemo(() => {
     const logo = outletLogo;
     
@@ -251,19 +251,25 @@ export default function OpportunityCard({ opportunity, isPriority = false }: Opp
       return '';
     }
     
-    // Convert localhost URLs to relative paths for mobile compatibility
-    if (logo.startsWith('http://localhost:5050/')) {
-      const relativePath = logo.replace('http://localhost:5050', '');
-      return `${window.location.origin}${relativePath}`;
-    }
-    
-    // Handle other URLs normally
-    if (logo.startsWith('http') || logo.startsWith('data:')) {
+    // Handle data URLs (SVG, base64, etc.)
+    if (logo.startsWith('data:')) {
       return logo;
     }
     
-    // Handle relative paths
-    return `${window.location.origin}${logo}`;
+    // Handle absolute HTTP/HTTPS URLs (external logos)
+    if (logo.startsWith('http://') || logo.startsWith('https://')) {
+      // For localhost URLs, convert to current origin to handle dev/prod differences
+      if (logo.includes('localhost:5050') || logo.includes('localhost:5051')) {
+        const relativePath = logo.replace(/^https?:\/\/[^\/]+/, '');
+        return `${window.location.origin}${relativePath}`;
+      }
+      // For other absolute URLs, use as-is
+      return logo;
+    }
+    
+    // Handle relative paths (ensure they start with /)
+    const relativePath = logo.startsWith('/') ? logo : `/${logo}`;
+    return `${window.location.origin}${relativePath}`;
   }, [outletLogo]);
 
   // Use default tick interval (no need to fetch admin config for regular users)
