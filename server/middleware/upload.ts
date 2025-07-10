@@ -43,13 +43,23 @@ const storage = multer.diskStorage({
 
 // File filter to only allow images
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  // Accept images based on MIME type rather than just file extension
-  if (!file.mimetype.startsWith('image/')) {
-    console.log(`Rejected file upload: ${file.originalname} with MIME type ${file.mimetype}`);
-    return cb(new Error('Only image files are allowed!'));
+  // For publication logos, enforce PNG only
+  if (req.path.includes('/publication-logo')) {
+    if (file.mimetype !== 'image/png') {
+      console.log(`Rejected publication logo: ${file.originalname} with MIME type ${file.mimetype} (PNG required)`);
+      return cb(new Error('Publication logos must be PNG format!'));
+    }
+    console.log(`Accepted PNG publication logo: ${file.originalname}`);
+    cb(null, true);
+  } else {
+    // For other uploads (avatars, etc.), accept any image
+    if (!file.mimetype.startsWith('image/')) {
+      console.log(`Rejected file upload: ${file.originalname} with MIME type ${file.mimetype}`);
+      return cb(new Error('Only image files are allowed!'));
+    }
+    console.log(`Accepted file upload: ${file.originalname} with MIME type ${file.mimetype}`);
+    cb(null, true);
   }
-  console.log(`Accepted file upload: ${file.originalname} with MIME type ${file.mimetype}`);
-  cb(null, true);
 };
 
 // Create the multer instance

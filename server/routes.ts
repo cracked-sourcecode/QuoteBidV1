@@ -35,6 +35,7 @@ import upload from './middleware/upload';
 import pdfUpload from './middleware/pdfUpload';
 import path from 'path';
 import fs from 'fs';
+import sizeOf from 'image-size';
 import { saveAgreementPDF, regenerateAgreementsPDF, createAgreementPDF, generateProfessionalPDF } from './pdf-utils';
 import { serveAgreementPDF, handleAgreementUpload } from './handlers/agreement-handlers';
 import { handleGeneratePDF, handleSignupAgreementUpload, serveAgreementHTML } from './handlers/signup-wizard-handlers';
@@ -2801,6 +2802,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Processing publication logo upload:', req.file.filename);
       
+      // Check image dimensions
+      const imageBuffer = fs.readFileSync(req.file.path);
+      const dimensions = sizeOf(imageBuffer);
+      
+      if (!dimensions.width || !dimensions.height) {
+        // Clean up uploaded file
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ 
+          message: 'Invalid image file - could not read dimensions' 
+        });
+      }
+      
+      if (dimensions.width !== 200 || dimensions.height !== 200) {
+        // Clean up uploaded file
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ 
+          message: `Invalid image dimensions. Required: 200x200 pixels, Received: ${dimensions.width}x${dimensions.height} pixels` 
+        });
+      }
+      
+      console.log(`✅ Image validation passed: ${dimensions.width}x${dimensions.height} PNG`);
+      
       // Generate the URL for the uploaded file
       const baseUrl = `${req.protocol}://${req.get('host')}`;
       const fileUrl = `${baseUrl}/uploads/publications/${req.file.filename}`;
@@ -2812,6 +2835,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fileUrl: fileUrl 
       });
     } catch (error: any) {
+      // Clean up uploaded file on error
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
       console.error('Failed to process publication logo:', error);
       res.status(500).json({ message: 'Failed to upload file', error: error.message });
     }
