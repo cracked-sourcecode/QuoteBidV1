@@ -23,7 +23,8 @@
     "full-stack:mobile": "concurrently \"FRONTEND_URL=http://192.168.1.121:5051 EMAIL_FROM='QuoteBid <no-reply@quotebid.co>' npm run dev:mobile\" \"npm run ws\" \"npm run worker:dev\"",
     "full-stack:production": "concurrently \"npm start\" \"node dist/wsServer.js\" \"node dist/pricingWorker.js\"",
     "full-stack:simple": "node start-production.cjs",
-    "check-services": "npx tsx check-services.ts"
+    "check-services": "npx tsx check-services.ts",
+    "postinstall": "npm rebuild sharp --platform=linux --arch=x64 || npm rebuild sharp || echo 'Sharp rebuild failed, using fallback'"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.2",

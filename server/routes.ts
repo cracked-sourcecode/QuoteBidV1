@@ -2801,7 +2801,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Processing publication logo upload:', req.file.filename);
       
-      // Import sharp dynamically for ES module compatibility
+      // Import sharp for image resizing
       const { default: sharp } = await import('sharp');
       
       // Get original file path
