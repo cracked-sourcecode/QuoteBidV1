@@ -7,11 +7,16 @@ let storage: Storage;
 
 if (process.env.GOOGLE_CLOUD_PROJECT_ID && process.env.GOOGLE_CLOUD_PRIVATE_KEY && process.env.GOOGLE_CLOUD_CLIENT_EMAIL) {
   // Render: Use individual environment variables
+  // Fix private key formatting - replace literal \n with actual newlines
+  const privateKey = process.env.GOOGLE_CLOUD_PRIVATE_KEY
+    .replace(/\\n/g, '\n')
+    .replace(/"/g, ''); // Remove any quotes
+  
   const credentials = {
     type: 'service_account',
     project_id: process.env.GOOGLE_CLOUD_PROJECT_ID,
     private_key_id: process.env.GOOGLE_CLOUD_PRIVATE_KEY_ID,
-    private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    private_key: privateKey,
     client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
     client_id: process.env.GOOGLE_CLOUD_CLIENT_ID,
     auth_uri: 'https://accounts.google.com/o/oauth2/auth',
@@ -21,6 +26,10 @@ if (process.env.GOOGLE_CLOUD_PROJECT_ID && process.env.GOOGLE_CLOUD_PRIVATE_KEY 
     universe_domain: 'googleapis.com'
   };
   
+  console.log('🔑 Using individual environment variables for GCS auth');
+  console.log('📧 Client email:', process.env.GOOGLE_CLOUD_CLIENT_EMAIL);
+  console.log('🆔 Project ID:', process.env.GOOGLE_CLOUD_PROJECT_ID);
+  
   storage = new Storage({
     projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
     credentials: credentials,
@@ -28,12 +37,14 @@ if (process.env.GOOGLE_CLOUD_PROJECT_ID && process.env.GOOGLE_CLOUD_PRIVATE_KEY 
 } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
   // Fallback: Use JSON credentials from environment variable
   const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+  console.log('🔑 Using JSON blob for GCS auth');
   storage = new Storage({
     projectId: 'ecstatic-valve-465521-v6',
     credentials: credentials,
   });
 } else {
   // Local development or Cloud Run: Use Application Default Credentials
+  console.log('🔑 Using Application Default Credentials for GCS auth');
   storage = new Storage({
     projectId: 'ecstatic-valve-465521-v6',
   });
