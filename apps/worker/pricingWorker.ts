@@ -521,29 +521,29 @@ async function processPricingTick(): Promise<void> {
         // 2. Ambient decay during cooldown (prevents flat periods)
         // 3. Price decreases during cooldown (market pressure)
         if (!isInCooldown || (isInCooldown && (isPriceDecrease || isAmbientDecay))) {
-          // Check gatekeeper rule
-          if (shouldSkipGPT(priceDelta, snapshot.hoursRemaining, pricingConfig.priceStep)) {
-            // Apply price change directly (now with V2 metadata)
-            await updateOpportunityPrice(opp.id, newPrice, snapshot, "worker");
-            updatedCount++;
-            
-            // Calculate band for logging
-            const anchor = snapshot.outlet_avg_price ?? (snapshot.tier === 1 ? 250 : snapshot.tier === 2 ? 175 : 125);
-            const bandFloor = Math.max(pricingConfig.floor, 0.6 * anchor);
-            const bandCeil = Math.min(pricingConfig.ceil, 2.0 * anchor);
-            
-            const direction = priceDelta > 0 ? "▲" : "▼";
+        // Check gatekeeper rule
+        if (shouldSkipGPT(priceDelta, snapshot.hoursRemaining, pricingConfig.priceStep)) {
+          // Apply price change directly (now with V2 metadata)
+          await updateOpportunityPrice(opp.id, newPrice, snapshot, "worker");
+          updatedCount++;
+          
+          // Calculate band for logging
+          const anchor = snapshot.outlet_avg_price ?? (snapshot.tier === 1 ? 250 : snapshot.tier === 2 ? 175 : 125);
+          const bandFloor = Math.max(pricingConfig.floor, 0.6 * anchor);
+          const bandCeil = Math.min(pricingConfig.ceil, 2.0 * anchor);
+          
+          const direction = priceDelta > 0 ? "▲" : "▼";
             const cooldownSuffix = isInCooldown ? " [ambient decay]" : "";
             console.log(`💰 OPP ${opp.id} → $${newPrice} (${direction}$${Math.abs(priceDelta)}) (band ${bandFloor}-${bandCeil}) [V2 direct] score: ${pricingResult.meta.score.toFixed(2)}${cooldownSuffix}`);
-          } else {
+        } else {
             // Queue for GPT decision (only if not in cooldown for demand-driven increases)
             if (!isInCooldown) {
-              gptBatch.push({
-                ...snapshot,
-                current_price: newPrice, // Include the suggested new price
-              });
-              skippedCount++;
-              console.log(`🤖 OPP ${opp.id} → $${newPrice} (queued for GPT) score: ${pricingResult.meta.score.toFixed(2)}`);
+          gptBatch.push({
+            ...snapshot,
+            current_price: newPrice, // Include the suggested new price
+          });
+          skippedCount++;
+          console.log(`🤖 OPP ${opp.id} → $${newPrice} (queued for GPT) score: ${pricingResult.meta.score.toFixed(2)}`);
             } else {
               console.log(`⏳  OPP ${opp.id} skipped – demand-driven increase blocked by cooldown (${cooldownMinutes} min)`);
             }

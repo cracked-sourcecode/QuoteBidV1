@@ -32,6 +32,7 @@ import { ensureAuth } from "./middleware/ensureAuth";
 import { updatePrices } from './jobs/updatePrices';
 
 import upload from './middleware/upload';
+import gcsUpload from './middleware/gcs-upload';
 import pdfUpload from './middleware/pdfUpload';
 import path from 'path';
 import fs from 'fs';
@@ -2803,7 +2804,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Upload publication logo
-  app.post('/api/upload/publication-logo', requireAdminAuth, upload.single('logo'), async (req, res) => {
+  app.post('/api/upload/publication-logo', requireAdminAuth, gcsUpload.single('logo'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
@@ -2833,11 +2834,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`✅ Image validation passed: ${dimensions.width}x${dimensions.height} PNG`);
       
-      // Generate the URL for the uploaded file
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const fileUrl = `${baseUrl}/uploads/publications/${req.file.filename}`;
+      // Google Cloud Storage URL is already provided in req.file.path
+      const fileUrl = req.file.path;
       
-      console.log('Publication logo uploaded successfully:', fileUrl);
+      console.log('Publication logo uploaded successfully to GCS:', fileUrl);
       
       res.status(200).json({ 
         message: 'File uploaded successfully',
