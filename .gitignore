@@ -3,3 +3,8 @@ node_modules/
 dist/
 .DS_Store
 .env.backup
+
+# Google Cloud Service Account Keys (NEVER COMMIT!)
+*.json
+ecstatic-valve-*.json
+service-account-*.json

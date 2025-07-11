@@ -3,9 +3,21 @@ import { Storage } from '@google-cloud/storage';
 import { Request } from 'express';
 
 // Initialize Google Cloud Storage
-const storage = new Storage({
-  projectId: 'ecstatic-valve-465521-v6', // Your project ID
-});
+let storage: Storage;
+
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+  // Render: Use JSON credentials from environment variable
+  const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+  storage = new Storage({
+    projectId: 'ecstatic-valve-465521-v6',
+    credentials: credentials,
+  });
+} else {
+  // Local development or Cloud Run: Use Application Default Credentials
+  storage = new Storage({
+    projectId: 'ecstatic-valve-465521-v6',
+  });
+}
 
 const bucket = storage.bucket('quotebid-uploads');
 
