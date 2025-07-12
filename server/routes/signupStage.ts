@@ -10,6 +10,7 @@ import multer from 'multer';
 import jwt from 'jsonwebtoken';
 import PDFDocument from 'pdfkit';
 import { hashPassword } from '../utils/passwordUtils';
+import gcsUpload from '../middleware/gcs-upload';
 
 // Initialize Stripe client
 function getStripeClient() {
@@ -383,7 +384,7 @@ function determineSignupStage(user: any) {
 }
 
 // Handle avatar uploads
-router.post('/:email/avatar', upload.single('avatar'), async (req: Request, res: Response) => {
+router.post('/:email/avatar', gcsUpload.single('avatar'), async (req: Request, res: Response) => {
   try {
     const { email } = req.params;
     const file = req.file;
@@ -406,15 +407,15 @@ router.post('/:email/avatar', upload.single('avatar'), async (req: Request, res:
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Save the avatar path to the user record
-    const avatarPath = `/uploads/avatars/${file.filename}`;
+    // GCS upload returns the public URL in req.file.path
+    const gcsUrl = req.file!.path;
     
     await getDb()
       .update(users)
-      .set({ avatar: avatarPath })
+      .set({ avatar: gcsUrl })
       .where(eq(users.id, user.id));
     
-    return res.status(200).json({ success: true, path: avatarPath });
+    return res.status(200).json({ success: true, path: gcsUrl });
   } catch (error) {
     console.error('Error uploading avatar:', error);
     return res.status(500).json({ message: 'Internal server error', success: false });
