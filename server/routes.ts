@@ -2874,14 +2874,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Processing publication logo upload:', req.file.filename);
       
       // Image dimensions are validated in the GCS middleware before upload
-      // Google Cloud Storage URL is already provided in req.file.path
-      const fileUrl = req.file.path;
+      // Convert GCS URL to our proxy URL
+      // req.file.filename contains the full path like "publications/1752334924284-266664280.png"
+      const fullPath = req.file.filename;
+      const filename = fullPath.split('/').pop(); // Extract just the filename
+      const proxyUrl = `/uploads/publications/${filename}`;
       
-      console.log('Publication logo uploaded successfully to GCS:', fileUrl);
+      console.log('Publication logo uploaded successfully to GCS:', req.file.path);
+      console.log('Serving via proxy URL:', proxyUrl);
       
       res.status(200).json({ 
         message: 'File uploaded successfully',
-        fileUrl: fileUrl 
+        fileUrl: proxyUrl  // Return proxy URL instead of direct GCS URL
       });
     } catch (error: any) {
       // Note: File cleanup is handled by GCS middleware for cloud storage
