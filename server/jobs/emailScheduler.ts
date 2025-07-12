@@ -15,162 +15,61 @@ export function computeEmailDelay(): number {
 }
 
 export function startEmailScheduler() {
-  console.log('📧 Starting email scheduler background job...');
-  
-  // Check for pending emails every minute
-  schedulerInterval = setInterval(async () => {
-    await checkAndSendPendingEmails();
-  }, 60000); // 60 seconds
-
-  // Also run immediately on startup to catch any emails that should have been sent
-  setTimeout(async () => {
-    await checkAndSendPendingEmails();
-  }, 5000); // Wait 5 seconds for server to be ready
+  console.log('📧 Email scheduler disabled - emails send immediately on creation');
+  // SCHEDULER DISABLED - No background processing
+  // Emails are sent immediately when opportunities are created
 }
 
 export function stopEmailScheduler() {
-  if (schedulerInterval) {
-    clearInterval(schedulerInterval);
-    schedulerInterval = null;
-    console.log('📧 Email scheduler stopped');
-  }
+  console.log('📧 Email scheduler was already disabled');
 }
 
-async function checkAndSendPendingEmails() {
-  try {
-    const now = new Date();
-    const tenMinutesAgo = new Date(now.getTime() - (10 * 60 * 1000));
-    const db = getDb();
-    
-    // Find opportunities that need emails sent:
-    // 1. Regular scheduled emails: email_scheduled_at <= now AND email_sent_at IS NULL AND email_send_attempted = false
-    // 2. FAIL-SAFE: email_scheduled_at IS NULL AND email_sent_at IS NULL AND created_at <= 10 minutes ago
-    const pendingOpportunities = await db
-      .select()
-      .from(opportunities)
-      .where(
-        or(
-          // Regular scheduled emails that are due
-          and(
-            lt(opportunities.email_scheduled_at, now),
-            isNull(opportunities.email_sent_at),
-            eq(opportunities.email_send_attempted, false)
-          ),
-          // FAIL-SAFE: opportunities that were never scheduled but are older than 10 minutes
-          and(
-            isNull(opportunities.email_scheduled_at),
-            isNull(opportunities.email_sent_at),
-            lt(opportunities.createdAt, tenMinutesAgo)
-          )
-        )
-      );
-
-    if (pendingOpportunities.length === 0) {
-      // Only log if we're in development mode to avoid spam
-      if (process.env.NODE_ENV === 'development') {
-        console.log('📧 No pending emails to send');
-      }
-      return;
-    }
-
-    console.log(`📧 Found ${pendingOpportunities.length} pending opportunity emails to send`);
-
-    // Process each opportunity
-    for (const opportunity of pendingOpportunities) {
-      await processPendingEmail(opportunity);
-    }
-
-  } catch (error) {
-    console.error('❌ Error in email scheduler:', error);
-  }
-}
-
-async function processPendingEmail(opportunity: any) {
-  try {
-    console.log(`📧 Processing email for opportunity ID ${opportunity.id}: "${opportunity.title}"`);
-
-    const db = getDb();
-    
-    // Mark as attempted immediately to prevent duplicate processing
-    await db
-      .update(opportunities)
-      .set({ email_send_attempted: true })
-      .where(eq(opportunities.id, opportunity.id));
-
-    // Send the email alerts to matching users
-    await sendOpportunityEmails(opportunity.id);
-
-    // Mark as sent successfully
-    await db
-      .update(opportunities)
-      .set({ email_sent_at: new Date() })
-      .where(eq(opportunities.id, opportunity.id));
-
-    console.log(`✅ Email sent successfully for opportunity ID ${opportunity.id}`);
-
-  } catch (error) {
-    console.error(`❌ Failed to send email for opportunity ID ${opportunity.id}:`, error);
-    
-    // Note: We keep email_send_attempted = true to prevent retries
-    // You could implement retry logic here if needed
-  }
-}
-
-// Helper function to schedule an email for a new opportunity
+// Helper function to send an email for a new opportunity (immediately, no scheduling)
 export async function scheduleOpportunityEmail(opportunityId: number, delayMinutes: number = computeEmailDelay()) {
   try {
-    // DEVELOPMENT MODE: Send immediately for faster testing
-    if (delayMinutes === 0) {
-      console.log(`🚀 DEVELOPMENT MODE: Sending opportunity alert immediately for ID ${opportunityId}`);
-      
-      const db = getDb();
-      
-      // Mark as scheduled for now in database
-      await db
-        .update(opportunities)
-        .set({ 
-          email_scheduled_at: new Date(), // Schedule for immediate send
-          email_send_attempted: false,
-          email_sent_at: null 
-        })
-        .where(eq(opportunities.id, opportunityId));
-      
-      // Send immediately
-      try {
-        await sendOpportunityEmails(opportunityId);
-        
-        // Mark as sent
-        await db
-          .update(opportunities)
-          .set({ email_sent_at: new Date() })
-          .where(eq(opportunities.id, opportunityId));
-          
-        console.log(`✅ Development email sent immediately for opportunity ID ${opportunityId}`);
-      } catch (emailError) {
-        console.error(`❌ Immediate send failed for ID ${opportunityId}:`, emailError);
-      }
+    console.log(`🚀 Sending opportunity email immediately for ID ${opportunityId}`);
+    
+    const db = getDb();
+    
+    // Check if email was already sent to prevent duplicates
+    const existing = await db
+      .select({ email_sent_at: opportunities.email_sent_at })
+      .from(opportunities)
+      .where(eq(opportunities.id, opportunityId))
+      .limit(1);
+    
+    if (existing[0]?.email_sent_at) {
+      console.log(`⚠️ Email already sent for opportunity ${opportunityId}, skipping`);
       return;
     }
     
-    // PRODUCTION MODE: Schedule with delay
-    const scheduledTime = new Date();
-    scheduledTime.setMinutes(scheduledTime.getMinutes() + delayMinutes);
-
-    const db = getDb();
-    
+    // Mark as sending to prevent race conditions
     await db
       .update(opportunities)
       .set({ 
-        email_scheduled_at: scheduledTime,
-        email_send_attempted: false,
-        email_sent_at: null 
+        email_send_attempted: true,
+        email_scheduled_at: new Date()
       })
       .where(eq(opportunities.id, opportunityId));
-
-    console.log(`📅 Email scheduled for opportunity ID ${opportunityId} to be sent at ${scheduledTime.toISOString()}`);
+    
+    // Send immediately
+    try {
+      await sendOpportunityEmails(opportunityId);
+      
+      // Mark as sent successfully
+      await db
+        .update(opportunities)
+        .set({ email_sent_at: new Date() })
+        .where(eq(opportunities.id, opportunityId));
+        
+      console.log(`✅ Email sent immediately for opportunity ID ${opportunityId}`);
+    } catch (emailError) {
+      console.error(`❌ Immediate send failed for ID ${opportunityId}:`, emailError);
+      // Keep email_send_attempted = true to prevent retries
+    }
     
   } catch (error) {
-    console.error(`❌ Failed to schedule email for opportunity ID ${opportunityId}:`, error);
+    console.error(`❌ Failed to send email for opportunity ID ${opportunityId}:`, error);
   }
 }
 
