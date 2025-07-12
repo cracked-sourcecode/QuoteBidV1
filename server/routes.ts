@@ -33,6 +33,40 @@ import { updatePrices } from './jobs/updatePrices';
 
 import upload from './middleware/upload';
 import gcsUpload from './middleware/gcs-upload';
+import { Storage } from '@google-cloud/storage';
+
+// Initialize GCS storage for serving images
+let gcsStorage: Storage;
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+  gcsStorage = new Storage({
+    projectId: 'ecstatic-valve-465521-v6',
+    credentials: JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON),
+  });
+} else if (process.env.GOOGLE_CLOUD_PROJECT_ID && process.env.GOOGLE_CLOUD_PRIVATE_KEY && process.env.GOOGLE_CLOUD_CLIENT_EMAIL) {
+  const credentials = {
+    type: 'service_account',
+    project_id: process.env.GOOGLE_CLOUD_PROJECT_ID,
+    private_key_id: process.env.GOOGLE_CLOUD_PRIVATE_KEY_ID,
+    private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
+    client_id: process.env.GOOGLE_CLOUD_CLIENT_ID,
+    auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+    token_uri: 'https://oauth2.googleapis.com/token',
+    auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
+    client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${process.env.GOOGLE_CLOUD_CLIENT_EMAIL}`,
+    universe_domain: 'googleapis.com'
+  };
+  gcsStorage = new Storage({
+    projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+    credentials: credentials,
+  });
+} else {
+  gcsStorage = new Storage({
+    projectId: 'ecstatic-valve-465521-v6',
+  });
+}
+
+const bucket = gcsStorage.bucket('quotebid-uploads');
 import pdfUpload from './middleware/pdfUpload';
 import path from 'path';
 import fs from 'fs';
@@ -2793,14 +2827,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Serve uploaded publication logos
-  app.use('/uploads/publications', (req, res, next) => {
-    const filePath = path.join(process.cwd(), 'uploads', 'publications', req.path);
-    res.sendFile(filePath, (err) => {
-      if (err) {
-        next();
+  // Serve uploaded publication logos from GCS
+  app.get('/uploads/publications/:filename', async (req, res) => {
+    try {
+      const filename = req.params.filename;
+      const gcsFile = bucket.file(`publications/${filename}`);
+      
+      // Check if file exists
+      const [exists] = await gcsFile.exists();
+      if (!exists) {
+        return res.status(404).json({ message: 'Image not found' });
       }
-    });
+      
+      // Get file metadata for content type
+      const [metadata] = await gcsFile.getMetadata();
+      const contentType = metadata.contentType || 'image/png';
+      
+      // Set appropriate headers
+      res.set('Content-Type', contentType);
+      res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+      
+      // Stream the file from GCS
+      const stream = gcsFile.createReadStream();
+      stream.pipe(res);
+      
+      stream.on('error', (err: any) => {
+        console.error('Error streaming file from GCS:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ message: 'Error serving image' });
+        }
+      });
+      
+    } catch (error) {
+      console.error('Error serving publication logo:', error);
+      res.status(500).json({ message: 'Error serving image' });
+    }
   });
   
   // Upload publication logo
