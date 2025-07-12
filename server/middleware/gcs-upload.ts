@@ -1,6 +1,7 @@
 import multer from 'multer';
 import { Storage } from '@google-cloud/storage';
 import { Request } from 'express';
+import sizeOf from 'image-size';
 
 // Initialize Google Cloud Storage
 let storage: Storage;
@@ -106,30 +107,79 @@ class GoogleCloudStorage implements multer.StorageEngine {
     const extension = file.originalname.split('.').pop();
     const filename = `${folder}/${uniqueSuffix}.${extension}`;
 
-    // Create a write stream to Google Cloud Storage
-    const gcsFile = bucket.file(filename);
-    const stream = gcsFile.createWriteStream({
-      metadata: {
-        contentType: file.mimetype,
-      },
-    });
-
-    stream.on('error', (err) => {
-      cb(err);
-    });
-
-    stream.on('finish', () => {
-      // File uploaded successfully
-      const publicUrl = `https://storage.googleapis.com/quotebid-uploads/${filename}`;
+    // For publication logos, validate dimensions before upload
+    if (req.path.includes('/publication-logo')) {
+      // Buffer the incoming file data for validation
+      const chunks: Buffer[] = [];
       
-      cb(null, {
-        filename: filename,
-        path: publicUrl,
+      file.stream.on('data', (chunk) => {
+        chunks.push(chunk);
       });
-    });
+      
+      file.stream.on('end', () => {
+        const imageBuffer = Buffer.concat(chunks);
+        
+        try {
+          // Validate image dimensions
+          const dimensions = sizeOf(imageBuffer);
+          
+          if (!dimensions.width || !dimensions.height) {
+            return cb(new Error('Invalid image file - could not read dimensions'));
+          }
+          
+          if (dimensions.width !== 200 || dimensions.height !== 200) {
+            return cb(new Error(`Invalid image dimensions. Required: 200x200 pixels, Received: ${dimensions.width}x${dimensions.height} pixels`));
+          }
+          
+          console.log(`✅ Publication logo validation passed: ${dimensions.width}x${dimensions.height} PNG`);
+          
+          // Now upload to GCS
+          uploadToGCS(imageBuffer, filename, file.mimetype, cb);
+          
+        } catch (error) {
+          return cb(new Error('Failed to validate image dimensions'));
+        }
+      });
+      
+      file.stream.on('error', (err) => {
+        cb(err);
+      });
+    } else {
+      // For other uploads (avatars, etc.), upload directly
+      uploadToGCS(file.stream, filename, file.mimetype, cb);
+    }
+    
+    function uploadToGCS(data: Buffer | NodeJS.ReadableStream, filename: string, mimetype: string, cb: (error?: any, info?: Partial<Express.Multer.File>) => void) {
+      const gcsFile = bucket.file(filename);
+      const stream = gcsFile.createWriteStream({
+        metadata: {
+          contentType: mimetype,
+        },
+      });
 
-    // Pipe the file buffer to Google Cloud Storage
-    file.stream.pipe(stream);
+      stream.on('error', (err) => {
+        cb(err);
+      });
+
+      stream.on('finish', () => {
+        // File uploaded successfully
+        const publicUrl = `https://storage.googleapis.com/quotebid-uploads/${filename}`;
+        
+        cb(null, {
+          filename: filename,
+          path: publicUrl,
+          size: data instanceof Buffer ? data.length : undefined,
+        });
+      });
+
+      // Upload the data to Google Cloud Storage
+      if (data instanceof Buffer) {
+        stream.end(data);
+      } else {
+        // data is NodeJS.ReadableStream
+        (data as NodeJS.ReadableStream).pipe(stream);
+      }
+    }
   }
 
   _removeFile(req: Request, file: Express.Multer.File, cb: (error: Error | null) => void): void {

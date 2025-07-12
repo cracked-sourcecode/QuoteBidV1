@@ -2812,28 +2812,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Processing publication logo upload:', req.file.filename);
       
-      // Check image dimensions
-      const imageBuffer = fs.readFileSync(req.file.path);
-      const dimensions = sizeOf(imageBuffer);
-      
-      if (!dimensions.width || !dimensions.height) {
-        // Clean up uploaded file
-        fs.unlinkSync(req.file.path);
-        return res.status(400).json({ 
-          message: 'Invalid image file - could not read dimensions' 
-        });
-      }
-      
-      if (dimensions.width !== 200 || dimensions.height !== 200) {
-        // Clean up uploaded file
-        fs.unlinkSync(req.file.path);
-        return res.status(400).json({ 
-          message: `Invalid image dimensions. Required: 200x200 pixels, Received: ${dimensions.width}x${dimensions.height} pixels` 
-        });
-      }
-      
-      console.log(`✅ Image validation passed: ${dimensions.width}x${dimensions.height} PNG`);
-      
+      // Image dimensions are validated in the GCS middleware before upload
       // Google Cloud Storage URL is already provided in req.file.path
       const fileUrl = req.file.path;
       
@@ -2844,10 +2823,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fileUrl: fileUrl 
       });
     } catch (error: any) {
-      // Clean up uploaded file on error
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
+      // Note: File cleanup is handled by GCS middleware for cloud storage
       console.error('Failed to process publication logo:', error);
       res.status(500).json({ message: 'Failed to upload file', error: error.message });
     }
