@@ -6070,7 +6070,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Handle avatar upload
-  app.post('/api/users/:userId/avatar', gcsUpload.single('avatar'), async (req: Request, res: Response) => {
+  app.post('/api/users/:userId/avatar', upload.single('avatar'), async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
@@ -6081,21 +6081,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No file uploaded' });
       }
       
-      // GCS upload returns the public URL in req.file.path
-      const gcsUrl = req.file.path;
+      // Store only the relative path in the database
+      const relativePath = `/uploads/avatars/${req.file.filename}`;
       
-      console.log("Avatar uploaded to GCS:", gcsUrl);
+      console.log("Avatar uploaded to:", relativePath);
       
-      // Update user's avatar in the database with GCS URL
+      // Update user's avatar in the database with relative path
       const updatedUser = await getDb().update(users)
-        .set({ avatar: gcsUrl })
+        .set({ avatar: relativePath })
         .where(eq(users.id, userId))
         .returning()
         .then(rows => rows[0]);
       
       res.status(200).json({ 
         message: 'Avatar uploaded successfully',
-        fileUrl: gcsUrl, // Return the GCS URL
+        fileUrl: relativePath, // Return the relative path
         user: updatedUser
       });
     } catch (error: any) {
