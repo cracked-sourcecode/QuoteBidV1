@@ -7238,13 +7238,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Created opportunity:", JSON.stringify(newOpportunity));
       
       // 📧 SCHEDULE EMAIL ALERT (7-minute delay to prevent front-running)
+      console.log(`🚀 ATTEMPTING to schedule email for opportunity ${newOpportunity.id}...`);
       try {
+        console.log(`📦 Importing emailScheduler module...`);
         const { scheduleOpportunityEmail } = await import('./jobs/emailScheduler');
-        await scheduleOpportunityEmail(newOpportunity.id, 7);
-        console.log(`📅 Scheduled email alert for opportunity ${newOpportunity.id} with 7-minute delay`);
+        console.log(`✅ EmailScheduler imported successfully`);
+        
+        const { computeEmailDelay } = await import('./jobs/emailScheduler');
+        const delayMinutes = computeEmailDelay();
+        console.log(`📅 Calling scheduleOpportunityEmail(${newOpportunity.id}, ${delayMinutes})...`);
+        await scheduleOpportunityEmail(newOpportunity.id, delayMinutes);
+        console.log(`✅ SUCCESSFULLY scheduled email alert for opportunity ${newOpportunity.id} with ${delayMinutes}-minute delay`);
+        
       } catch (emailError) {
-        console.error('Failed to schedule opportunity email:', emailError);
-        // Don't fail the opportunity creation if email scheduling fails
+        console.error(`❌ CRITICAL: Failed to schedule opportunity email for ID ${newOpportunity.id}:`, emailError);
+        console.error(`❌ Email error stack:`, emailError.stack);
+        // IMPORTANT: Re-throw to surface the error to monitoring systems
+        // This ensures the real root cause (e.g., missing user industry) is visible
+        throw new Error(`scheduleOpportunityEmail() failed for opportunity ${newOpportunity.id}: ${emailError.message}`);
       }
       
       // Return the created opportunity with publication data

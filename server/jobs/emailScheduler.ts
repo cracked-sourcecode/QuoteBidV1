@@ -1,12 +1,18 @@
 // Email Scheduler Job - Database-based email scheduling
 // This replaces the setTimeout approach which was lost on server restart
 
-import { eq, and, lt, isNull } from 'drizzle-orm';
+import { eq, and, lt, isNull, or } from 'drizzle-orm';
 import { getDb } from '../db';
 import { opportunities } from '@shared/schema';
 import { storage } from '../storage';
 
 let schedulerInterval: NodeJS.Timeout | null = null;
+
+// Environment-specific email delay configuration
+export function computeEmailDelay(): number {
+  // SEND IMMEDIATELY - No delays for opportunity emails
+  return 0;
+}
 
 export function startEmailScheduler() {
   console.log('📧 Starting email scheduler background job...');
@@ -33,20 +39,29 @@ export function stopEmailScheduler() {
 async function checkAndSendPendingEmails() {
   try {
     const now = new Date();
+    const tenMinutesAgo = new Date(now.getTime() - (10 * 60 * 1000));
     const db = getDb();
     
-    // Find opportunities that:
-    // 1. Have an email_scheduled_at time that has passed
-    // 2. Haven't been sent yet (email_sent_at is null)
-    // 3. Haven't been attempted yet (email_send_attempted is false)
+    // Find opportunities that need emails sent:
+    // 1. Regular scheduled emails: email_scheduled_at <= now AND email_sent_at IS NULL AND email_send_attempted = false
+    // 2. FAIL-SAFE: email_scheduled_at IS NULL AND email_sent_at IS NULL AND created_at <= 10 minutes ago
     const pendingOpportunities = await db
       .select()
       .from(opportunities)
       .where(
-        and(
-          lt(opportunities.email_scheduled_at, now),
-          isNull(opportunities.email_sent_at),
-          eq(opportunities.email_send_attempted, false)
+        or(
+          // Regular scheduled emails that are due
+          and(
+            lt(opportunities.email_scheduled_at, now),
+            isNull(opportunities.email_sent_at),
+            eq(opportunities.email_send_attempted, false)
+          ),
+          // FAIL-SAFE: opportunities that were never scheduled but are older than 10 minutes
+          and(
+            isNull(opportunities.email_scheduled_at),
+            isNull(opportunities.email_sent_at),
+            lt(opportunities.createdAt, tenMinutesAgo)
+          )
         )
       );
 
@@ -82,7 +97,7 @@ async function processPendingEmail(opportunity: any) {
       .set({ email_send_attempted: true })
       .where(eq(opportunities.id, opportunity.id));
 
-    // Send the email using the same logic as opportunityEmailAlert
+    // Send the email alerts to matching users
     await sendOpportunityEmails(opportunity.id);
 
     // Mark as sent successfully
@@ -102,8 +117,42 @@ async function processPendingEmail(opportunity: any) {
 }
 
 // Helper function to schedule an email for a new opportunity
-export async function scheduleOpportunityEmail(opportunityId: number, delayMinutes: number = 7) {
+export async function scheduleOpportunityEmail(opportunityId: number, delayMinutes: number = computeEmailDelay()) {
   try {
+    // DEVELOPMENT MODE: Send immediately for faster testing
+    if (delayMinutes === 0) {
+      console.log(`🚀 DEVELOPMENT MODE: Sending opportunity alert immediately for ID ${opportunityId}`);
+      
+      const db = getDb();
+      
+      // Mark as scheduled for now in database
+      await db
+        .update(opportunities)
+        .set({ 
+          email_scheduled_at: new Date(), // Schedule for immediate send
+          email_send_attempted: false,
+          email_sent_at: null 
+        })
+        .where(eq(opportunities.id, opportunityId));
+      
+      // Send immediately
+      try {
+        await sendOpportunityEmails(opportunityId);
+        
+        // Mark as sent
+        await db
+          .update(opportunities)
+          .set({ email_sent_at: new Date() })
+          .where(eq(opportunities.id, opportunityId));
+          
+        console.log(`✅ Development email sent immediately for opportunity ID ${opportunityId}`);
+      } catch (emailError) {
+        console.error(`❌ Immediate send failed for ID ${opportunityId}:`, emailError);
+      }
+      return;
+    }
+    
+    // PRODUCTION MODE: Schedule with delay
     const scheduledTime = new Date();
     scheduledTime.setMinutes(scheduledTime.getMinutes() + delayMinutes);
 
@@ -125,7 +174,7 @@ export async function scheduleOpportunityEmail(opportunityId: number, delayMinut
   }
 }
 
-// Send opportunity emails using the same logic as opportunityEmailAlert
+// Send opportunity emails to all users with matching industry
 async function sendOpportunityEmails(opportunityId: number) {
   try {
     console.log(`📧 Starting opportunity alert email process for ID ${opportunityId}`);
