@@ -5,52 +5,88 @@ import { Request } from 'express';
 // Initialize Google Cloud Storage
 let storage: Storage;
 
-if (process.env.GOOGLE_CLOUD_PROJECT_ID && process.env.GOOGLE_CLOUD_PRIVATE_KEY && process.env.GOOGLE_CLOUD_CLIENT_EMAIL) {
-  // Render: Use individual environment variables
-  // Fix private key formatting - replace literal \n with actual newlines
-  const privateKey = process.env.GOOGLE_CLOUD_PRIVATE_KEY
-    .replace(/\\n/g, '\n')
-    .replace(/"/g, ''); // Remove any quotes
+// Simplified GCS Authentication
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+  // Use JSON credentials from environment variable (recommended)
+  console.log('🔑 Using JSON credentials for GCS auth');
   
-  const credentials = {
-    type: 'service_account',
-    project_id: process.env.GOOGLE_CLOUD_PROJECT_ID,
-    private_key_id: process.env.GOOGLE_CLOUD_PRIVATE_KEY_ID,
-    private_key: privateKey,
-    client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
-    client_id: process.env.GOOGLE_CLOUD_CLIENT_ID,
-    auth_uri: 'https://accounts.google.com/o/oauth2/auth',
-    token_uri: 'https://oauth2.googleapis.com/token',
-    auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
-    client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${process.env.GOOGLE_CLOUD_CLIENT_EMAIL}`,
-    universe_domain: 'googleapis.com'
-  };
-  
+  try {
+    const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+    console.log('✅ JSON credentials parsed successfully');
+    console.log('📧 Service account email:', credentials.client_email);
+    console.log('🆔 Project ID:', credentials.project_id);
+    
+    storage = new Storage({
+      projectId: credentials.project_id,
+      credentials: credentials,
+    });
+  } catch (error) {
+    console.error('❌ Failed to parse JSON credentials:', error instanceof Error ? error.message : String(error));
+    throw new Error('Invalid GOOGLE_APPLICATION_CREDENTIALS_JSON format');
+  }
+
+} else if (process.env.GOOGLE_CLOUD_PROJECT_ID && process.env.GOOGLE_CLOUD_PRIVATE_KEY && process.env.GOOGLE_CLOUD_CLIENT_EMAIL) {
+  // Fallback: Use individual environment variables
   console.log('🔑 Using individual environment variables for GCS auth');
-  console.log('📧 Client email:', process.env.GOOGLE_CLOUD_CLIENT_EMAIL);
-  console.log('🆔 Project ID:', process.env.GOOGLE_CLOUD_PROJECT_ID);
   
-  storage = new Storage({
-    projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-    credentials: credentials,
-  });
-} else if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-  // Fallback: Use JSON credentials from environment variable
-  const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-  console.log('🔑 Using JSON blob for GCS auth');
-  storage = new Storage({
-    projectId: 'ecstatic-valve-465521-v6',
-    credentials: credentials,
-  });
+  try {
+    // Fix private key formatting - replace literal \n with actual newlines
+    const privateKey = process.env.GOOGLE_CLOUD_PRIVATE_KEY
+      .replace(/\\n/g, '\n')
+      .replace(/"/g, ''); // Remove any quotes
+    
+    const credentials = {
+      type: 'service_account',
+      project_id: process.env.GOOGLE_CLOUD_PROJECT_ID,
+      private_key_id: process.env.GOOGLE_CLOUD_PRIVATE_KEY_ID,
+      private_key: privateKey,
+      client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
+      client_id: process.env.GOOGLE_CLOUD_CLIENT_ID,
+      auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+      token_uri: 'https://oauth2.googleapis.com/token',
+      auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
+      client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${process.env.GOOGLE_CLOUD_CLIENT_EMAIL}`,
+      universe_domain: 'googleapis.com'
+    };
+    
+    console.log('✅ Individual environment variables configured');
+    console.log('📧 Client email:', process.env.GOOGLE_CLOUD_CLIENT_EMAIL);
+    console.log('🆔 Project ID:', process.env.GOOGLE_CLOUD_PROJECT_ID);
+    
+    storage = new Storage({
+      projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+      credentials: credentials,
+    });
+  } catch (error) {
+    console.error('❌ Individual env vars failed:', error instanceof Error ? error.message : String(error));
+    throw error;
+  }
+
 } else {
-  // Local development or Cloud Run: Use Application Default Credentials
+  // Local development: Use Application Default Credentials
   console.log('🔑 Using Application Default Credentials for GCS auth');
+  console.log('⚠️  Make sure you have run: gcloud auth application-default login');
+  
   storage = new Storage({
     projectId: 'ecstatic-valve-465521-v6',
   });
 }
 
 const bucket = storage.bucket('quotebid-uploads');
+
+// Test the connection
+(async () => {
+  try {
+    const [exists] = await bucket.exists();
+    if (exists) {
+      console.log('✅ Successfully connected to GCS bucket: quotebid-uploads');
+    } else {
+      console.error('❌ GCS bucket "quotebid-uploads" does not exist');
+    }
+  } catch (error) {
+    console.error('❌ Failed to connect to GCS:', error instanceof Error ? error.message : String(error));
+  }
+})();
 
 // Custom storage engine for Google Cloud Storage
 class GoogleCloudStorage implements multer.StorageEngine {
