@@ -2129,7 +2129,7 @@ export default function AccountPage() {
                           <div className="w-24 h-24 rounded-full bg-gray-100 relative overflow-hidden flex-shrink-0">
                             {(user.avatar || avatarPreview) ? (
                               <img 
-                                src={avatarPreview || user.avatar || ''}
+                                src={avatarPreview || getAvatarUrl(user.avatar)}
                                 alt={user.fullName || 'Profile'}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {

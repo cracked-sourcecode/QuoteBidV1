@@ -81,6 +81,7 @@ import {
 import PitchChatModal from '@/components/PitchChatModal';
 import { formatDistanceToNow } from 'date-fns';
 import { BillingTabContent } from '@/components/BillingTabContent';
+import { getAvatarUrl } from '@/lib/responsive-utils';
 
 
 // Country codes list (same as signup)
@@ -1064,7 +1065,7 @@ export default function AccountPage() {
               <>
                 {(user.avatar || avatarPreview) && (
                   <img 
-                    src={avatarPreview || user.avatar || ''} 
+                    src={avatarPreview || getAvatarUrl(user.avatar)} 
                     alt={user.fullName || 'Profile'} 
                     className="w-full h-full object-cover rounded-full"
                     onError={(e) => {
@@ -1270,7 +1271,7 @@ export default function AccountPage() {
                   >
                   {(user.avatar || avatarPreview) && (
                     <img 
-                      src={avatarPreview || user.avatar || ''} 
+                      src={avatarPreview || getAvatarUrl(user.avatar)} 
                       alt={user.fullName || 'Profile'} 
                       className="w-full h-full object-cover"
                     />
@@ -1324,7 +1325,7 @@ export default function AccountPage() {
                         <div className="w-24 h-24 rounded-full bg-slate-800 border-2 border-slate-700 relative overflow-hidden mx-auto mb-4">
                           {(user.avatar || avatarPreview) ? (
                             <img 
-                              src={avatarPreview || user.avatar || ''}
+                              src={avatarPreview || getAvatarUrl(user.avatar)}
                               alt={user.fullName || 'Profile'}
                               className="w-full h-full object-cover"
                             />
@@ -2129,7 +2130,7 @@ export default function AccountPage() {
                           <div className="w-24 h-24 rounded-full bg-slate-800 border-2 border-slate-700 relative overflow-hidden flex-shrink-0">
                             {(user.avatar || avatarPreview) ? (
                               <img 
-                                src={avatarPreview || user.avatar || ''}
+                                src={avatarPreview || getAvatarUrl(user.avatar)}
                                 alt={user.fullName || 'Profile'}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
