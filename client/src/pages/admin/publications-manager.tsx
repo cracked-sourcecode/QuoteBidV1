@@ -77,8 +77,8 @@ const publicationFormSchema = z.object({
   }),
   logo: z.string().min(1, {
     message: "Logo is required."
-  }).refine((val) => val === 'pending-upload' || val.startsWith('http'), {
-    message: "Logo must be a valid URL."
+  }).refine((val) => val === 'pending-upload' || val.startsWith('http') || val.startsWith('/uploads'), {
+    message: "Logo must be a valid URL or upload path."
   }),
   website: z.string().url({
     message: "Website must be a valid URL."
@@ -338,7 +338,7 @@ export default function PublicationsManager() {
       category: '',
       tier: '',
     },
-    mode: 'onChange',
+    mode: 'onSubmit',
   });
 
   // Handle logo file selection
@@ -346,8 +346,6 @@ export default function PublicationsManager() {
     const files = e.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      
-      console.log('File selected:', file.name, file.type, file.size);
       
       // Check file type - only PNG allowed
       if (!file.type.startsWith('image/png')) {
@@ -410,7 +408,6 @@ export default function PublicationsManager() {
           editForm.setValue('logo', 'pending-upload', { shouldValidate: true });
         }
         
-        console.log('Logo file ready for upload:', file.name);
         toast({
           title: "Logo ready",
           description: "PNG logo is ready to be uploaded.",
@@ -1392,7 +1389,6 @@ export default function PublicationsManager() {
                     type="button" 
                     variant="outline" 
                     onClick={() => {
-                      console.log('Cancel button clicked');
                       setIsEditDialogOpen(false);
                       setLogoFile(null);
                       setLogoPreview(null);
@@ -1405,13 +1401,6 @@ export default function PublicationsManager() {
                     type="submit" 
                     disabled={updateMutation.isPending || isUploading}
                     className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 font-semibold"
-                    onClick={() => {
-                      console.log('Update button clicked');
-                      console.log('Form is valid:', editForm.formState.isValid);
-                      console.log('Form errors:', editForm.formState.errors);
-                      console.log('Update mutation pending:', updateMutation.isPending);
-                      console.log('Is uploading:', isUploading);
-                    }}
                   >
                     {(updateMutation.isPending || isUploading) && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
