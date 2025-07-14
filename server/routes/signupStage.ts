@@ -10,6 +10,7 @@ import multer from 'multer';
 import jwt from 'jsonwebtoken';
 import PDFDocument from 'pdfkit';
 import { hashPassword } from '../utils/passwordUtils';
+import gcsUpload from '../middleware/gcs-upload';
 
 // Initialize Stripe client
 function getStripeClient() {
@@ -383,7 +384,7 @@ function determineSignupStage(user: any) {
 }
 
 // Handle avatar uploads
-router.post('/:email/avatar', upload.single('avatar'), async (req: Request, res: Response) => {
+router.post('/:email/avatar', gcsUpload.single('avatar'), async (req: Request, res: Response) => {
   try {
     const { email } = req.params;
     const file = req.file;
@@ -406,15 +407,24 @@ router.post('/:email/avatar', upload.single('avatar'), async (req: Request, res:
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Save the avatar path to the user record
-    const avatarPath = `/uploads/avatars/${file.filename}`;
+    console.log('Processing signup avatar upload:', req.file!.filename);
     
+    // Convert GCS URL to our proxy URL (same pattern as publication logos)
+    // req.file.filename contains the full path like "avatars/1752334924284-266664280.jpg"
+    const fullPath = req.file!.filename;
+    const filename = fullPath.split('/').pop(); // Extract just the filename
+    const proxyUrl = `/uploads/avatars/${filename}`;
+    
+    console.log('Signup avatar uploaded successfully to GCS:', req.file!.path);
+    console.log('Serving via proxy URL:', proxyUrl);
+    
+    // Save the avatar proxy URL to the user record
     await getDb()
       .update(users)
-      .set({ avatar: avatarPath })
+      .set({ avatar: proxyUrl })
       .where(eq(users.id, user.id));
     
-    return res.status(200).json({ success: true, path: avatarPath });
+    return res.status(200).json({ success: true, path: proxyUrl });
   } catch (error) {
     console.error('Error uploading avatar:', error);
     return res.status(500).json({ message: 'Internal server error', success: false });

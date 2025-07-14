@@ -6069,8 +6069,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Serve uploaded avatars from GCS
+  app.get('/uploads/avatars/:filename', async (req, res) => {
+    try {
+      const filename = req.params.filename;
+      const gcsFile = bucket.file(`avatars/${filename}`);
+      
+      // Check if file exists
+      const [exists] = await gcsFile.exists();
+      if (!exists) {
+        return res.status(404).json({ message: 'Avatar not found' });
+      }
+      
+      // Get file metadata for content type
+      const [metadata] = await gcsFile.getMetadata();
+      const contentType = metadata.contentType || 'image/jpeg';
+      
+      // Set appropriate headers
+      res.set('Content-Type', contentType);
+      res.set('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+      
+      // Stream the file from GCS
+      const stream = gcsFile.createReadStream();
+      stream.pipe(res);
+      
+      stream.on('error', (err: any) => {
+        console.error('Error streaming avatar from GCS:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ message: 'Error serving avatar' });
+        }
+      });
+      
+    } catch (error) {
+      console.error('Error serving avatar:', error);
+      res.status(500).json({ message: 'Error serving avatar' });
+    }
+  });
+
   // Handle avatar upload
-  app.post('/api/users/:userId/avatar', upload.single('avatar'), async (req: Request, res: Response) => {
+  app.post('/api/users/:userId/avatar', gcsUpload.single('avatar'), async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
@@ -6081,21 +6118,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No file uploaded' });
       }
       
-      // Store only the relative path in the database
-      const relativePath = `/uploads/avatars/${req.file.filename}`;
+      console.log('Processing avatar upload:', req.file.filename);
       
-      console.log("Avatar uploaded to:", relativePath);
+      // Convert GCS URL to our proxy URL
+      // req.file.filename contains the full path like "avatars/1752334924284-266664280.jpg"
+      const fullPath = req.file.filename;
+      const filename = fullPath.split('/').pop(); // Extract just the filename
+      const proxyUrl = `/uploads/avatars/${filename}`;
       
-      // Update user's avatar in the database with relative path
+      console.log('Avatar uploaded successfully to GCS:', req.file.path);
+      console.log('Serving via proxy URL:', proxyUrl);
+      
+      // Update user's avatar in the database with proxy URL
       const updatedUser = await getDb().update(users)
-        .set({ avatar: relativePath })
+        .set({ avatar: proxyUrl })
         .where(eq(users.id, userId))
         .returning()
         .then(rows => rows[0]);
       
       res.status(200).json({ 
         message: 'Avatar uploaded successfully',
-        fileUrl: relativePath, // Return the relative path
+        fileUrl: proxyUrl, // Return proxy URL instead of direct GCS URL
         user: updatedUser
       });
     } catch (error: any) {

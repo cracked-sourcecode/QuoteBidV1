@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { Link } from 'wouter';
 import { Loader2, CreditCard, CheckCircle, CalendarIcon, ExternalLink, Newspaper, Upload, Trash2, Brain, Mail, Menu, X, Home, MessageSquare, Search, Settings as SettingsIcon, HelpCircle, Phone } from 'lucide-react';
 import { LoadingScreen, CompactLoading } from "@/components/ui/loading-screen";
+import { getAvatarUrl } from '@/lib/responsive-utils';
 
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -1064,7 +1065,7 @@ export default function AccountPage() {
               <>
                 {(user.avatar || avatarPreview) && (
                   <img 
-                    src={avatarPreview || user.avatar || ''} 
+                    src={avatarPreview || getAvatarUrl(user.avatar)} 
                     alt={user.fullName || 'Profile'} 
                     className="w-full h-full object-cover rounded-full"
                     onError={(e) => {
@@ -1270,7 +1271,7 @@ export default function AccountPage() {
                   >
                   {(user.avatar || avatarPreview) && (
                     <img 
-                      src={avatarPreview || user.avatar || ''} 
+                      src={avatarPreview || getAvatarUrl(user.avatar)} 
                       alt={user.fullName || 'Profile'} 
                       className="w-full h-full object-cover"
                     />
@@ -1326,7 +1327,7 @@ export default function AccountPage() {
                         <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-gray-200 relative overflow-hidden mx-auto mb-4">
                           {(user.avatar || avatarPreview) ? (
                             <img 
-                              src={avatarPreview || user.avatar || ''}
+                              src={avatarPreview || getAvatarUrl(user.avatar)}
                               alt={user.fullName || 'Profile'}
                               className="w-full h-full object-cover"
                             />

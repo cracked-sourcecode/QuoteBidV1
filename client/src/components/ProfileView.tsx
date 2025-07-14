@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { FaTwitter, FaLinkedin, FaInstagram, FaMedium } from "react-icons/fa";
 import { BiWorld } from "react-icons/bi";
 import { User } from "@shared/schema";
+import { getAvatarUrl } from "../lib/responsive-utils";
 
 type ProfileViewProps = {
   user: Partial<User>;
@@ -38,7 +39,7 @@ export function ProfileView({ user, onEdit }: ProfileViewProps) {
         <div className="flex flex-col md:flex-row gap-8">
           <div className="flex-shrink-0">
             <Avatar className="h-40 w-40 rounded-md border">
-              <AvatarImage src={user.avatar ? user.avatar : undefined} alt={user.fullName || 'User'} className="object-cover" />
+              <AvatarImage src={getAvatarUrl(user.avatar)} alt={user.fullName || 'User'} className="object-cover" />
               <AvatarFallback className="text-4xl font-medium bg-gray-100 text-gray-600">
                 {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
               </AvatarFallback>

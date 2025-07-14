@@ -226,3 +226,18 @@ export const debugImageLoading = (src: string, element: HTMLImageElement) => {
   console.log('Image src:', element.src);
   console.groupEnd();
 }; 
+
+// Avatar URL helper - ensures avatar images load from the correct backend server
+export const getAvatarUrl = (avatarPath: string | null | undefined): string => {
+  if (!avatarPath) return '';
+  
+  // If it's already a full URL (GCS or external), return as-is
+  if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+    return avatarPath;
+  }
+  
+  // For proxy paths (like /uploads/avatars/filename.jpg), construct the full URL to the backend server
+  // This matches the pattern used for publication logos
+  const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5051';
+  return `${backendUrl}${avatarPath}`;
+}; 
