@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 import fs from 'fs';
 import path from 'path';
 import { getDb } from '../db';
-import { users } from '@shared/schema';
+import { users, adminUsers } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
 console.log('🚀 PRODUCTION EMAIL SYSTEM LOADING...');
@@ -423,16 +423,15 @@ export async function sendAdminPitchNotification(data: {
   }
   
   try {
-    // Get admin emails from database
-    const { adminUsers } = await import('../../shared/schema');
-    const admins = await getDb().select({ email: adminUsers.email }).from(adminUsers);
+    // Get specific admin email (ID 5 - Juan)
+    const admin = await getDb().select({ email: adminUsers.email }).from(adminUsers).where(eq(adminUsers.id, 5)).limit(1);
     
-    if (admins.length === 0) {
-      console.error('❌ No admin users found in database');
-      return { success: false, error: 'No admin users found' };
+    if (admin.length === 0) {
+      console.error('❌ Admin user ID 5 not found in database');
+      return { success: false, error: 'Admin user not found' };
     }
     
-    const adminEmails = admins.map((admin: { email: string }) => admin.email).filter(email => email && email.trim());
+    const adminEmails = [admin[0].email].filter(email => email && email.trim());
     
     // Truncate opportunity title for email header if too long
     const truncateForHeader = (text: string, maxLength: number = 120): string => {

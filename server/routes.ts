@@ -6,7 +6,7 @@ import { processVoiceRecording } from "./lib/voice";
 import { increaseBidAmount } from "./lib/bidding";
 import { z } from "zod";
 import { subHours, subDays } from 'date-fns';
-import { insertBidSchema, insertOpportunitySchema, insertPitchSchema, insertPublicationSchema, insertSavedOpportunitySchema, User, PlacementWithRelations, users, pitches, opportunities, publications, notifications, placements, price_snapshots, variable_registry, pricing_config, mediaCoverage, emailClicks } from "@shared/schema";
+import { insertBidSchema, insertOpportunitySchema, insertPitchSchema, insertPublicationSchema, insertSavedOpportunitySchema, User, PlacementWithRelations, users, pitches, opportunities, publications, notifications, placements, price_snapshots, variable_registry, pricing_config, mediaCoverage, emailClicks, adminUsers } from "@shared/schema";
 import { getDb } from "./db";
 import { eq, sql, desc, and, ne, asc, isNull, isNotNull, gte, lte, or, inArray, gt } from "drizzle-orm";
 
@@ -3393,44 +3393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Successfully created pitch with ID:", newPitch.id);
       
-      // 🚀 Cancel saved opportunity reminder since user has now pitched
-      try {
-        const { cancelSavedOpportunityReminder } = await import('./jobs/savedOpportunityReminder');
-        cancelSavedOpportunityReminder(userId, opportunityId);
-        console.log(`🚫 Cancelled saved opportunity reminder for user ${userId}, opportunity ${opportunityId} (pitch submitted)`);
-      } catch (reminderError) {
-        console.error('Failed to cancel saved opportunity reminder:', reminderError);
-        // Don't fail the pitch submission if reminder cancellation fails
-      }
-
-      // 🚫 Cancel draft reminder since user has now submitted their pitch
-      try {
-        // Find any existing draft for this user/opportunity to cancel its reminder
-        const existingDrafts = await getDb().select()
-          .from(pitches)
-          .where(
-            and(
-              eq(pitches.userId, userId),
-              eq(pitches.opportunityId, opportunityId),
-              eq(pitches.status, 'draft'),
-              eq(pitches.isDraft, true)
-            )
-          );
-        
-        existingDrafts.forEach(draft => {
-          try {
-            cancelDraftReminder(userId, draft.id);
-            console.log(`🚫 Cancelled draft reminder for user ${userId}, draft ${draft.id} (pitch submitted)`);
-          } catch (reminderError) {
-            console.error(`Failed to cancel draft reminder for draft ${draft.id}:`, reminderError);
-          }
-        });
-      } catch (draftLookupError) {
-        console.error('Failed to lookup existing drafts for reminder cancellation:', draftLookupError);
-        // Don't fail the pitch submission if draft lookup fails
-      }
-      
-      // 📧 Send admin pitch notification email for new pending pitches
+      // 📧 Send admin pitch notification email IMMEDIATELY upon submission
       try {
         const opportunity = await storage.getOpportunity(opportunityId);
         const publication = opportunity?.publicationId 
@@ -3486,12 +3449,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
             deadline: deadline
           });
           
-          console.log(`✅ Admin notification sent for new pending pitch ${newPitch.id}`);
+          console.log(`✅ Admin notification sent immediately for new pitch ${newPitch.id}`);
         }
       } catch (adminEmailError) {
-        console.error('Error sending admin pitch notification:', adminEmailError);
+        console.error('Error sending immediate admin pitch notification:', adminEmailError);
         // Don't fail the pitch submission if admin email fails
       }
+      
+      // 🚀 Cancel saved opportunity reminder since user has now pitched
+      try {
+        const { cancelSavedOpportunityReminder } = await import('./jobs/savedOpportunityReminder');
+        cancelSavedOpportunityReminder(userId, opportunityId);
+        console.log(`🚫 Cancelled saved opportunity reminder for user ${userId}, opportunity ${opportunityId} (pitch submitted)`);
+      } catch (reminderError) {
+        console.error('Failed to cancel saved opportunity reminder:', reminderError);
+        // Don't fail the pitch submission if reminder cancellation fails
+      }
+
+      // 🚫 Cancel draft reminder since user has now submitted their pitch
+      try {
+        // Find any existing draft for this user/opportunity to cancel its reminder
+        const existingDrafts = await getDb().select()
+          .from(pitches)
+          .where(
+            and(
+              eq(pitches.userId, userId),
+              eq(pitches.opportunityId, opportunityId),
+              eq(pitches.status, 'draft'),
+              eq(pitches.isDraft, true)
+            )
+          );
+        
+        existingDrafts.forEach(draft => {
+          try {
+            cancelDraftReminder(userId, draft.id);
+            console.log(`🚫 Cancelled draft reminder for user ${userId}, draft ${draft.id} (pitch submitted)`);
+          } catch (reminderError) {
+            console.error(`Failed to cancel draft reminder for draft ${draft.id}:`, reminderError);
+          }
+        });
+      } catch (draftLookupError) {
+        console.error('Failed to lookup existing drafts for reminder cancellation:', draftLookupError);
+        // Don't fail the pitch submission if draft lookup fails
+      }
+      
+
 
       // Create notification for successful pitch submission
       try {
