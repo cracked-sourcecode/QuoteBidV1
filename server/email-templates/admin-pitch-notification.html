@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Pitch Received - QuoteBid Admin</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+</head>
+<body style="margin:0;padding:0;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+
+  <!-- Main Container -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <tr>
+      <td align="center" style="padding: 20px 8px;">
+        
+        <!-- Email Container -->
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.1);overflow:hidden;">
+          
+          <!-- Header Section -->
+          <tr>
+            <td style="background: #f8fafc; padding: 24px 16px 20px 16px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+              
+              <!-- Logo -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto 20px auto;">
+                <tr>
+                  <td style="text-align: center;">
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 24px; font-weight: 700; color: #1f2937; line-height: 1;">
+                      <span style="color: #1f2937;">Quote</span><span style="color: #6366f1;">Bid</span>
+                    </div>
+                  </td>
+                  <td style="vertical-align: top; padding-left: 8px; padding-top: 2px;">
+                    <div style="background: #6366f1; color: #ffffff; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 12px; text-align: center;">
+                      ADMIN
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Badge -->
+              <div style="background: #f59e0b; color: #ffffff; font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 20px; text-align: center; display: inline-block; margin-bottom: 16px;">
+                📝 NEW PITCH RECEIVED
+              </div>
+              
+              <!-- Subject -->
+              <h1 style="font-size: 28px; font-weight: 700; color: #1f2937; margin: 0; line-height: 1.2;">
+                New Pitch: ${{bidAmount}} - {{publicationName}}
+              </h1>
+              
+              <p style="color: #6b7280; font-size: 16px; margin: 8px 0 0 0;">
+                {{opportunityTitle}}
+              </p>
+              
+            </td>
+          </tr>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 32px 32px 24px 32px;">
+              
+              <!-- Expert Profile -->
+              <div style="background: #f0fdf4; border: 2px solid #bbf7d0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+                <h2 style="font-size: 18px; font-weight: 600; color: #1f2937; margin: 0 0 16px 0;">
+                  Expert Profile
+                </h2>
+                
+                <div style="margin-bottom: 16px;">
+                  <h3 style="font-size: 20px; font-weight: 700; color: #1f2937; margin: 0 0 4px 0;">{{userFullName}}</h3>
+                  <p style="font-size: 16px; font-weight: 600; color: #059669; margin: 0;">{{userTitle}}</p>
+                </div>
+                
+                <div style="margin-bottom: 12px;">
+                  <p style="font-size: 14px; color: #374151; margin: 0;"><strong>Company:</strong> {{userCompany}}</p>
+                </div>
+                
+                <div style="margin-bottom: 12px;">
+                  <p style="font-size: 14px; color: #374151; margin: 0;"><strong>Email:</strong> {{userEmail}}</p>
+                </div>
+                
+                <div>
+                  <p style="font-size: 14px; color: #374151; margin: 0;"><strong>Industry:</strong> {{industry}}</p>
+                </div>
+              </div>
+
+              <!-- Opportunity Details -->
+              <div style="background: #f8fafc; border: 2px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+                <h2 style="font-size: 18px; font-weight: 600; color: #1f2937; margin: 0 0 16px 0;">
+                  Opportunity Details
+                </h2>
+                
+                <div style="margin-bottom: 16px;">
+                  <p style="font-size: 16px; color: #000000; font-weight: 700; margin: 0 0 8px 0;">Publication: {{publicationName}}</p>
+                  <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin: 0;">{{opportunityTitle}}</h3>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                  <p style="font-size: 12px; font-weight: 400; color: #374151; margin: 0 0 4px 0;">Bid Amount</p>
+                  <p style="font-size: 18px; font-weight: 700; color: #059669; margin: 0;">${{bidAmount}}</p>
+                </div>
+                
+                <div>
+                  <p style="font-size: 12px; font-weight: 400; color: #374151; margin: 0 0 4px 0;">Submitted</p>
+                  <p style="font-size: 14px; color: #6b7280; margin: 0;">{{submittedAt}}</p>
+                </div>
+              </div>
+
+              <!-- Ready-to-Use Quote -->
+              <div style="background: #fef3c7; border: 2px solid #fbbf24; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+                <h2 style="font-size: 18px; font-weight: 600; color: #1f2937; margin: 0 0 16px 0;">
+                  Ready-to-Use Quote
+                </h2>
+                
+                <div style="background: white; border: 1px solid #d1d5db; border-radius: 8px; padding: 20px; font-size: 14px; color: #000000; line-height: 1.6;">
+                  {{pitchContent}}
+                  
+                  <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: right; font-style: italic; color: #666666;">
+                    — {{userFullName}}, {{userTitle}}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Info -->
+              <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; text-align: center;">
+                <p style="font-size: 14px; color: #6b7280; margin: 0;">
+                  <strong>Pitch ID:</strong> {{pitchId}} | <strong>Expert:</strong> {{userUsername}}
+                </p>
+              </div>
+              
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background: #f8fafc; padding: 24px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
+              
+              <div style="margin-bottom: 16px;">
+                <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                  This is an automated notification from the QuoteBid platform.
+                </p>
+              </div>
+              
+              <div style="border-top: 1px solid #e5e7eb; padding-top: 16px;">
+                <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                  © {{currentYear}} QuoteBid. All rights reserved.
+                </p>
+              </div>
+              
+            </td>
+          </tr>
+          
+        </table>
+        
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html> 

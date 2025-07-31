@@ -392,6 +392,98 @@ export async function sendPasswordResetEmail(data: {
   });
 }
 
+export async function sendAdminPitchNotification(data: {
+  // Pitch details
+  pitchId: number;
+  pitchContent: string;
+  pitchType: string;
+  bidAmount: number;
+  submittedAt: string;
+  
+  // User details
+  userFullName: string;
+  userEmail: string;
+  userUsername: string;
+  userTitle?: string;
+  userCompany?: string;
+  
+  // Opportunity details
+  opportunityTitle: string;
+  publicationName: string;
+  industry?: string;
+  currentPrice: string;
+  deadline?: string;
+}) {
+  console.log('📧 Preparing admin pitch notification email');
+  
+  const resend = getResendInstance();
+  if (!resend) {
+    console.log('📧 Email sending disabled - no API key configured');
+    return { success: false, error: 'Email service not configured' };
+  }
+  
+  try {
+    // Get admin emails from database
+    const { adminUsers } = await import('../../shared/schema');
+    const admins = await getDb().select({ email: adminUsers.email }).from(adminUsers);
+    
+    if (admins.length === 0) {
+      console.error('❌ No admin users found in database');
+      return { success: false, error: 'No admin users found' };
+    }
+    
+    const adminEmails = admins.map((admin: { email: string }) => admin.email);
+    console.log(`📧 Sending admin notification to ${adminEmails.length} admin(s): ${adminEmails.join(', ')}`);
+    
+    // Truncate opportunity title for email header if too long
+    const truncateForHeader = (text: string, maxLength: number = 120): string => {
+      if (!text || text.length <= maxLength) return text;
+      return text.substring(0, maxLength).trim() + '...';
+    };
+
+    const htmlContent = loadTemplate('admin-pitch-notification', {
+      pitchId: data.pitchId,
+      pitchContent: data.pitchContent || 'No content provided',
+      pitchType: data.pitchType || 'Text',
+      bidAmount: data.bidAmount,
+      submittedAt: data.submittedAt,
+      
+      userFullName: data.userFullName,
+      userEmail: data.userEmail,
+      userUsername: data.userUsername,
+      userTitle: data.userTitle || 'Not specified',
+      userCompany: data.userCompany || 'Not specified',
+      
+      opportunityTitle: truncateForHeader(data.opportunityTitle),
+      publicationName: data.publicationName,
+      industry: data.industry || 'Not specified',
+      currentPrice: data.currentPrice,
+      deadline: data.deadline || 'Not specified',
+      
+      currentYear: new Date().getFullYear(),
+      frontendUrl: process.env.FRONTEND_URL || 'https://quotebid.co'
+    });
+
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'QuoteBid <noreply@quotebid.co>',
+      to: adminEmails,
+      subject: `New Pitch Received ($${data.bidAmount}) - ${data.userFullName} - ${data.publicationName}`,
+      html: htmlContent,
+    });
+
+    if (result.error) {
+      console.error(`❌ Admin pitch notification error:`, result.error);
+      return { success: false, error: result.error.message };
+    }
+
+    console.log(`✅ Admin pitch notification sent successfully to ${adminEmails.join(', ')}: ${result.data?.id}`);
+    return { success: true, id: result.data?.id, recipients: adminEmails };
+  } catch (error) {
+    console.error('❌ Failed to send admin pitch notification:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
 // ====== VALIDATION FUNCTIONS ======
 
 export async function validateEmailTemplates(): Promise<{ 

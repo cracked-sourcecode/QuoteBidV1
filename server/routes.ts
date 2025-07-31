@@ -3430,6 +3430,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the pitch submission if draft lookup fails
       }
       
+      // 📧 Send admin pitch notification email for new pending pitches
+      try {
+        const opportunity = await storage.getOpportunity(opportunityId);
+        const publication = opportunity?.publicationId 
+          ? await storage.getPublication(opportunity.publicationId)
+          : null;
+        
+        // Only send admin notification for pitches that need review
+        if (status === 'pending') {
+          const { sendAdminPitchNotification } = await import('./lib/email-production');
+          
+          // Format submission date
+          const submittedAt = new Date().toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short'
+          });
+          
+          // Format deadline
+          const deadline = opportunity?.deadline 
+            ? new Date(opportunity.deadline).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })
+            : 'Not specified';
+          
+          // Determine pitch type based on content
+          const pitchType = audioUrl ? 'Voice' : (content ? 'Text' : 'Unknown');
+          
+          await sendAdminPitchNotification({
+            // Pitch details
+            pitchId: newPitch.id,
+            pitchContent: content || transcript || 'No content provided',
+            pitchType: pitchType,
+            bidAmount: bidAmount || opportunity?.current_price || opportunity?.minimumBid || 0,
+            submittedAt: submittedAt,
+            
+            // User details
+            userFullName: user.fullName || user.username || 'Unknown User',
+            userEmail: user.email,
+            userUsername: user.username,
+            userTitle: user.title || undefined,
+            userCompany: user.company_name || undefined,
+            
+            // Opportunity details
+            opportunityTitle: opportunity?.title || 'Unknown Opportunity',
+            publicationName: publication?.name || 'Unknown Publication',
+            industry: opportunity?.industry || undefined,
+            currentPrice: String(opportunity?.current_price || opportunity?.minimumBid || 0),
+            deadline: deadline
+          });
+          
+          console.log(`✅ Admin notification sent for new pending pitch ${newPitch.id}`);
+        }
+      } catch (adminEmailError) {
+        console.error('Error sending admin pitch notification:', adminEmailError);
+        // Don't fail the pitch submission if admin email fails
+      }
+
       // Create notification for successful pitch submission
       try {
         const opportunity = await storage.getOpportunity(opportunityId);
@@ -3452,6 +3515,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Error creating pitch submission notification:', notificationError);
         // Don't fail the request if notification creation fails
       }
+
+
 
       // 📧 Send pitch sent email (when user submits pitch)
       try {
@@ -7405,6 +7470,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         console.log(`Retrieved ${pitchesWithRelations.length} pitches with complete relations`);
+        
+
         
         // Debug: Log the first pitch to see if relations are included
         if (pitchesWithRelations.length > 0) {
