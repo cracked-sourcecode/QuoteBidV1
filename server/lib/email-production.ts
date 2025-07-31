@@ -432,8 +432,7 @@ export async function sendAdminPitchNotification(data: {
       return { success: false, error: 'No admin users found' };
     }
     
-    const adminEmails = admins.map((admin: { email: string }) => admin.email);
-    console.log(`📧 Sending admin notification to ${adminEmails.length} admin(s): ${adminEmails.join(', ')}`);
+    const adminEmails = admins.map((admin: { email: string }) => admin.email).filter(email => email && email.trim());
     
     // Truncate opportunity title for email header if too long
     const truncateForHeader = (text: string, maxLength: number = 120): string => {
@@ -464,20 +463,32 @@ export async function sendAdminPitchNotification(data: {
       frontendUrl: process.env.FRONTEND_URL || 'https://quotebid.co'
     });
 
-    const result = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'QuoteBid <noreply@quotebid.co>',
-      to: adminEmails,
-      subject: `New Pitch Received ($${data.bidAmount}) - ${data.userFullName} - ${data.publicationName}`,
-      html: htmlContent,
-    });
+    // Send individual emails to each admin to ensure delivery
+    const results = [];
+    for (const email of adminEmails) {
+      try {
+        const result = await resend.emails.send({
+          from: process.env.EMAIL_FROM || 'QuoteBid <noreply@quotebid.co>',
+          to: [email],
+          subject: `New Pitch Received ($${data.bidAmount}) - ${data.userFullName} - ${data.publicationName}`,
+          html: htmlContent,
+        });
 
-    if (result.error) {
-      console.error(`❌ Admin pitch notification error:`, result.error);
-      return { success: false, error: result.error.message };
+        if (result.error) {
+          console.error(`❌ Failed to send to ${email}:`, result.error);
+        } else {
+          results.push({ email, id: result.data?.id });
+        }
+      } catch (emailError) {
+        console.error(`❌ Error sending to ${email}:`, emailError);
+      }
     }
 
-    console.log(`✅ Admin pitch notification sent successfully to ${adminEmails.join(', ')}: ${result.data?.id}`);
-    return { success: true, id: result.data?.id, recipients: adminEmails };
+    if (results.length === 0) {
+      return { success: false, error: 'Failed to send to any admin' };
+    }
+
+    return { success: true, recipients: adminEmails, results };
   } catch (error) {
     console.error('❌ Failed to send admin pitch notification:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
