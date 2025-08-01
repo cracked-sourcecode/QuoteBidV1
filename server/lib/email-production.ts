@@ -414,14 +414,6 @@ export async function sendAdminPitchNotification(data: {
   currentPrice: string;
   deadline?: string;
 }) {
-  console.log('📧 Preparing admin pitch notification email');
-  
-  const resend = getResendInstance();
-  if (!resend) {
-    console.log('📧 Email sending disabled - no API key configured');
-    return { success: false, error: 'Email service not configured' };
-  }
-  
   try {
     // Get specific admin email (ID 5 - Juan)
     const admin = await getDb().select({ email: adminUsers.email }).from(adminUsers).where(eq(adminUsers.id, 5)).limit(1);
@@ -431,63 +423,45 @@ export async function sendAdminPitchNotification(data: {
       return { success: false, error: 'Admin user not found' };
     }
     
-    const adminEmails = [admin[0].email].filter(email => email && email.trim());
-    
+    const adminEmail = admin[0].email;
+    if (!adminEmail || !adminEmail.trim()) {
+      return { success: false, error: 'Admin email is empty' };
+    }
+
     // Truncate opportunity title for email header if too long
     const truncateForHeader = (text: string, maxLength: number = 120): string => {
       if (!text || text.length <= maxLength) return text;
       return text.substring(0, maxLength).trim() + '...';
     };
 
-    const htmlContent = loadTemplate('admin-pitch-notification', {
-      pitchId: data.pitchId,
-      pitchContent: data.pitchContent || 'No content provided',
-      pitchType: data.pitchType || 'Text',
-      bidAmount: data.bidAmount,
-      submittedAt: data.submittedAt,
-      
-      userFullName: data.userFullName,
-      userEmail: data.userEmail,
-      userUsername: data.userUsername,
-      userTitle: data.userTitle || 'Not specified',
-      userCompany: data.userCompany || 'Not specified',
-      
-      opportunityTitle: truncateForHeader(data.opportunityTitle),
-      publicationName: data.publicationName,
-      industry: data.industry || 'Not specified',
-      currentPrice: data.currentPrice,
-      deadline: data.deadline || 'Not specified',
-      
-      currentYear: new Date().getFullYear(),
-      frontendUrl: process.env.FRONTEND_URL || 'https://quotebid.co'
+    // Use the same pattern as other working email functions
+    return await sendEmail({
+      to: adminEmail,
+      subject: `New Pitch Received ($${data.bidAmount}) - ${data.userFullName} - ${data.publicationName}`,
+      template: 'admin-pitch-notification',
+      variables: {
+        pitchId: data.pitchId,
+        pitchContent: data.pitchContent || 'No content provided',
+        pitchType: data.pitchType || 'Text',
+        bidAmount: data.bidAmount,
+        submittedAt: data.submittedAt,
+        
+        userFullName: data.userFullName,
+        userEmail: data.userEmail,
+        userUsername: data.userUsername,
+        userTitle: data.userTitle || 'Not specified',
+        userCompany: data.userCompany || 'Not specified',
+        
+        opportunityTitle: truncateForHeader(data.opportunityTitle),
+        publicationName: data.publicationName,
+        industry: data.industry || 'Not specified',
+        currentPrice: data.currentPrice,
+        deadline: data.deadline || 'Not specified',
+        
+        currentYear: new Date().getFullYear()
+      },
+      skipPreferenceCheck: true // Admin emails should always be sent
     });
-
-    // Send individual emails to each admin to ensure delivery
-    const results = [];
-    for (const email of adminEmails) {
-      try {
-        const result = await resend.emails.send({
-          from: process.env.EMAIL_FROM || 'QuoteBid <noreply@quotebid.co>',
-          to: [email],
-          subject: `New Pitch Received ($${data.bidAmount}) - ${data.userFullName} - ${data.publicationName}`,
-          html: htmlContent,
-        });
-
-        if (result.error) {
-          console.error(`❌ Failed to send to ${email}:`, result.error);
-        } else {
-          results.push({ email, id: result.data?.id });
-        }
-      } catch (emailError) {
-        console.error(`❌ Error sending to ${email}:`, emailError);
-      }
-    }
-
-    if (results.length === 0) {
-      return { success: false, error: 'Failed to send to any admin' };
-    }
-
-    return { success: true, recipients: adminEmails, results };
   } catch (error) {
     console.error('❌ Failed to send admin pitch notification:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
@@ -513,7 +487,8 @@ export async function validateEmailTemplates(): Promise<{
     'new-opportunity-alert',
     'subscription-renewal-failed',
     'saved-opportunity-alert',
-    'password-reset'
+    'password-reset',
+    'admin-pitch-notification'
   ];
 
   const missing: string[] = [];

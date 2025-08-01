@@ -3393,15 +3393,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Successfully created pitch with ID:", newPitch.id);
       
-      // 📧 Send admin pitch notification email IMMEDIATELY upon submission
+      // 📧 Send admin pitch notification email IMMEDIATELY when pitch hits DB
       try {
         const opportunity = await storage.getOpportunity(opportunityId);
         const publication = opportunity?.publicationId 
           ? await storage.getPublication(opportunity.publicationId)
           : null;
         
-        // Only send admin notification for pitches that need review
-        if (status === 'pending') {
+        // Send admin notification for ALL pitches sent to database
+        {
           const { sendAdminPitchNotification } = await import('./lib/email-production');
           
           // Format submission date
