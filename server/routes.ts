@@ -345,6 +345,140 @@ function isRequestAuthenticated(req: Request): boolean {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // === RUBICON SSO CONSUMER ===
+  // GET /sso/consume - Handle SSO token from Rubicon
+  app.get('/sso/consume', async (req: Request, res: Response) => {
+    try {
+      const { token } = req.query;
+
+      if (!token || typeof token !== 'string') {
+        return res.status(400).send(`
+          <h1>Access Denied</h1>
+          <p>Invalid SSO token. <a href="https://www.rubiconprgroup.com">Return to Rubicon</a></p>
+        `);
+      }
+
+      // Validate token with Rubicon
+      const rubiconBaseUrl = process.env.RUBICON_BASE_URL || 'https://www.rubiconprgroup.com';
+      
+      console.log(`🎫 Validating SSO token with Rubicon: ${rubiconBaseUrl}/api/quotebid/validate`);
+      
+      const response = await fetch(`${rubiconBaseUrl}/api/quotebid/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('SSO validation failed:', response.status, errorText);
+        
+        return res.status(401).send(`
+          <h1>Access Denied</h1>
+          <p>Invalid or expired access token.</p>
+          <p><a href="https://www.rubiconprgroup.com">Request access through Rubicon</a></p>
+        `);
+      }
+
+      const result = await response.json();
+      
+      if (!result.ok || !result.user) {
+        return res.status(401).send(`
+          <h1>Access Denied</h1>
+          <p>Failed to validate access.</p>
+          <p><a href="https://www.rubiconprgroup.com">Return to Rubicon</a></p>
+        `);
+      }
+
+      // Create QuoteBid session for the user
+      const userData = result.user;
+      
+      // Check if user exists in QuoteBid, if not create them
+      const db = getDb();
+      let existingUser;
+      
+      try {
+        existingUser = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, userData.email))
+          .limit(1);
+      } catch (dbError) {
+        console.error('Database error checking user:', dbError);
+        return res.status(500).send('<h1>Database Error</h1><p>Please try again.</p>');
+      }
+
+      let userId;
+      
+      if (existingUser.length === 0) {
+        // Create new user from Rubicon data
+        const newUser = {
+          email: userData.email,
+          username: userData.email, // Use email as username for SSO users
+          full_name: userData.name || `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
+          company_name: userData.companyName || '',
+          signup_stage: 'completed', // Skip onboarding for SSO users
+          email_verified: true,
+          created_at: new Date(),
+          rubicon_user_id: userData.id, // Store Rubicon user ID for reference
+        };
+
+        try {
+          const insertResult = await db.insert(users).values(newUser).returning();
+          userId = insertResult[0].id;
+          console.log(`✅ Created QuoteBid user for ${userData.email} (Rubicon ID: ${userData.id})`);
+        } catch (createError) {
+          console.error('Error creating user:', createError);
+          return res.status(500).send('<h1>Account Creation Error</h1><p>Please try again.</p>');
+        }
+      } else {
+        userId = existingUser[0].id;
+        
+        // Update user info from Rubicon if needed
+        try {
+          await db
+            .update(users)
+            .set({
+              full_name: userData.name || existingUser[0].full_name,
+              company_name: userData.companyName || existingUser[0].company_name,
+              rubicon_user_id: userData.id,
+            })
+            .where(eq(users.id, userId));
+        } catch (updateError) {
+          console.error('Error updating user:', updateError);
+        }
+        
+        console.log(`✅ SSO login for existing user ${userData.email}`);
+      }
+
+      // Create session (using existing QuoteBid session system)
+      if (req.session) {
+        req.session.userId = userId;
+        req.session.user = {
+          id: userId,
+          email: userData.email,
+          name: userData.name,
+          isAuthenticated: true,
+        };
+      }
+
+      console.log(`🎉 QuoteBid session created for ${userData.email} → redirecting to /app`);
+
+      // Redirect to QuoteBid dashboard
+      res.redirect('/app');
+      
+    } catch (error) {
+      console.error('SSO consume error:', error);
+      res.status(500).send(`
+        <h1>SSO Error</h1>
+        <p>Something went wrong during authentication.</p>
+        <p><a href="https://www.rubiconprgroup.com">Return to Rubicon</a></p>
+      `);
+    }
+  });
+
   // --- PUBLIC REGISTRATION ENDPOINT (must be before any middleware) ---
   app.post('/api/auth/register', async (req: Request, res: Response) => {
     const { email, password, username, fullName, companyName, phone, industry } = req.body;
