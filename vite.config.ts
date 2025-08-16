@@ -15,6 +15,12 @@ export default defineConfig({
         ]
       : []),
   ],
+  define: {
+    // Environment variables for frontend
+    'import.meta.env.VITE_RUBICON_INTEGRATION': JSON.stringify(process.env.RUBICON_INTEGRATION || 'false'),
+    'import.meta.env.VITE_RUBICON_BASE_URL': JSON.stringify(process.env.RUBICON_BASE_URL || 'https://www.rubiconprgroup.com'),
+    'import.meta.env.VITE_DISABLE_NATIVE_AUTH': JSON.stringify(process.env.DISABLE_NATIVE_AUTH || 'false'),
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),

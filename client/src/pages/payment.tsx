@@ -7,7 +7,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { useAuth } from '@/hooks/use-auth';
 import { apiRequest } from '@/lib/queryClient';
 import { Loader2, CreditCard, CheckCircle2, AlertCircle } from 'lucide-react';
-import { SignupWizard } from '@/components/signup/SignupWizard';
+// SignupWizard removed - payment handled via Rubicon integration
 
 // Make sure to call `loadStripe` outside of a component's render to avoid
 // recreating the `Stripe` object on every render.
@@ -264,8 +264,6 @@ export default function Payment() {
     </div>
   );
   
-  // Wrap the content with the SignupWizard component when the feature flag is enabled
-  return import.meta.env.VITE_NEXT_SIGNUP_WIZARD === 'true' 
-    ? <SignupWizard>{pageContent}</SignupWizard>
-    : pageContent;
+  // Return content directly - SignupWizard removed for Rubicon integration
+  return pageContent;
 }

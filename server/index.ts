@@ -25,6 +25,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./db";
 import { checkUnique } from "./routes/public/checkUnique";
 import { startEmailScheduler } from "./jobs/emailScheduler";
+import { rubiconLockdownMiddleware } from "./middleware/rubiconLockdown";
 import path from 'path';
 import cors from 'cors';
 

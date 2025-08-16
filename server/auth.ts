@@ -6,6 +6,7 @@ import { hashPassword, comparePasswords } from "./utils/passwordUtils";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import { ensureAuth } from './middleware/ensureAuth';
+import { rubiconHeaderAuth } from './middleware/rubiconAuth';
 import { z } from "zod";
 import path from "path";
 import fs from "fs";
@@ -34,6 +35,44 @@ declare global {
 const PostgresSessionStore = connectPg(session);
 
 export function setupAuth(app: Express) {
+  // Check if Rubicon integration is enabled
+  const isRubiconIntegration = process.env.RUBICON_INTEGRATION === 'true';
+  const disableNativeAuth = process.env.DISABLE_NATIVE_AUTH === 'true';
+  
+  if (isRubiconIntegration || disableNativeAuth) {
+    console.log('🔗 Rubicon Integration Mode - Native auth disabled');
+    console.log('🔒 Authentication will be handled via Rubicon headers');
+    
+    // Set up minimal session for Rubicon integration
+    const sessionSettings: session.SessionOptions = {
+      secret: process.env.SESSION_SECRET || "qwoted-development-secret",
+      resave: false,
+      saveUninitialized: false,
+      store: new PostgresSessionStore({ 
+        pool: getPool(), 
+        createTableIfMissing: true,
+        tableName: 'user_sessions'
+      }),
+      cookie: {
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+        sameSite: "lax",
+      },
+    };
+
+    app.set("trust proxy", 1);
+    app.use(session(sessionSettings));
+    
+    // Add Rubicon header authentication middleware
+    app.use(rubiconHeaderAuth);
+    
+    // Skip all native auth endpoints - only SSO consumer remains active
+    console.log('🚫 Native auth endpoints disabled - using Rubicon authentication');
+    return;
+  }
+
+  // Original native authentication setup
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "qwoted-development-secret",
     resave: false,
@@ -80,6 +119,8 @@ export function setupAuth(app: Express) {
       done(err);
     }
   });
+
+  // Native authentication endpoints (only active when Rubicon integration is disabled)
 
   app.post("/api/register", async (req, res, next) => {
     try {

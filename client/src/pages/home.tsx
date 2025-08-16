@@ -42,14 +42,16 @@ export default function Home() {
     };
   }, []);
   
-  const handleLogin = (e: React.MouseEvent<HTMLButtonElement>) => {
+  // Auth handlers removed - users access via Rubicon SSO
+  const handleRubiconRedirect = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    window.location.href = "/login";
+    window.location.href = "https://www.rubiconprgroup.com";
   };
   
-  const handleSignup = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleObsoleteSignup = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    window.location.href = "/register";
+    // Redirect to Rubicon since QuoteBid signup is disabled
+    window.location.href = "https://www.rubiconprgroup.com";
   };
 
   return (

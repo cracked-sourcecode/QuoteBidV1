@@ -15,12 +15,10 @@ import OpportunityDetail from "@/pages/opportunity-detail-wrapper";
 import MyPitches from "@/pages/my-pitches-wrapper";
 import PitchHistory from "@/pages/pitch-history";
 import Subscribe from "@/pages/subscribe";
-import PaymentSuccess from "@/pages/payment-success"; 
 import SubscriptionSuccess from "@/pages/subscription-success";
 import SubscriptionRedirect from "@/pages/subscription-redirect";
-import ProfileSetup from "@/pages/profile-setup";
-import SignupWizard from "@/pages/SignupWizard";
-import RegisterPage from "@/pages/register";
+// ProfileSetup and PaymentSuccess removed - handled via Rubicon integration
+// Removed SignupWizard and RegisterPage - using Rubicon SSO
 import Account from "@/pages/account-wrapper";
 // Profile page removed as requested
 import Navbar from "@/components/navbar";
@@ -44,10 +42,10 @@ import CoverageManager from "@/pages/admin/coverage-manager";
 import AdminAnalytics from "@/pages/admin/analytics";
 import AdminPricing from "@/pages/admin/pricing";
 import PublicationsManager from "@/pages/admin/publications-manager";
-import LoginPage from "@/pages/login-page";
-import ForgotPassword from "@/pages/forgot-password";
+// Auth pages removed - using Rubicon SSO integration
 import TermsOfService from "@/pages/TermsOfService";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import { RubiconRedirect } from "@/components/RubiconRedirect";
 import ResetPassword from "@/pages/reset-password";
 import AdminLogin from "@/pages/admin/login";
 import CreateAdmin from "@/pages/admin/create-admin";
@@ -130,17 +128,17 @@ function Router() {
               return <Redirect to="/opportunities" />;
           }}
         </Route>
-        <Route path="/login" component={LoginPage} />
-        <Route path="/forgot-password" component={ForgotPassword} />
-        <Route path="/register" component={RegisterPage} />
-        <Route path="/auth">
-          {() => <Redirect to="/login" />}
-        </Route>
-        <Route path="/logout" component={LogoutHandler} />
+        {/* Rubicon integration - redirect all auth attempts to Rubicon */}
+        <Route path="/login" component={() => <RubiconRedirect type="login" />} />
+        <Route path="/register" component={() => <RubiconRedirect type="register" />} />
+        <Route path="/logout" component={() => <RubiconRedirect type="logout" />} />
+        <Route path="/signup-wizard" component={() => <RubiconRedirect type="register" />} />
+        <Route path="/auth" component={() => <RubiconRedirect type="login" />} />
+        
+        {/* Admin routes - always available */}
         <Route path="/admin-logout" component={AdminLogoutHandler} />
         <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin/create-admin" component={CreateAdmin} />
-        <Route path="/signup-wizard" component={SignupWizard} />
         <Route path="/terms" component={TermsOfService} />
         <Route path="/privacy" component={PrivacyPolicy} />
         <Route path="/legal/terms" component={TermsOfService} />
@@ -152,9 +150,8 @@ function Router() {
         
         {/* Routes that require authentication */}
         <ProtectedRoute path="/subscribe" component={() => <Subscribe />} />
-        <ProtectedRoute path="/payment-success" component={() => <PaymentSuccess />} />
         <ProtectedRoute path="/subscription-success" component={() => <SubscriptionSuccess />} />
-        <ProtectedRoute path="/profile-setup" component={() => <ProfileSetup />} />
+        {/* profile-setup and payment-success removed - handled via Rubicon */}
         <ProtectedRoute path="/account" component={() => (
             <Account />
         )} />

@@ -29,6 +29,7 @@ import { setupAdminAuth, requireAdminAuth } from "./admin-auth-middleware";
 import { enforceOnboarding } from "./middleware/enforceOnboarding";
 import { jwtAuth } from "./middleware/jwtAuth";
 import { ensureAuth } from "./middleware/ensureAuth";
+import { rubiconLockdownMiddleware } from "./middleware/rubiconLockdown";
 import { updatePrices } from './jobs/updatePrices';
 
 import upload from './middleware/upload';
