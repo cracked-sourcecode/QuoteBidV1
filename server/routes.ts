@@ -424,6 +424,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email_verified: true,
           created_at: new Date(),
           rubicon_user_id: userData.id, // Store Rubicon user ID for reference
+          premiumStatus: 'active', // Rubicon users are premium by default
+          subscription_status: 'active' // Mark as active subscriber
         };
 
         try {
@@ -445,6 +447,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               full_name: userData.name || existingUser[0].full_name,
               company_name: userData.companyName || existingUser[0].company_name,
               rubicon_user_id: userData.id,
+              premiumStatus: 'active', // Ensure Rubicon users stay premium
+              subscription_status: 'active' // Keep subscription active
             })
             .where(eq(users.id, userId));
         } catch (updateError) {
