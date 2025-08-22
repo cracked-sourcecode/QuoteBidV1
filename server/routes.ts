@@ -418,11 +418,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const newUser = {
           email: userData.email,
           username: userData.email, // Use email as username for SSO users
-          full_name: userData.name || `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
+          password: 'sso_user_no_password', // Required field - use placeholder for SSO users
+          fullName: userData.name || `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
           company_name: userData.companyName || '',
+          industry: userData.industry || '',
+          avatar: userData.avatar || '',
+          bio: userData.companyDescription || '',
           signup_stage: 'completed', // Skip onboarding for SSO users
           email_verified: true,
-          created_at: new Date(),
+          profileCompleted: true, // Mark profile as completed for SSO users
+          createdAt: new Date(),
           rubicon_user_id: userData.id, // Store Rubicon user ID for reference
           premiumStatus: 'active', // Rubicon users are premium by default
           subscription_status: 'active' // Mark as active subscriber
@@ -444,11 +449,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await db
             .update(users)
             .set({
-              full_name: userData.name || existingUser[0].full_name,
+              fullName: userData.name || existingUser[0].fullName,
               company_name: userData.companyName || existingUser[0].company_name,
+              industry: userData.industry || existingUser[0].industry,
+              avatar: userData.avatar || existingUser[0].avatar,
+              bio: userData.companyDescription || existingUser[0].bio,
               rubicon_user_id: userData.id,
               premiumStatus: 'active', // Ensure Rubicon users stay premium
-              subscription_status: 'active' // Keep subscription active
+              subscription_status: 'active', // Keep subscription active
+              profileCompleted: true // Mark profile as completed for SSO users
             })
             .where(eq(users.id, userId));
         } catch (updateError) {
