@@ -10472,6 +10472,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { password, ...userWithoutPassword } = req.user as any;
     res.json(userWithoutPassword);
   });
+
+  // Check user setup status for Rubicon integration
+  app.get('/api/user/check-setup-status', jwtAuth, ensureAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const db = getDb();
+      const [user] = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Check if Rubicon user has completed QuoteBid setup
+      const isRubiconUser = !!user.rubicon_user_id;
+      const hasCompletedSetup = user.subscription_status === 'active' && user.premiumStatus === 'active';
+
+      res.json({
+        isRubiconUser,
+        setupComplete: hasCompletedSetup,
+        needsSignup: isRubiconUser && !hasCompletedSetup
+      });
+
+    } catch (error) {
+      console.error('Setup status check error:', error);
+      res.status(500).json({ error: 'Failed to check setup status' });
+    }
+  });
+
+  // Handle subscription setup completion from Rubicon
+  app.post('/api/quotebid/complete-setup', jwtAuth, ensureAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const { companyInfo } = req.body;
+      
+      if (!companyInfo || !companyInfo.company || !companyInfo.industry) {
+        return res.status(400).json({ error: 'Company information required' });
+      }
+
+      const db = getDb();
+      
+      // Update user with company info and mark as setup complete
+      await db
+        .update(users)
+        .set({
+          company_name: companyInfo.company,
+          industry: companyInfo.industry,
+          title: companyInfo.role || null,
+          // User should already have premium status from SSO, but ensure it's set
+          premiumStatus: 'active',
+          subscription_status: 'active',
+          signup_stage: 'completed',
+          profileCompleted: true
+        })
+        .where(eq(users.id, req.user.id));
+
+      console.log(`✅ QuoteBid setup completed for user ${req.user.id} (${companyInfo.company})`);
+      
+      res.json({ 
+        success: true,
+        message: 'Setup completed successfully'
+      });
+
+    } catch (error) {
+      console.error('QuoteBid setup completion error:', error);
+      res.status(500).json({ error: 'Failed to complete setup' });
+    }
+  });
   
   // Get user's email preferences
   app.get("/api/users/:userId/email-preferences", jwtAuth, async (req, res) => {

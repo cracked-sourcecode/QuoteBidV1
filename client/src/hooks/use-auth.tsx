@@ -146,6 +146,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Invalidate all queries to ensure fresh data
       queryClient.invalidateQueries();
       
+      // Handle Rubicon integration logout
+      const isRubiconIntegration = import.meta.env.VITE_RUBICON_INTEGRATION === 'true';
+      
+      if (isRubiconIntegration && user?.rubicon_user_id) {
+        // User came from Rubicon - redirect back to Rubicon dashboard
+        const rubiconBaseUrl = import.meta.env.VITE_RUBICON_BASE_URL || 'https://www.rubiconprgroup.com';
+        window.location.href = `${rubiconBaseUrl}/dashboard`;
+        return; // Exit early to prevent QuoteBid toast/redirect
+      }
+      
       toast({
         title: "Logged out",
         description: "You have been successfully logged out.",
@@ -165,6 +175,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], null);
       queryClient.cancelQueries({ queryKey: ["/api/user"] });
       queryClient.removeQueries({ queryKey: ["/api/user"] });
+      
+      // Handle Rubicon integration logout even on error
+      const isRubiconIntegration = import.meta.env.VITE_RUBICON_INTEGRATION === 'true';
+      
+      if (isRubiconIntegration && user?.rubicon_user_id) {
+        // User came from Rubicon - redirect back to Rubicon dashboard even on error
+        const rubiconBaseUrl = import.meta.env.VITE_RUBICON_BASE_URL || 'https://www.rubiconprgroup.com';
+        window.location.href = `${rubiconBaseUrl}/dashboard`;
+        return; // Exit early to prevent QuoteBid toast
+      }
       
       toast({
         title: "Logout failed",

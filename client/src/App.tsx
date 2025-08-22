@@ -46,6 +46,8 @@ import PublicationsManager from "@/pages/admin/publications-manager";
 import TermsOfService from "@/pages/TermsOfService";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import { RubiconRedirect } from "@/components/RubiconRedirect";
+import SignupCheck from "@/components/SignupCheck";
+import { useSessionHandler } from "@/hooks/use-session-handler";
 import ResetPassword from "@/pages/reset-password";
 import AdminLogin from "@/pages/admin/login";
 import CreateAdmin from "@/pages/admin/create-admin";
@@ -108,7 +110,8 @@ function AdminLogoutHandler() {
 }
 
 function Router() {
-  // Note: Removed usePriceUpdates() since we're using PriceContext system now
+  // Handle session expiration for Rubicon users
+  useSessionHandler();
   
   return (
     <>
@@ -687,7 +690,9 @@ function App() {
             <TooltipProvider>
               <Toaster />
               <ScrollRestoration />
-              <Router />
+              <SignupCheck>
+                <Router />
+              </SignupCheck>
             </TooltipProvider>
           </PriceProvider>
         </AdminAuthProvider>

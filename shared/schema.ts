@@ -71,6 +71,7 @@ export const users = pgTable("users", {
     notifications: true,
     language: "en"
   }),
+  rubicon_user_id: text("rubicon_user_id").unique(), // Link to Rubicon user for SSO
   createdAt: timestamp("created_at").defaultNow(),
 });
 
