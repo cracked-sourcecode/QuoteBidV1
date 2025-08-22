@@ -414,16 +414,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let userId;
       
       if (existingUser.length === 0) {
-        // Create new user from Rubicon data
+        // Create new user from Rubicon data with required field defaults
+        const fullName = userData.name || `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Rubicon User';
+        const bio = userData.companyDescription || `Professional from ${userData.companyName || 'Rubicon PR Group'}`;
+        const industry = userData.industry || 'Public Relations';
+        const location = 'United States'; // Default location since RubiconWeb doesn't capture this yet
+        
+        // Ensure bio meets minimum length requirement (10 chars)
+        const validBio = bio.length >= 10 ? bio : `${bio}. Experienced professional in ${industry}.`;
+        
         const newUser = {
           email: userData.email,
           username: userData.email, // Use email as username for SSO users
           password: 'sso_user_no_password', // Required field - use placeholder for SSO users
-          fullName: userData.name || `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
+          fullName: fullName,
           company_name: userData.companyName || '',
-          industry: userData.industry || '',
+          industry: industry, // Ensure this is never empty
+          location: location, // Required field with default
           avatar: userData.avatar || '',
-          bio: userData.companyDescription || '',
+          bio: validBio, // Required field with minimum length
           signup_stage: 'completed', // Skip onboarding for SSO users
           email_verified: true,
           profileCompleted: true, // Mark profile as completed for SSO users
@@ -445,15 +454,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId = existingUser[0].id;
         
         // Update user info from Rubicon if needed
+        const updatedFullName = userData.name || existingUser[0].fullName || 'Rubicon User';
+        const updatedBio = userData.companyDescription || existingUser[0].bio || `Professional from ${userData.companyName || 'Rubicon PR Group'}`;
+        const updatedIndustry = userData.industry || existingUser[0].industry || 'Public Relations';
+        const updatedLocation = existingUser[0].location || 'United States';
+        
+        // Ensure bio meets minimum length requirement (10 chars)
+        const validUpdatedBio = updatedBio.length >= 10 ? updatedBio : `${updatedBio}. Experienced professional in ${updatedIndustry}.`;
+        
         try {
           await db
             .update(users)
             .set({
-              fullName: userData.name || existingUser[0].fullName,
+              fullName: updatedFullName,
               company_name: userData.companyName || existingUser[0].company_name,
-              industry: userData.industry || existingUser[0].industry,
+              industry: updatedIndustry, // Ensure this is never empty
+              location: updatedLocation, // Ensure this is set
               avatar: userData.avatar || existingUser[0].avatar,
-              bio: userData.companyDescription || existingUser[0].bio,
+              bio: validUpdatedBio, // Ensure minimum length
               rubicon_user_id: userData.id,
               premiumStatus: 'active', // Ensure Rubicon users stay premium
               subscription_status: 'active', // Keep subscription active
