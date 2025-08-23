@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/use-auth';
-import RubiconSignupBridge from './RubiconSignupBridge';
+import { ProfileCompletionModal } from './ProfileCompletionModal';
 
 export default function SignupCheck({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -22,11 +22,8 @@ export default function SignupCheck({ children }: { children: React.ReactNode })
       const isRubiconIntegration = import.meta.env.VITE_RUBICON_INTEGRATION === 'true';
       
       if (isRubiconIntegration && user.rubicon_user_id) {
-        // For Rubicon users, check setup status
-        const response = await fetch('/api/user/check-setup-status');
-        const data = await response.json();
-        
-        setNeedsSignup(!data.setupComplete);
+        // For Rubicon users, check if profile is completed
+        setNeedsSignup(!user.profileCompleted);
       } else {
         // Non-Rubicon users don't need signup bridge
         setNeedsSignup(false);
@@ -50,9 +47,20 @@ export default function SignupCheck({ children }: { children: React.ReactNode })
     );
   }
 
-  if (needsSignup) {
-    return <RubiconSignupBridge />;
-  }
+  const handleProfileComplete = () => {
+    setNeedsSignup(false);
+  };
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {needsSignup && user && (
+        <ProfileCompletionModal
+          user={user}
+          isOpen={true}
+          onComplete={handleProfileComplete}
+        />
+      )}
+    </>
+  );
 }

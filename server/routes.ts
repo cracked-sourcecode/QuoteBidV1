@@ -6301,6 +6301,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to update user profile" });
     }
   });
+
+  // Update current user's profile (for authenticated users)
+  app.patch("/api/users/profile", jwtAuth, ensureAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      
+      const schema = z.object({
+        fullName: z.string().min(1).optional(),
+        email: z.string().email().optional(),
+        phone_number: z.string().optional(),
+        bio: z.string().optional(),
+        location: z.string().optional(),
+        title: z.string().optional(),
+        industry: z.string().min(1).optional(),
+        company_name: z.string().optional(),
+        linkedIn: z.string().url().optional().or(z.string().length(0)),
+        instagram: z.string().url().optional().or(z.string().length(0)),
+        twitter: z.string().url().optional().or(z.string().length(0)),
+        website: z.string().url().optional().or(z.string().length(0)),
+        doFollowLink: z.string().url().optional().or(z.string().length(0)),
+        profileCompleted: z.boolean().optional(),
+      });
+      
+      const validationResult = schema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid profile data", 
+          errors: validationResult.error.errors 
+        });
+      }
+      
+      // Update the user's profile  
+      const updatedUser = await getDb().update(users)
+        .set(validationResult.data)
+        .where(eq(users.id, userId))
+        .returning()
+        .then(rows => rows[0]);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      console.log(`✅ Profile updated for user ${userId}`);
+      res.json(updatedUser);
+    } catch (error: any) {
+      console.error("Failed to update user profile:", error);
+      res.status(500).json({ message: "Failed to update user profile" });
+    }
+  });
   
   // Serve uploaded avatars from GCS
   app.get('/uploads/avatars/:filename', async (req, res) => {
